@@ -1,0 +1,11 @@
+packages:
+  - "."
+
+publicHoistPattern:
+  - "*"
+
+allowBuilds:
+  esbuild: true
+  sharp: true
+  unrs-resolver: true
+  workerd: true
