@@ -48,6 +48,15 @@ type RecurringTask = {
   createdAt: string;
 };
 
+type Objective = {
+  id: string;
+  title: string;
+  description: string;
+  targetLabel: string;
+  personIds: string[];
+  createdAt: string;
+};
+
 type Person = {
   id: string;
   name: string;
@@ -65,6 +74,7 @@ type PersonDraft = {
 
 type TaskDraft = Omit<Task, "id" | "comments" | "completionNotifications" | "createdAt">;
 type RecurringDraft = Omit<RecurringTask, "id" | "createdAt">;
+type ObjectiveDraft = Omit<Objective, "id" | "createdAt">;
 
 const AUTHOR_KEY = "petit-suivi-auteur-v2";
 const DENSITY_KEY = "petit-suivi-densite-v2";
@@ -95,6 +105,13 @@ const emptyRecurringDraft: RecurringDraft = {
   assigneeId: null,
   estimatedHours: null,
   priority: "medium",
+};
+
+const emptyObjectiveDraft: ObjectiveDraft = {
+  title: "",
+  description: "",
+  targetLabel: "",
+  personIds: [],
 };
 
 const statusLabels: Record<Status, string> = {
@@ -261,6 +278,17 @@ function normalizeRecurringTask(raw: Partial<RecurringTask>): RecurringTask {
   };
 }
 
+function normalizeObjective(raw: Partial<Objective>): Objective {
+  return {
+    id: raw.id || uid("objective"),
+    title: raw.title || "",
+    description: raw.description || "",
+    targetLabel: raw.targetLabel || "",
+    personIds: Array.isArray(raw.personIds) ? raw.personIds.filter(Boolean) : [],
+    createdAt: raw.createdAt || new Date().toISOString(),
+  };
+}
+
 function normalizePerson(raw: Partial<Person>): Person {
   return {
     id: raw.id || uid("person"),
@@ -274,6 +302,7 @@ function normalizePerson(raw: Partial<Person>): Person {
 export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [recurringTasks, setRecurringTasks] = useState<RecurringTask[]>([]);
+  const [objectives, setObjectives] = useState<Objective[]>([]);
   const [people, setPeople] = useState<Person[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -296,11 +325,14 @@ export default function Home() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [peopleOpen, setPeopleOpen] = useState(false);
   const [recurringOpen, setRecurringOpen] = useState(false);
+  const [objectiveOpen, setObjectiveOpen] = useState(false);
   const [notifyOpen, setNotifyOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingRecurringId, setEditingRecurringId] = useState<string | null>(null);
   const [draft, setDraft] = useState<TaskDraft>(emptyDraft);
   const [recurringDraft, setRecurringDraft] = useState<RecurringDraft>(emptyRecurringDraft);
+  const [objectiveDraft, setObjectiveDraft] = useState<ObjectiveDraft>(emptyObjectiveDraft);
+  const [editingObjectiveId, setEditingObjectiveId] = useState<string | null>(null);
   const [sendAssignmentEmail, setSendAssignmentEmail] = useState(true);
   const [personDraft, setPersonDraft] = useState<PersonDraft>(emptyPersonDraft);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -349,23 +381,36 @@ export default function Home() {
     }
   }, []);
 
+  const loadObjectives = useCallback(async () => {
+    try {
+      const response = await fetch("/api/objectives", { cache: "no-store" });
+      if (!response.ok) throw new Error("load-objectives-failed");
+      const data = (await response.json()) as { objectives?: Partial<Objective>[] };
+      setObjectives(Array.isArray(data.objectives) ? data.objectives.map(normalizeObjective) : []);
+    } catch {
+      setToast("Objectifs indisponibles");
+    }
+  }, []);
+
   useEffect(() => {
     const timer = window.setTimeout(() => {
       void loadTasks();
       void loadPeople();
       void loadRecurringTasks();
+      void loadObjectives();
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [loadTasks, loadPeople, loadRecurringTasks]);
+  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
       void loadTasks(true);
       void loadPeople();
       void loadRecurringTasks();
+      void loadObjectives();
     }, 30000);
     return () => window.clearInterval(timer);
-  }, [loadTasks, loadPeople, loadRecurringTasks]);
+  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives]);
 
   useEffect(() => {
     if (authorName.trim()) localStorage.setItem(AUTHOR_KEY, authorName.trim());
@@ -442,6 +487,7 @@ export default function Home() {
 
   const selectedTask = tasks.find((task) => task.id === selectedId) ?? null;
   const notifyTask = tasks.find((task) => task.id === notifyTaskId) ?? null;
+  const featuredObjective = objectives[0] ?? null;
   const notifiablePeople = people.filter((person) => person.active);
   const draftAssignee = draft.assigneeId ? peopleById.get(draft.assigneeId) : null;
   const editingTask = editingId ? tasks.find((task) => task.id === editingId) ?? null : null;
@@ -487,6 +533,28 @@ export default function Home() {
     } catch {
       setSyncError("Sauvegarde impossible, rechargez la page avant de continuer");
       setToast("Modele non sauvegarde");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function saveObjectives(nextObjectives: Objective[], message: string) {
+    setSaving(true);
+    setSyncError("");
+    setObjectives(nextObjectives);
+    try {
+      const response = await fetch("/api/objectives", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ objectives: nextObjectives }),
+      });
+      if (!response.ok) throw new Error("save-objectives-failed");
+      const data = (await response.json()) as { objectives?: Partial<Objective>[] };
+      setObjectives(Array.isArray(data.objectives) ? data.objectives.map(normalizeObjective) : []);
+      setToast(message);
+    } catch {
+      setSyncError("Sauvegarde impossible, rechargez la page avant de continuer");
+      setToast("Objectif non sauvegarde");
     } finally {
       setSaving(false);
     }
@@ -626,6 +694,56 @@ export default function Home() {
       recurringTasks.filter((task) => task.id !== taskId),
       "Modele recurrent supprime",
     );
+  }
+
+  function openObjective(objective?: Objective) {
+    setEditingObjectiveId(objective?.id ?? null);
+    setObjectiveDraft(
+      objective
+        ? {
+            title: objective.title,
+            description: objective.description,
+            targetLabel: objective.targetLabel,
+            personIds: objective.personIds,
+          }
+        : emptyObjectiveDraft,
+    );
+    setObjectiveOpen(true);
+  }
+
+  function toggleObjectivePerson(personId: string, checked: boolean) {
+    setObjectiveDraft((current) => ({
+      ...current,
+      personIds: checked
+        ? [...current.personIds, personId]
+        : current.personIds.filter((id) => id !== personId),
+    }));
+  }
+
+  async function saveObjective(event: FormEvent) {
+    event.preventDefault();
+    if (!objectiveDraft.title.trim() || !objectiveDraft.targetLabel.trim() || saving) return;
+    const cleanDraft = {
+      ...objectiveDraft,
+      title: objectiveDraft.title.trim(),
+      description: objectiveDraft.description.trim(),
+      targetLabel: objectiveDraft.targetLabel.trim(),
+      personIds: Array.from(new Set(objectiveDraft.personIds)),
+    };
+    if (editingObjectiveId) {
+      await saveObjectives(
+        objectives.map((objective) =>
+          objective.id === editingObjectiveId ? { ...objective, ...cleanDraft } : objective,
+        ),
+        "Objectif mis a jour",
+      );
+    } else {
+      await saveObjectives(
+        [{ ...cleanDraft, id: uid("objective"), createdAt: new Date().toISOString() }, ...objectives],
+        "Objectif ajoute",
+      );
+    }
+    setObjectiveOpen(false);
   }
 
   async function saveTask(event: FormEvent) {
@@ -789,8 +907,8 @@ export default function Home() {
         <div className="brand">
           <div className="brand-mark" aria-hidden="true">✓</div>
           <div>
-            <span>Petit suivi</span>
-            <small>Taches partagees sans connexion</small>
+            <span>Alpha Education</span>
+            <small>Todo des equipes</small>
           </div>
         </div>
         <div className="header-actions">
@@ -812,6 +930,37 @@ export default function Home() {
       </header>
 
       <section className="content">
+        <section className="alpha-hero" aria-label="Objectif Alpha Education">
+          <div className="alpha-quote">
+            <p className="eyebrow">Alpha Education · organisation collective</p>
+            <blockquote>“Une equipe organisee transforme l&apos;energie en resultats.”</blockquote>
+            <span>Prioriser, suivre, relancer : le cap est clair, chacun sait quoi faire.</span>
+          </div>
+          <div className="objective-card">
+            <div>
+              <p className="eyebrow">Objectif du mois</p>
+              <h1>{featuredObjective?.title || "Objectif septembre"}</h1>
+              <strong>{featuredObjective?.targetLabel || "2600 eleves"}</strong>
+              <p>{featuredObjective?.description || "Garder le cap de la rentree avec une equipe alignee."}</p>
+            </div>
+            <div className="objective-people">
+              <span>Equipe taguee</span>
+              <div>
+                {featuredObjective?.personIds.length
+                  ? featuredObjective.personIds.map((personId) => {
+                      const person = peopleById.get(personId);
+                      if (!person) return null;
+                      return <span className="objective-person" key={person.id}><span className="avatar">{ownerInitials(person.name)}</span>{person.name}</span>;
+                    })
+                  : <small>Aucune personne taguee pour le moment.</small>}
+              </div>
+              <button className="button quiet" onClick={() => openObjective(featuredObjective ?? undefined)}>
+                Modifier l&apos;objectif
+              </button>
+            </div>
+          </div>
+        </section>
+
         <div className="main-tabs" role="group" aria-label="Choisir le type de suivi">
           <button className={appMode === "tasks" ? "active" : ""} onClick={() => setAppMode("tasks")}>
             Taches
@@ -1106,6 +1255,39 @@ export default function Home() {
               <label className="field"><span>Duree estimee <small>(heures)</small></span><input type="number" min="0" step="0.25" value={recurringDraft.estimatedHours ?? ""} onChange={(event) => setRecurringDraft({ ...recurringDraft, estimatedHours: event.target.value ? Number(event.target.value) : null })} placeholder="Ex. 1.5" /></label>
               <div className="form-note">Les dates ne sont pas stockees dans le modele. Elles seront choisies au moment de creer la vraie tache.</div>
               <div className="form-actions"><button type="button" className="button quiet" onClick={() => setRecurringOpen(false)}>Annuler</button><button type="submit" className="button primary" disabled={saving}>{saving ? "Sauvegarde..." : editingRecurringId ? "Enregistrer" : "Ajouter le modele"}</button></div>
+            </form>
+          </section>
+        </div>
+      )}
+
+      {objectiveOpen && (
+        <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setObjectiveOpen(false)}>
+          <section className="modal notify-modal" role="dialog" aria-modal="true" aria-labelledby="objective-title">
+            <div className="modal-header">
+              <div><p className="eyebrow">Objectif equipe</p><h2 id="objective-title">{editingObjectiveId ? "Modifier l'objectif" : "Nouvel objectif"}</h2></div>
+              <button className="close-button" onClick={() => setObjectiveOpen(false)} aria-label="Fermer">×</button>
+            </div>
+            <form onSubmit={saveObjective} className="task-form">
+              <label className="field"><span>Titre *</span><input required value={objectiveDraft.title} onChange={(event) => setObjectiveDraft({ ...objectiveDraft, title: event.target.value })} placeholder="Objectif septembre" /></label>
+              <label className="field"><span>Cible *</span><input required value={objectiveDraft.targetLabel} onChange={(event) => setObjectiveDraft({ ...objectiveDraft, targetLabel: event.target.value })} placeholder="2600 eleves" /></label>
+              <label className="field full"><span>Description</span><textarea rows={3} value={objectiveDraft.description} onChange={(event) => setObjectiveDraft({ ...objectiveDraft, description: event.target.value })} placeholder="Pourquoi cet objectif compte, ou comment l'equipe doit s'organiser..." /></label>
+              <div className="field full">
+                <span>Personnes taguees</span>
+                <div className="recipient-list objective-recipient-list">
+                  {activePeople.length ? activePeople.map((person) => (
+                    <label className="recipient-row" key={person.id}>
+                      <input
+                        type="checkbox"
+                        checked={objectiveDraft.personIds.includes(person.id)}
+                        onChange={(event) => toggleObjectivePerson(person.id, event.target.checked)}
+                      />
+                      <span className="avatar">{ownerInitials(person.name)}</span>
+                      <span><strong>{person.name}</strong><small>{person.hasEmail ? "email enregistre" : "email manquant"}</small></span>
+                    </label>
+                  )) : <p className="no-comment">Ajoutez d&apos;abord des personnes pour les taguer.</p>}
+                </div>
+              </div>
+              <div className="form-actions"><button type="button" className="button quiet" onClick={() => setObjectiveOpen(false)}>Annuler</button><button type="submit" className="button primary" disabled={saving}>{saving ? "Sauvegarde..." : "Enregistrer"}</button></div>
             </form>
           </section>
         </div>

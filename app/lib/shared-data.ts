@@ -40,6 +40,15 @@ export type RecurringTask = {
   createdAt: string;
 };
 
+export type Objective = {
+  id: string;
+  title: string;
+  description: string;
+  targetLabel: string;
+  personIds: string[];
+  createdAt: string;
+};
+
 export type Person = {
   id: string;
   name: string;
@@ -56,12 +65,25 @@ const STORE_NAME = "task-tracker";
 export const TASKS_KEY = "tasks.json";
 export const PEOPLE_KEY = "people.json";
 export const RECURRING_TASKS_KEY = "recurring-tasks.json";
+export const OBJECTIVES_KEY = "objectives.json";
 
 const memory = globalThis as typeof globalThis & {
   __petitSuiviTasks?: Task[];
   __petitSuiviPeople?: Person[];
   __petitSuiviRecurringTasks?: RecurringTask[];
+  __petitSuiviObjectives?: Objective[];
 };
+
+const defaultObjectives: Objective[] = [
+  {
+    id: "objective-september-2600",
+    title: "Objectif septembre",
+    description: "Mobiliser l'equipe Alpha Education autour de la rentree et garder le cap chaque semaine.",
+    targetLabel: "2600 eleves",
+    personIds: [],
+    createdAt: "2026-09-01T00:00:00.000Z",
+  },
+];
 
 export function taskStore() {
   return getStore({ name: STORE_NAME, consistency: "strong" });
@@ -167,6 +189,17 @@ export function sanitizeRecurringTask(raw: Record<string, unknown>): RecurringTa
   };
 }
 
+export function sanitizeObjective(raw: Record<string, unknown>): Objective {
+  return {
+    id: cleanText(raw.id) || crypto.randomUUID(),
+    title: cleanText(raw.title),
+    description: cleanText(raw.description),
+    targetLabel: cleanText(raw.targetLabel),
+    personIds: Array.isArray(raw.personIds) ? raw.personIds.map(cleanText).filter(Boolean) : [],
+    createdAt: cleanText(raw.createdAt) || new Date().toISOString(),
+  };
+}
+
 export async function readTasks() {
   try {
     const store = taskStore();
@@ -226,6 +259,30 @@ export async function writeRecurringTasks(recurringTasks: RecurringTask[]) {
     await store.setJSON(RECURRING_TASKS_KEY, recurringTasks);
   } catch {
     memory.__petitSuiviRecurringTasks = recurringTasks;
+  }
+}
+
+export async function readObjectives() {
+  try {
+    const store = taskStore();
+    const objectives = await store.get(OBJECTIVES_KEY, { type: "json", consistency: "strong" });
+    return Array.isArray(objectives)
+      ? objectives
+          .filter((objective): objective is Record<string, unknown> => Boolean(objective && typeof objective === "object"))
+          .map(sanitizeObjective)
+          .filter((objective) => objective.title && objective.targetLabel)
+      : defaultObjectives;
+  } catch {
+    return memory.__petitSuiviObjectives ?? defaultObjectives;
+  }
+}
+
+export async function writeObjectives(objectives: Objective[]) {
+  try {
+    const store = taskStore();
+    await store.setJSON(OBJECTIVES_KEY, objectives);
+  } catch {
+    memory.__petitSuiviObjectives = objectives;
   }
 }
 

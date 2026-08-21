@@ -53,6 +53,21 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .button.danger { background: var(--red-pale); color: var(--red); border-color: #ffd4e5; }
 
 .content { width: min(1320px, calc(100% - 28px)); margin: 0 auto; padding: 14px 0 44px; }
+.alpha-hero { display: grid; grid-template-columns: minmax(280px, .95fr) minmax(360px, 1.35fr); gap: 10px; margin-bottom: 10px; }
+.alpha-quote, .objective-card { border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.92); box-shadow: 0 8px 28px rgba(14,165,233,.055); }
+.alpha-quote { padding: 16px 18px; background: linear-gradient(135deg, rgba(224,247,255,.94), rgba(247,255,252,.96)); }
+.alpha-quote blockquote { margin: 0; color: var(--blue-title); font-size: clamp(20px, 2.1vw, 28px); line-height: 1.08; font-weight: 780; letter-spacing: -.025em; }
+.alpha-quote > span { display: block; margin-top: 8px; color: var(--muted); font-size: 12px; line-height: 1.45; }
+.objective-card { padding: 14px 16px; display: flex; align-items: stretch; justify-content: space-between; gap: 18px; position: relative; overflow: hidden; }
+.objective-card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: linear-gradient(180deg, var(--blue-main), var(--green)); }
+.objective-card h1 { color: var(--blue-title); font-size: clamp(21px, 2.4vw, 34px); line-height: 1; }
+.objective-card strong { display: inline-flex; margin-top: 7px; padding: 6px 10px; border-radius: 999px; color: white; background: linear-gradient(135deg, var(--blue-main), var(--green)); font-size: clamp(18px, 2vw, 25px); line-height: 1; box-shadow: 0 7px 16px rgba(14,165,233,.14); }
+.objective-card p { max-width: 620px; margin: 8px 0 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
+.objective-people { min-width: 230px; padding-left: 16px; border-left: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; justify-content: center; }
+.objective-people > span { color: var(--blue-title); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+.objective-people > div { display: flex; flex-wrap: wrap; gap: 5px; }
+.objective-people small { color: var(--muted); font-size: 11px; line-height: 1.35; }
+.objective-person { display: inline-flex; align-items: center; gap: 5px; padding: 3px 7px 3px 3px; border: 1px solid var(--line); border-radius: 999px; background: var(--soft); color: var(--blue-title); font-size: 10.5px; font-weight: 720; }
 .hero-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 32px; margin-bottom: 26px; }
 .eyebrow { margin: 0 0 8px; color: var(--blue-main); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; }
 h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-height: 1.08; font-weight: 720; }
@@ -259,6 +274,13 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .storage-note { max-width: 48vw; overflow: hidden; text-overflow: ellipsis; }
   .header-actions .button { padding: 7px 9px; font-size: 11px; min-height: 32px; }
   .content { width: min(100% - 14px, 1320px); padding-top: 8px; }
+  .alpha-hero { grid-template-columns: 1fr; gap: 7px; margin-bottom: 7px; }
+  .alpha-quote { padding: 12px; }
+  .alpha-quote blockquote { font-size: 19px; }
+  .objective-card { padding: 12px; flex-direction: column; gap: 10px; }
+  .objective-card h1 { font-size: 24px; }
+  .objective-card strong { font-size: 19px; }
+  .objective-people { min-width: 0; padding-left: 0; padding-top: 10px; border-left: 0; border-top: 1px solid var(--line); }
   .hero-row { display: none; }
   h1 { font-size: 31px; }
   .hero-copy { font-size: 14px; }

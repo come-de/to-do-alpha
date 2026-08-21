@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Petit suivi — Tâches partagées",
-  description: "Un tableau public et sans connexion pour suivre des tâches partagées avec responsables, dates, priorités, statuts et commentaires.",
+  title: "Alpha Education — Todo équipes",
+  description: "Le suivi partagé des équipes Alpha Education pour organiser les priorités, les objectifs et les tâches de rentrée.",
   icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
 };
 
