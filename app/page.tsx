@@ -905,10 +905,10 @@ export default function Home() {
     <main className={`app-shell density-${density}`}>
       <header className="topbar">
         <div className="brand">
-          <div className="brand-mark" aria-hidden="true">✓</div>
+          <div className="brand-mark" aria-hidden="true">α</div>
           <div>
             <span>Alpha Education</span>
-            <small>Todo des equipes</small>
+            <small>Todo des équipes</small>
           </div>
         </div>
         <div className="header-actions">
@@ -932,19 +932,30 @@ export default function Home() {
       <section className="content">
         <section className="alpha-hero" aria-label="Objectif Alpha Education">
           <div className="alpha-quote">
-            <p className="eyebrow">Alpha Education · organisation collective</p>
-            <blockquote>“Une equipe organisee transforme l&apos;energie en resultats.”</blockquote>
-            <span>Prioriser, suivre, relancer : le cap est clair, chacun sait quoi faire.</span>
+            <div className="mission-badge">Alpha Education · rentrée 2026</div>
+            <p className="eyebrow">Todo des équipes</p>
+            <blockquote>“On ne gagne pas par hasard : on gagne parce qu&apos;on s&apos;organise mieux que le problème.”</blockquote>
+            <span>Chaque tâche clarifiée, chaque relance faite, chaque priorité assumée rapproche l&apos;équipe de l&apos;objectif.</span>
+            <div className="hero-rally">
+              <span>Cap clair</span>
+              <span>Équipe alignée</span>
+              <span>Exécution quotidienne</span>
+            </div>
           </div>
           <div className="objective-card">
             <div>
-              <p className="eyebrow">Objectif du mois</p>
+              <p className="eyebrow">Objectif prioritaire</p>
               <h1>{featuredObjective?.title || "Objectif septembre"}</h1>
-              <strong>{featuredObjective?.targetLabel || "2600 eleves"}</strong>
-              <p>{featuredObjective?.description || "Garder le cap de la rentree avec une equipe alignee."}</p>
+              <strong>{featuredObjective?.targetLabel || "2600 élèves"}</strong>
+              <p>{featuredObjective?.description || "Garder le cap de la rentrée avec une équipe alignée, concentrée et prête à transformer les efforts en inscriptions."}</p>
+              <div className="objective-metrics">
+                <span><b>{stats.active}</b> tâches actives</span>
+                <span><b>{stats.progress}</b> en cours</span>
+                <span><b>{stats.high}</b> priorités hautes</span>
+              </div>
             </div>
             <div className="objective-people">
-              <span>Equipe taguee</span>
+              <span>Équipe mobilisée</span>
               <div>
                 {featuredObjective?.personIds.length
                   ? featuredObjective.personIds.map((personId) => {
@@ -952,7 +963,7 @@ export default function Home() {
                       if (!person) return null;
                       return <span className="objective-person" key={person.id}><span className="avatar">{ownerInitials(person.name)}</span>{person.name}</span>;
                     })
-                  : <small>Aucune personne taguee pour le moment.</small>}
+                  : <small>Tague les personnes responsables de cet objectif pour rendre l&apos;engagement visible.</small>}
               </div>
               <button className="button quiet" onClick={() => openObjective(featuredObjective ?? undefined)}>
                 Modifier l&apos;objectif
