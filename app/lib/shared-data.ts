@@ -45,6 +45,8 @@ export type Objective = {
   title: string;
   description: string;
   targetLabel: string;
+  currentValue: number | null;
+  targetValue: number | null;
   personIds: string[];
   createdAt: string;
 };
@@ -79,7 +81,9 @@ const defaultObjectives: Objective[] = [
     id: "objective-september-2600",
     title: "Objectif septembre",
     description: "Mobiliser l'equipe Alpha Education autour de la rentree et garder le cap chaque semaine.",
-    targetLabel: "2600 eleves",
+    targetLabel: "eleves",
+    currentValue: 160,
+    targetValue: 2600,
     personIds: [],
     createdAt: "2026-09-01T00:00:00.000Z",
   },
@@ -96,6 +100,25 @@ export function publicPerson(person: Person): PublicPerson {
 
 export function cleanText(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function numberFromText(value: string) {
+  const match = value.replace(",", ".").match(/\d+(?:\.\d+)?/);
+  if (!match) return null;
+  const parsed = Number(match[0]);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function cleanPositiveNumber(value: unknown, allowZero = false) {
+  const parsed =
+    typeof value === "number"
+      ? value
+      : typeof value === "string" && value.trim()
+        ? Number(value.replace(",", "."))
+        : null;
+  if (parsed === null || !Number.isFinite(parsed)) return null;
+  if (allowZero && parsed === 0) return 0;
+  return parsed > 0 ? parsed : null;
 }
 
 export function isStatus(value: unknown): value is Status {
@@ -190,11 +213,20 @@ export function sanitizeRecurringTask(raw: Record<string, unknown>): RecurringTa
 }
 
 export function sanitizeObjective(raw: Record<string, unknown>): Objective {
+  const legacyTarget = numberFromText(cleanText(raw.targetLabel));
+  const targetLabel = cleanText(raw.targetLabel)
+    .replace(/\d+/g, "")
+    .trim()
+    .replace(/^\/+/, "")
+    .trim();
+
   return {
     id: cleanText(raw.id) || crypto.randomUUID(),
     title: cleanText(raw.title),
     description: cleanText(raw.description),
-    targetLabel: cleanText(raw.targetLabel),
+    targetLabel: targetLabel || "eleves",
+    currentValue: cleanPositiveNumber(raw.currentValue, true),
+    targetValue: cleanPositiveNumber(raw.targetValue, false) ?? legacyTarget,
     personIds: Array.isArray(raw.personIds) ? raw.personIds.map(cleanText).filter(Boolean) : [],
     createdAt: cleanText(raw.createdAt) || new Date().toISOString(),
   };

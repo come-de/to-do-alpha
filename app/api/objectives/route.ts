@@ -27,7 +27,7 @@ export async function PUT(request: Request) {
         Boolean(objective && typeof objective === "object"),
       )
       .map(sanitizeObjective)
-      .filter((objective) => objective.title && objective.targetLabel);
+      .filter((objective) => objective.title && objective.targetValue);
 
     await writeObjectives(objectives);
     return json({ objectives });

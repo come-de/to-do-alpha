@@ -53,6 +53,8 @@ type Objective = {
   title: string;
   description: string;
   targetLabel: string;
+  currentValue: number | null;
+  targetValue: number | null;
   personIds: string[];
   createdAt: string;
 };
@@ -110,7 +112,9 @@ const emptyRecurringDraft: RecurringDraft = {
 const emptyObjectiveDraft: ObjectiveDraft = {
   title: "",
   description: "",
-  targetLabel: "",
+  targetLabel: "élèves",
+  currentValue: null,
+  targetValue: null,
   personIds: [],
 };
 
@@ -143,6 +147,35 @@ const durationBuckets: { value: DurationBucket; label: string; hint: string }[] 
 
 function uid(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+function numberFromText(value: string) {
+  const match = value.replace(",", ".").match(/\d+(?:\.\d+)?/);
+  if (!match) return null;
+  const parsed = Number(match[0]);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function normalizePositiveNumber(value: unknown, allowZero = false) {
+  const parsed =
+    typeof value === "number"
+      ? value
+      : typeof value === "string" && value.trim()
+        ? Number(value.replace(",", "."))
+        : null;
+  if (parsed === null || !Number.isFinite(parsed)) return null;
+  if (allowZero && parsed === 0) return 0;
+  return parsed > 0 ? parsed : null;
+}
+
+function formatObjectiveNumber(value: number | null) {
+  if (value === null) return "";
+  return new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(value);
+}
+
+function objectiveProgressPercent(objective: Objective | null) {
+  if (!objective?.targetValue || objective.targetValue <= 0) return 0;
+  return Math.max(0, Math.min(100, Math.round(((objective.currentValue ?? 0) / objective.targetValue) * 100)));
 }
 
 function dateValue(date: string) {
@@ -279,11 +312,17 @@ function normalizeRecurringTask(raw: Partial<RecurringTask>): RecurringTask {
 }
 
 function normalizeObjective(raw: Partial<Objective>): Objective {
+  const targetLabelText = raw.targetLabel || "";
+  const fallbackTarget = numberFromText(targetLabelText);
+  const label = targetLabelText.replace(/\d+/g, "").trim().replace(/^\/+/, "").trim();
+
   return {
     id: raw.id || uid("objective"),
     title: raw.title || "",
     description: raw.description || "",
-    targetLabel: raw.targetLabel || "",
+    targetLabel: label || "élèves",
+    currentValue: normalizePositiveNumber(raw.currentValue, true),
+    targetValue: normalizePositiveNumber(raw.targetValue, false) ?? fallbackTarget,
     personIds: Array.isArray(raw.personIds) ? raw.personIds.filter(Boolean) : [],
     createdAt: raw.createdAt || new Date().toISOString(),
   };
@@ -488,6 +527,15 @@ export default function Home() {
   const selectedTask = tasks.find((task) => task.id === selectedId) ?? null;
   const notifyTask = tasks.find((task) => task.id === notifyTaskId) ?? null;
   const featuredObjective = objectives[0] ?? null;
+  const displayedObjective = featuredObjective ?? normalizeObjective({
+    id: "objective-september-2600",
+    title: "Objectif septembre",
+    description: "Garder le cap de la rentrée avec une équipe alignée, concentrée et prête à transformer les efforts en inscriptions.",
+    targetLabel: "élèves",
+    currentValue: 160,
+    targetValue: 2600,
+  });
+  const displayedObjectivePercent = objectiveProgressPercent(displayedObjective);
   const notifiablePeople = people.filter((person) => person.active);
   const draftAssignee = draft.assigneeId ? peopleById.get(draft.assigneeId) : null;
   const editingTask = editingId ? tasks.find((task) => task.id === editingId) ?? null : null;
@@ -704,6 +752,8 @@ export default function Home() {
             title: objective.title,
             description: objective.description,
             targetLabel: objective.targetLabel,
+            currentValue: objective.currentValue,
+            targetValue: objective.targetValue,
             personIds: objective.personIds,
           }
         : emptyObjectiveDraft,
@@ -722,12 +772,16 @@ export default function Home() {
 
   async function saveObjective(event: FormEvent) {
     event.preventDefault();
-    if (!objectiveDraft.title.trim() || !objectiveDraft.targetLabel.trim() || saving) return;
+    const currentValue = normalizePositiveNumber(objectiveDraft.currentValue, true) ?? 0;
+    const targetValue = normalizePositiveNumber(objectiveDraft.targetValue, false);
+    if (!objectiveDraft.title.trim() || !targetValue || saving) return;
     const cleanDraft = {
       ...objectiveDraft,
       title: objectiveDraft.title.trim(),
       description: objectiveDraft.description.trim(),
-      targetLabel: objectiveDraft.targetLabel.trim(),
+      targetLabel: objectiveDraft.targetLabel.trim() || "élèves",
+      currentValue,
+      targetValue,
       personIds: Array.from(new Set(objectiveDraft.personIds)),
     };
     if (editingObjectiveId) {
@@ -945,9 +999,20 @@ export default function Home() {
           <div className="objective-card">
             <div>
               <p className="eyebrow">Objectif prioritaire</p>
-              <h1>{featuredObjective?.title || "Objectif septembre"}</h1>
-              <strong>{featuredObjective?.targetLabel || "2600 élèves"}</strong>
-              <p>{featuredObjective?.description || "Garder le cap de la rentrée avec une équipe alignée, concentrée et prête à transformer les efforts en inscriptions."}</p>
+              <h1>{displayedObjective.title}</h1>
+              <div className="objective-progress-summary">
+                <strong>
+                  {formatObjectiveNumber(displayedObjective.currentValue ?? 0)} / {formatObjectiveNumber(displayedObjective.targetValue)} {displayedObjective.targetLabel}
+                </strong>
+                <span>{displayedObjectivePercent}%</span>
+              </div>
+              <div className="objective-progress-bar" aria-label={`Progression de l'objectif : ${displayedObjectivePercent}%`}>
+                <span style={{ width: `${displayedObjectivePercent}%` }} />
+              </div>
+              <p className="objective-progress-caption">
+                Nous avons déjà {formatObjectiveNumber(displayedObjective.currentValue ?? 0)} {displayedObjective.targetLabel} sur {formatObjectiveNumber(displayedObjective.targetValue)}.
+              </p>
+              <p>{displayedObjective.description}</p>
               <div className="objective-metrics">
                 <span><b>{stats.active}</b> tâches actives</span>
                 <span><b>{stats.progress}</b> en cours</span>
@@ -1280,7 +1345,9 @@ export default function Home() {
             </div>
             <form onSubmit={saveObjective} className="task-form">
               <label className="field"><span>Titre *</span><input required value={objectiveDraft.title} onChange={(event) => setObjectiveDraft({ ...objectiveDraft, title: event.target.value })} placeholder="Objectif septembre" /></label>
-              <label className="field"><span>Cible *</span><input required value={objectiveDraft.targetLabel} onChange={(event) => setObjectiveDraft({ ...objectiveDraft, targetLabel: event.target.value })} placeholder="2600 eleves" /></label>
+              <label className="field"><span>Déjà atteint</span><input type="number" min="0" step="1" value={objectiveDraft.currentValue ?? ""} onChange={(event) => setObjectiveDraft({ ...objectiveDraft, currentValue: event.target.value ? Number(event.target.value) : null })} placeholder="160" /></label>
+              <label className="field"><span>Objectif total *</span><input required type="number" min="1" step="1" value={objectiveDraft.targetValue ?? ""} onChange={(event) => setObjectiveDraft({ ...objectiveDraft, targetValue: event.target.value ? Number(event.target.value) : null })} placeholder="2600" /></label>
+              <label className="field"><span>Unité</span><input value={objectiveDraft.targetLabel} onChange={(event) => setObjectiveDraft({ ...objectiveDraft, targetLabel: event.target.value })} placeholder="élèves" /></label>
               <label className="field full"><span>Description</span><textarea rows={3} value={objectiveDraft.description} onChange={(event) => setObjectiveDraft({ ...objectiveDraft, description: event.target.value })} placeholder="Pourquoi cet objectif compte, ou comment l'equipe doit s'organiser..." /></label>
               <div className="field full">
                 <span>Personnes taguees</span>
