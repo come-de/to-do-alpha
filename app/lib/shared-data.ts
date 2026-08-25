@@ -21,6 +21,9 @@ export type Task = {
   estimatedHours: number | null;
   status: Status;
   priority: Priority;
+  verified: boolean;
+  verificationOwner: string;
+  verificationComment: string;
   comments: {
     id: string;
     text: string;
@@ -211,6 +214,9 @@ export function sanitizeTask(raw: Record<string, unknown>): Task {
         : null,
     status: isStatus(raw.status) ? raw.status : "todo",
     priority: isPriority(raw.priority) ? raw.priority : "medium",
+    verified: raw.verified === true,
+    verificationOwner: cleanText(raw.verificationOwner),
+    verificationComment: cleanText(raw.verificationComment),
     comments: Array.isArray(raw.comments)
       ? raw.comments
           .filter((comment): comment is Record<string, unknown> => Boolean(comment && typeof comment === "object"))

@@ -34,6 +34,9 @@ type Task = {
   estimatedHours: number | null;
   status: Status;
   priority: Priority;
+  verified: boolean;
+  verificationOwner: string;
+  verificationComment: string;
   comments: Comment[];
   completionNotifications: CompletionNotification[];
   createdAt: string;
@@ -107,6 +110,9 @@ const emptyDraft: TaskDraft = {
   estimatedHours: null,
   status: "todo",
   priority: "medium",
+  verified: false,
+  verificationOwner: "",
+  verificationComment: "",
 };
 
 const emptyPersonDraft: PersonDraft = {
@@ -349,6 +355,9 @@ function normalizeTask(raw: Partial<Task>): Task {
       raw.priority === "low" || raw.priority === "high" || raw.priority === "medium"
         ? raw.priority
         : "medium",
+    verified: raw.verified === true,
+    verificationOwner: raw.verificationOwner || "",
+    verificationComment: raw.verificationComment || "",
     comments: Array.isArray(raw.comments)
       ? raw.comments.map((comment) => ({
           id: comment.id || uid("comment"),
@@ -570,8 +579,9 @@ export default function Home() {
       Array.from(
         new Set([
           ...tasks.map((task) => task.owner).filter(Boolean),
-          ...recurringTasks.map((task) => task.owner).filter(Boolean),
-          ...people.map((person) => person.name).filter(Boolean),
+      ...recurringTasks.map((task) => task.owner).filter(Boolean),
+      ...tasks.map((task) => task.verificationOwner).filter(Boolean),
+      ...people.map((person) => person.name).filter(Boolean),
         ]),
       ).sort(),
     [tasks, recurringTasks, people],
@@ -781,6 +791,9 @@ export default function Home() {
       estimatedHours: task.estimatedHours,
       status: task.status,
       priority: task.priority,
+      verified: task.verified,
+      verificationOwner: task.verificationOwner,
+      verificationComment: task.verificationComment,
     });
     setSendAssignmentEmail(true);
     setEditorOpen(true);
@@ -865,6 +878,9 @@ export default function Home() {
       estimatedHours: task.estimatedHours,
       status: "todo",
       priority: task.priority,
+      verified: false,
+      verificationOwner: "",
+      verificationComment: "",
     });
     const assignee = task.assigneeId ? peopleById.get(task.assigneeId) : null;
     setSendAssignmentEmail(Boolean(assignee?.hasEmail));
@@ -1016,6 +1032,8 @@ export default function Home() {
       title: draft.title.trim(),
       description: draft.description.trim(),
       owner: draft.owner.trim(),
+      verificationOwner: draft.verificationOwner.trim(),
+      verificationComment: draft.verificationComment.trim(),
       estimatedHours:
         typeof draft.estimatedHours === "number" && Number.isFinite(draft.estimatedHours) && draft.estimatedHours > 0
           ? draft.estimatedHours
@@ -1615,6 +1633,12 @@ export default function Home() {
               <label className="field"><span>Duree estimee <small>(heures)</small></span><input type="number" min="0" step="0.25" value={draft.estimatedHours ?? ""} onChange={(event) => setDraft({ ...draft, estimatedHours: event.target.value ? Number(event.target.value) : null })} placeholder="Ex. 2.5" /></label>
               <label className="field"><span>Date de debut *</span><input required type="date" value={draft.startDate} onChange={(event) => setDraft({ ...draft, startDate: event.target.value })} /></label>
               <label className="field"><span>Date de fin <small>(facultative)</small></span><input type="date" min={draft.startDate} value={draft.endDate} onChange={(event) => setDraft({ ...draft, endDate: event.target.value })} /></label>
+              <label className="field checkbox-field verification-toggle-field">
+                <input type="checkbox" checked={draft.verified} onChange={(event) => setDraft({ ...draft, verified: event.target.checked })} />
+                <span>Tâche vérifiée <small>facultatif</small></span>
+              </label>
+              <label className="field"><span>Responsable vérification</span><input list="owners" value={draft.verificationOwner} onChange={(event) => setDraft({ ...draft, verificationOwner: event.target.value })} placeholder="Prenom ou equipe" /></label>
+              <label className="field full"><span>Commentaire de vérification</span><textarea rows={2} value={draft.verificationComment} onChange={(event) => setDraft({ ...draft, verificationComment: event.target.value })} placeholder="Ce qui a été contrôlé, point d'attention, validation..." /></label>
               {draft.assigneeId && (
                 <label className="field checkbox-field assignment-email-field">
                   <input type="checkbox" checked={sendAssignmentEmail} disabled={!draftAssignee?.hasEmail || !assignmentChanged} onChange={(event) => setSendAssignmentEmail(event.target.checked)} />
@@ -1769,6 +1793,13 @@ export default function Home() {
               <div><small>Responsable</small><span className="owner"><span className="avatar">{ownerInitials(peopleById.get(selectedTask.assigneeId || "")?.name || selectedTask.owner)}</span>{peopleById.get(selectedTask.assigneeId || "")?.name || selectedTask.owner}</span></div>
               <div><small>{selectedTask.endDate ? "Periode" : "Date"}</small><strong>{formatFullDate(selectedTask.startDate)}{selectedTask.endDate && selectedTask.endDate !== selectedTask.startDate ? ` -> ${formatFullDate(selectedTask.endDate)}` : ""}</strong></div>
               <div><small>Duree estimee</small><strong>{formatDuration(selectedTask.estimatedHours)}</strong></div>
+            </div>
+            <div className={`verification-panel ${selectedTask.verified ? "is-verified" : ""}`}>
+              <div>
+                <span className="verification-badge">{selectedTask.verified ? "✓ Vérifiée" : "À vérifier"}</span>
+                <strong>{selectedTask.verificationOwner || "Aucun responsable de vérification"}</strong>
+              </div>
+              <p>{selectedTask.verificationComment || "Aucun commentaire de vérification."}</p>
             </div>
             <div className="quick-status">
               <span>Avancement</span>
