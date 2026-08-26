@@ -77,6 +77,17 @@ type SharedLink = {
   createdAt: string;
 };
 
+type StudentHistoryEntry = {
+  date: string;
+  value: number | null;
+};
+
+type StudentHistoryYear = {
+  year: number;
+  entries: StudentHistoryEntry[];
+  createdAt: string;
+};
+
 type Person = {
   id: string;
   name: string;
@@ -259,6 +270,47 @@ function normalizeSharedLink(raw: Partial<SharedLink>): SharedLink {
   };
 }
 
+function campaignDates(year: number) {
+  const dates: string[] = [];
+  const cursor = new Date(Date.UTC(year, 7, 25));
+  const end = new Date(Date.UTC(year, 8, 30));
+  while (cursor <= end) {
+    dates.push(cursor.toISOString().slice(0, 10));
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return dates;
+}
+
+function normalizeStudentHistoryYear(raw: Partial<StudentHistoryYear>): StudentHistoryYear {
+  const year =
+    typeof raw.year === "number" && Number.isInteger(raw.year) && raw.year >= 2000 && raw.year <= 2100
+      ? raw.year
+      : new Date().getFullYear();
+  const valuesByDate = new Map(
+    Array.isArray(raw.entries)
+      ? raw.entries.map((entry) => [entry.date, normalizePositiveNumber(entry.value, true)] as const)
+      : [],
+  );
+  return {
+    year,
+    entries: campaignDates(year).map((date) => ({
+      date,
+      value: valuesByDate.get(date) ?? null,
+    })),
+    createdAt: raw.createdAt || new Date().toISOString(),
+  };
+}
+
+function campaignDayLabel(date: string) {
+  return new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" }).format(
+    new Date(`${date}T12:00:00`),
+  );
+}
+
+function campaignDayKey(date: string) {
+  return date.slice(5);
+}
+
 function dateValue(date: string) {
   if (!date) return Number.POSITIVE_INFINITY;
   return new Date(`${date}T12:00:00`).getTime();
@@ -432,6 +484,7 @@ export default function Home() {
   const [recurringTasks, setRecurringTasks] = useState<RecurringTask[]>([]);
   const [objectives, setObjectives] = useState<Objective[]>([]);
   const [links, setLinks] = useState<SharedLink[]>([]);
+  const [studentHistory, setStudentHistory] = useState<StudentHistoryYear[]>([]);
   const [people, setPeople] = useState<Person[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -465,6 +518,8 @@ export default function Home() {
   const [objectiveDraft, setObjectiveDraft] = useState<ObjectiveDraft>(emptyObjectiveDraft);
   const [linkDraft, setLinkDraft] = useState<LinkDraft>(emptyLinkDraft);
   const [editingObjectiveId, setEditingObjectiveId] = useState<string | null>(null);
+  const [activeHistoryYear, setActiveHistoryYear] = useState<number>(new Date().getFullYear());
+  const [selectedHistoryYears, setSelectedHistoryYears] = useState<number[]>([]);
   const [sendAssignmentEmail, setSendAssignmentEmail] = useState(true);
   const [personDraft, setPersonDraft] = useState<PersonDraft>(emptyPersonDraft);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -535,6 +590,28 @@ export default function Home() {
     }
   }, []);
 
+  const loadStudentHistory = useCallback(async () => {
+    try {
+      const response = await fetch("/api/student-history", { cache: "no-store" });
+      if (!response.ok) throw new Error("load-student-history-failed");
+      const data = (await response.json()) as { history?: Partial<StudentHistoryYear>[] };
+      const history = Array.isArray(data.history) ? data.history.map(normalizeStudentHistoryYear) : [];
+      setStudentHistory(history);
+      if (history.length) {
+        setActiveHistoryYear((current) =>
+          history.some((year) => year.year === current) ? current : history[0].year,
+        );
+        setSelectedHistoryYears((current) => {
+          const available = new Set(history.map((year) => year.year));
+          const kept = current.filter((year) => available.has(year));
+          return kept.length ? kept : [history[0].year];
+        });
+      }
+    } catch {
+      setToast("Historique eleves indisponible");
+    }
+  }, []);
+
   useEffect(() => {
     const timer = window.setTimeout(() => {
       void loadTasks();
@@ -542,9 +619,10 @@ export default function Home() {
       void loadRecurringTasks();
       void loadObjectives();
       void loadLinks();
+      void loadStudentHistory();
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks]);
+  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadStudentHistory]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -553,9 +631,10 @@ export default function Home() {
       void loadRecurringTasks();
       void loadObjectives();
       void loadLinks();
+      void loadStudentHistory();
     }, 30000);
     return () => window.clearInterval(timer);
-  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks]);
+  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadStudentHistory]);
 
   useEffect(() => {
     if (authorName.trim()) localStorage.setItem(AUTHOR_KEY, authorName.trim());
@@ -659,6 +738,19 @@ export default function Home() {
     .filter((objective) => objective.kind === "qualitative")
     .slice()
     .sort((a, b) => dateValue(a.endDate || a.startDate) - dateValue(b.endDate || b.startDate));
+  const activeHistory = studentHistory.find((year) => year.year === activeHistoryYear) ?? null;
+  const chartYears = studentHistory.filter((year) => selectedHistoryYears.includes(year.year));
+  const chartDays = campaignDates(2000).map(campaignDayKey);
+  const maxStudentHistoryValue = Math.max(
+    1,
+    ...chartYears.flatMap((year) => {
+      let carried = 0;
+      return year.entries.map((entry) => {
+        if (entry.value !== null) carried = entry.value;
+        return carried;
+      });
+    }),
+  );
   const notifiablePeople = people.filter((person) => person.active);
   const draftAssignee = draft.assigneeId ? peopleById.get(draft.assigneeId) : null;
   const editingTask = editingId ? tasks.find((task) => task.id === editingId) ?? null : null;
@@ -748,6 +840,30 @@ export default function Home() {
     } catch {
       setSyncError("Sauvegarde impossible, rechargez la page avant de continuer");
       setToast("Lien non sauvegarde");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function saveStudentHistory(nextHistory: StudentHistoryYear[], message: string) {
+    setSaving(true);
+    setSyncError("");
+    const normalizedHistory = nextHistory.map(normalizeStudentHistoryYear).sort((a, b) => b.year - a.year);
+    setStudentHistory(normalizedHistory);
+    try {
+      const response = await fetch("/api/student-history", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ history: normalizedHistory }),
+      });
+      if (!response.ok) throw new Error("save-student-history-failed");
+      const data = (await response.json()) as { history?: Partial<StudentHistoryYear>[] };
+      const savedHistory = Array.isArray(data.history) ? data.history.map(normalizeStudentHistoryYear) : [];
+      setStudentHistory(savedHistory);
+      setToast(message);
+    } catch {
+      setSyncError("Sauvegarde impossible, rechargez la page avant de continuer");
+      setToast("Historique non sauvegarde");
     } finally {
       setSaving(false);
     }
@@ -1023,6 +1139,53 @@ export default function Home() {
     await saveObjectives(objectives.filter((objective) => objective.id !== objectiveId), "Objectif supprime");
   }
 
+  async function addStudentHistoryYear() {
+    const typedYear = window.prompt("Quelle annee ajouter ?", String(new Date().getFullYear()));
+    if (!typedYear) return;
+    const year = Number(typedYear.trim());
+    if (!Number.isInteger(year) || year < 2000 || year > 2100) {
+      setToast("Annee invalide");
+      return;
+    }
+    if (studentHistory.some((item) => item.year === year)) {
+      setActiveHistoryYear(year);
+      setSelectedHistoryYears((current) => (current.includes(year) ? current : [...current, year]));
+      setToast("Cette annee existe deja");
+      return;
+    }
+    const nextYear = normalizeStudentHistoryYear({
+      year,
+      entries: campaignDates(year).map((date) => ({ date, value: null })),
+      createdAt: new Date().toISOString(),
+    });
+    setActiveHistoryYear(year);
+    setSelectedHistoryYears((current) => [...new Set([...current, year])]);
+    await saveStudentHistory([nextYear, ...studentHistory], "Annee ajoutee");
+  }
+
+  async function updateStudentHistoryValue(year: number, date: string, typedValue: string) {
+    const value = typedValue.trim() === "" ? null : normalizePositiveNumber(typedValue, true);
+    if (typedValue.trim() !== "" && value === null) {
+      setToast("Nombre d'eleves invalide");
+      return;
+    }
+    const nextHistory = studentHistory.map((historyYear) =>
+      historyYear.year === year
+        ? {
+            ...historyYear,
+            entries: historyYear.entries.map((entry) => (entry.date === date ? { ...entry, value } : entry)),
+          }
+        : historyYear,
+    );
+    await saveStudentHistory(nextHistory, "Historique mis a jour");
+  }
+
+  function toggleHistoryYear(year: number, checked: boolean) {
+    setSelectedHistoryYears((current) =>
+      checked ? [...new Set([...current, year])] : current.filter((item) => item !== year),
+    );
+  }
+
   async function saveTask(event: FormEvent) {
     event.preventDefault();
     if (!draft.title.trim() || !draft.owner.trim() || !draft.startDate || saving) return;
@@ -1180,6 +1343,138 @@ export default function Home() {
     }
   }
 
+  function studentHistoryPath(historyYear: StudentHistoryYear) {
+    let carried = 0;
+    const points = chartDays.map((dayKey, index) => {
+      const entry = historyYear.entries.find((item) => campaignDayKey(item.date) === dayKey);
+      if (entry?.value !== null && entry?.value !== undefined) carried = entry.value;
+      const x = chartDays.length <= 1 ? 0 : (index / (chartDays.length - 1)) * 1000;
+      const y = 180 - (carried / maxStudentHistoryValue) * 150;
+      return `${x.toFixed(2)},${y.toFixed(2)}`;
+    });
+    return points.join(" ");
+  }
+
+  function renderStudentHistorySection() {
+    let carriedValue: number | null = null;
+    let previousKnownValue: number | null = null;
+    const chartColors = ["#0EA5E9", "#10B981", "#BE185D", "#075985", "#F59E0B", "#7C3AED"];
+
+    return (
+      <section className="student-history-panel" aria-label="Historique du nombre d'eleves">
+        <div className="panel-heading">
+          <div>
+            <p className="eyebrow">Historique élèves</p>
+            <h2>Trajectoire du 25 août au 30 septembre</h2>
+            <p>Total cumulé saisi jour par jour, séparé du compteur principal.</p>
+          </div>
+          <div className="filters">
+            {studentHistory.length > 0 && (
+              <select value={activeHistoryYear} onChange={(event) => setActiveHistoryYear(Number(event.target.value))}>
+                {studentHistory.map((year) => <option key={year.year} value={year.year}>{year.year}</option>)}
+              </select>
+            )}
+            <button className="button primary" onClick={addStudentHistoryYear} disabled={saving}>＋ Ajouter une année</button>
+          </div>
+        </div>
+
+        {studentHistory.length ? (
+          <>
+            <div className="history-compare">
+              <div className="history-chart-head">
+                <div>
+                  <strong>Grand graphique comparatif</strong>
+                  <span>{chartYears.length ? `${chartYears.length} annee${chartYears.length > 1 ? "s" : ""} affichee${chartYears.length > 1 ? "s" : ""}` : "Cochez au moins une annee"}</span>
+                </div>
+                <div className="history-year-toggles">
+                  {studentHistory.map((year) => (
+                    <label key={year.year}>
+                      <input
+                        type="checkbox"
+                        checked={selectedHistoryYears.includes(year.year)}
+                        onChange={(event) => toggleHistoryYear(year.year, event.target.checked)}
+                      />
+                      {year.year}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="student-chart">
+                <svg viewBox="0 0 1000 210" role="img" aria-label="Comparaison du nombre d'eleves par annee">
+                  <line x1="0" y1="180" x2="1000" y2="180" />
+                  <line x1="0" y1="30" x2="1000" y2="30" />
+                  <line x1="0" y1="105" x2="1000" y2="105" />
+                  {chartYears.map((year, index) => (
+                    <polyline
+                      key={year.year}
+                      points={studentHistoryPath(year)}
+                      style={{ stroke: chartColors[index % chartColors.length] }}
+                    />
+                  ))}
+                </svg>
+                <div className="chart-axis">
+                  <span>25 août</span>
+                  <span>15 sept.</span>
+                  <span>30 sept.</span>
+                </div>
+              </div>
+              <div className="chart-legend">
+                {chartYears.map((year, index) => (
+                  <span key={year.year}><i style={{ background: chartColors[index % chartColors.length] }} />{year.year}</span>
+                ))}
+              </div>
+            </div>
+
+            {activeHistory && (
+              <div className="history-table-wrap">
+                <div className="history-table table-head" aria-hidden="true">
+                  <span>Date</span><span>Total saisi</span><span>Total affiche</span><span>Ajout</span>
+                </div>
+                {activeHistory.entries.map((entry) => {
+                  const displayedValue = entry.value ?? carriedValue;
+                  const addedValue =
+                    entry.value !== null && previousKnownValue !== null ? entry.value - previousKnownValue : null;
+                  if (entry.value !== null) {
+                    carriedValue = entry.value;
+                    previousKnownValue = entry.value;
+                  }
+                  return (
+                    <article className="history-table history-row" key={entry.date}>
+                      <strong>{campaignDayLabel(entry.date)}</strong>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        defaultValue={entry.value ?? ""}
+                        placeholder="—"
+                        onBlur={(event) => updateStudentHistoryValue(activeHistory.year, entry.date, event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") event.currentTarget.blur();
+                        }}
+                        aria-label={`Nombre d'eleves au ${campaignDayLabel(entry.date)}`}
+                      />
+                      <span>{displayedValue === null ? "—" : formatObjectiveNumber(displayedValue)}</span>
+                      <span className={addedValue !== null && addedValue < 0 ? "negative" : ""}>
+                        {addedValue === null ? "—" : `${addedValue >= 0 ? "+" : ""}${formatObjectiveNumber(addedValue)}`}
+                      </span>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="empty-state history-empty">
+            <span>↗</span>
+            <h3>Aucun historique élèves</h3>
+            <p>Ajoutez une année pour générer automatiquement toutes les dates du 25 août au 30 septembre.</p>
+            <button className="button primary" onClick={addStudentHistoryYear} disabled={saving}>Ajouter une année</button>
+          </div>
+        )}
+      </section>
+    );
+  }
+
   function renderCounterObjective(objective: Objective, label: string) {
     const percent = objectiveProgressPercent(objective);
     const nextStep = objectiveNextStep(objective);
@@ -1284,6 +1579,8 @@ export default function Home() {
             {renderCounterObjective(sessionObjective, "Objectif hebdo")}
           </div>
         </section>
+
+        {renderStudentHistorySection()}
 
         <div className="main-tabs" role="group" aria-label="Choisir le type de suivi">
           <button className={appMode === "tasks" ? "active" : ""} onClick={() => setAppMode("tasks")}>

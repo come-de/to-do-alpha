@@ -69,6 +69,17 @@ export type SharedLink = {
   createdAt: string;
 };
 
+export type StudentHistoryEntry = {
+  date: string;
+  value: number | null;
+};
+
+export type StudentHistoryYear = {
+  year: number;
+  entries: StudentHistoryEntry[];
+  createdAt: string;
+};
+
 export type Person = {
   id: string;
   name: string;
@@ -87,6 +98,7 @@ export const PEOPLE_KEY = "people.json";
 export const RECURRING_TASKS_KEY = "recurring-tasks.json";
 export const OBJECTIVES_KEY = "objectives.json";
 export const LINKS_KEY = "links.json";
+export const STUDENT_HISTORY_KEY = "student-history.json";
 
 const memory = globalThis as typeof globalThis & {
   __petitSuiviTasks?: Task[];
@@ -94,6 +106,7 @@ const memory = globalThis as typeof globalThis & {
   __petitSuiviRecurringTasks?: RecurringTask[];
   __petitSuiviObjectives?: Objective[];
   __petitSuiviLinks?: SharedLink[];
+  __petitSuiviStudentHistory?: StudentHistoryYear[];
 };
 
 const defaultObjectives: Objective[] = [
@@ -159,6 +172,28 @@ function cleanPositiveNumber(value: unknown, allowZero = false) {
   if (parsed === null || !Number.isFinite(parsed)) return null;
   if (allowZero && parsed === 0) return 0;
   return parsed > 0 ? parsed : null;
+}
+
+function cleanYear(value: unknown) {
+  const parsed =
+    typeof value === "number"
+      ? value
+      : typeof value === "string" && value.trim()
+        ? Number(value)
+        : null;
+  if (parsed === null || !Number.isInteger(parsed)) return new Date().getFullYear();
+  return parsed >= 2000 && parsed <= 2100 ? parsed : new Date().getFullYear();
+}
+
+function campaignDates(year: number) {
+  const dates: string[] = [];
+  const cursor = new Date(Date.UTC(year, 7, 25));
+  const end = new Date(Date.UTC(year, 8, 30));
+  while (cursor <= end) {
+    dates.push(cursor.toISOString().slice(0, 10));
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return dates;
 }
 
 export function isStatus(value: unknown): value is Status {
@@ -299,6 +334,30 @@ export function sanitizeSharedLink(raw: Record<string, unknown>): SharedLink {
   };
 }
 
+export function sanitizeStudentHistoryYear(raw: Record<string, unknown>): StudentHistoryYear {
+  const year = cleanYear(raw.year);
+  const entriesByDate = new Map(
+    Array.isArray(raw.entries)
+      ? raw.entries
+          .filter((entry): entry is Record<string, unknown> => Boolean(entry && typeof entry === "object"))
+          .map((entry) => {
+            const value = cleanPositiveNumber(entry.value, true);
+            return [cleanText(entry.date), value] as const;
+          })
+          .filter(([date]) => date)
+      : [],
+  );
+
+  return {
+    year,
+    entries: campaignDates(year).map((date) => ({
+      date,
+      value: entriesByDate.get(date) ?? null,
+    })),
+    createdAt: cleanText(raw.createdAt) || new Date().toISOString(),
+  };
+}
+
 export async function readTasks() {
   try {
     const store = taskStore();
@@ -411,6 +470,30 @@ export async function writeLinks(links: SharedLink[]) {
     await store.setJSON(LINKS_KEY, links);
   } catch {
     memory.__petitSuiviLinks = links;
+  }
+}
+
+export async function readStudentHistory() {
+  try {
+    const store = taskStore();
+    const history = await store.get(STUDENT_HISTORY_KEY, { type: "json", consistency: "strong" });
+    return Array.isArray(history)
+      ? history
+          .filter((year): year is Record<string, unknown> => Boolean(year && typeof year === "object"))
+          .map(sanitizeStudentHistoryYear)
+          .sort((a, b) => b.year - a.year)
+      : [];
+  } catch {
+    return memory.__petitSuiviStudentHistory ?? [];
+  }
+}
+
+export async function writeStudentHistory(history: StudentHistoryYear[]) {
+  try {
+    const store = taskStore();
+    await store.setJSON(STUDENT_HISTORY_KEY, history);
+  } catch {
+    memory.__petitSuiviStudentHistory = history;
   }
 }
 

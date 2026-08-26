@@ -99,6 +99,32 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .objective-row-head { margin-bottom: 8px; }
 .objective-tags { margin-top: 10px; }
 .objective-note { display: block; margin-top: 7px; color: var(--blue-dark); font-size: 11px; font-weight: 720; }
+.student-history-panel { margin: 0 0 10px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.94); box-shadow: 0 8px 28px rgba(14,165,233,.045); overflow: hidden; }
+.history-compare { padding: 12px 14px 10px; border-top: 1px solid var(--line); background: linear-gradient(180deg, rgba(244,251,252,.72), rgba(255,255,255,.95)); }
+.history-chart-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 10px; }
+.history-chart-head strong { display: block; color: var(--blue-title); font-size: 14px; }
+.history-chart-head span { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; }
+.history-year-toggles { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 6px; }
+.history-year-toggles label { display: inline-flex; align-items: center; gap: 5px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 999px; color: var(--blue-dark); background: white; font-size: 11px; font-weight: 760; }
+.history-year-toggles input { width: 13px; height: 13px; }
+.student-chart { padding: 8px 9px 4px; border: 1px solid var(--line); border-radius: 10px; background: white; }
+.student-chart svg { display: block; width: 100%; height: 230px; overflow: visible; }
+.student-chart line { stroke: #d9edf3; stroke-width: 1; }
+.student-chart polyline { fill: none; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 4px 7px rgba(14,165,233,.12)); }
+.chart-axis, .chart-legend { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 10px; font-weight: 700; }
+.chart-axis { padding: 2px 2px 0; }
+.chart-legend { justify-content: flex-start; flex-wrap: wrap; margin-top: 8px; }
+.chart-legend span { display: inline-flex; align-items: center; gap: 5px; padding: 4px 7px; border: 1px solid var(--line); border-radius: 999px; background: white; color: var(--blue-title); }
+.chart-legend i { width: 9px; height: 9px; border-radius: 50%; }
+.history-table-wrap { padding: 0 14px 14px; overflow-x: auto; }
+.history-table { min-width: 620px; display: grid; grid-template-columns: minmax(130px, 1fr) minmax(140px, .9fr) minmax(130px, .8fr) minmax(100px, .65fr); align-items: center; column-gap: 12px; }
+.history-row { min-height: 42px; padding: 6px 0; border-bottom: 1px solid #e6f1f5; }
+.history-row strong { color: var(--blue-title); font-size: 12px; }
+.history-row input { width: 100%; min-height: 34px; border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; background: #fbfeff; color: var(--ink); font-size: 12px; font-weight: 700; }
+.history-row input:focus { border-color: var(--blue-main); background: white; outline: 3px solid rgba(14,165,233,.12); }
+.history-row span { color: var(--muted); font-size: 12px; font-weight: 760; }
+.history-row span.negative { color: var(--red); }
+.history-empty { border-top: 1px solid var(--line); }
 .hero-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 32px; margin-bottom: 26px; }
 .eyebrow { margin: 0 0 8px; color: var(--blue-main); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; }
 h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-height: 1.08; font-weight: 720; }
@@ -377,6 +403,14 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .link-grid, .objective-list { padding: 8px; }
   .qualitative-objective { flex-direction: column; gap: 10px; }
   .link-card .row-actions, .qualitative-objective .row-actions { width: 100%; justify-content: flex-start; }
+  .student-history-panel { margin-bottom: 7px; }
+  .history-chart-head { flex-direction: column; gap: 8px; }
+  .history-year-toggles { justify-content: flex-start; }
+  .student-chart svg { height: 170px; }
+  .history-table-wrap { padding: 0 8px 10px; overflow: visible; }
+  .history-table.table-head { display: none; }
+  .history-table.history-row { min-width: 0; grid-template-columns: 1fr 92px 72px 58px; gap: 6px; padding: 6px 0; }
+  .history-row input { min-height: 32px; padding: 6px 7px; }
   .modal-backdrop { padding: 0; place-items: end center; }
   .modal { max-height: 94vh; border-radius: 8px 8px 0 0; }
   .modal-header { padding: 22px 20px 16px; }
