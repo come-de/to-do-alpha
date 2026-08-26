@@ -5,7 +5,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "re
 type Status = "todo" | "progress" | "done";
 type Priority = "low" | "medium" | "high";
 type Density = "compact" | "comfortable";
-type AppMode = "tasks" | "recurring" | "links" | "objectives";
+type AppMode = "tasks" | "recurring" | "links" | "objectives" | "history";
 type ViewMode = "list" | "matrix";
 type DurationBucket = "short" | "medium" | "long" | "unset";
 type ObjectiveKind = "counter" | "qualitative";
@@ -1355,6 +1355,27 @@ export default function Home() {
     return points.join(" ");
   }
 
+  function miniStudentHistoryPath() {
+    const historyYear = activeHistory ?? chartYears[0] ?? studentHistory[0];
+    if (!historyYear) return "";
+    let carried = 0;
+    const maxValue = Math.max(1, ...historyYear.entries.map((entry) => entry.value ?? 0));
+    return historyYear.entries
+      .map((entry, index) => {
+        if (entry.value !== null) carried = entry.value;
+        const x = historyYear.entries.length <= 1 ? 0 : (index / (historyYear.entries.length - 1)) * 100;
+        const y = 42 - (carried / maxValue) * 34;
+        return `${x.toFixed(2)},${y.toFixed(2)}`;
+      })
+      .join(" ");
+  }
+
+  function latestStudentHistoryValue() {
+    const historyYear = activeHistory ?? chartYears[0] ?? studentHistory[0];
+    if (!historyYear) return null;
+    return historyYear.entries.reduce<number | null>((latest, entry) => entry.value ?? latest, null);
+  }
+
   function renderStudentHistorySection() {
     let carriedValue: number | null = null;
     let previousKnownValue: number | null = null;
@@ -1478,6 +1499,9 @@ export default function Home() {
   function renderCounterObjective(objective: Objective, label: string) {
     const percent = objectiveProgressPercent(objective);
     const nextStep = objectiveNextStep(objective);
+    const isStudentObjective = objective.id === "objective-september-2600";
+    const miniPath = miniStudentHistoryPath();
+    const latestHistoryValue = latestStudentHistoryValue();
     return (
       <div className="objective-card">
         <div>
@@ -1498,6 +1522,17 @@ export default function Home() {
               : "Objectif atteint : cap tenu, on garde l'elan."}
           </p>
           <p>{objective.description}</p>
+          {isStudentObjective && (
+            <button className="mini-history-card" onClick={() => setAppMode("history")} type="button">
+              <span>
+                <strong>Historique élèves</strong>
+                <small>{latestHistoryValue === null ? "Ajouter les donnees" : `Dernier total : ${formatObjectiveNumber(latestHistoryValue)}`}</small>
+              </span>
+              <svg viewBox="0 0 100 50" aria-hidden="true">
+                <polyline points={miniPath || "0,42 100,42"} />
+              </svg>
+            </button>
+          )}
         </div>
         <div className="objective-people">
           <span>Équipe mobilisée</span>
@@ -1545,7 +1580,9 @@ export default function Home() {
                   ? openNewLink
                   : appMode === "objectives"
                     ? openNewQualitativeObjective
-                    : openNewTask
+                    : appMode === "history"
+                      ? addStudentHistoryYear
+                      : openNewTask
             }
             disabled={saving}
           >
@@ -1556,13 +1593,15 @@ export default function Home() {
                 ? "Nouveau lien"
                 : appMode === "objectives"
                   ? "Nouvel objectif"
-                  : "Nouvelle tache"}
+                  : appMode === "history"
+                    ? "Ajouter une année"
+                    : "Nouvelle tache"}
           </button>
         </div>
       </header>
 
       <section className="content">
-        <section className="alpha-hero" aria-label="Objectif Alpha Education">
+        {appMode !== "history" && <section className="alpha-hero" aria-label="Objectif Alpha Education">
           <div className="alpha-quote">
             <div className="mission-badge">Alpha Education · rentrée 2026</div>
             <p className="eyebrow">Todo des équipes</p>
@@ -1578,9 +1617,7 @@ export default function Home() {
             {renderCounterObjective(studentObjective, "Objectif élèves")}
             {renderCounterObjective(sessionObjective, "Objectif hebdo")}
           </div>
-        </section>
-
-        {renderStudentHistorySection()}
+        </section>}
 
         <div className="main-tabs" role="group" aria-label="Choisir le type de suivi">
           <button className={appMode === "tasks" ? "active" : ""} onClick={() => setAppMode("tasks")}>
@@ -1594,6 +1631,9 @@ export default function Home() {
           </button>
           <button className={appMode === "objectives" ? "active" : ""} onClick={() => setAppMode("objectives")}>
             Objectifs <span>{qualitativeObjectives.length}</span>
+          </button>
+          <button className={appMode === "history" ? "active" : ""} onClick={() => setAppMode("history")}>
+            Historique <span>{studentHistory.length}</span>
           </button>
         </div>
 
@@ -1855,6 +1895,7 @@ export default function Home() {
             )}
           </div>
         </section>
+        : appMode === "history" ? renderStudentHistorySection()
         : <section className="task-panel">
           <div className="panel-heading">
             <div>
