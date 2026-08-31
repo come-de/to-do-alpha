@@ -1,4 +1,5 @@
 import { getStore } from "@netlify/blobs";
+import { importedSchools } from "./imported-schools";
 
 export type Status = "todo" | "progress" | "done";
 export type Priority = "low" | "medium" | "high";
@@ -82,6 +83,7 @@ export type JournalPost = {
 };
 
 export type SchoolEventKind = "event" | "comment" | "action";
+export type SchoolType = "alpha" | "mise-a-dispo" | "mixed";
 
 export type SchoolEvent = {
   id: string;
@@ -89,14 +91,28 @@ export type SchoolEvent = {
   title: string;
   note: string;
   author: string;
+  tags: string[];
   date: string;
   createdAt: string;
 };
 
 export type School = {
   id: string;
+  externalId: string;
   name: string;
+  category: string;
+  schoolType: SchoolType;
+  zone: string;
+  coordinator: string;
+  registeredCount: number | null;
   city: string;
+  address: string;
+  department: string;
+  upcomingWeek: string;
+  pastSessions: string;
+  typicalWeek: string;
+  contractSigned: string;
+  actions: string;
   contact: string;
   nextAction: string;
   notes: string;
@@ -398,12 +414,123 @@ function isSchoolEventKind(value: unknown): value is SchoolEventKind {
   return value === "event" || value === "comment" || value === "action";
 }
 
+function isSchoolType(value: unknown): value is SchoolType {
+  return value === "alpha" || value === "mise-a-dispo" || value === "mixed";
+}
+
+function normalizeSchoolName(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("fr")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function schoolFromImport(item: (typeof importedSchools)[number]): School {
+  const now = "2026-08-31T00:00:00.000Z";
+  return {
+    id: item.externalId ? `school-${item.externalId}` : crypto.randomUUID(),
+    externalId: item.externalId,
+    name: item.name,
+    category: item.category,
+    schoolType: item.schoolType,
+    zone: item.zone,
+    coordinator: item.coordinator,
+    registeredCount: item.registeredCount,
+    city: item.city,
+    address: item.address,
+    department: item.department,
+    upcomingWeek: item.upcomingWeek,
+    pastSessions: item.pastSessions,
+    typicalWeek: item.typicalWeek,
+    contractSigned: item.contractSigned,
+    actions: item.actions,
+    contact: item.coordinator,
+    nextAction: item.actions,
+    notes: "",
+    events: [],
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+function mergeImportedSchools(schools: School[]) {
+  const importedByExternalId = new Map(importedSchools.map((item) => [item.externalId, schoolFromImport(item)]));
+  const importedByName = new Map(importedSchools.map((item) => [normalizeSchoolName(item.name), schoolFromImport(item)]));
+  const matchedExternalIds = new Set<string>();
+  const matchedNames = new Set<string>();
+
+  const enrichedSchools = schools.map((school) => {
+    const imported =
+      (school.externalId ? importedByExternalId.get(school.externalId) : null) ??
+      importedByName.get(normalizeSchoolName(school.name));
+    if (!imported) return school;
+    if (imported.externalId) matchedExternalIds.add(imported.externalId);
+    matchedNames.add(normalizeSchoolName(imported.name));
+    return {
+      ...imported,
+      ...school,
+      externalId: school.externalId || imported.externalId,
+      category: school.category || imported.category,
+      schoolType: !school.category && school.schoolType === "mixed" ? imported.schoolType : school.schoolType,
+      zone: school.zone || imported.zone,
+      coordinator: school.coordinator || imported.coordinator,
+      registeredCount: school.registeredCount ?? imported.registeredCount,
+      city: school.city || imported.city,
+      address: school.address || imported.address,
+      department: school.department || imported.department,
+      upcomingWeek: school.upcomingWeek || imported.upcomingWeek,
+      pastSessions: school.pastSessions || imported.pastSessions,
+      typicalWeek: school.typicalWeek || imported.typicalWeek,
+      contractSigned: school.contractSigned || imported.contractSigned,
+      actions: school.actions || imported.actions,
+      contact: school.contact || imported.contact,
+      nextAction: school.nextAction || imported.nextAction,
+      notes: school.notes,
+      events: school.events,
+      createdAt: school.createdAt,
+      updatedAt: school.updatedAt,
+    };
+  });
+
+  const knownNames = new Set(enrichedSchools.map((school) => normalizeSchoolName(school.name)).filter(Boolean));
+  const missingImportedSchools = importedSchools
+    .filter((item) => {
+      const externalMatch = item.externalId && matchedExternalIds.has(item.externalId);
+      const name = normalizeSchoolName(item.name);
+      return !externalMatch && !matchedNames.has(name) && !knownNames.has(name);
+    })
+    .map(schoolFromImport);
+  return [...enrichedSchools, ...missingImportedSchools].sort((a, b) => a.name.localeCompare(b.name, "fr"));
+}
+
 export function sanitizeSchool(raw: Record<string, unknown>): School {
   const now = new Date().toISOString();
+  const category = cleanText(raw.category);
   return {
     id: cleanText(raw.id) || crypto.randomUUID(),
+    externalId: cleanText(raw.externalId),
     name: cleanText(raw.name),
+    category,
+    schoolType: isSchoolType(raw.schoolType)
+      ? raw.schoolType
+      : category.toLocaleLowerCase("fr").includes("prestation")
+        ? "mise-a-dispo"
+        : category.toLocaleLowerCase("fr").includes("alpha")
+          ? "alpha"
+          : "mixed",
+    zone: cleanText(raw.zone),
+    coordinator: cleanText(raw.coordinator),
+    registeredCount: cleanPositiveNumber(raw.registeredCount, true),
     city: cleanText(raw.city),
+    address: cleanText(raw.address),
+    department: cleanText(raw.department),
+    upcomingWeek: cleanText(raw.upcomingWeek),
+    pastSessions: cleanText(raw.pastSessions),
+    typicalWeek: cleanText(raw.typicalWeek),
+    contractSigned: cleanText(raw.contractSigned),
+    actions: cleanText(raw.actions),
     contact: cleanText(raw.contact),
     nextAction: cleanText(raw.nextAction),
     notes: cleanText(raw.notes),
@@ -416,6 +543,12 @@ export function sanitizeSchool(raw: Record<string, unknown>): School {
             title: cleanText(event.title),
             note: cleanText(event.note),
             author: cleanText(event.author) || "Equipe Alpha",
+            tags: Array.isArray(event.tags)
+              ? event.tags.map(cleanText).filter(Boolean)
+              : cleanText(event.tags)
+                  .split(",")
+                  .map((tag) => tag.trim())
+                  .filter(Boolean),
             date: cleanText(event.date) || cleanText(event.createdAt) || now,
             createdAt: cleanText(event.createdAt) || now,
           }))
@@ -595,15 +728,16 @@ export async function readSchools() {
   try {
     const store = taskStore();
     const schools = await store.get(SCHOOLS_KEY, { type: "json", consistency: "strong" });
-    return Array.isArray(schools)
+    const savedSchools = Array.isArray(schools)
       ? schools
           .filter((school): school is Record<string, unknown> => Boolean(school && typeof school === "object"))
           .map(sanitizeSchool)
           .filter((school) => school.name)
           .sort((a, b) => a.name.localeCompare(b.name, "fr"))
       : [];
+    return mergeImportedSchools(savedSchools);
   } catch {
-    return memory.__petitSuiviSchools ?? [];
+    return mergeImportedSchools(memory.__petitSuiviSchools ?? []);
   }
 }
 

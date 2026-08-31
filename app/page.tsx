@@ -90,6 +90,7 @@ type JournalPost = {
 };
 
 type SchoolEventKind = "event" | "comment" | "action";
+type SchoolType = "alpha" | "mise-a-dispo" | "mixed";
 
 type SchoolEvent = {
   id: string;
@@ -97,14 +98,28 @@ type SchoolEvent = {
   title: string;
   note: string;
   author: string;
+  tags: string[];
   date: string;
   createdAt: string;
 };
 
 type School = {
   id: string;
+  externalId: string;
   name: string;
+  category: string;
+  schoolType: SchoolType;
+  zone: string;
+  coordinator: string;
+  registeredCount: number | null;
   city: string;
+  address: string;
+  department: string;
+  upcomingWeek: string;
+  pastSessions: string;
+  typicalWeek: string;
+  contractSigned: string;
+  actions: string;
   contact: string;
   nextAction: string;
   notes: string;
@@ -225,8 +240,21 @@ const emptyJournalDraft: JournalDraft = {
 };
 
 const emptySchoolDraft: SchoolDraft = {
+  externalId: "",
   name: "",
+  category: "",
+  schoolType: "alpha",
+  zone: "",
+  coordinator: "",
+  registeredCount: null,
   city: "",
+  address: "",
+  department: "",
+  upcomingWeek: "",
+  pastSessions: "",
+  typicalWeek: "",
+  contractSigned: "",
+  actions: "",
   contact: "",
   nextAction: "",
   notes: "",
@@ -237,6 +265,7 @@ const emptySchoolEventDraft: SchoolEventDraft = {
   title: "",
   note: "",
   author: "",
+  tags: [],
   date: new Date().toISOString().slice(0, 10),
 };
 
@@ -245,6 +274,27 @@ const schoolEventKindLabels: Record<SchoolEventKind, string> = {
   comment: "Commentaire",
   action: "Action réalisée",
 };
+
+const schoolTypeLabels: Record<SchoolType, string> = {
+  alpha: "Étude Alpha",
+  "mise-a-dispo": "Mise à disposition",
+  mixed: "Mixte / autre",
+};
+
+const crmTagSuggestions = [
+  "Problème à résoudre",
+  "Communication envoyée",
+  "Mécontentement signalé",
+  "Contentement signalé",
+  "Relance à faire",
+  "Rendez-vous prévu",
+  "Décision prise",
+  "Information importante",
+  "Contrat / administratif",
+  "Inscription / élèves",
+  "Surveillance / séances",
+  "Besoins mis à jour",
+];
 
 const statusLabels: Record<Status, string> = {
   todo: "A faire",
@@ -390,6 +440,7 @@ function normalizeSchoolEvent(raw: Partial<SchoolEvent>): SchoolEvent {
     title: raw.title || "",
     note: raw.note || "",
     author: raw.author || "Equipe Alpha",
+    tags: normalizeTags(raw.tags),
     date: raw.date || raw.createdAt || now,
     createdAt: raw.createdAt || now,
   };
@@ -397,10 +448,31 @@ function normalizeSchoolEvent(raw: Partial<SchoolEvent>): SchoolEvent {
 
 function normalizeSchool(raw: Partial<School>): School {
   const now = new Date().toISOString();
+  const category = raw.category || "";
   return {
     id: raw.id || uid("school"),
+    externalId: raw.externalId || "",
     name: raw.name || "",
+    category,
+    schoolType:
+      raw.schoolType === "alpha" || raw.schoolType === "mise-a-dispo" || raw.schoolType === "mixed"
+        ? raw.schoolType
+        : category.toLocaleLowerCase("fr").includes("prestation")
+          ? "mise-a-dispo"
+          : category.toLocaleLowerCase("fr").includes("alpha")
+            ? "alpha"
+            : "mixed",
+    zone: raw.zone || "",
+    coordinator: raw.coordinator || "",
+    registeredCount: normalizePositiveNumber(raw.registeredCount, true),
     city: raw.city || "",
+    address: raw.address || "",
+    department: raw.department || "",
+    upcomingWeek: raw.upcomingWeek || "",
+    pastSessions: raw.pastSessions || "",
+    typicalWeek: raw.typicalWeek || "",
+    contractSigned: raw.contractSigned || "",
+    actions: raw.actions || "",
     contact: raw.contact || "",
     nextAction: raw.nextAction || "",
     notes: raw.notes || "",
@@ -958,8 +1030,8 @@ export default function Home() {
     return schools
       .filter((school) => {
         if (!normalized) return true;
-        const eventsText = school.events.map((event) => `${event.title} ${event.note} ${event.author}`).join(" ");
-        return `${school.name} ${school.city} ${school.contact} ${school.nextAction} ${school.notes} ${eventsText}`
+        const eventsText = school.events.map((event) => `${event.title} ${event.note} ${event.author} ${event.tags.join(" ")}`).join(" ");
+        return `${school.name} ${school.city} ${school.contact} ${school.nextAction} ${school.notes} ${school.category} ${schoolTypeLabels[school.schoolType]} ${school.zone} ${school.coordinator} ${school.address} ${school.department} ${school.actions} ${eventsText}`
           .toLocaleLowerCase("fr")
           .includes(normalized);
       })
@@ -1425,8 +1497,21 @@ export default function Home() {
   function openEditSchool(school: School) {
     setEditingSchoolId(school.id);
     setSchoolDraft({
+      externalId: school.externalId,
       name: school.name,
+      category: school.category,
+      schoolType: school.schoolType,
+      zone: school.zone,
+      coordinator: school.coordinator,
+      registeredCount: school.registeredCount,
       city: school.city,
+      address: school.address,
+      department: school.department,
+      upcomingWeek: school.upcomingWeek,
+      pastSessions: school.pastSessions,
+      typicalWeek: school.typicalWeek,
+      contractSigned: school.contractSigned,
+      actions: school.actions,
       contact: school.contact,
       nextAction: school.nextAction,
       notes: school.notes,
@@ -1440,8 +1525,20 @@ export default function Home() {
     const now = new Date().toISOString();
     const cleanDraft = {
       ...schoolDraft,
+      externalId: schoolDraft.externalId.trim(),
       name: schoolDraft.name.trim(),
+      category: schoolDraft.category.trim(),
+      zone: schoolDraft.zone.trim(),
+      coordinator: schoolDraft.coordinator.trim(),
+      registeredCount: normalizePositiveNumber(schoolDraft.registeredCount, true),
       city: schoolDraft.city.trim(),
+      address: schoolDraft.address.trim(),
+      department: schoolDraft.department.trim(),
+      upcomingWeek: schoolDraft.upcomingWeek.trim(),
+      pastSessions: schoolDraft.pastSessions.trim(),
+      typicalWeek: schoolDraft.typicalWeek.trim(),
+      contractSigned: schoolDraft.contractSigned.trim(),
+      actions: schoolDraft.actions.trim(),
       contact: schoolDraft.contact.trim(),
       nextAction: schoolDraft.nextAction.trim(),
       notes: schoolDraft.notes.trim(),
@@ -1481,6 +1578,15 @@ export default function Home() {
     setSchoolEventOpen(true);
   }
 
+  function toggleSchoolEventTag(tag: string) {
+    setSchoolEventDraft((current) => ({
+      ...current,
+      tags: current.tags.includes(tag)
+        ? current.tags.filter((item) => item !== tag)
+        : [...current.tags, tag],
+    }));
+  }
+
   async function saveSchoolEvent(event: FormEvent) {
     event.preventDefault();
     if (!eventSchoolId || (!schoolEventDraft.title.trim() && !schoolEventDraft.note.trim()) || saving) return;
@@ -1491,6 +1597,7 @@ export default function Home() {
       title: schoolEventDraft.title.trim(),
       note: schoolEventDraft.note.trim(),
       author: schoolEventDraft.author.trim() || authorName.trim() || "Equipe Alpha",
+      tags: normalizeTags(schoolEventDraft.tags),
       date: schoolEventDraft.date ? new Date(`${schoolEventDraft.date}T12:00:00`).toISOString() : now,
       createdAt: now,
     };
@@ -2493,14 +2600,18 @@ export default function Home() {
             {filteredSchools.length ? filteredSchools.map((school) => {
               const latestEvent = school.events[0];
               return (
-                <article className="school-card" key={school.id}>
+                <article className={`school-card school-type-${school.schoolType}`} key={school.id}>
                   <div className="school-card-header">
                     <div>
                       <p className="eyebrow">Établissement scolaire</p>
                       <h3>{school.name}</h3>
                       <div className="school-meta">
+                        <span className={`school-type-pill school-type-${school.schoolType}`}>{schoolTypeLabels[school.schoolType]}</span>
+                        {school.category && <span>{school.category}</span>}
                         {school.city && <span>{school.city}</span>}
-                        {school.contact && <span>Contact : {school.contact}</span>}
+                        {(school.coordinator || school.contact) && <span>Coordinateur : {school.coordinator || school.contact}</span>}
+                        {school.registeredCount !== null && <span>{school.registeredCount} inscrit{school.registeredCount > 1 ? "s" : ""}</span>}
+                        {school.zone && <span>{school.zone}</span>}
                         <span>{school.events.length} entrée{school.events.length > 1 ? "s" : ""}</span>
                       </div>
                     </div>
@@ -2516,6 +2627,17 @@ export default function Home() {
                       {school.notes && <div><small>Notes</small><span>{school.notes}</span></div>}
                     </div>
                   )}
+                  {(school.address || school.department || school.upcomingWeek || school.pastSessions || school.typicalWeek || school.contractSigned || school.actions) && (
+                    <div className="school-imported-info">
+                      {school.address && <span>Adresse : {school.address}</span>}
+                      {school.department && <span>{school.department}</span>}
+                      {school.upcomingWeek && <span>Semaine à venir : {school.upcomingWeek}</span>}
+                      {school.pastSessions && <span>Séances passées : {school.pastSessions}</span>}
+                      {school.typicalWeek && <span>Semaine type : {school.typicalWeek}</span>}
+                      {school.contractSigned && <span>Contrat : {school.contractSigned}</span>}
+                      {school.actions && <span>Actions Excel : {school.actions}</span>}
+                    </div>
+                  )}
                   <div className="school-timeline">
                     {school.events.length ? school.events.map((event) => (
                       <div className={`school-event event-${event.kind}`} key={event.id}>
@@ -2527,6 +2649,11 @@ export default function Home() {
                           </div>
                           {event.title && <strong>{event.title}</strong>}
                           {event.note && <p>{event.note}</p>}
+                          {event.tags.length > 0 && (
+                            <div className="school-event-tags">
+                              {event.tags.map((tag) => <button key={tag} onClick={() => setSchoolQuery(tag)}>#{tag}</button>)}
+                            </div>
+                          )}
                         </div>
                       </div>
                     )) : (
@@ -2742,9 +2869,20 @@ export default function Home() {
             </div>
             <form onSubmit={saveSchool} className="task-form">
               <label className="field full"><span>Nom de l&apos;établissement *</span><input autoFocus required value={schoolDraft.name} onChange={(event) => setSchoolDraft({ ...schoolDraft, name: event.target.value })} placeholder="Ex. Collège Saint-Exupéry" /></label>
+              <label className="field"><span>Type d&apos;établissement</span><select value={schoolDraft.schoolType} onChange={(event) => setSchoolDraft({ ...schoolDraft, schoolType: event.target.value as SchoolType })}><option value="alpha">Étude Alpha</option><option value="mise-a-dispo">Mise à disposition</option><option value="mixed">Mixte / autre</option></select></label>
+              <label className="field"><span>Catégorie</span><input value={schoolDraft.category} onChange={(event) => setSchoolDraft({ ...schoolDraft, category: event.target.value })} placeholder="Ex. Étude Alpha" /></label>
               <label className="field"><span>Ville</span><input value={schoolDraft.city} onChange={(event) => setSchoolDraft({ ...schoolDraft, city: event.target.value })} placeholder="Ex. Paris" /></label>
-              <label className="field"><span>Contact principal</span><input value={schoolDraft.contact} onChange={(event) => setSchoolDraft({ ...schoolDraft, contact: event.target.value })} placeholder="Nom, rôle, téléphone..." /></label>
+              <label className="field"><span>Coordinateur</span><input value={schoolDraft.coordinator} onChange={(event) => setSchoolDraft({ ...schoolDraft, coordinator: event.target.value, contact: event.target.value })} placeholder="Ex. Sophie Martin" /></label>
+              <label className="field"><span>Inscrits</span><input type="number" min="0" step="1" value={schoolDraft.registeredCount ?? ""} onChange={(event) => setSchoolDraft({ ...schoolDraft, registeredCount: event.target.value ? Number(event.target.value) : null })} placeholder="0" /></label>
+              <label className="field"><span>Zone</span><input value={schoolDraft.zone} onChange={(event) => setSchoolDraft({ ...schoolDraft, zone: event.target.value })} placeholder="Zone A" /></label>
+              <label className="field full"><span>Adresse</span><input value={schoolDraft.address} onChange={(event) => setSchoolDraft({ ...schoolDraft, address: event.target.value })} placeholder="Adresse de l'établissement" /></label>
+              <label className="field full"><span>Département</span><input value={schoolDraft.department} onChange={(event) => setSchoolDraft({ ...schoolDraft, department: event.target.value })} placeholder="Département / code postal" /></label>
               <label className="field full"><span>Prochaine action à mener</span><input value={schoolDraft.nextAction} onChange={(event) => setSchoolDraft({ ...schoolDraft, nextAction: event.target.value })} placeholder="Ex. Relancer la direction mardi" /></label>
+              <label className="field"><span>Semaine à venir</span><input value={schoolDraft.upcomingWeek} onChange={(event) => setSchoolDraft({ ...schoolDraft, upcomingWeek: event.target.value })} /></label>
+              <label className="field"><span>Séances passées</span><input value={schoolDraft.pastSessions} onChange={(event) => setSchoolDraft({ ...schoolDraft, pastSessions: event.target.value })} /></label>
+              <label className="field"><span>Semaine type</span><input value={schoolDraft.typicalWeek} onChange={(event) => setSchoolDraft({ ...schoolDraft, typicalWeek: event.target.value })} /></label>
+              <label className="field"><span>Contrat signé</span><input value={schoolDraft.contractSigned} onChange={(event) => setSchoolDraft({ ...schoolDraft, contractSigned: event.target.value })} /></label>
+              <label className="field full"><span>Actions importées</span><input value={schoolDraft.actions} onChange={(event) => setSchoolDraft({ ...schoolDraft, actions: event.target.value })} /></label>
               <label className="field full"><span>Notes générales</span><textarea rows={3} value={schoolDraft.notes} onChange={(event) => setSchoolDraft({ ...schoolDraft, notes: event.target.value })} placeholder="Contexte, relation, préférences, points importants..." /></label>
               <div className="form-actions"><button type="button" className="button quiet" onClick={() => setSchoolOpen(false)}>Annuler</button><button type="submit" className="button primary" disabled={saving}>{saving ? "Sauvegarde..." : "Enregistrer"}</button></div>
             </form>
@@ -2764,6 +2902,22 @@ export default function Home() {
               <label className="field"><span>Date</span><input type="date" value={schoolEventDraft.date.slice(0, 10)} onChange={(event) => setSchoolEventDraft({ ...schoolEventDraft, date: event.target.value })} /></label>
               <label className="field full"><span>Titre</span><input autoFocus value={schoolEventDraft.title} onChange={(event) => setSchoolEventDraft({ ...schoolEventDraft, title: event.target.value })} placeholder="Ex. Appel avec la direction" /></label>
               <label className="field full"><span>Commentaire / détail</span><textarea rows={4} value={schoolEventDraft.note} onChange={(event) => setSchoolEventDraft({ ...schoolEventDraft, note: event.target.value })} placeholder="Ce qui a été fait, décidé, demandé, ou la prochaine étape..." /></label>
+              <div className="field full">
+                <span>Tags CRM</span>
+                <div className="crm-tag-picker">
+                  {crmTagSuggestions.map((tag) => (
+                    <button
+                      type="button"
+                      key={tag}
+                      className={schoolEventDraft.tags.includes(tag) ? "active" : ""}
+                      onClick={() => toggleSchoolEventTag(tag)}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <label className="field full"><span>Tags libres</span><input value={tagsToText(schoolEventDraft.tags)} onChange={(event) => setSchoolEventDraft({ ...schoolEventDraft, tags: normalizeTags(event.target.value) })} placeholder="Autre tag, besoin urgent..." /></label>
               <label className="field full"><span>Auteur</span><input value={schoolEventDraft.author} onChange={(event) => setSchoolEventDraft({ ...schoolEventDraft, author: event.target.value })} placeholder={authorName || "Equipe Alpha"} /></label>
               <div className="form-actions"><button type="button" className="button quiet" onClick={() => setSchoolEventOpen(false)}>Annuler</button><button type="submit" className="button primary" disabled={saving || (!schoolEventDraft.title.trim() && !schoolEventDraft.note.trim())}>{saving ? "Sauvegarde..." : "Ajouter à l'historique"}</button></div>
             </form>

@@ -132,16 +132,26 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .journal-tags button:hover { border-color: #9fd6ea; background: white; transform: translateY(-1px); }
 .journal-empty { border-top: 1px solid var(--line); }
 .school-crm-list { padding: 12px; display: grid; gap: 10px; }
-.school-card { border: 1px solid var(--line); border-radius: 12px; padding: 13px; background: linear-gradient(135deg, rgba(255,255,255,.98), rgba(236,253,245,.72)); box-shadow: 0 5px 18px rgba(14,165,233,.05); }
+.school-card { border: 1px solid var(--line); border-radius: 12px; padding: 13px; background: linear-gradient(135deg, rgba(255,255,255,.98), rgba(236,253,245,.72)); box-shadow: 0 5px 18px rgba(14,165,233,.05); position: relative; overflow: hidden; }
+.school-card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 5px; background: linear-gradient(180deg, var(--blue-main), var(--green)); }
+.school-card.school-type-mise-a-dispo { border-color: #ffd4e5; background: linear-gradient(135deg, rgba(255,255,255,.98), rgba(255,241,247,.82)); }
+.school-card.school-type-mise-a-dispo::before { background: linear-gradient(180deg, var(--red), #f472b6); }
+.school-card.school-type-mixed { background: linear-gradient(135deg, rgba(255,255,255,.98), rgba(244,251,252,.92)); }
+.school-card.school-type-mixed::before { background: linear-gradient(180deg, #7fa0af, var(--blue-dark)); }
 .school-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
 .school-card-header h3 { margin: 0; color: var(--blue-title); font-size: 17px; line-height: 1.18; }
 .school-meta { margin-top: 7px; display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
 .school-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 3px 7px; color: var(--blue-dark); background: rgba(255,255,255,.78); font-size: 10.5px; font-weight: 760; }
+.school-type-pill.school-type-alpha { border-color: rgba(16,185,129,.26); color: var(--green-dark); background: var(--green-pale); }
+.school-type-pill.school-type-mise-a-dispo { border-color: #ffd4e5; color: var(--red); background: var(--red-pale); }
+.school-type-pill.school-type-mixed { color: var(--blue-title); background: var(--soft); }
 .school-summary { margin-top: 11px; display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 8px; }
 .school-summary > div { min-width: 0; padding: 9px 10px; border: 1px solid rgba(14,165,233,.14); border-radius: 10px; background: rgba(255,255,255,.72); }
 .school-summary small { display: block; margin-bottom: 4px; color: var(--muted); font-size: 9.5px; text-transform: uppercase; letter-spacing: .07em; font-weight: 800; }
 .school-summary strong, .school-summary span { color: var(--blue-title); font-size: 12px; line-height: 1.35; }
 .school-summary span { color: var(--muted); }
+.school-imported-info { margin-top: 9px; display: flex; flex-wrap: wrap; gap: 5px; }
+.school-imported-info span { max-width: 100%; border: 1px solid rgba(213,231,239,.9); border-radius: 999px; padding: 3px 7px; color: var(--muted); background: rgba(255,255,255,.72); font-size: 10px; font-weight: 690; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .school-timeline { margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(213,231,239,.82); display: grid; gap: 8px; }
 .school-event { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 8px; }
 .school-event-dot { width: 9px; height: 9px; margin-top: 7px; border-radius: 50%; background: var(--blue-main); box-shadow: 0 0 0 4px rgba(14,165,233,.1); }
@@ -153,6 +163,11 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .school-event-head small { color: var(--muted); font-size: 10.5px; white-space: nowrap; }
 .school-event strong { display: block; color: var(--blue-title); font-size: 12.5px; line-height: 1.3; }
 .school-event p { margin: 4px 0 0; color: var(--muted); font-size: 12px; line-height: 1.45; white-space: pre-wrap; }
+.school-event-tags, .crm-tag-picker { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
+.school-event-tags { margin-top: 7px; }
+.school-event-tags button, .crm-tag-picker button { border: 1px solid var(--line); border-radius: 999px; padding: 4px 8px; color: var(--blue-dark); background: white; font-size: 10.5px; font-weight: 760; cursor: pointer; }
+.school-event-tags button:hover, .crm-tag-picker button:hover, .crm-tag-picker button.active { border-color: rgba(16,185,129,.28); color: var(--green-dark); background: var(--green-pale); }
+.crm-tag-picker button.active { box-shadow: inset 0 0 0 1px rgba(16,185,129,.18); }
 .school-empty-timeline { padding: 10px; border: 1px dashed var(--line); border-radius: 10px; background: rgba(255,255,255,.65); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .school-empty-timeline span { color: var(--muted); font-size: 12px; font-style: italic; }
 .school-last-action { margin: 9px 0 0; color: var(--blue-dark); font-size: 11px; font-weight: 760; }
