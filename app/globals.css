@@ -106,6 +106,31 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .objective-row-head { margin-bottom: 8px; }
 .objective-tags { margin-top: 10px; }
 .objective-note { display: block; margin-top: 7px; color: var(--blue-dark); font-size: 11px; font-weight: 720; }
+.journal-highlight { margin: -4px 0 10px; padding: 12px 14px; border: 1px solid rgba(14,165,233,.18); border-radius: 12px; background: radial-gradient(circle at 0 0, rgba(16,185,129,.14), transparent 34%), rgba(255,255,255,.94); box-shadow: 0 8px 26px rgba(14,165,233,.055); display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; overflow: hidden; position: relative; }
+.journal-highlight::after { content: "Journal"; position: absolute; right: 16px; bottom: -22px; color: rgba(14,165,233,.055); font-size: 62px; line-height: 1; font-weight: 950; letter-spacing: -.06em; pointer-events: none; }
+.journal-highlight-mark { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 13px; color: white; background: linear-gradient(135deg, var(--blue-main), var(--green)); font-size: 20px; box-shadow: 0 8px 18px rgba(14,165,233,.15); position: relative; z-index: 1; }
+.journal-highlight-content { min-width: 0; position: relative; z-index: 1; }
+.journal-highlight h2 { margin: 0; color: var(--blue-title); font-size: 19px; line-height: 1.12; letter-spacing: -.025em; }
+.journal-highlight p:not(.eyebrow) { max-width: 880px; margin: 5px 0 0; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+.journal-meta, .journal-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+.journal-meta { margin-top: 8px; }
+.journal-meta span, .journal-tag, .journal-tags button { width: fit-content; border: 1px solid var(--line); border-radius: 999px; padding: 3px 7px; color: var(--blue-dark); background: rgba(255,255,255,.76); font-size: 10.5px; font-weight: 760; }
+.journal-tag { background: var(--green-pale); color: var(--green-dark); border-color: rgba(16,185,129,.22); }
+.journal-highlight-actions { display: flex; gap: 7px; align-items: center; justify-content: flex-end; position: relative; z-index: 1; }
+.journal-list { padding: 12px; display: grid; gap: 9px; }
+.journal-card { border: 1px solid var(--line); border-radius: 11px; padding: 12px; background: linear-gradient(135deg, rgba(255,255,255,.98), rgba(244,251,252,.82)); display: grid; grid-template-columns: 70px minmax(0, 1fr) auto; gap: 13px; align-items: start; box-shadow: 0 4px 15px rgba(14,165,233,.045); }
+.journal-card-date { min-height: 70px; border-radius: 12px; border: 1px solid rgba(14,165,233,.18); background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--blue-dark); }
+.journal-card-date span { font-size: 25px; line-height: 1; font-weight: 920; letter-spacing: -.04em; }
+.journal-card-date small { max-width: 58px; margin-top: 4px; color: var(--muted); font-size: 10px; line-height: 1.1; text-align: center; text-transform: lowercase; }
+.journal-card-body { min-width: 0; }
+.journal-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.journal-card-head h3 { margin: 0; color: var(--blue-title); font-size: 16px; line-height: 1.2; }
+.journal-card-head small { color: var(--blue-dark); font-size: 11px; font-weight: 800; white-space: nowrap; }
+.journal-card-body p { margin: 7px 0 0; color: var(--ink); font-size: 12.5px; line-height: 1.5; white-space: pre-wrap; }
+.journal-tags { margin-top: 9px; }
+.journal-tags button { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+.journal-tags button:hover { border-color: #9fd6ea; background: white; transform: translateY(-1px); }
+.journal-empty { border-top: 1px solid var(--line); }
 .student-history-panel { margin: 0 0 10px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.94); box-shadow: 0 8px 28px rgba(14,165,233,.045); overflow: hidden; }
 .history-compare { padding: 12px 14px 10px; border-top: 1px solid var(--line); background: linear-gradient(180deg, rgba(244,251,252,.72), rgba(255,255,255,.95)); }
 .history-chart-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 10px; }
@@ -365,6 +390,12 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .objective-metrics { gap: 5px; }
   .objective-metrics span { padding: 5px 7px; font-size: 10px; }
   .objective-people { min-width: 0; padding-left: 0; padding-top: 10px; border-left: 0; border-top: 1px solid var(--line); }
+  .journal-highlight { grid-template-columns: auto minmax(0, 1fr); align-items: start; padding: 11px; gap: 9px; }
+  .journal-highlight::after { font-size: 44px; right: 8px; bottom: -14px; }
+  .journal-highlight-mark { width: 34px; height: 34px; border-radius: 10px; font-size: 16px; }
+  .journal-highlight h2 { font-size: 16px; }
+  .journal-highlight p:not(.eyebrow) { font-size: 11.5px; }
+  .journal-highlight-actions { grid-column: 1 / -1; justify-content: flex-start; flex-wrap: wrap; }
   .hero-row { display: none; }
   h1 { font-size: 31px; }
   .hero-copy { font-size: 14px; }
@@ -407,8 +438,16 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .matrix-mobile-label { display: block; }
   .matrix-empty { display: none; }
   .matrix-card { padding: 6px 7px; gap: 2px; }
-  .link-grid, .objective-list { padding: 8px; }
+  .link-grid, .objective-list, .journal-list { padding: 8px; }
   .qualitative-objective { flex-direction: column; gap: 10px; }
+  .journal-card { grid-template-columns: 48px minmax(0, 1fr); gap: 9px; padding: 9px; }
+  .journal-card-date { min-height: 48px; border-radius: 10px; }
+  .journal-card-date span { font-size: 18px; }
+  .journal-card-date small { max-width: 42px; font-size: 8.5px; }
+  .journal-card-head { flex-direction: column; gap: 3px; }
+  .journal-card-head h3 { font-size: 14px; }
+  .journal-card-body p { font-size: 11.5px; line-height: 1.45; }
+  .journal-card > .row-actions { grid-column: 2; justify-content: flex-start; }
   .link-card .row-actions, .qualitative-objective .row-actions { width: 100%; justify-content: flex-start; }
   .student-history-panel { margin-bottom: 7px; }
   .history-chart-head { flex-direction: column; gap: 8px; }

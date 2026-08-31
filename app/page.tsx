@@ -5,7 +5,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "re
 type Status = "todo" | "progress" | "done";
 type Priority = "low" | "medium" | "high";
 type Density = "compact" | "comfortable";
-type AppMode = "tasks" | "recurring" | "links" | "objectives" | "history";
+type AppMode = "tasks" | "recurring" | "links" | "objectives" | "history" | "journal";
 type ViewMode = "list" | "matrix";
 type DurationBucket = "short" | "medium" | "long" | "unset";
 type ObjectiveKind = "counter" | "qualitative";
@@ -77,6 +77,18 @@ type SharedLink = {
   createdAt: string;
 };
 
+type JournalPost = {
+  id: string;
+  title: string;
+  content: string;
+  author: string;
+  tags: string[];
+  personIds: string[];
+  publishedAt: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 type StudentHistoryEntry = {
   date: string;
   value: number | null;
@@ -107,6 +119,7 @@ type TaskDraft = Omit<Task, "id" | "comments" | "completionNotifications" | "cre
 type RecurringDraft = Omit<RecurringTask, "id" | "createdAt">;
 type ObjectiveDraft = Omit<Objective, "id" | "createdAt">;
 type LinkDraft = Omit<SharedLink, "id" | "createdAt">;
+type JournalDraft = Omit<JournalPost, "id" | "createdAt" | "updatedAt">;
 
 const AUTHOR_KEY = "petit-suivi-auteur-v2";
 const DENSITY_KEY = "petit-suivi-densite-v2";
@@ -174,6 +187,15 @@ const emptyLinkDraft: LinkDraft = {
   title: "",
   description: "",
   url: "",
+};
+
+const emptyJournalDraft: JournalDraft = {
+  title: "",
+  content: "",
+  author: "",
+  tags: [],
+  personIds: [],
+  publishedAt: new Date().toISOString().slice(0, 10),
 };
 
 const statusLabels: Record<Status, string> = {
@@ -267,6 +289,48 @@ function normalizeSharedLink(raw: Partial<SharedLink>): SharedLink {
     description: raw.description || "",
     url: normalizeUrl(raw.url || ""),
     createdAt: raw.createdAt || new Date().toISOString(),
+  };
+}
+
+function normalizeTags(value: unknown) {
+  const source = Array.isArray(value) ? value : typeof value === "string" ? value.split(",") : [];
+  return Array.from(
+    new Set(
+      source
+        .map((item) => (typeof item === "string" ? item.trim() : ""))
+        .filter(Boolean),
+    ),
+  );
+}
+
+function tagsToText(tags: string[]) {
+  return tags.join(", ");
+}
+
+function excerpt(value: string, maxLength = 180) {
+  const clean = value.replace(/\s+/g, " ").trim();
+  if (clean.length <= maxLength) return clean;
+  return `${clean.slice(0, maxLength).trim()}…`;
+}
+
+function formatJournalDate(value: string) {
+  const date = value.includes("T") ? new Date(value) : new Date(`${value}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric" }).format(date);
+}
+
+function normalizeJournalPost(raw: Partial<JournalPost>): JournalPost {
+  const now = new Date().toISOString();
+  return {
+    id: raw.id || uid("journal"),
+    title: raw.title || "",
+    content: raw.content || "",
+    author: raw.author || "Equipe Alpha",
+    tags: normalizeTags(raw.tags),
+    personIds: Array.isArray(raw.personIds) ? raw.personIds.filter(Boolean) : [],
+    publishedAt: raw.publishedAt || now,
+    createdAt: raw.createdAt || now,
+    updatedAt: raw.updatedAt || raw.createdAt || now,
   };
 }
 
@@ -484,6 +548,7 @@ export default function Home() {
   const [recurringTasks, setRecurringTasks] = useState<RecurringTask[]>([]);
   const [objectives, setObjectives] = useState<Objective[]>([]);
   const [links, setLinks] = useState<SharedLink[]>([]);
+  const [journalPosts, setJournalPosts] = useState<JournalPost[]>([]);
   const [studentHistory, setStudentHistory] = useState<StudentHistoryYear[]>([]);
   const [people, setPeople] = useState<Person[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -509,14 +574,17 @@ export default function Home() {
   const [recurringOpen, setRecurringOpen] = useState(false);
   const [objectiveOpen, setObjectiveOpen] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
+  const [journalOpen, setJournalOpen] = useState(false);
   const [notifyOpen, setNotifyOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingRecurringId, setEditingRecurringId] = useState<string | null>(null);
   const [editingLinkId, setEditingLinkId] = useState<string | null>(null);
+  const [editingJournalId, setEditingJournalId] = useState<string | null>(null);
   const [draft, setDraft] = useState<TaskDraft>(emptyDraft);
   const [recurringDraft, setRecurringDraft] = useState<RecurringDraft>(emptyRecurringDraft);
   const [objectiveDraft, setObjectiveDraft] = useState<ObjectiveDraft>(emptyObjectiveDraft);
   const [linkDraft, setLinkDraft] = useState<LinkDraft>(emptyLinkDraft);
+  const [journalDraft, setJournalDraft] = useState<JournalDraft>(emptyJournalDraft);
   const [editingObjectiveId, setEditingObjectiveId] = useState<string | null>(null);
   const [activeHistoryYear, setActiveHistoryYear] = useState<number>(new Date().getFullYear());
   const [selectedHistoryYears, setSelectedHistoryYears] = useState<number[]>([]);
@@ -527,6 +595,10 @@ export default function Home() {
   const [notifyRecipients, setNotifyRecipients] = useState<string[]>([]);
   const [comment, setComment] = useState("");
   const [toast, setToast] = useState("");
+  const [journalQuery, setJournalQuery] = useState("");
+  const [journalTagFilter, setJournalTagFilter] = useState("all");
+  const [journalAuthorFilter, setJournalAuthorFilter] = useState("all");
+  const [journalPersonFilter, setJournalPersonFilter] = useState("all");
   const importRef = useRef<HTMLInputElement>(null);
 
   const loadTasks = useCallback(async (silent = false) => {
@@ -590,6 +662,17 @@ export default function Home() {
     }
   }, []);
 
+  const loadJournalPosts = useCallback(async () => {
+    try {
+      const response = await fetch("/api/journal-posts", { cache: "no-store" });
+      if (!response.ok) throw new Error("load-journal-failed");
+      const data = (await response.json()) as { posts?: Partial<JournalPost>[] };
+      setJournalPosts(Array.isArray(data.posts) ? data.posts.map(normalizeJournalPost) : []);
+    } catch {
+      setToast("Journal indisponible");
+    }
+  }, []);
+
   const loadStudentHistory = useCallback(async () => {
     try {
       const response = await fetch("/api/student-history", { cache: "no-store" });
@@ -619,10 +702,11 @@ export default function Home() {
       void loadRecurringTasks();
       void loadObjectives();
       void loadLinks();
+      void loadJournalPosts();
       void loadStudentHistory();
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadStudentHistory]);
+  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadStudentHistory]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -631,10 +715,11 @@ export default function Home() {
       void loadRecurringTasks();
       void loadObjectives();
       void loadLinks();
+      void loadJournalPosts();
       void loadStudentHistory();
     }, 30000);
     return () => window.clearInterval(timer);
-  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadStudentHistory]);
+  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadStudentHistory]);
 
   useEffect(() => {
     if (authorName.trim()) localStorage.setItem(AUTHOR_KEY, authorName.trim());
@@ -738,6 +823,34 @@ export default function Home() {
     .filter((objective) => objective.kind === "qualitative")
     .slice()
     .sort((a, b) => dateValue(a.endDate || a.startDate) - dateValue(b.endDate || b.startDate));
+  const latestJournalPost = journalPosts[0] ?? null;
+  const journalTags = useMemo(
+    () => Array.from(new Set(journalPosts.flatMap((post) => post.tags))).sort((a, b) => a.localeCompare(b, "fr")),
+    [journalPosts],
+  );
+  const journalAuthors = useMemo(
+    () => Array.from(new Set(journalPosts.map((post) => post.author).filter(Boolean))).sort((a, b) => a.localeCompare(b, "fr")),
+    [journalPosts],
+  );
+  const filteredJournalPosts = useMemo(() => {
+    const normalized = journalQuery.trim().toLocaleLowerCase("fr");
+    return journalPosts
+      .filter((post) => {
+        const taggedPeople = post.personIds
+          .map((personId) => peopleById.get(personId)?.name || "")
+          .join(" ");
+        const matchesText =
+          !normalized ||
+          `${post.title} ${post.content} ${post.author} ${post.tags.join(" ")} ${taggedPeople}`
+            .toLocaleLowerCase("fr")
+            .includes(normalized);
+        const matchesTag = journalTagFilter === "all" || post.tags.includes(journalTagFilter);
+        const matchesAuthor = journalAuthorFilter === "all" || post.author === journalAuthorFilter;
+        const matchesPerson = journalPersonFilter === "all" || post.personIds.includes(journalPersonFilter);
+        return matchesText && matchesTag && matchesAuthor && matchesPerson;
+      })
+      .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+  }, [journalPosts, journalQuery, journalTagFilter, journalAuthorFilter, journalPersonFilter, peopleById]);
   const activeHistory = studentHistory.find((year) => year.year === activeHistoryYear) ?? null;
   const chartYears = studentHistory.filter((year) => selectedHistoryYears.includes(year.year));
   const chartDays = campaignDates(2000).map(campaignDayKey);
@@ -840,6 +953,31 @@ export default function Home() {
     } catch {
       setSyncError("Sauvegarde impossible, rechargez la page avant de continuer");
       setToast("Lien non sauvegarde");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function saveJournalPosts(nextPosts: JournalPost[], message: string) {
+    setSaving(true);
+    setSyncError("");
+    const sortedPosts = nextPosts
+      .map(normalizeJournalPost)
+      .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+    setJournalPosts(sortedPosts);
+    try {
+      const response = await fetch("/api/journal-posts", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ posts: sortedPosts }),
+      });
+      if (!response.ok) throw new Error("save-journal-failed");
+      const data = (await response.json()) as { posts?: Partial<JournalPost>[] };
+      setJournalPosts(Array.isArray(data.posts) ? data.posts.map(normalizeJournalPost) : []);
+      setToast(message);
+    } catch {
+      setSyncError("Sauvegarde impossible, rechargez la page avant de continuer");
+      setToast("Post non sauvegarde");
     } finally {
       setSaving(false);
     }
@@ -1054,6 +1192,85 @@ export default function Home() {
   async function deleteLink(linkId: string) {
     if (!window.confirm("Supprimer ce lien ?")) return;
     await saveLinks(links.filter((link) => link.id !== linkId), "Lien supprime");
+  }
+
+  function openNewJournalPost() {
+    setEditingJournalId(null);
+    setJournalDraft({
+      ...emptyJournalDraft,
+      author: authorName.trim() || "",
+      publishedAt: new Date().toISOString().slice(0, 10),
+    });
+    setJournalOpen(true);
+  }
+
+  function openEditJournalPost(post: JournalPost) {
+    setEditingJournalId(post.id);
+    setJournalDraft({
+      title: post.title,
+      content: post.content,
+      author: post.author,
+      tags: post.tags,
+      personIds: post.personIds,
+      publishedAt: post.publishedAt.slice(0, 10),
+    });
+    setJournalOpen(true);
+  }
+
+  function toggleJournalPerson(personId: string, checked: boolean) {
+    setJournalDraft((current) => ({
+      ...current,
+      personIds: checked
+        ? [...current.personIds, personId]
+        : current.personIds.filter((id) => id !== personId),
+    }));
+  }
+
+  async function saveJournalPost(event: FormEvent) {
+    event.preventDefault();
+    if (!journalDraft.title.trim() || !journalDraft.content.trim() || saving) return;
+    const now = new Date().toISOString();
+    const cleanDraft = {
+      ...journalDraft,
+      title: journalDraft.title.trim(),
+      content: journalDraft.content.trim(),
+      author: journalDraft.author.trim() || authorName.trim() || "Equipe Alpha",
+      tags: normalizeTags(journalDraft.tags),
+      personIds: Array.from(new Set(journalDraft.personIds)),
+      publishedAt: journalDraft.publishedAt
+        ? new Date(`${journalDraft.publishedAt}T12:00:00`).toISOString()
+        : now,
+      updatedAt: now,
+    };
+    if (cleanDraft.author && cleanDraft.author !== "Equipe Alpha") setAuthorName(cleanDraft.author);
+
+    if (editingJournalId) {
+      const existingPost = journalPosts.find((post) => post.id === editingJournalId);
+      await saveJournalPosts(
+        journalPosts.map((post) =>
+          post.id === editingJournalId
+            ? {
+                ...(existingPost ?? post),
+                ...cleanDraft,
+                id: editingJournalId,
+                createdAt: existingPost?.createdAt || post.createdAt,
+              }
+            : post,
+        ),
+        "Post mis a jour",
+      );
+    } else {
+      await saveJournalPosts(
+        [{ ...cleanDraft, id: uid("journal"), createdAt: now }, ...journalPosts],
+        "Post ajoute au journal",
+      );
+    }
+    setJournalOpen(false);
+  }
+
+  async function deleteJournalPost(postId: string) {
+    if (!window.confirm("Supprimer ce post du journal ?")) return;
+    await saveJournalPosts(journalPosts.filter((post) => post.id !== postId), "Post supprime");
   }
 
   function openNewQualitativeObjective() {
@@ -1578,6 +1795,8 @@ export default function Home() {
                 ? openNewRecurringTask
                 : appMode === "links"
                   ? openNewLink
+                  : appMode === "journal"
+                    ? openNewJournalPost
                   : appMode === "objectives"
                     ? openNewQualitativeObjective
                     : appMode === "history"
@@ -1589,10 +1808,12 @@ export default function Home() {
             <span aria-hidden="true">＋</span>{" "}
             {appMode === "recurring"
               ? "Nouveau modele"
-              : appMode === "links"
-                ? "Nouveau lien"
-                : appMode === "objectives"
-                  ? "Nouvel objectif"
+                : appMode === "links"
+                  ? "Nouveau lien"
+                  : appMode === "journal"
+                    ? "Nouveau post"
+                  : appMode === "objectives"
+                    ? "Nouvel objectif"
                   : appMode === "history"
                     ? "Ajouter une année"
                     : "Nouvelle tache"}
@@ -1619,6 +1840,45 @@ export default function Home() {
           </div>
         </section>}
 
+        {appMode !== "history" && (
+          <section className="journal-highlight" aria-label="Journal de l'Etude Alpha">
+            <div className="journal-highlight-mark" aria-hidden="true">✦</div>
+            <div className="journal-highlight-content">
+              <p className="eyebrow">Journal de l’Étude Alpha</p>
+              {latestJournalPost ? (
+                <>
+                  <h2>{latestJournalPost.title}</h2>
+                  <p>{excerpt(latestJournalPost.content, 210)}</p>
+                  <div className="journal-meta">
+                    <span>{latestJournalPost.author}</span>
+                    <span>{formatJournalDate(latestJournalPost.publishedAt)}</span>
+                    {latestJournalPost.tags.slice(0, 3).map((tag) => <span className="journal-tag" key={tag}>#{tag}</span>)}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h2>Écrire la première trace de la rentrée</h2>
+                  <p>Gardez les décisions, les apprentissages et les petites victoires de l’équipe au même endroit.</p>
+                  <div className="journal-meta">
+                    <span>Carnet de bord partagé</span>
+                    <span>Lisible plus tard</span>
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="journal-highlight-actions">
+              <button className="button primary" onClick={() => setAppMode("journal")}>
+                Lire le journal
+              </button>
+              {!latestJournalPost && (
+                <button className="button quiet" onClick={openNewJournalPost}>
+                  Créer le premier post
+                </button>
+              )}
+            </div>
+          </section>
+        )}
+
         <div className="main-tabs" role="group" aria-label="Choisir le type de suivi">
           <button className={appMode === "tasks" ? "active" : ""} onClick={() => setAppMode("tasks")}>
             Taches
@@ -1628,6 +1888,9 @@ export default function Home() {
           </button>
           <button className={appMode === "links" ? "active" : ""} onClick={() => setAppMode("links")}>
             Liens <span>{links.length}</span>
+          </button>
+          <button className={appMode === "journal" ? "active" : ""} onClick={() => setAppMode("journal")}>
+            Journal <span>{journalPosts.length}</span>
           </button>
           <button className={appMode === "objectives" ? "active" : ""} onClick={() => setAppMode("objectives")}>
             Objectifs <span>{qualitativeObjectives.length}</span>
@@ -1895,6 +2158,73 @@ export default function Home() {
             )}
           </div>
         </section>
+        : appMode === "journal" ? <section className="task-panel">
+          <div className="panel-heading">
+            <div>
+              <h2>Journal de l’Étude Alpha</h2>
+              <p>{`${filteredJournalPosts.length} post${filteredJournalPosts.length > 1 ? "s" : ""} affiche${filteredJournalPosts.length > 1 ? "s" : ""}`}</p>
+            </div>
+            <div className="filters">
+              <label className="search-box">
+                <span aria-hidden="true">⌕</span>
+                <input value={journalQuery} onChange={(event) => setJournalQuery(event.target.value)} placeholder="Rechercher dans le journal..." aria-label="Rechercher dans le journal" />
+              </label>
+              <select value={journalTagFilter} onChange={(event) => setJournalTagFilter(event.target.value)} aria-label="Filtrer par tag">
+                <option value="all">Tous les tags</option>
+                {journalTags.map((tag) => <option key={tag} value={tag}>{tag}</option>)}
+              </select>
+              <select value={journalAuthorFilter} onChange={(event) => setJournalAuthorFilter(event.target.value)} aria-label="Filtrer par auteur">
+                <option value="all">Tous les auteurs</option>
+                {journalAuthors.map((author) => <option key={author} value={author}>{author}</option>)}
+              </select>
+              <select value={journalPersonFilter} onChange={(event) => setJournalPersonFilter(event.target.value)} aria-label="Filtrer par personne taguee">
+                <option value="all">Toutes personnes</option>
+                {activePeople.map((person) => <option key={person.id} value={person.id}>{person.name}</option>)}
+              </select>
+              <button className="button quiet" onClick={() => { void loadJournalPosts(); }} disabled={saving}>↻ Actualiser</button>
+              <button className="button primary" onClick={openNewJournalPost} disabled={saving}>＋ Nouveau post</button>
+            </div>
+          </div>
+          <div className="journal-list">
+            {filteredJournalPosts.length ? filteredJournalPosts.map((post) => (
+              <article className="journal-card" key={post.id}>
+                <div className="journal-card-date">
+                  <span>{formatJournalDate(post.publishedAt).split(" ")[0]}</span>
+                  <small>{formatJournalDate(post.publishedAt).split(" ").slice(1).join(" ")}</small>
+                </div>
+                <div className="journal-card-body">
+                  <div className="journal-card-head">
+                    <div>
+                      <p className="eyebrow">Carnet de bord</p>
+                      <h3>{post.title}</h3>
+                    </div>
+                    <small>{post.author}</small>
+                  </div>
+                  <p>{post.content}</p>
+                  <div className="journal-tags">
+                    {post.tags.map((tag) => <button key={tag} onClick={() => setJournalTagFilter(tag)}>#{tag}</button>)}
+                    {post.personIds.map((personId) => {
+                      const person = peopleById.get(personId);
+                      if (!person) return null;
+                      return <button key={person.id} onClick={() => setJournalPersonFilter(person.id)}><span className="avatar">{ownerInitials(person.name)}</span>{person.name}</button>;
+                    })}
+                  </div>
+                </div>
+                <div className="row-actions">
+                  <button className="button quiet" onClick={() => openEditJournalPost(post)}>Modifier</button>
+                  <button className="icon-button danger-icon" onClick={() => deleteJournalPost(post.id)} aria-label={`Supprimer ${post.title}`}>×</button>
+                </div>
+              </article>
+            )) : (
+              <div className="empty-state journal-empty">
+                <span>✦</span>
+                <h3>{journalPosts.length ? "Aucun post ne correspond aux filtres" : "Le journal est prêt"}</h3>
+                <p>{journalPosts.length ? "Essayez une autre recherche ou retirez un filtre." : "Écrivez la première trace de l’Étude Alpha : une décision, une victoire, un apprentissage."}</p>
+                <button className="button primary" onClick={openNewJournalPost}>Créer un post</button>
+              </div>
+            )}
+          </div>
+        </section>
         : appMode === "history" ? renderStudentHistorySection()
         : <section className="task-panel">
           <div className="panel-heading">
@@ -2037,6 +2367,41 @@ export default function Home() {
               <label className="field full"><span>Description</span><textarea rows={3} value={linkDraft.description} onChange={(event) => setLinkDraft({ ...linkDraft, description: event.target.value })} placeholder="A quoi sert ce lien ?" /></label>
               <label className="field full"><span>Lien *</span><input required value={linkDraft.url} onChange={(event) => setLinkDraft({ ...linkDraft, url: event.target.value })} placeholder="https://..." /></label>
               <div className="form-actions"><button type="button" className="button quiet" onClick={() => setLinkOpen(false)}>Annuler</button><button type="submit" className="button primary" disabled={saving}>{saving ? "Sauvegarde..." : "Enregistrer"}</button></div>
+            </form>
+          </section>
+        </div>
+      )}
+
+      {journalOpen && (
+        <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setJournalOpen(false)}>
+          <section className="modal notify-modal" role="dialog" aria-modal="true" aria-labelledby="journal-title">
+            <div className="modal-header">
+              <div><p className="eyebrow">Journal de l’Étude Alpha</p><h2 id="journal-title">{editingJournalId ? "Modifier le post" : "Nouveau post"}</h2></div>
+              <button className="close-button" onClick={() => setJournalOpen(false)} aria-label="Fermer">×</button>
+            </div>
+            <form onSubmit={saveJournalPost} className="task-form">
+              <label className="field full"><span>Titre *</span><input autoFocus required value={journalDraft.title} onChange={(event) => setJournalDraft({ ...journalDraft, title: event.target.value })} placeholder="Ex. Ce qu'on retient de la journée" /></label>
+              <label className="field full"><span>Post *</span><textarea required rows={6} value={journalDraft.content} onChange={(event) => setJournalDraft({ ...journalDraft, content: event.target.value })} placeholder="Décisions, apprentissages, petites victoires, points d'attention..." /></label>
+              <label className="field"><span>Auteur</span><input value={journalDraft.author} onChange={(event) => setJournalDraft({ ...journalDraft, author: event.target.value })} placeholder={authorName || "Equipe Alpha"} /></label>
+              <label className="field"><span>Date</span><input type="date" value={journalDraft.publishedAt.slice(0, 10)} onChange={(event) => setJournalDraft({ ...journalDraft, publishedAt: event.target.value })} /></label>
+              <label className="field full"><span>Tags</span><input value={tagsToText(journalDraft.tags)} onChange={(event) => setJournalDraft({ ...journalDraft, tags: normalizeTags(event.target.value) })} placeholder="rentrée, organisation, victoire" /></label>
+              <div className="field full">
+                <span>Personnes taguées</span>
+                <div className="recipient-list objective-recipient-list">
+                  {activePeople.length ? activePeople.map((person) => (
+                    <label className="recipient-row" key={person.id}>
+                      <input
+                        type="checkbox"
+                        checked={journalDraft.personIds.includes(person.id)}
+                        onChange={(event) => toggleJournalPerson(person.id, event.target.checked)}
+                      />
+                      <span className="avatar">{ownerInitials(person.name)}</span>
+                      <span><strong>{person.name}</strong><small>personne taguée</small></span>
+                    </label>
+                  )) : <p className="no-comment">Ajoutez d&apos;abord des personnes pour les taguer.</p>}
+                </div>
+              </div>
+              <div className="form-actions"><button type="button" className="button quiet" onClick={() => setJournalOpen(false)}>Annuler</button><button type="submit" className="button primary" disabled={saving}>{saving ? "Sauvegarde..." : "Enregistrer"}</button></div>
             </form>
           </section>
         </div>

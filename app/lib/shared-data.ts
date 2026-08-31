@@ -69,6 +69,18 @@ export type SharedLink = {
   createdAt: string;
 };
 
+export type JournalPost = {
+  id: string;
+  title: string;
+  content: string;
+  author: string;
+  tags: string[];
+  personIds: string[];
+  publishedAt: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type StudentHistoryEntry = {
   date: string;
   value: number | null;
@@ -98,6 +110,7 @@ export const PEOPLE_KEY = "people.json";
 export const RECURRING_TASKS_KEY = "recurring-tasks.json";
 export const OBJECTIVES_KEY = "objectives.json";
 export const LINKS_KEY = "links.json";
+export const JOURNAL_POSTS_KEY = "journal-posts.json";
 export const STUDENT_HISTORY_KEY = "student-history.json";
 
 const memory = globalThis as typeof globalThis & {
@@ -106,6 +119,7 @@ const memory = globalThis as typeof globalThis & {
   __petitSuiviRecurringTasks?: RecurringTask[];
   __petitSuiviObjectives?: Objective[];
   __petitSuiviLinks?: SharedLink[];
+  __petitSuiviJournalPosts?: JournalPost[];
   __petitSuiviStudentHistory?: StudentHistoryYear[];
 };
 
@@ -334,6 +348,26 @@ export function sanitizeSharedLink(raw: Record<string, unknown>): SharedLink {
   };
 }
 
+export function sanitizeJournalPost(raw: Record<string, unknown>): JournalPost {
+  const now = new Date().toISOString();
+  return {
+    id: cleanText(raw.id) || crypto.randomUUID(),
+    title: cleanText(raw.title),
+    content: cleanText(raw.content),
+    author: cleanText(raw.author) || "Equipe Alpha",
+    tags: Array.isArray(raw.tags)
+      ? raw.tags.map(cleanText).filter(Boolean)
+      : cleanText(raw.tags)
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter(Boolean),
+    personIds: Array.isArray(raw.personIds) ? raw.personIds.map(cleanText).filter(Boolean) : [],
+    publishedAt: cleanText(raw.publishedAt) || now,
+    createdAt: cleanText(raw.createdAt) || now,
+    updatedAt: cleanText(raw.updatedAt) || cleanText(raw.createdAt) || now,
+  };
+}
+
 export function sanitizeStudentHistoryYear(raw: Record<string, unknown>): StudentHistoryYear {
   const year = cleanYear(raw.year);
   const entriesByDate = new Map(
@@ -470,6 +504,31 @@ export async function writeLinks(links: SharedLink[]) {
     await store.setJSON(LINKS_KEY, links);
   } catch {
     memory.__petitSuiviLinks = links;
+  }
+}
+
+export async function readJournalPosts() {
+  try {
+    const store = taskStore();
+    const posts = await store.get(JOURNAL_POSTS_KEY, { type: "json", consistency: "strong" });
+    return Array.isArray(posts)
+      ? posts
+          .filter((post): post is Record<string, unknown> => Boolean(post && typeof post === "object"))
+          .map(sanitizeJournalPost)
+          .filter((post) => post.title && post.content)
+          .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+      : [];
+  } catch {
+    return memory.__petitSuiviJournalPosts ?? [];
+  }
+}
+
+export async function writeJournalPosts(posts: JournalPost[]) {
+  try {
+    const store = taskStore();
+    await store.setJSON(JOURNAL_POSTS_KEY, posts);
+  } catch {
+    memory.__petitSuiviJournalPosts = posts;
   }
 }
 
