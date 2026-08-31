@@ -131,6 +131,32 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .journal-tags button { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
 .journal-tags button:hover { border-color: #9fd6ea; background: white; transform: translateY(-1px); }
 .journal-empty { border-top: 1px solid var(--line); }
+.school-crm-list { padding: 12px; display: grid; gap: 10px; }
+.school-card { border: 1px solid var(--line); border-radius: 12px; padding: 13px; background: linear-gradient(135deg, rgba(255,255,255,.98), rgba(236,253,245,.72)); box-shadow: 0 5px 18px rgba(14,165,233,.05); }
+.school-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.school-card-header h3 { margin: 0; color: var(--blue-title); font-size: 17px; line-height: 1.18; }
+.school-meta { margin-top: 7px; display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
+.school-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 3px 7px; color: var(--blue-dark); background: rgba(255,255,255,.78); font-size: 10.5px; font-weight: 760; }
+.school-summary { margin-top: 11px; display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 8px; }
+.school-summary > div { min-width: 0; padding: 9px 10px; border: 1px solid rgba(14,165,233,.14); border-radius: 10px; background: rgba(255,255,255,.72); }
+.school-summary small { display: block; margin-bottom: 4px; color: var(--muted); font-size: 9.5px; text-transform: uppercase; letter-spacing: .07em; font-weight: 800; }
+.school-summary strong, .school-summary span { color: var(--blue-title); font-size: 12px; line-height: 1.35; }
+.school-summary span { color: var(--muted); }
+.school-timeline { margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(213,231,239,.82); display: grid; gap: 8px; }
+.school-event { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 8px; }
+.school-event-dot { width: 9px; height: 9px; margin-top: 7px; border-radius: 50%; background: var(--blue-main); box-shadow: 0 0 0 4px rgba(14,165,233,.1); }
+.school-event.event-comment .school-event-dot { background: var(--green); box-shadow: 0 0 0 4px rgba(16,185,129,.11); }
+.school-event.event-action .school-event-dot { background: var(--blue-dark); box-shadow: 0 0 0 4px rgba(14,165,233,.12); }
+.school-event > div:last-child { min-width: 0; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,.86); }
+.school-event-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 5px; }
+.school-event-head span { color: var(--blue-dark); font-size: 10px; font-weight: 850; text-transform: uppercase; letter-spacing: .07em; }
+.school-event-head small { color: var(--muted); font-size: 10.5px; white-space: nowrap; }
+.school-event strong { display: block; color: var(--blue-title); font-size: 12.5px; line-height: 1.3; }
+.school-event p { margin: 4px 0 0; color: var(--muted); font-size: 12px; line-height: 1.45; white-space: pre-wrap; }
+.school-empty-timeline { padding: 10px; border: 1px dashed var(--line); border-radius: 10px; background: rgba(255,255,255,.65); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.school-empty-timeline span { color: var(--muted); font-size: 12px; font-style: italic; }
+.school-last-action { margin: 9px 0 0; color: var(--blue-dark); font-size: 11px; font-weight: 760; }
+.school-empty { border-top: 1px solid var(--line); }
 .student-history-panel { margin: 0 0 10px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.94); box-shadow: 0 8px 28px rgba(14,165,233,.045); overflow: hidden; }
 .history-compare { padding: 12px 14px 10px; border-top: 1px solid var(--line); background: linear-gradient(180deg, rgba(244,251,252,.72), rgba(255,255,255,.95)); }
 .history-chart-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 10px; }
@@ -438,7 +464,7 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .matrix-mobile-label { display: block; }
   .matrix-empty { display: none; }
   .matrix-card { padding: 6px 7px; gap: 2px; }
-  .link-grid, .objective-list, .journal-list { padding: 8px; }
+  .link-grid, .objective-list, .journal-list, .school-crm-list { padding: 8px; }
   .qualitative-objective { flex-direction: column; gap: 10px; }
   .journal-card { grid-template-columns: 48px minmax(0, 1fr); gap: 9px; padding: 9px; }
   .journal-card-date { min-height: 48px; border-radius: 10px; }
@@ -448,6 +474,16 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .journal-card-head h3 { font-size: 14px; }
   .journal-card-body p { font-size: 11.5px; line-height: 1.45; }
   .journal-card > .row-actions { grid-column: 2; justify-content: flex-start; }
+  .school-card { padding: 9px; border-radius: 10px; }
+  .school-card-header { flex-direction: column; gap: 8px; }
+  .school-card-header h3 { font-size: 15px; }
+  .school-card-header .row-actions { width: 100%; justify-content: flex-start; flex-wrap: wrap; }
+  .school-summary { grid-template-columns: 1fr; gap: 6px; }
+  .school-event { grid-template-columns: 12px minmax(0, 1fr); gap: 6px; }
+  .school-event > div:last-child { padding: 7px 8px; }
+  .school-event-head { flex-direction: column; align-items: flex-start; gap: 2px; }
+  .school-event-head small { white-space: normal; }
+  .school-empty-timeline { align-items: flex-start; flex-direction: column; }
   .link-card .row-actions, .qualitative-objective .row-actions { width: 100%; justify-content: flex-start; }
   .student-history-panel { margin-bottom: 7px; }
   .history-chart-head { flex-direction: column; gap: 8px; }

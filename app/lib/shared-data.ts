@@ -81,6 +81,30 @@ export type JournalPost = {
   updatedAt: string;
 };
 
+export type SchoolEventKind = "event" | "comment" | "action";
+
+export type SchoolEvent = {
+  id: string;
+  kind: SchoolEventKind;
+  title: string;
+  note: string;
+  author: string;
+  date: string;
+  createdAt: string;
+};
+
+export type School = {
+  id: string;
+  name: string;
+  city: string;
+  contact: string;
+  nextAction: string;
+  notes: string;
+  events: SchoolEvent[];
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type StudentHistoryEntry = {
   date: string;
   value: number | null;
@@ -111,6 +135,7 @@ export const RECURRING_TASKS_KEY = "recurring-tasks.json";
 export const OBJECTIVES_KEY = "objectives.json";
 export const LINKS_KEY = "links.json";
 export const JOURNAL_POSTS_KEY = "journal-posts.json";
+export const SCHOOLS_KEY = "schools.json";
 export const STUDENT_HISTORY_KEY = "student-history.json";
 
 const memory = globalThis as typeof globalThis & {
@@ -120,6 +145,7 @@ const memory = globalThis as typeof globalThis & {
   __petitSuiviObjectives?: Objective[];
   __petitSuiviLinks?: SharedLink[];
   __petitSuiviJournalPosts?: JournalPost[];
+  __petitSuiviSchools?: School[];
   __petitSuiviStudentHistory?: StudentHistoryYear[];
 };
 
@@ -368,6 +394,39 @@ export function sanitizeJournalPost(raw: Record<string, unknown>): JournalPost {
   };
 }
 
+function isSchoolEventKind(value: unknown): value is SchoolEventKind {
+  return value === "event" || value === "comment" || value === "action";
+}
+
+export function sanitizeSchool(raw: Record<string, unknown>): School {
+  const now = new Date().toISOString();
+  return {
+    id: cleanText(raw.id) || crypto.randomUUID(),
+    name: cleanText(raw.name),
+    city: cleanText(raw.city),
+    contact: cleanText(raw.contact),
+    nextAction: cleanText(raw.nextAction),
+    notes: cleanText(raw.notes),
+    events: Array.isArray(raw.events)
+      ? raw.events
+          .filter((event): event is Record<string, unknown> => Boolean(event && typeof event === "object"))
+          .map((event) => ({
+            id: cleanText(event.id) || crypto.randomUUID(),
+            kind: isSchoolEventKind(event.kind) ? event.kind : "event",
+            title: cleanText(event.title),
+            note: cleanText(event.note),
+            author: cleanText(event.author) || "Equipe Alpha",
+            date: cleanText(event.date) || cleanText(event.createdAt) || now,
+            createdAt: cleanText(event.createdAt) || now,
+          }))
+          .filter((event) => event.title || event.note)
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      : [],
+    createdAt: cleanText(raw.createdAt) || now,
+    updatedAt: cleanText(raw.updatedAt) || cleanText(raw.createdAt) || now,
+  };
+}
+
 export function sanitizeStudentHistoryYear(raw: Record<string, unknown>): StudentHistoryYear {
   const year = cleanYear(raw.year);
   const entriesByDate = new Map(
@@ -529,6 +588,31 @@ export async function writeJournalPosts(posts: JournalPost[]) {
     await store.setJSON(JOURNAL_POSTS_KEY, posts);
   } catch {
     memory.__petitSuiviJournalPosts = posts;
+  }
+}
+
+export async function readSchools() {
+  try {
+    const store = taskStore();
+    const schools = await store.get(SCHOOLS_KEY, { type: "json", consistency: "strong" });
+    return Array.isArray(schools)
+      ? schools
+          .filter((school): school is Record<string, unknown> => Boolean(school && typeof school === "object"))
+          .map(sanitizeSchool)
+          .filter((school) => school.name)
+          .sort((a, b) => a.name.localeCompare(b.name, "fr"))
+      : [];
+  } catch {
+    return memory.__petitSuiviSchools ?? [];
+  }
+}
+
+export async function writeSchools(schools: School[]) {
+  try {
+    const store = taskStore();
+    await store.setJSON(SCHOOLS_KEY, schools);
+  } catch {
+    memory.__petitSuiviSchools = schools;
   }
 }
 

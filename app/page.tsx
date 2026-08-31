@@ -5,7 +5,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "re
 type Status = "todo" | "progress" | "done";
 type Priority = "low" | "medium" | "high";
 type Density = "compact" | "comfortable";
-type AppMode = "tasks" | "recurring" | "links" | "objectives" | "history" | "journal";
+type AppMode = "tasks" | "recurring" | "links" | "objectives" | "history" | "journal" | "schools";
 type ViewMode = "list" | "matrix";
 type DurationBucket = "short" | "medium" | "long" | "unset";
 type ObjectiveKind = "counter" | "qualitative";
@@ -89,6 +89,30 @@ type JournalPost = {
   updatedAt: string;
 };
 
+type SchoolEventKind = "event" | "comment" | "action";
+
+type SchoolEvent = {
+  id: string;
+  kind: SchoolEventKind;
+  title: string;
+  note: string;
+  author: string;
+  date: string;
+  createdAt: string;
+};
+
+type School = {
+  id: string;
+  name: string;
+  city: string;
+  contact: string;
+  nextAction: string;
+  notes: string;
+  events: SchoolEvent[];
+  createdAt: string;
+  updatedAt: string;
+};
+
 type StudentHistoryEntry = {
   date: string;
   value: number | null;
@@ -120,6 +144,8 @@ type RecurringDraft = Omit<RecurringTask, "id" | "createdAt">;
 type ObjectiveDraft = Omit<Objective, "id" | "createdAt">;
 type LinkDraft = Omit<SharedLink, "id" | "createdAt">;
 type JournalDraft = Omit<JournalPost, "id" | "createdAt" | "updatedAt">;
+type SchoolDraft = Omit<School, "id" | "events" | "createdAt" | "updatedAt">;
+type SchoolEventDraft = Omit<SchoolEvent, "id" | "createdAt">;
 
 const AUTHOR_KEY = "petit-suivi-auteur-v2";
 const DENSITY_KEY = "petit-suivi-densite-v2";
@@ -196,6 +222,28 @@ const emptyJournalDraft: JournalDraft = {
   tags: [],
   personIds: [],
   publishedAt: new Date().toISOString().slice(0, 10),
+};
+
+const emptySchoolDraft: SchoolDraft = {
+  name: "",
+  city: "",
+  contact: "",
+  nextAction: "",
+  notes: "",
+};
+
+const emptySchoolEventDraft: SchoolEventDraft = {
+  kind: "action",
+  title: "",
+  note: "",
+  author: "",
+  date: new Date().toISOString().slice(0, 10),
+};
+
+const schoolEventKindLabels: Record<SchoolEventKind, string> = {
+  event: "Événement",
+  comment: "Commentaire",
+  action: "Action réalisée",
 };
 
 const statusLabels: Record<Status, string> = {
@@ -329,6 +377,39 @@ function normalizeJournalPost(raw: Partial<JournalPost>): JournalPost {
     tags: normalizeTags(raw.tags),
     personIds: Array.isArray(raw.personIds) ? raw.personIds.filter(Boolean) : [],
     publishedAt: raw.publishedAt || now,
+    createdAt: raw.createdAt || now,
+    updatedAt: raw.updatedAt || raw.createdAt || now,
+  };
+}
+
+function normalizeSchoolEvent(raw: Partial<SchoolEvent>): SchoolEvent {
+  const now = new Date().toISOString();
+  return {
+    id: raw.id || uid("school-event"),
+    kind: raw.kind === "event" || raw.kind === "comment" || raw.kind === "action" ? raw.kind : "action",
+    title: raw.title || "",
+    note: raw.note || "",
+    author: raw.author || "Equipe Alpha",
+    date: raw.date || raw.createdAt || now,
+    createdAt: raw.createdAt || now,
+  };
+}
+
+function normalizeSchool(raw: Partial<School>): School {
+  const now = new Date().toISOString();
+  return {
+    id: raw.id || uid("school"),
+    name: raw.name || "",
+    city: raw.city || "",
+    contact: raw.contact || "",
+    nextAction: raw.nextAction || "",
+    notes: raw.notes || "",
+    events: Array.isArray(raw.events)
+      ? raw.events
+          .map(normalizeSchoolEvent)
+          .filter((event) => event.title || event.note)
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      : [],
     createdAt: raw.createdAt || now,
     updatedAt: raw.updatedAt || raw.createdAt || now,
   };
@@ -549,6 +630,7 @@ export default function Home() {
   const [objectives, setObjectives] = useState<Objective[]>([]);
   const [links, setLinks] = useState<SharedLink[]>([]);
   const [journalPosts, setJournalPosts] = useState<JournalPost[]>([]);
+  const [schools, setSchools] = useState<School[]>([]);
   const [studentHistory, setStudentHistory] = useState<StudentHistoryYear[]>([]);
   const [people, setPeople] = useState<Person[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -575,16 +657,22 @@ export default function Home() {
   const [objectiveOpen, setObjectiveOpen] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
   const [journalOpen, setJournalOpen] = useState(false);
+  const [schoolOpen, setSchoolOpen] = useState(false);
+  const [schoolEventOpen, setSchoolEventOpen] = useState(false);
   const [notifyOpen, setNotifyOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingRecurringId, setEditingRecurringId] = useState<string | null>(null);
   const [editingLinkId, setEditingLinkId] = useState<string | null>(null);
   const [editingJournalId, setEditingJournalId] = useState<string | null>(null);
+  const [editingSchoolId, setEditingSchoolId] = useState<string | null>(null);
+  const [eventSchoolId, setEventSchoolId] = useState<string | null>(null);
   const [draft, setDraft] = useState<TaskDraft>(emptyDraft);
   const [recurringDraft, setRecurringDraft] = useState<RecurringDraft>(emptyRecurringDraft);
   const [objectiveDraft, setObjectiveDraft] = useState<ObjectiveDraft>(emptyObjectiveDraft);
   const [linkDraft, setLinkDraft] = useState<LinkDraft>(emptyLinkDraft);
   const [journalDraft, setJournalDraft] = useState<JournalDraft>(emptyJournalDraft);
+  const [schoolDraft, setSchoolDraft] = useState<SchoolDraft>(emptySchoolDraft);
+  const [schoolEventDraft, setSchoolEventDraft] = useState<SchoolEventDraft>(emptySchoolEventDraft);
   const [editingObjectiveId, setEditingObjectiveId] = useState<string | null>(null);
   const [activeHistoryYear, setActiveHistoryYear] = useState<number>(new Date().getFullYear());
   const [selectedHistoryYears, setSelectedHistoryYears] = useState<number[]>([]);
@@ -599,6 +687,7 @@ export default function Home() {
   const [journalTagFilter, setJournalTagFilter] = useState("all");
   const [journalAuthorFilter, setJournalAuthorFilter] = useState("all");
   const [journalPersonFilter, setJournalPersonFilter] = useState("all");
+  const [schoolQuery, setSchoolQuery] = useState("");
   const importRef = useRef<HTMLInputElement>(null);
 
   const loadTasks = useCallback(async (silent = false) => {
@@ -673,6 +762,17 @@ export default function Home() {
     }
   }, []);
 
+  const loadSchools = useCallback(async () => {
+    try {
+      const response = await fetch("/api/schools", { cache: "no-store" });
+      if (!response.ok) throw new Error("load-schools-failed");
+      const data = (await response.json()) as { schools?: Partial<School>[] };
+      setSchools(Array.isArray(data.schools) ? data.schools.map(normalizeSchool) : []);
+    } catch {
+      setToast("Établissements indisponibles");
+    }
+  }, []);
+
   const loadStudentHistory = useCallback(async () => {
     try {
       const response = await fetch("/api/student-history", { cache: "no-store" });
@@ -703,10 +803,11 @@ export default function Home() {
       void loadObjectives();
       void loadLinks();
       void loadJournalPosts();
+      void loadSchools();
       void loadStudentHistory();
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadStudentHistory]);
+  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadSchools, loadStudentHistory]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -716,10 +817,11 @@ export default function Home() {
       void loadObjectives();
       void loadLinks();
       void loadJournalPosts();
+      void loadSchools();
       void loadStudentHistory();
     }, 30000);
     return () => window.clearInterval(timer);
-  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadStudentHistory]);
+  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadSchools, loadStudentHistory]);
 
   useEffect(() => {
     if (authorName.trim()) localStorage.setItem(AUTHOR_KEY, authorName.trim());
@@ -851,6 +953,22 @@ export default function Home() {
       })
       .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
   }, [journalPosts, journalQuery, journalTagFilter, journalAuthorFilter, journalPersonFilter, peopleById]);
+  const filteredSchools = useMemo(() => {
+    const normalized = schoolQuery.trim().toLocaleLowerCase("fr");
+    return schools
+      .filter((school) => {
+        if (!normalized) return true;
+        const eventsText = school.events.map((event) => `${event.title} ${event.note} ${event.author}`).join(" ");
+        return `${school.name} ${school.city} ${school.contact} ${school.nextAction} ${school.notes} ${eventsText}`
+          .toLocaleLowerCase("fr")
+          .includes(normalized);
+      })
+      .sort((a, b) => a.name.localeCompare(b.name, "fr"));
+  }, [schools, schoolQuery]);
+  const totalSchoolEvents = useMemo(
+    () => schools.reduce((total, school) => total + school.events.length, 0),
+    [schools],
+  );
   const activeHistory = studentHistory.find((year) => year.year === activeHistoryYear) ?? null;
   const chartYears = studentHistory.filter((year) => selectedHistoryYears.includes(year.year));
   const chartDays = campaignDates(2000).map(campaignDayKey);
@@ -978,6 +1096,31 @@ export default function Home() {
     } catch {
       setSyncError("Sauvegarde impossible, rechargez la page avant de continuer");
       setToast("Post non sauvegarde");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function saveSchools(nextSchools: School[], message: string) {
+    setSaving(true);
+    setSyncError("");
+    const sortedSchools = nextSchools
+      .map(normalizeSchool)
+      .sort((a, b) => a.name.localeCompare(b.name, "fr"));
+    setSchools(sortedSchools);
+    try {
+      const response = await fetch("/api/schools", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ schools: sortedSchools }),
+      });
+      if (!response.ok) throw new Error("save-schools-failed");
+      const data = (await response.json()) as { schools?: Partial<School>[] };
+      setSchools(Array.isArray(data.schools) ? data.schools.map(normalizeSchool) : []);
+      setToast(message);
+    } catch {
+      setSyncError("Sauvegarde impossible, rechargez la page avant de continuer");
+      setToast("Établissement non sauvegardé");
     } finally {
       setSaving(false);
     }
@@ -1271,6 +1414,103 @@ export default function Home() {
   async function deleteJournalPost(postId: string) {
     if (!window.confirm("Supprimer ce post du journal ?")) return;
     await saveJournalPosts(journalPosts.filter((post) => post.id !== postId), "Post supprime");
+  }
+
+  function openNewSchool() {
+    setEditingSchoolId(null);
+    setSchoolDraft(emptySchoolDraft);
+    setSchoolOpen(true);
+  }
+
+  function openEditSchool(school: School) {
+    setEditingSchoolId(school.id);
+    setSchoolDraft({
+      name: school.name,
+      city: school.city,
+      contact: school.contact,
+      nextAction: school.nextAction,
+      notes: school.notes,
+    });
+    setSchoolOpen(true);
+  }
+
+  async function saveSchool(event: FormEvent) {
+    event.preventDefault();
+    if (!schoolDraft.name.trim() || saving) return;
+    const now = new Date().toISOString();
+    const cleanDraft = {
+      ...schoolDraft,
+      name: schoolDraft.name.trim(),
+      city: schoolDraft.city.trim(),
+      contact: schoolDraft.contact.trim(),
+      nextAction: schoolDraft.nextAction.trim(),
+      notes: schoolDraft.notes.trim(),
+      updatedAt: now,
+    };
+
+    if (editingSchoolId) {
+      await saveSchools(
+        schools.map((school) =>
+          school.id === editingSchoolId
+            ? { ...school, ...cleanDraft, id: editingSchoolId, createdAt: school.createdAt }
+            : school,
+        ),
+        "Établissement mis à jour",
+      );
+    } else {
+      await saveSchools(
+        [{ ...cleanDraft, id: uid("school"), events: [], createdAt: now }, ...schools],
+        "Établissement ajouté",
+      );
+    }
+    setSchoolOpen(false);
+  }
+
+  async function deleteSchool(schoolId: string) {
+    if (!window.confirm("Supprimer cet établissement et tout son historique ?")) return;
+    await saveSchools(schools.filter((school) => school.id !== schoolId), "Établissement supprimé");
+  }
+
+  function openSchoolEvent(schoolId: string) {
+    setEventSchoolId(schoolId);
+    setSchoolEventDraft({
+      ...emptySchoolEventDraft,
+      author: authorName.trim() || "",
+      date: new Date().toISOString().slice(0, 10),
+    });
+    setSchoolEventOpen(true);
+  }
+
+  async function saveSchoolEvent(event: FormEvent) {
+    event.preventDefault();
+    if (!eventSchoolId || (!schoolEventDraft.title.trim() && !schoolEventDraft.note.trim()) || saving) return;
+    const now = new Date().toISOString();
+    const cleanEvent: SchoolEvent = {
+      id: uid("school-event"),
+      kind: schoolEventDraft.kind,
+      title: schoolEventDraft.title.trim(),
+      note: schoolEventDraft.note.trim(),
+      author: schoolEventDraft.author.trim() || authorName.trim() || "Equipe Alpha",
+      date: schoolEventDraft.date ? new Date(`${schoolEventDraft.date}T12:00:00`).toISOString() : now,
+      createdAt: now,
+    };
+    if (cleanEvent.author && cleanEvent.author !== "Equipe Alpha") setAuthorName(cleanEvent.author);
+    await saveSchools(
+      schools.map((school) =>
+        school.id === eventSchoolId
+          ? {
+              ...school,
+              events: [cleanEvent, ...school.events].sort(
+                (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+              ),
+              updatedAt: now,
+            }
+          : school,
+      ),
+      "Historique établissement mis à jour",
+    );
+    setSchoolEventOpen(false);
+    setEventSchoolId(null);
   }
 
   function openNewQualitativeObjective() {
@@ -1797,6 +2037,8 @@ export default function Home() {
                   ? openNewLink
                   : appMode === "journal"
                     ? openNewJournalPost
+                    : appMode === "schools"
+                      ? openNewSchool
                   : appMode === "objectives"
                     ? openNewQualitativeObjective
                     : appMode === "history"
@@ -1812,6 +2054,8 @@ export default function Home() {
                   ? "Nouveau lien"
                   : appMode === "journal"
                     ? "Nouveau post"
+                    : appMode === "schools"
+                      ? "Nouvel établissement"
                   : appMode === "objectives"
                     ? "Nouvel objectif"
                   : appMode === "history"
@@ -1891,6 +2135,9 @@ export default function Home() {
           </button>
           <button className={appMode === "journal" ? "active" : ""} onClick={() => setAppMode("journal")}>
             Journal <span>{journalPosts.length}</span>
+          </button>
+          <button className={appMode === "schools" ? "active" : ""} onClick={() => setAppMode("schools")}>
+            Établissements <span>{schools.length}</span>
           </button>
           <button className={appMode === "objectives" ? "active" : ""} onClick={() => setAppMode("objectives")}>
             Objectifs <span>{qualitativeObjectives.length}</span>
@@ -2225,6 +2472,85 @@ export default function Home() {
             )}
           </div>
         </section>
+        : appMode === "schools" ? <section className="task-panel">
+          <div className="panel-heading">
+            <div>
+              <h2>Mini-CRM établissements</h2>
+              <p>
+                {`${filteredSchools.length} établissement${filteredSchools.length > 1 ? "s" : ""} affiché${filteredSchools.length > 1 ? "s" : ""} · ${totalSchoolEvents} action${totalSchoolEvents > 1 ? "s" : ""} enregistrée${totalSchoolEvents > 1 ? "s" : ""}`}
+              </p>
+            </div>
+            <div className="filters">
+              <label className="search-box">
+                <span aria-hidden="true">⌕</span>
+                <input value={schoolQuery} onChange={(event) => setSchoolQuery(event.target.value)} placeholder="Rechercher un établissement..." aria-label="Rechercher un etablissement" />
+              </label>
+              <button className="button quiet" onClick={() => { void loadSchools(); }} disabled={saving}>↻ Actualiser</button>
+              <button className="button primary" onClick={openNewSchool} disabled={saving}>＋ Nouvel établissement</button>
+            </div>
+          </div>
+          <div className="school-crm-list">
+            {filteredSchools.length ? filteredSchools.map((school) => {
+              const latestEvent = school.events[0];
+              return (
+                <article className="school-card" key={school.id}>
+                  <div className="school-card-header">
+                    <div>
+                      <p className="eyebrow">Établissement scolaire</p>
+                      <h3>{school.name}</h3>
+                      <div className="school-meta">
+                        {school.city && <span>{school.city}</span>}
+                        {school.contact && <span>Contact : {school.contact}</span>}
+                        <span>{school.events.length} entrée{school.events.length > 1 ? "s" : ""}</span>
+                      </div>
+                    </div>
+                    <div className="row-actions">
+                      <button className="button primary" onClick={() => openSchoolEvent(school.id)}>＋ Ajouter une action</button>
+                      <button className="button quiet" onClick={() => openEditSchool(school)}>Modifier</button>
+                      <button className="icon-button danger-icon" onClick={() => deleteSchool(school.id)} aria-label={`Supprimer ${school.name}`}>×</button>
+                    </div>
+                  </div>
+                  {(school.nextAction || school.notes) && (
+                    <div className="school-summary">
+                      {school.nextAction && <div><small>Prochaine action</small><strong>{school.nextAction}</strong></div>}
+                      {school.notes && <div><small>Notes</small><span>{school.notes}</span></div>}
+                    </div>
+                  )}
+                  <div className="school-timeline">
+                    {school.events.length ? school.events.map((event) => (
+                      <div className={`school-event event-${event.kind}`} key={event.id}>
+                        <span className="school-event-dot" aria-hidden="true"></span>
+                        <div>
+                          <div className="school-event-head">
+                            <span>{schoolEventKindLabels[event.kind]}</span>
+                            <small>{formatJournalDate(event.date)} · {event.author}</small>
+                          </div>
+                          {event.title && <strong>{event.title}</strong>}
+                          {event.note && <p>{event.note}</p>}
+                        </div>
+                      </div>
+                    )) : (
+                      <div className="school-empty-timeline">
+                        <span>Première trace à écrire</span>
+                        <button className="button quiet" onClick={() => openSchoolEvent(school.id)}>Ajouter un commentaire</button>
+                      </div>
+                    )}
+                  </div>
+                  {latestEvent && (
+                    <p className="school-last-action">Dernière trace : {latestEvent.title || excerpt(latestEvent.note, 70)}</p>
+                  )}
+                </article>
+              );
+            }) : (
+              <div className="empty-state school-empty">
+                <span>⌂</span>
+                <h3>{schools.length ? "Aucun établissement trouvé" : "Premier établissement à ajouter"}</h3>
+                <p>{schools.length ? "Essayez un autre nom ou une autre recherche." : "Ajoutez un établissement puis consignez chaque appel, rendez-vous, commentaire ou prochaine action."}</p>
+                <button className="button primary" onClick={openNewSchool}>Ajouter un établissement</button>
+              </div>
+            )}
+          </div>
+        </section>
         : appMode === "history" ? renderStudentHistorySection()
         : <section className="task-panel">
           <div className="panel-heading">
@@ -2402,6 +2728,44 @@ export default function Home() {
                 </div>
               </div>
               <div className="form-actions"><button type="button" className="button quiet" onClick={() => setJournalOpen(false)}>Annuler</button><button type="submit" className="button primary" disabled={saving}>{saving ? "Sauvegarde..." : "Enregistrer"}</button></div>
+            </form>
+          </section>
+        </div>
+      )}
+
+      {schoolOpen && (
+        <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setSchoolOpen(false)}>
+          <section className="modal" role="dialog" aria-modal="true" aria-labelledby="school-title">
+            <div className="modal-header">
+              <div><p className="eyebrow">Mini-CRM établissements</p><h2 id="school-title">{editingSchoolId ? "Modifier l&apos;établissement" : "Nouvel établissement"}</h2></div>
+              <button className="close-button" onClick={() => setSchoolOpen(false)} aria-label="Fermer">×</button>
+            </div>
+            <form onSubmit={saveSchool} className="task-form">
+              <label className="field full"><span>Nom de l&apos;établissement *</span><input autoFocus required value={schoolDraft.name} onChange={(event) => setSchoolDraft({ ...schoolDraft, name: event.target.value })} placeholder="Ex. Collège Saint-Exupéry" /></label>
+              <label className="field"><span>Ville</span><input value={schoolDraft.city} onChange={(event) => setSchoolDraft({ ...schoolDraft, city: event.target.value })} placeholder="Ex. Paris" /></label>
+              <label className="field"><span>Contact principal</span><input value={schoolDraft.contact} onChange={(event) => setSchoolDraft({ ...schoolDraft, contact: event.target.value })} placeholder="Nom, rôle, téléphone..." /></label>
+              <label className="field full"><span>Prochaine action à mener</span><input value={schoolDraft.nextAction} onChange={(event) => setSchoolDraft({ ...schoolDraft, nextAction: event.target.value })} placeholder="Ex. Relancer la direction mardi" /></label>
+              <label className="field full"><span>Notes générales</span><textarea rows={3} value={schoolDraft.notes} onChange={(event) => setSchoolDraft({ ...schoolDraft, notes: event.target.value })} placeholder="Contexte, relation, préférences, points importants..." /></label>
+              <div className="form-actions"><button type="button" className="button quiet" onClick={() => setSchoolOpen(false)}>Annuler</button><button type="submit" className="button primary" disabled={saving}>{saving ? "Sauvegarde..." : "Enregistrer"}</button></div>
+            </form>
+          </section>
+        </div>
+      )}
+
+      {schoolEventOpen && (
+        <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setSchoolEventOpen(false)}>
+          <section className="modal" role="dialog" aria-modal="true" aria-labelledby="school-event-title">
+            <div className="modal-header">
+              <div><p className="eyebrow">Historique établissement</p><h2 id="school-event-title">Ajouter une trace</h2></div>
+              <button className="close-button" onClick={() => setSchoolEventOpen(false)} aria-label="Fermer">×</button>
+            </div>
+            <form onSubmit={saveSchoolEvent} className="task-form">
+              <label className="field"><span>Type</span><select value={schoolEventDraft.kind} onChange={(event) => setSchoolEventDraft({ ...schoolEventDraft, kind: event.target.value as SchoolEventKind })}><option value="action">Action réalisée</option><option value="comment">Commentaire</option><option value="event">Événement</option></select></label>
+              <label className="field"><span>Date</span><input type="date" value={schoolEventDraft.date.slice(0, 10)} onChange={(event) => setSchoolEventDraft({ ...schoolEventDraft, date: event.target.value })} /></label>
+              <label className="field full"><span>Titre</span><input autoFocus value={schoolEventDraft.title} onChange={(event) => setSchoolEventDraft({ ...schoolEventDraft, title: event.target.value })} placeholder="Ex. Appel avec la direction" /></label>
+              <label className="field full"><span>Commentaire / détail</span><textarea rows={4} value={schoolEventDraft.note} onChange={(event) => setSchoolEventDraft({ ...schoolEventDraft, note: event.target.value })} placeholder="Ce qui a été fait, décidé, demandé, ou la prochaine étape..." /></label>
+              <label className="field full"><span>Auteur</span><input value={schoolEventDraft.author} onChange={(event) => setSchoolEventDraft({ ...schoolEventDraft, author: event.target.value })} placeholder={authorName || "Equipe Alpha"} /></label>
+              <div className="form-actions"><button type="button" className="button quiet" onClick={() => setSchoolEventOpen(false)}>Annuler</button><button type="submit" className="button primary" disabled={saving || (!schoolEventDraft.title.trim() && !schoolEventDraft.note.trim())}>{saving ? "Sauvegarde..." : "Ajouter à l'historique"}</button></div>
             </form>
           </section>
         </div>
