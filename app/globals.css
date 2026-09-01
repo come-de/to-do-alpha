@@ -49,6 +49,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .button.primary { color: white; background: linear-gradient(135deg, var(--blue-main), var(--green)); box-shadow: 0 4px 10px rgba(14,165,233,.18); }
 .button.primary:hover:not(:disabled) { filter: saturate(1.05) brightness(.98); }
 .button.quiet { background: white; border-color: var(--line); color: var(--blue-dark); }
+.button.danger-button { color: var(--red); border-color: #ffd4e5; background: var(--red-pale); }
 .button.quiet:hover:not(:disabled) { border-color: #9fd6ea; background: var(--soft); }
 .button.danger { background: var(--red-pale); color: var(--red); border-color: #ffd4e5; }
 
@@ -172,6 +173,51 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .school-empty-timeline span { color: var(--muted); font-size: 12px; font-style: italic; }
 .school-last-action { margin: 9px 0 0; color: var(--blue-dark); font-size: 11px; font-weight: 760; }
 .school-empty { border-top: 1px solid var(--line); }
+.school-filter-tabs { display: flex; align-items: center; gap: 5px; padding: 0 12px 9px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+.school-filter-tabs button { border: 1px solid var(--line); border-radius: 999px; padding: 5px 9px; color: var(--muted); background: rgba(255,255,255,.8); font-size: 11px; font-weight: 800; white-space: nowrap; cursor: pointer; }
+.school-filter-tabs button:hover, .school-filter-tabs button.active { border-color: rgba(16,185,129,.28); color: var(--green-dark); background: var(--green-pale); }
+.school-crm-layout { padding: 12px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 360px); gap: 12px; align-items: start; }
+.school-feed { min-width: 0; display: grid; gap: 9px; }
+.crm-post-card { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: linear-gradient(135deg, rgba(255,255,255,.98), rgba(236,253,245,.68)); box-shadow: 0 5px 17px rgba(14,165,233,.045); display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 11px; position: relative; overflow: hidden; }
+.crm-post-card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: linear-gradient(180deg, var(--blue-main), var(--green)); }
+.crm-post-card.school-type-mise-a-dispo { border-color: #ffd4e5; background: linear-gradient(135deg, rgba(255,255,255,.98), rgba(255,241,247,.75)); }
+.crm-post-card.school-type-mise-a-dispo::before { background: linear-gradient(180deg, var(--red), #f472b6); }
+.crm-post-card.school-type-mixed { background: linear-gradient(135deg, rgba(255,255,255,.98), rgba(244,251,252,.9)); }
+.crm-post-card.school-type-mixed::before { background: linear-gradient(180deg, #7fa0af, var(--blue-dark)); }
+.crm-post-date { min-height: 54px; border: 1px solid rgba(14,165,233,.16); border-radius: 11px; background: rgba(255,255,255,.82); color: var(--blue-dark); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.crm-post-date span { font-size: 19px; line-height: 1; font-weight: 920; letter-spacing: -.04em; }
+.crm-post-date small { max-width: 48px; margin-top: 3px; color: var(--muted); font-size: 8.8px; line-height: 1.1; text-align: center; text-transform: lowercase; }
+.crm-post-body { min-width: 0; }
+.crm-post-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.crm-post-head button { appearance: none; border: 0; padding: 0; color: var(--blue-title); background: transparent; font-size: 14px; line-height: 1.18; font-weight: 900; text-align: left; cursor: pointer; }
+.crm-post-head button:hover { color: var(--blue-main); text-decoration: underline; text-underline-offset: 3px; }
+.crm-post-head > div { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 5px; }
+.crm-post-head > div > span:not(.school-type-pill) { border: 1px solid var(--line); border-radius: 999px; padding: 3px 7px; color: var(--muted); background: rgba(255,255,255,.75); font-size: 10px; font-weight: 790; white-space: nowrap; }
+.crm-post-card h3 { margin: 5px 0 0; color: var(--blue-title); font-size: 15px; line-height: 1.22; }
+.crm-post-card p { margin: 4px 0 0; color: var(--ink); font-size: 12px; line-height: 1.38; white-space: pre-wrap; }
+.crm-post-meta { margin-top: 6px; }
+.schools-without-posts { margin-top: 3px; padding: 10px; border: 1px dashed rgba(14,165,233,.25); border-radius: 12px; background: rgba(244,251,252,.62); }
+.schools-without-posts h3 { margin: 0 0 8px; color: var(--blue-title); font-size: 13px; }
+.schools-without-posts > div { display: flex; flex-wrap: wrap; gap: 6px; }
+.schools-without-posts button { max-width: 260px; border: 1px solid var(--line); border-radius: 999px; padding: 5px 8px; color: var(--blue-dark); background: white; font-size: 10.5px; font-weight: 780; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.schools-without-posts button:hover { border-color: #9fd6ea; transform: translateY(-1px); }
+.schools-without-posts p { margin: 8px 0 0; color: var(--muted); font-size: 11px; }
+.empty-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; }
+.school-detail-card { position: sticky; top: 12px; border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: linear-gradient(135deg, rgba(255,255,255,.98), rgba(236,253,245,.7)); box-shadow: 0 8px 26px rgba(14,165,233,.06); overflow: hidden; }
+.school-detail-card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: linear-gradient(180deg, var(--blue-main), var(--green)); }
+.school-detail-card.school-type-mise-a-dispo { border-color: #ffd4e5; background: linear-gradient(135deg, rgba(255,255,255,.98), rgba(255,241,247,.8)); }
+.school-detail-card.school-type-mise-a-dispo::before { background: linear-gradient(180deg, var(--red), #f472b6); }
+.school-detail-card.school-type-mixed::before { background: linear-gradient(180deg, #7fa0af, var(--blue-dark)); }
+.school-detail-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.school-detail-head h3 { margin: 0; color: var(--blue-title); font-size: 18px; line-height: 1.15; }
+.school-detail-summary { grid-template-columns: 1fr; }
+.school-detail-actions { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 7px; }
+.school-detail-posts { margin-top: 11px; padding-top: 10px; border-top: 1px solid rgba(213,231,239,.8); display: grid; gap: 7px; }
+.school-detail-posts > strong { color: var(--blue-title); font-size: 12px; }
+.school-detail-posts > div { padding: 7px 8px; border: 1px solid var(--line); border-radius: 9px; background: rgba(255,255,255,.72); display: grid; gap: 2px; }
+.school-detail-posts small { color: var(--muted); font-size: 10px; }
+.school-detail-posts span { color: var(--blue-title); font-size: 11.5px; font-weight: 760; line-height: 1.3; }
+.school-detail-posts p { margin: 0; color: var(--muted); font-size: 11.5px; }
 .student-history-panel { margin: 0 0 10px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.94); box-shadow: 0 8px 28px rgba(14,165,233,.045); overflow: hidden; }
 .history-compare { padding: 12px 14px 10px; border-top: 1px solid var(--line); background: linear-gradient(180deg, rgba(244,251,252,.72), rgba(255,255,255,.95)); }
 .history-chart-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 10px; }
@@ -499,6 +545,19 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .school-event-head { flex-direction: column; align-items: flex-start; gap: 2px; }
   .school-event-head small { white-space: normal; }
   .school-empty-timeline { align-items: flex-start; flex-direction: column; }
+  .school-filter-tabs { padding: 0 8px 8px; }
+  .school-crm-layout { grid-template-columns: 1fr; padding: 8px; gap: 8px; }
+  .crm-post-card { grid-template-columns: 46px minmax(0, 1fr); gap: 8px; padding: 8px 9px; border-radius: 10px; }
+  .crm-post-date { min-height: 46px; border-radius: 9px; }
+  .crm-post-date span { font-size: 16px; }
+  .crm-post-date small { max-width: 39px; font-size: 8px; }
+  .crm-post-head { flex-direction: column; gap: 4px; }
+  .crm-post-head button { font-size: 13px; }
+  .crm-post-card h3 { font-size: 13.5px; }
+  .crm-post-card p { font-size: 11.3px; }
+  .school-detail-card { position: static; padding: 9px; border-radius: 10px; }
+  .school-detail-head h3 { font-size: 15px; }
+  .schools-without-posts { padding: 8px; }
   .link-card .row-actions, .qualitative-objective .row-actions { width: 100%; justify-content: flex-start; }
   .student-history-panel { margin-bottom: 7px; }
   .history-chart-head { flex-direction: column; gap: 8px; }

@@ -91,6 +91,7 @@ type JournalPost = {
 
 type SchoolEventKind = "event" | "comment" | "action";
 type SchoolType = "alpha" | "mise-a-dispo" | "mixed";
+type SchoolFilter = "all" | SchoolType | "with-posts" | "without-posts";
 
 type SchoolEvent = {
   id: string;
@@ -161,6 +162,11 @@ type LinkDraft = Omit<SharedLink, "id" | "createdAt">;
 type JournalDraft = Omit<JournalPost, "id" | "createdAt" | "updatedAt">;
 type SchoolDraft = Omit<School, "id" | "events" | "createdAt" | "updatedAt">;
 type SchoolEventDraft = Omit<SchoolEvent, "id" | "createdAt">;
+
+type CrmFeedItem = {
+  school: School;
+  event: SchoolEvent;
+};
 
 const AUTHOR_KEY = "petit-suivi-auteur-v2";
 const DENSITY_KEY = "petit-suivi-densite-v2";
@@ -760,6 +766,8 @@ export default function Home() {
   const [journalAuthorFilter, setJournalAuthorFilter] = useState("all");
   const [journalPersonFilter, setJournalPersonFilter] = useState("all");
   const [schoolQuery, setSchoolQuery] = useState("");
+  const [schoolFilter, setSchoolFilter] = useState<SchoolFilter>("all");
+  const [selectedSchoolId, setSelectedSchoolId] = useState<string | null>(null);
   const importRef = useRef<HTMLInputElement>(null);
 
   const loadTasks = useCallback(async (silent = false) => {
@@ -1029,6 +1037,12 @@ export default function Home() {
     const normalized = schoolQuery.trim().toLocaleLowerCase("fr");
     return schools
       .filter((school) => {
+        const matchesFilter =
+          schoolFilter === "all" ||
+          (schoolFilter === "with-posts" && school.events.length > 0) ||
+          (schoolFilter === "without-posts" && school.events.length === 0) ||
+          school.schoolType === schoolFilter;
+        if (!matchesFilter) return false;
         if (!normalized) return true;
         const eventsText = school.events.map((event) => `${event.title} ${event.note} ${event.author} ${event.tags.join(" ")}`).join(" ");
         return `${school.name} ${school.city} ${school.contact} ${school.nextAction} ${school.notes} ${school.category} ${schoolTypeLabels[school.schoolType]} ${school.zone} ${school.coordinator} ${school.address} ${school.department} ${school.actions} ${eventsText}`
@@ -1036,11 +1050,21 @@ export default function Home() {
           .includes(normalized);
       })
       .sort((a, b) => a.name.localeCompare(b.name, "fr"));
-  }, [schools, schoolQuery]);
-  const totalSchoolEvents = useMemo(
-    () => schools.reduce((total, school) => total + school.events.length, 0),
-    [schools],
+  }, [schools, schoolQuery, schoolFilter]);
+  const crmFeedItems = useMemo(
+    () =>
+      filteredSchools
+        .flatMap((school) => school.events.map((event): CrmFeedItem => ({ school, event })))
+        .sort((a, b) => new Date(b.event.date).getTime() - new Date(a.event.date).getTime()),
+    [filteredSchools],
   );
+  const schoolsWithoutEvents = useMemo(
+    () => filteredSchools.filter((school) => school.events.length === 0),
+    [filteredSchools],
+  );
+  const selectedSchool = selectedSchoolId
+    ? schools.find((school) => school.id === selectedSchoolId) ?? null
+    : null;
   const activeHistory = studentHistory.find((year) => year.year === activeHistoryYear) ?? null;
   const chartYears = studentHistory.filter((year) => selectedHistoryYears.includes(year.year));
   const chartDays = campaignDates(2000).map(campaignDayKey);
@@ -1568,8 +1592,8 @@ export default function Home() {
     await saveSchools(schools.filter((school) => school.id !== schoolId), "Établissement supprimé");
   }
 
-  function openSchoolEvent(schoolId: string) {
-    setEventSchoolId(schoolId);
+  function openSchoolEvent(schoolId?: string) {
+    setEventSchoolId(schoolId ?? null);
     setSchoolEventDraft({
       ...emptySchoolEventDraft,
       author: authorName.trim() || "",
@@ -2145,7 +2169,7 @@ export default function Home() {
                   : appMode === "journal"
                     ? openNewJournalPost
                     : appMode === "schools"
-                      ? openNewSchool
+                      ? () => openSchoolEvent()
                   : appMode === "objectives"
                     ? openNewQualitativeObjective
                     : appMode === "history"
@@ -2162,7 +2186,7 @@ export default function Home() {
                   : appMode === "journal"
                     ? "Nouveau post"
                     : appMode === "schools"
-                      ? "Nouvel établissement"
+                      ? "Nouveau post CRM"
                   : appMode === "objectives"
                     ? "Nouvel objectif"
                   : appMode === "history"
@@ -2582,9 +2606,9 @@ export default function Home() {
         : appMode === "schools" ? <section className="task-panel">
           <div className="panel-heading">
             <div>
-              <h2>Mini-CRM établissements</h2>
+              <h2>Journal CRM établissements</h2>
               <p>
-                {`${filteredSchools.length} établissement${filteredSchools.length > 1 ? "s" : ""} affiché${filteredSchools.length > 1 ? "s" : ""} · ${totalSchoolEvents} action${totalSchoolEvents > 1 ? "s" : ""} enregistrée${totalSchoolEvents > 1 ? "s" : ""}`}
+                {`${crmFeedItems.length} post${crmFeedItems.length > 1 ? "s" : ""} CRM · ${filteredSchools.length} établissement${filteredSchools.length > 1 ? "s" : ""} concerné${filteredSchools.length > 1 ? "s" : ""}`}
               </p>
             </div>
             <div className="filters">
@@ -2592,89 +2616,121 @@ export default function Home() {
                 <span aria-hidden="true">⌕</span>
                 <input value={schoolQuery} onChange={(event) => setSchoolQuery(event.target.value)} placeholder="Rechercher un établissement..." aria-label="Rechercher un etablissement" />
               </label>
+              <button className="button primary" onClick={() => openSchoolEvent()} disabled={saving || !schools.length}>＋ Nouveau post CRM</button>
+              <button className="button quiet" onClick={openNewSchool} disabled={saving}>＋ Nouvel établissement</button>
               <button className="button quiet" onClick={() => { void loadSchools(); }} disabled={saving}>↻ Actualiser</button>
-              <button className="button primary" onClick={openNewSchool} disabled={saving}>＋ Nouvel établissement</button>
             </div>
           </div>
-          <div className="school-crm-list">
-            {filteredSchools.length ? filteredSchools.map((school) => {
-              const latestEvent = school.events[0];
-              return (
-                <article className={`school-card school-type-${school.schoolType}`} key={school.id}>
-                  <div className="school-card-header">
-                    <div>
-                      <p className="eyebrow">Établissement scolaire</p>
-                      <h3>{school.name}</h3>
-                      <div className="school-meta">
-                        <span className={`school-type-pill school-type-${school.schoolType}`}>{schoolTypeLabels[school.schoolType]}</span>
-                        {school.category && <span>{school.category}</span>}
-                        {school.city && <span>{school.city}</span>}
-                        {(school.coordinator || school.contact) && <span>Coordinateur : {school.coordinator || school.contact}</span>}
-                        {school.registeredCount !== null && <span>{school.registeredCount} inscrit{school.registeredCount > 1 ? "s" : ""}</span>}
-                        {school.zone && <span>{school.zone}</span>}
-                        <span>{school.events.length} entrée{school.events.length > 1 ? "s" : ""}</span>
-                      </div>
-                    </div>
-                    <div className="row-actions">
-                      <button className="button primary" onClick={() => openSchoolEvent(school.id)}>＋ Ajouter une action</button>
-                      <button className="button quiet" onClick={() => openEditSchool(school)}>Modifier</button>
-                      <button className="icon-button danger-icon" onClick={() => deleteSchool(school.id)} aria-label={`Supprimer ${school.name}`}>×</button>
-                    </div>
+          <div className="school-filter-tabs" role="group" aria-label="Filtrer les établissements">
+            {([
+              ["all", "Tous"],
+              ["alpha", "Étude Alpha"],
+              ["mise-a-dispo", "Mise à disposition"],
+              ["with-posts", "Avec posts"],
+              ["without-posts", "Sans posts"],
+            ] as const).map(([value, label]) => (
+              <button key={value} className={schoolFilter === value ? "active" : ""} onClick={() => setSchoolFilter(value)}>{label}</button>
+            ))}
+          </div>
+          <div className="school-crm-layout">
+            <div className="school-feed">
+              {crmFeedItems.length ? crmFeedItems.map(({ school, event }) => (
+                <article className={`crm-post-card school-type-${school.schoolType}`} key={`${school.id}-${event.id}`}>
+                  <div className="crm-post-date">
+                    <span>{formatJournalDate(event.date).split(" ")[0]}</span>
+                    <small>{formatJournalDate(event.date).split(" ").slice(1).join(" ")}</small>
                   </div>
-                  {(school.nextAction || school.notes) && (
-                    <div className="school-summary">
-                      {school.nextAction && <div><small>Prochaine action</small><strong>{school.nextAction}</strong></div>}
-                      {school.notes && <div><small>Notes</small><span>{school.notes}</span></div>}
-                    </div>
-                  )}
-                  {(school.address || school.department || school.upcomingWeek || school.pastSessions || school.typicalWeek || school.contractSigned || school.actions) && (
-                    <div className="school-imported-info">
-                      {school.address && <span>Adresse : {school.address}</span>}
-                      {school.department && <span>{school.department}</span>}
-                      {school.upcomingWeek && <span>Semaine à venir : {school.upcomingWeek}</span>}
-                      {school.pastSessions && <span>Séances passées : {school.pastSessions}</span>}
-                      {school.typicalWeek && <span>Semaine type : {school.typicalWeek}</span>}
-                      {school.contractSigned && <span>Contrat : {school.contractSigned}</span>}
-                      {school.actions && <span>Actions Excel : {school.actions}</span>}
-                    </div>
-                  )}
-                  <div className="school-timeline">
-                    {school.events.length ? school.events.map((event) => (
-                      <div className={`school-event event-${event.kind}`} key={event.id}>
-                        <span className="school-event-dot" aria-hidden="true"></span>
-                        <div>
-                          <div className="school-event-head">
-                            <span>{schoolEventKindLabels[event.kind]}</span>
-                            <small>{formatJournalDate(event.date)} · {event.author}</small>
-                          </div>
-                          {event.title && <strong>{event.title}</strong>}
-                          {event.note && <p>{event.note}</p>}
-                          {event.tags.length > 0 && (
-                            <div className="school-event-tags">
-                              {event.tags.map((tag) => <button key={tag} onClick={() => setSchoolQuery(tag)}>#{tag}</button>)}
-                            </div>
-                          )}
-                        </div>
+                  <div className="crm-post-body">
+                    <div className="crm-post-head">
+                      <button onClick={() => setSelectedSchoolId(school.id)}>{school.name}</button>
+                      <div>
+                        <span className={`school-type-pill school-type-${school.schoolType}`}>{schoolTypeLabels[school.schoolType]}</span>
+                        <span>{schoolEventKindLabels[event.kind]}</span>
                       </div>
-                    )) : (
-                      <div className="school-empty-timeline">
-                        <span>Première trace à écrire</span>
-                        <button className="button quiet" onClick={() => openSchoolEvent(school.id)}>Ajouter un commentaire</button>
+                    </div>
+                    <h3>{event.title || "Trace sans titre"}</h3>
+                    {event.note && <p>{event.note}</p>}
+                    <div className="school-meta crm-post-meta">
+                      {school.city && <span>{school.city}</span>}
+                      {(school.coordinator || school.contact) && <span>{school.coordinator || school.contact}</span>}
+                      <span>{event.author}</span>
+                    </div>
+                    {event.tags.length > 0 && (
+                      <div className="school-event-tags">
+                        {event.tags.map((tag) => <button key={tag} onClick={() => setSchoolQuery(tag)}>#{tag}</button>)}
                       </div>
                     )}
                   </div>
-                  {latestEvent && (
-                    <p className="school-last-action">Dernière trace : {latestEvent.title || excerpt(latestEvent.note, 70)}</p>
-                  )}
                 </article>
-              );
-            }) : (
-              <div className="empty-state school-empty">
-                <span>⌂</span>
-                <h3>{schools.length ? "Aucun établissement trouvé" : "Premier établissement à ajouter"}</h3>
-                <p>{schools.length ? "Essayez un autre nom ou une autre recherche." : "Ajoutez un établissement puis consignez chaque appel, rendez-vous, commentaire ou prochaine action."}</p>
-                <button className="button primary" onClick={openNewSchool}>Ajouter un établissement</button>
-              </div>
+              )) : (
+                <div className="empty-state school-empty">
+                  <span>⌂</span>
+                  <h3>{schools.length ? "Aucun post CRM trouvé" : "Premier établissement à ajouter"}</h3>
+                  <p>{schools.length ? "Créez un post CRM ou ajustez les filtres." : "Ajoutez un établissement puis consignez chaque appel, rendez-vous, commentaire ou prochaine action."}</p>
+                  <div className="empty-actions">
+                    {schools.length > 0 && <button className="button primary" onClick={() => openSchoolEvent()}>Créer un post CRM</button>}
+                    <button className="button quiet" onClick={openNewSchool}>Ajouter un établissement</button>
+                  </div>
+                </div>
+              )}
+              {schoolsWithoutEvents.length > 0 && (
+                <section className="schools-without-posts">
+                  <h3>Établissements sans historique</h3>
+                  <div>
+                    {schoolsWithoutEvents.slice(0, 24).map((school) => (
+                      <button key={school.id} onClick={() => setSelectedSchoolId(school.id)}>
+                        <span className={`school-type-pill school-type-${school.schoolType}`}>{schoolTypeLabels[school.schoolType]}</span>
+                        {school.name}
+                      </button>
+                    ))}
+                  </div>
+                  {schoolsWithoutEvents.length > 24 && <p>+ {schoolsWithoutEvents.length - 24} autre(s) établissement(s), utilisez la recherche pour les retrouver.</p>}
+                </section>
+              )}
+            </div>
+            {selectedSchool && (
+              <aside className={`school-detail-card school-type-${selectedSchool.schoolType}`}>
+                <div className="school-detail-head">
+                  <div>
+                    <p className="eyebrow">Fiche établissement</p>
+                    <h3>{selectedSchool.name}</h3>
+                  </div>
+                  <button className="close-button" onClick={() => setSelectedSchoolId(null)} aria-label="Fermer la fiche établissement">×</button>
+                </div>
+                <div className="school-meta">
+                  <span className={`school-type-pill school-type-${selectedSchool.schoolType}`}>{schoolTypeLabels[selectedSchool.schoolType]}</span>
+                  {selectedSchool.category && <span>{selectedSchool.category}</span>}
+                  {selectedSchool.city && <span>{selectedSchool.city}</span>}
+                  {selectedSchool.registeredCount !== null && <span>{selectedSchool.registeredCount} inscrit{selectedSchool.registeredCount > 1 ? "s" : ""}</span>}
+                </div>
+                {(selectedSchool.nextAction || selectedSchool.notes) && (
+                  <div className="school-summary school-detail-summary">
+                    {selectedSchool.nextAction && <div><small>Prochaine action</small><strong>{selectedSchool.nextAction}</strong></div>}
+                    {selectedSchool.notes && <div><small>Notes</small><span>{selectedSchool.notes}</span></div>}
+                  </div>
+                )}
+                <div className="school-imported-info">
+                  {selectedSchool.coordinator && <span>Coordinateur : {selectedSchool.coordinator}</span>}
+                  {selectedSchool.zone && <span>{selectedSchool.zone}</span>}
+                  {selectedSchool.address && <span>{selectedSchool.address}</span>}
+                  {selectedSchool.department && <span>{selectedSchool.department}</span>}
+                </div>
+                <div className="school-detail-actions">
+                  <button className="button primary" onClick={() => openSchoolEvent(selectedSchool.id)}>Ajouter un post</button>
+                  <button className="button quiet" onClick={() => openEditSchool(selectedSchool)}>Modifier</button>
+                  <button className="button quiet danger-button" onClick={() => deleteSchool(selectedSchool.id)}>Supprimer</button>
+                </div>
+                <div className="school-detail-posts">
+                  <strong>Derniers posts</strong>
+                  {selectedSchool.events.slice(0, 5).map((event) => (
+                    <div key={event.id}>
+                      <small>{formatJournalDate(event.date)} · {schoolEventKindLabels[event.kind]}</small>
+                      <span>{event.title || excerpt(event.note, 80)}</span>
+                    </div>
+                  ))}
+                  {!selectedSchool.events.length && <p>Aucun post CRM pour le moment.</p>}
+                </div>
+              </aside>
             )}
           </div>
         </section>
@@ -2898,9 +2954,28 @@ export default function Home() {
               <button className="close-button" onClick={() => setSchoolEventOpen(false)} aria-label="Fermer">×</button>
             </div>
             <form onSubmit={saveSchoolEvent} className="task-form">
+              <label className="field full">
+                <span>Établissement *</span>
+                <select
+                  autoFocus
+                  required
+                  value={eventSchoolId || ""}
+                  onChange={(event) => setEventSchoolId(event.target.value)}
+                >
+                  <option value="">Choisir un établissement</option>
+                  {schools
+                    .slice()
+                    .sort((a, b) => a.name.localeCompare(b.name, "fr"))
+                    .map((school) => (
+                      <option key={school.id} value={school.id}>
+                        {school.name} · {schoolTypeLabels[school.schoolType]}{school.city ? ` · ${school.city}` : ""}
+                      </option>
+                    ))}
+                </select>
+              </label>
               <label className="field"><span>Type</span><select value={schoolEventDraft.kind} onChange={(event) => setSchoolEventDraft({ ...schoolEventDraft, kind: event.target.value as SchoolEventKind })}><option value="action">Action réalisée</option><option value="comment">Commentaire</option><option value="event">Événement</option></select></label>
               <label className="field"><span>Date</span><input type="date" value={schoolEventDraft.date.slice(0, 10)} onChange={(event) => setSchoolEventDraft({ ...schoolEventDraft, date: event.target.value })} /></label>
-              <label className="field full"><span>Titre</span><input autoFocus value={schoolEventDraft.title} onChange={(event) => setSchoolEventDraft({ ...schoolEventDraft, title: event.target.value })} placeholder="Ex. Appel avec la direction" /></label>
+              <label className="field full"><span>Titre</span><input value={schoolEventDraft.title} onChange={(event) => setSchoolEventDraft({ ...schoolEventDraft, title: event.target.value })} placeholder="Ex. Appel avec la direction" /></label>
               <label className="field full"><span>Commentaire / détail</span><textarea rows={4} value={schoolEventDraft.note} onChange={(event) => setSchoolEventDraft({ ...schoolEventDraft, note: event.target.value })} placeholder="Ce qui a été fait, décidé, demandé, ou la prochaine étape..." /></label>
               <div className="field full">
                 <span>Tags CRM</span>
