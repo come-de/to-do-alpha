@@ -132,6 +132,32 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .journal-tags button { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
 .journal-tags button:hover { border-color: #9fd6ea; background: white; transform: translateY(-1px); }
 .journal-empty { border-top: 1px solid var(--line); }
+.communication-list { padding: 12px; display: grid; gap: 9px; }
+.communication-card { border: 1px solid var(--line); border-radius: 11px; padding: 10px 12px; background: linear-gradient(135deg, rgba(255,255,255,.98), rgba(244,251,252,.78)); display: grid; grid-template-columns: 58px minmax(0, 1fr) auto; gap: 12px; align-items: start; box-shadow: 0 4px 15px rgba(14,165,233,.045); position: relative; overflow: hidden; }
+.communication-card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: linear-gradient(180deg, var(--blue-main), var(--green)); }
+.communication-card.status-to-follow-up::before, .communication-card.is-late::before { background: linear-gradient(180deg, var(--red), #f472b6); }
+.communication-card.status-draft::before { background: linear-gradient(180deg, #7fa0af, var(--blue-dark)); }
+.communication-date { min-height: 54px; border-radius: 11px; border: 1px solid rgba(14,165,233,.16); background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--blue-dark); }
+.communication-date span { font-size: 19px; line-height: 1; font-weight: 920; letter-spacing: -.04em; }
+.communication-date small { max-width: 48px; margin-top: 3px; color: var(--muted); font-size: 8.8px; line-height: 1.1; text-align: center; text-transform: lowercase; }
+.communication-body { min-width: 0; }
+.communication-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.communication-head h3 { margin: 0; color: var(--blue-title); font-size: 15px; line-height: 1.22; }
+.communication-status { border: 1px solid var(--line); border-radius: 999px; padding: 4px 8px; color: var(--blue-dark); background: white; font-size: 10.5px; font-weight: 850; white-space: nowrap; }
+.communication-status.status-to-follow-up { border-color: #ffd4e5; color: var(--red); background: var(--red-pale); }
+.communication-status.status-draft { color: var(--muted); background: var(--soft); }
+.communication-status.status-cancelled { color: var(--muted); background: #f4f4f4; }
+.communication-body p { margin: 5px 0 0; color: var(--ink); font-size: 12px; line-height: 1.4; white-space: pre-wrap; }
+.communication-tags, .communication-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+.communication-tags { margin-top: 8px; }
+.communication-tags button { border: 1px solid rgba(16,185,129,.22); border-radius: 999px; padding: 3px 7px; color: var(--green-dark); background: var(--green-pale); font-size: 10.5px; font-weight: 780; cursor: pointer; }
+.communication-tags button:hover { background: white; transform: translateY(-1px); }
+.communication-meta { margin-top: 7px; }
+.communication-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 3px 7px; color: var(--blue-dark); background: rgba(255,255,255,.78); font-size: 10.5px; font-weight: 760; }
+.communication-meta span.late { border-color: #ffd4e5; color: var(--red); background: var(--red-pale); }
+.communication-note { display: block; margin-top: 7px; color: var(--muted); font-size: 11px; line-height: 1.35; white-space: pre-wrap; }
+.communication-empty { border-top: 1px solid var(--line); }
+.communication-audience-picker { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .school-crm-list { padding: 12px; display: grid; gap: 10px; }
 .school-card { border: 1px solid var(--line); border-radius: 12px; padding: 13px; background: linear-gradient(135deg, rgba(255,255,255,.98), rgba(236,253,245,.72)); box-shadow: 0 5px 18px rgba(14,165,233,.05); position: relative; overflow: hidden; }
 .school-card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 5px; background: linear-gradient(180deg, var(--blue-main), var(--green)); }
@@ -525,7 +551,7 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .matrix-mobile-label { display: block; }
   .matrix-empty { display: none; }
   .matrix-card { padding: 6px 7px; gap: 2px; }
-  .link-grid, .objective-list, .journal-list, .school-crm-list { padding: 8px; }
+  .link-grid, .objective-list, .journal-list, .communication-list, .school-crm-list { padding: 8px; }
   .qualitative-objective { flex-direction: column; gap: 10px; }
   .journal-card { grid-template-columns: 48px minmax(0, 1fr); gap: 9px; padding: 9px; }
   .journal-card-date { min-height: 48px; border-radius: 10px; }
@@ -535,6 +561,15 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .journal-card-head h3 { font-size: 14px; }
   .journal-card-body p { font-size: 11.5px; line-height: 1.45; }
   .journal-card > .row-actions { grid-column: 2; justify-content: flex-start; }
+  .communication-card { grid-template-columns: 46px minmax(0, 1fr); gap: 8px; padding: 8px 9px; border-radius: 10px; }
+  .communication-date { min-height: 46px; border-radius: 9px; }
+  .communication-date span { font-size: 16px; }
+  .communication-date small { max-width: 39px; font-size: 8px; }
+  .communication-head { flex-direction: column; gap: 4px; }
+  .communication-head h3 { font-size: 13.5px; }
+  .communication-body p { font-size: 11.3px; }
+  .communication-card > .row-actions { grid-column: 2; justify-content: flex-start; }
+  .communication-audience-picker { grid-template-columns: 1fr; }
   .school-card { padding: 9px; border-radius: 10px; }
   .school-card-header { flex-direction: column; gap: 8px; }
   .school-card-header h3 { font-size: 15px; }

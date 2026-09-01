@@ -82,6 +82,25 @@ export type JournalPost = {
   updatedAt: string;
 };
 
+export type CommunicationAudience = "tuteurs" | "etablissements" | "parents" | "coordinateurs";
+export type CommunicationStatus = "draft" | "sent" | "to-follow-up" | "cancelled";
+
+export type MassCommunication = {
+  id: string;
+  title: string;
+  messageSummary: string;
+  audiences: CommunicationAudience[];
+  channel: string;
+  status: CommunicationStatus;
+  sentAt: string;
+  followUpDate: string;
+  author: string;
+  notes: string;
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type SchoolEventKind = "event" | "comment" | "action";
 export type SchoolType = "alpha" | "mise-a-dispo" | "mixed";
 
@@ -151,6 +170,7 @@ export const RECURRING_TASKS_KEY = "recurring-tasks.json";
 export const OBJECTIVES_KEY = "objectives.json";
 export const LINKS_KEY = "links.json";
 export const JOURNAL_POSTS_KEY = "journal-posts.json";
+export const MASS_COMMUNICATIONS_KEY = "mass-communications.json";
 export const SCHOOLS_KEY = "schools.json";
 export const STUDENT_HISTORY_KEY = "student-history.json";
 
@@ -161,6 +181,7 @@ const memory = globalThis as typeof globalThis & {
   __petitSuiviObjectives?: Objective[];
   __petitSuiviLinks?: SharedLink[];
   __petitSuiviJournalPosts?: JournalPost[];
+  __petitSuiviMassCommunications?: MassCommunication[];
   __petitSuiviSchools?: School[];
   __petitSuiviStudentHistory?: StudentHistoryYear[];
 };
@@ -228,6 +249,11 @@ function cleanPositiveNumber(value: unknown, allowZero = false) {
   if (parsed === null || !Number.isFinite(parsed)) return null;
   if (allowZero && parsed === 0) return 0;
   return parsed > 0 ? parsed : null;
+}
+
+function dateValueForSort(value: string) {
+  const parsed = value ? new Date(value).getTime() : 0;
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function cleanYear(value: unknown) {
@@ -405,6 +431,43 @@ export function sanitizeJournalPost(raw: Record<string, unknown>): JournalPost {
           .filter(Boolean),
     personIds: Array.isArray(raw.personIds) ? raw.personIds.map(cleanText).filter(Boolean) : [],
     publishedAt: cleanText(raw.publishedAt) || now,
+    createdAt: cleanText(raw.createdAt) || now,
+    updatedAt: cleanText(raw.updatedAt) || cleanText(raw.createdAt) || now,
+  };
+}
+
+function isCommunicationAudience(value: unknown): value is CommunicationAudience {
+  return value === "tuteurs" || value === "etablissements" || value === "parents" || value === "coordinateurs";
+}
+
+function isCommunicationStatus(value: unknown): value is CommunicationStatus {
+  return value === "draft" || value === "sent" || value === "to-follow-up" || value === "cancelled";
+}
+
+export function sanitizeMassCommunication(raw: Record<string, unknown>): MassCommunication {
+  const now = new Date().toISOString();
+  const tags = Array.isArray(raw.tags)
+    ? raw.tags.map(cleanText).filter(Boolean)
+    : cleanText(raw.tags)
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean);
+  const audiences = Array.isArray(raw.audiences)
+    ? raw.audiences.filter(isCommunicationAudience)
+    : [];
+
+  return {
+    id: cleanText(raw.id) || crypto.randomUUID(),
+    title: cleanText(raw.title),
+    messageSummary: cleanText(raw.messageSummary),
+    audiences,
+    channel: cleanText(raw.channel) || "Email",
+    status: isCommunicationStatus(raw.status) ? raw.status : "sent",
+    sentAt: cleanText(raw.sentAt),
+    followUpDate: cleanText(raw.followUpDate),
+    author: cleanText(raw.author) || "Equipe Alpha",
+    notes: cleanText(raw.notes),
+    tags: Array.from(new Set(tags)),
     createdAt: cleanText(raw.createdAt) || now,
     updatedAt: cleanText(raw.updatedAt) || cleanText(raw.createdAt) || now,
   };
@@ -721,6 +784,31 @@ export async function writeJournalPosts(posts: JournalPost[]) {
     await store.setJSON(JOURNAL_POSTS_KEY, posts);
   } catch {
     memory.__petitSuiviJournalPosts = posts;
+  }
+}
+
+export async function readMassCommunications() {
+  try {
+    const store = taskStore();
+    const communications = await store.get(MASS_COMMUNICATIONS_KEY, { type: "json", consistency: "strong" });
+    return Array.isArray(communications)
+      ? communications
+          .filter((communication): communication is Record<string, unknown> => Boolean(communication && typeof communication === "object"))
+          .map(sanitizeMassCommunication)
+          .filter((communication) => communication.title)
+          .sort((a, b) => dateValueForSort(b.sentAt || b.followUpDate || b.createdAt) - dateValueForSort(a.sentAt || a.followUpDate || a.createdAt))
+      : [];
+  } catch {
+    return memory.__petitSuiviMassCommunications ?? [];
+  }
+}
+
+export async function writeMassCommunications(communications: MassCommunication[]) {
+  try {
+    const store = taskStore();
+    await store.setJSON(MASS_COMMUNICATIONS_KEY, communications);
+  } catch {
+    memory.__petitSuiviMassCommunications = communications;
   }
 }
 

@@ -5,11 +5,13 @@ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "re
 type Status = "todo" | "progress" | "done";
 type Priority = "low" | "medium" | "high";
 type Density = "compact" | "comfortable";
-type AppMode = "tasks" | "recurring" | "links" | "objectives" | "history" | "journal" | "schools";
+type AppMode = "tasks" | "recurring" | "links" | "objectives" | "history" | "journal" | "schools" | "communications";
 type ViewMode = "list" | "matrix";
 type DurationBucket = "short" | "medium" | "long" | "unset";
 type ObjectiveKind = "counter" | "qualitative";
 type ObjectiveStatus = "todo" | "progress" | "done";
+type CommunicationAudience = "tuteurs" | "etablissements" | "parents" | "coordinateurs";
+type CommunicationStatus = "draft" | "sent" | "to-follow-up" | "cancelled";
 
 type Comment = {
   id: string;
@@ -89,6 +91,22 @@ type JournalPost = {
   updatedAt: string;
 };
 
+type MassCommunication = {
+  id: string;
+  title: string;
+  messageSummary: string;
+  audiences: CommunicationAudience[];
+  channel: string;
+  status: CommunicationStatus;
+  sentAt: string;
+  followUpDate: string;
+  author: string;
+  notes: string;
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+};
+
 type SchoolEventKind = "event" | "comment" | "action";
 type SchoolType = "alpha" | "mise-a-dispo" | "mixed";
 type SchoolFilter = "all" | SchoolType | "with-posts" | "without-posts";
@@ -160,6 +178,7 @@ type RecurringDraft = Omit<RecurringTask, "id" | "createdAt">;
 type ObjectiveDraft = Omit<Objective, "id" | "createdAt">;
 type LinkDraft = Omit<SharedLink, "id" | "createdAt">;
 type JournalDraft = Omit<JournalPost, "id" | "createdAt" | "updatedAt">;
+type CommunicationDraft = Omit<MassCommunication, "id" | "createdAt" | "updatedAt">;
 type SchoolDraft = Omit<School, "id" | "events" | "createdAt" | "updatedAt">;
 type SchoolEventDraft = Omit<SchoolEvent, "id" | "createdAt">;
 
@@ -245,6 +264,19 @@ const emptyJournalDraft: JournalDraft = {
   publishedAt: new Date().toISOString().slice(0, 10),
 };
 
+const emptyCommunicationDraft: CommunicationDraft = {
+  title: "",
+  messageSummary: "",
+  audiences: [],
+  channel: "Email",
+  status: "sent",
+  sentAt: new Date().toISOString().slice(0, 10),
+  followUpDate: "",
+  author: "",
+  notes: "",
+  tags: [],
+};
+
 const emptySchoolDraft: SchoolDraft = {
   externalId: "",
   name: "",
@@ -286,6 +318,24 @@ const schoolTypeLabels: Record<SchoolType, string> = {
   "mise-a-dispo": "Mise à disposition",
   mixed: "Mixte / autre",
 };
+
+const communicationAudienceLabels: Record<CommunicationAudience, string> = {
+  tuteurs: "Tuteurs",
+  etablissements: "Établissements",
+  parents: "Parents",
+  coordinateurs: "Coordinateurs",
+};
+
+const communicationStatusLabels: Record<CommunicationStatus, string> = {
+  draft: "Brouillon",
+  sent: "Envoyé",
+  "to-follow-up": "À relancer",
+  cancelled: "Annulé",
+};
+
+const communicationAudiences: CommunicationAudience[] = ["tuteurs", "etablissements", "parents", "coordinateurs"];
+const communicationStatuses: ("all" | CommunicationStatus)[] = ["all", "sent", "to-follow-up", "draft", "cancelled"];
+const communicationChannels = ["Email", "WhatsApp", "Téléphone", "Réunion", "Autre"];
 
 const crmTagSuggestions = [
   "Problème à résoudre",
@@ -438,6 +488,30 @@ function normalizeJournalPost(raw: Partial<JournalPost>): JournalPost {
   };
 }
 
+function normalizeMassCommunication(raw: Partial<MassCommunication>): MassCommunication {
+  const now = new Date().toISOString();
+  return {
+    id: raw.id || uid("communication"),
+    title: raw.title || "",
+    messageSummary: raw.messageSummary || "",
+    audiences: Array.isArray(raw.audiences)
+      ? raw.audiences.filter((audience): audience is CommunicationAudience => communicationAudiences.includes(audience as CommunicationAudience))
+      : [],
+    channel: raw.channel || "Email",
+    status:
+      raw.status === "draft" || raw.status === "sent" || raw.status === "to-follow-up" || raw.status === "cancelled"
+        ? raw.status
+        : "sent",
+    sentAt: raw.sentAt || "",
+    followUpDate: raw.followUpDate || "",
+    author: raw.author || "Equipe Alpha",
+    notes: raw.notes || "",
+    tags: normalizeTags(raw.tags),
+    createdAt: raw.createdAt || now,
+    updatedAt: raw.updatedAt || raw.createdAt || now,
+  };
+}
+
 function normalizeSchoolEvent(raw: Partial<SchoolEvent>): SchoolEvent {
   const now = new Date().toISOString();
   return {
@@ -539,6 +613,12 @@ function dateValue(date: string) {
   return new Date(`${date}T12:00:00`).getTime();
 }
 
+function sortDateValue(date: string) {
+  if (!date) return 0;
+  const parsed = date.includes("T") ? new Date(date).getTime() : new Date(`${date}T12:00:00`).getTime();
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 function todayValue() {
   const today = new Date();
   today.setHours(12, 0, 0, 0);
@@ -552,6 +632,10 @@ function daysFromToday(date: string) {
 
 function isLate(task: Task) {
   return task.status !== "done" && Boolean(task.endDate) && daysFromToday(task.endDate) < 0;
+}
+
+function isCommunicationFollowUpLate(communication: MassCommunication) {
+  return communication.status === "to-follow-up" && Boolean(communication.followUpDate) && daysFromToday(communication.followUpDate) < 0;
 }
 
 function formatDate(date: string) {
@@ -708,6 +792,7 @@ export default function Home() {
   const [objectives, setObjectives] = useState<Objective[]>([]);
   const [links, setLinks] = useState<SharedLink[]>([]);
   const [journalPosts, setJournalPosts] = useState<JournalPost[]>([]);
+  const [communications, setCommunications] = useState<MassCommunication[]>([]);
   const [schools, setSchools] = useState<School[]>([]);
   const [studentHistory, setStudentHistory] = useState<StudentHistoryYear[]>([]);
   const [people, setPeople] = useState<Person[]>([]);
@@ -735,6 +820,7 @@ export default function Home() {
   const [objectiveOpen, setObjectiveOpen] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
   const [journalOpen, setJournalOpen] = useState(false);
+  const [communicationOpen, setCommunicationOpen] = useState(false);
   const [schoolOpen, setSchoolOpen] = useState(false);
   const [schoolEventOpen, setSchoolEventOpen] = useState(false);
   const [notifyOpen, setNotifyOpen] = useState(false);
@@ -742,6 +828,7 @@ export default function Home() {
   const [editingRecurringId, setEditingRecurringId] = useState<string | null>(null);
   const [editingLinkId, setEditingLinkId] = useState<string | null>(null);
   const [editingJournalId, setEditingJournalId] = useState<string | null>(null);
+  const [editingCommunicationId, setEditingCommunicationId] = useState<string | null>(null);
   const [editingSchoolId, setEditingSchoolId] = useState<string | null>(null);
   const [eventSchoolId, setEventSchoolId] = useState<string | null>(null);
   const [draft, setDraft] = useState<TaskDraft>(emptyDraft);
@@ -749,6 +836,7 @@ export default function Home() {
   const [objectiveDraft, setObjectiveDraft] = useState<ObjectiveDraft>(emptyObjectiveDraft);
   const [linkDraft, setLinkDraft] = useState<LinkDraft>(emptyLinkDraft);
   const [journalDraft, setJournalDraft] = useState<JournalDraft>(emptyJournalDraft);
+  const [communicationDraft, setCommunicationDraft] = useState<CommunicationDraft>(emptyCommunicationDraft);
   const [schoolDraft, setSchoolDraft] = useState<SchoolDraft>(emptySchoolDraft);
   const [schoolEventDraft, setSchoolEventDraft] = useState<SchoolEventDraft>(emptySchoolEventDraft);
   const [editingObjectiveId, setEditingObjectiveId] = useState<string | null>(null);
@@ -765,6 +853,9 @@ export default function Home() {
   const [journalTagFilter, setJournalTagFilter] = useState("all");
   const [journalAuthorFilter, setJournalAuthorFilter] = useState("all");
   const [journalPersonFilter, setJournalPersonFilter] = useState("all");
+  const [communicationQuery, setCommunicationQuery] = useState("");
+  const [communicationAudienceFilter, setCommunicationAudienceFilter] = useState<"all" | CommunicationAudience>("all");
+  const [communicationStatusFilter, setCommunicationStatusFilter] = useState<"all" | CommunicationStatus>("all");
   const [schoolQuery, setSchoolQuery] = useState("");
   const [schoolFilter, setSchoolFilter] = useState<SchoolFilter>("all");
   const [selectedSchoolId, setSelectedSchoolId] = useState<string | null>(null);
@@ -842,6 +933,19 @@ export default function Home() {
     }
   }, []);
 
+  const loadCommunications = useCallback(async () => {
+    try {
+      const response = await fetch("/api/mass-communications", { cache: "no-store" });
+      if (!response.ok) throw new Error("load-communications-failed");
+      const data = (await response.json()) as { communications?: Partial<MassCommunication>[] };
+      setCommunications(
+        Array.isArray(data.communications) ? data.communications.map(normalizeMassCommunication) : [],
+      );
+    } catch {
+      setToast("Communications indisponibles");
+    }
+  }, []);
+
   const loadSchools = useCallback(async () => {
     try {
       const response = await fetch("/api/schools", { cache: "no-store" });
@@ -883,11 +987,12 @@ export default function Home() {
       void loadObjectives();
       void loadLinks();
       void loadJournalPosts();
+      void loadCommunications();
       void loadSchools();
       void loadStudentHistory();
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadSchools, loadStudentHistory]);
+  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadCommunications, loadSchools, loadStudentHistory]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -897,11 +1002,12 @@ export default function Home() {
       void loadObjectives();
       void loadLinks();
       void loadJournalPosts();
+      void loadCommunications();
       void loadSchools();
       void loadStudentHistory();
     }, 30000);
     return () => window.clearInterval(timer);
-  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadSchools, loadStudentHistory]);
+  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadCommunications, loadSchools, loadStudentHistory]);
 
   useEffect(() => {
     if (authorName.trim()) localStorage.setItem(AUTHOR_KEY, authorName.trim());
@@ -1033,6 +1139,26 @@ export default function Home() {
       })
       .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
   }, [journalPosts, journalQuery, journalTagFilter, journalAuthorFilter, journalPersonFilter, peopleById]);
+  const filteredCommunications = useMemo(() => {
+    const normalized = communicationQuery.trim().toLocaleLowerCase("fr");
+    return communications
+      .filter((communication) => {
+        const matchesText =
+          !normalized ||
+          `${communication.title} ${communication.messageSummary} ${communication.notes} ${communication.author} ${communication.tags.join(" ")} ${communication.audiences.map((audience) => communicationAudienceLabels[audience]).join(" ")} ${communication.channel}`
+            .toLocaleLowerCase("fr")
+            .includes(normalized);
+        const matchesAudience =
+          communicationAudienceFilter === "all" || communication.audiences.includes(communicationAudienceFilter);
+        const matchesStatus = communicationStatusFilter === "all" || communication.status === communicationStatusFilter;
+        return matchesText && matchesAudience && matchesStatus;
+      })
+      .sort(
+        (a, b) =>
+          sortDateValue(b.sentAt || b.followUpDate || b.createdAt) -
+          sortDateValue(a.sentAt || a.followUpDate || a.createdAt),
+      );
+  }, [communications, communicationQuery, communicationAudienceFilter, communicationStatusFilter]);
   const filteredSchools = useMemo(() => {
     const normalized = schoolQuery.trim().toLocaleLowerCase("fr");
     return schools
@@ -1192,6 +1318,37 @@ export default function Home() {
     } catch {
       setSyncError("Sauvegarde impossible, rechargez la page avant de continuer");
       setToast("Post non sauvegarde");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function saveCommunications(nextCommunications: MassCommunication[], message: string) {
+    setSaving(true);
+    setSyncError("");
+    const sortedCommunications = nextCommunications
+      .map(normalizeMassCommunication)
+      .sort(
+        (a, b) =>
+          sortDateValue(b.sentAt || b.followUpDate || b.createdAt) -
+          sortDateValue(a.sentAt || a.followUpDate || a.createdAt),
+      );
+    setCommunications(sortedCommunications);
+    try {
+      const response = await fetch("/api/mass-communications", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ communications: sortedCommunications }),
+      });
+      if (!response.ok) throw new Error("save-communications-failed");
+      const data = (await response.json()) as { communications?: Partial<MassCommunication>[] };
+      setCommunications(
+        Array.isArray(data.communications) ? data.communications.map(normalizeMassCommunication) : [],
+      );
+      setToast(message);
+    } catch {
+      setSyncError("Sauvegarde impossible, rechargez la page avant de continuer");
+      setToast("Communication non sauvegardée");
     } finally {
       setSaving(false);
     }
@@ -1510,6 +1667,93 @@ export default function Home() {
   async function deleteJournalPost(postId: string) {
     if (!window.confirm("Supprimer ce post du journal ?")) return;
     await saveJournalPosts(journalPosts.filter((post) => post.id !== postId), "Post supprime");
+  }
+
+  function openNewCommunication() {
+    setEditingCommunicationId(null);
+    setCommunicationDraft({
+      ...emptyCommunicationDraft,
+      author: authorName.trim() || "",
+      sentAt: new Date().toISOString().slice(0, 10),
+    });
+    setCommunicationOpen(true);
+  }
+
+  function openEditCommunication(communication: MassCommunication) {
+    setEditingCommunicationId(communication.id);
+    setCommunicationDraft({
+      title: communication.title,
+      messageSummary: communication.messageSummary,
+      audiences: communication.audiences,
+      channel: communication.channel,
+      status: communication.status,
+      sentAt: communication.sentAt ? communication.sentAt.slice(0, 10) : "",
+      followUpDate: communication.followUpDate ? communication.followUpDate.slice(0, 10) : "",
+      author: communication.author,
+      notes: communication.notes,
+      tags: communication.tags,
+    });
+    setCommunicationOpen(true);
+  }
+
+  function toggleCommunicationAudience(audience: CommunicationAudience, checked: boolean) {
+    setCommunicationDraft((current) => ({
+      ...current,
+      audiences: checked
+        ? Array.from(new Set([...current.audiences, audience]))
+        : current.audiences.filter((item) => item !== audience),
+    }));
+  }
+
+  async function saveCommunication(event: FormEvent) {
+    event.preventDefault();
+    if (!communicationDraft.title.trim() || communicationDraft.audiences.length === 0 || saving) return;
+    const now = new Date().toISOString();
+    const cleanDraft = {
+      ...communicationDraft,
+      title: communicationDraft.title.trim(),
+      messageSummary: communicationDraft.messageSummary.trim(),
+      audiences: Array.from(new Set(communicationDraft.audiences)),
+      channel: communicationDraft.channel.trim() || "Email",
+      sentAt: communicationDraft.sentAt,
+      followUpDate: communicationDraft.followUpDate,
+      author: communicationDraft.author.trim() || authorName.trim() || "Equipe Alpha",
+      notes: communicationDraft.notes.trim(),
+      tags: normalizeTags(communicationDraft.tags),
+      updatedAt: now,
+    };
+    if (cleanDraft.author && cleanDraft.author !== "Equipe Alpha") setAuthorName(cleanDraft.author);
+
+    if (editingCommunicationId) {
+      const existingCommunication = communications.find((communication) => communication.id === editingCommunicationId);
+      await saveCommunications(
+        communications.map((communication) =>
+          communication.id === editingCommunicationId
+            ? {
+                ...(existingCommunication ?? communication),
+                ...cleanDraft,
+                id: editingCommunicationId,
+                createdAt: existingCommunication?.createdAt || communication.createdAt,
+              }
+            : communication,
+        ),
+        "Communication mise à jour",
+      );
+    } else {
+      await saveCommunications(
+        [{ ...cleanDraft, id: uid("communication"), createdAt: now }, ...communications],
+        "Communication ajoutée",
+      );
+    }
+    setCommunicationOpen(false);
+  }
+
+  async function deleteCommunication(communicationId: string) {
+    if (!window.confirm("Supprimer cette communication ?")) return;
+    await saveCommunications(
+      communications.filter((communication) => communication.id !== communicationId),
+      "Communication supprimée",
+    );
   }
 
   function openNewSchool() {
@@ -2168,6 +2412,8 @@ export default function Home() {
                   ? openNewLink
                   : appMode === "journal"
                     ? openNewJournalPost
+                    : appMode === "communications"
+                      ? openNewCommunication
                     : appMode === "schools"
                       ? () => openSchoolEvent()
                   : appMode === "objectives"
@@ -2185,6 +2431,8 @@ export default function Home() {
                   ? "Nouveau lien"
                   : appMode === "journal"
                     ? "Nouveau post"
+                    : appMode === "communications"
+                      ? "Nouvelle communication"
                     : appMode === "schools"
                       ? "Nouveau post CRM"
                   : appMode === "objectives"
@@ -2266,6 +2514,9 @@ export default function Home() {
           </button>
           <button className={appMode === "journal" ? "active" : ""} onClick={() => setAppMode("journal")}>
             Journal <span>{journalPosts.length}</span>
+          </button>
+          <button className={appMode === "communications" ? "active" : ""} onClick={() => setAppMode("communications")}>
+            Communications <span>{communications.length}</span>
           </button>
           <button className={appMode === "schools" ? "active" : ""} onClick={() => setAppMode("schools")}>
             Établissements <span>{schools.length}</span>
@@ -2603,6 +2854,79 @@ export default function Home() {
             )}
           </div>
         </section>
+        : appMode === "communications" ? <section className="task-panel">
+          <div className="panel-heading">
+            <div>
+              <h2>Communications de masse</h2>
+              <p>{`${filteredCommunications.length} communication${filteredCommunications.length > 1 ? "s" : ""} affichée${filteredCommunications.length > 1 ? "s" : ""}`}</p>
+            </div>
+            <div className="filters">
+              <label className="search-box">
+                <span aria-hidden="true">⌕</span>
+                <input value={communicationQuery} onChange={(event) => setCommunicationQuery(event.target.value)} placeholder="Rechercher une communication..." aria-label="Rechercher une communication" />
+              </label>
+              <select value={communicationAudienceFilter} onChange={(event) => setCommunicationAudienceFilter(event.target.value as "all" | CommunicationAudience)} aria-label="Filtrer par public">
+                <option value="all">Tous les publics</option>
+                {communicationAudiences.map((audience) => <option key={audience} value={audience}>{communicationAudienceLabels[audience]}</option>)}
+              </select>
+              <select value={communicationStatusFilter} onChange={(event) => setCommunicationStatusFilter(event.target.value as "all" | CommunicationStatus)} aria-label="Filtrer par statut">
+                {communicationStatuses.map((status) => (
+                  <option key={status} value={status}>{status === "all" ? "Tous les statuts" : communicationStatusLabels[status]}</option>
+                ))}
+              </select>
+              <button className="button quiet" onClick={() => { void loadCommunications(); }} disabled={saving}>↻ Actualiser</button>
+              <button className="button primary" onClick={openNewCommunication} disabled={saving}>＋ Nouvelle communication</button>
+            </div>
+          </div>
+          <div className="communication-list">
+            {filteredCommunications.length ? filteredCommunications.map((communication) => {
+              const followUpLate = isCommunicationFollowUpLate(communication);
+              return (
+                <article className={`communication-card status-${communication.status} ${followUpLate ? "is-late" : ""}`} key={communication.id}>
+                  <div className="communication-date">
+                    <span>{formatJournalDate(communication.sentAt || communication.createdAt).split(" ")[0]}</span>
+                    <small>{formatJournalDate(communication.sentAt || communication.createdAt).split(" ").slice(1).join(" ")}</small>
+                  </div>
+                  <div className="communication-body">
+                    <div className="communication-head">
+                      <div>
+                        <p className="eyebrow">{communication.channel}</p>
+                        <h3>{communication.title}</h3>
+                      </div>
+                      <span className={`communication-status status-${communication.status}`}>{communicationStatusLabels[communication.status]}</span>
+                    </div>
+                    {communication.messageSummary && <p>{communication.messageSummary}</p>}
+                    <div className="communication-tags">
+                      {communication.audiences.map((audience) => <button key={audience} onClick={() => setCommunicationAudienceFilter(audience)}>{communicationAudienceLabels[audience]}</button>)}
+                      {communication.tags.map((tag) => <button key={tag} onClick={() => setCommunicationQuery(tag)}>#{tag}</button>)}
+                    </div>
+                    <div className="communication-meta">
+                      <span>{communication.author}</span>
+                      {communication.sentAt && <span>Envoyé le {formatDate(communication.sentAt)}</span>}
+                      {communication.followUpDate && (
+                        <span className={followUpLate ? "late" : ""}>
+                          {followUpLate ? "Relance en retard" : "Relance"} · {formatDate(communication.followUpDate)}
+                        </span>
+                      )}
+                    </div>
+                    {communication.notes && <small className="communication-note">{communication.notes}</small>}
+                  </div>
+                  <div className="row-actions">
+                    <button className="button quiet" onClick={() => openEditCommunication(communication)}>Modifier</button>
+                    <button className="icon-button danger-icon" onClick={() => deleteCommunication(communication.id)} aria-label={`Supprimer ${communication.title}`}>×</button>
+                  </div>
+                </article>
+              );
+            }) : (
+              <div className="empty-state communication-empty">
+                <span>✉</span>
+                <h3>{communications.length ? "Aucune communication ne correspond aux filtres" : "Aucune communication enregistrée"}</h3>
+                <p>{communications.length ? "Essayez une autre recherche ou retirez un filtre." : "Tracez les messages envoyés aux tuteurs, établissements, parents ou coordinateurs."}</p>
+                <button className="button primary" onClick={openNewCommunication}>Créer la première communication</button>
+              </div>
+            )}
+          </div>
+        </section>
         : appMode === "schools" ? <section className="task-panel">
           <div className="panel-heading">
             <div>
@@ -2911,6 +3235,48 @@ export default function Home() {
                 </div>
               </div>
               <div className="form-actions"><button type="button" className="button quiet" onClick={() => setJournalOpen(false)}>Annuler</button><button type="submit" className="button primary" disabled={saving}>{saving ? "Sauvegarde..." : "Enregistrer"}</button></div>
+            </form>
+          </section>
+        </div>
+      )}
+
+      {communicationOpen && (
+        <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setCommunicationOpen(false)}>
+          <section className="modal notify-modal" role="dialog" aria-modal="true" aria-labelledby="communication-title">
+            <div className="modal-header">
+              <div><p className="eyebrow">Communication de masse</p><h2 id="communication-title">{editingCommunicationId ? "Modifier la communication" : "Nouvelle communication"}</h2></div>
+              <button className="close-button" onClick={() => setCommunicationOpen(false)} aria-label="Fermer">×</button>
+            </div>
+            <form onSubmit={saveCommunication} className="task-form">
+              <label className="field full"><span>Titre *</span><input autoFocus required value={communicationDraft.title} onChange={(event) => setCommunicationDraft({ ...communicationDraft, title: event.target.value })} placeholder="Ex. Relance rentrée aux parents" /></label>
+              <div className="field full">
+                <span>Publics concernés *</span>
+                <div className="recipient-list objective-recipient-list communication-audience-picker">
+                  {communicationAudiences.map((audience) => (
+                    <label className="recipient-row" key={audience}>
+                      <input
+                        type="checkbox"
+                        checked={communicationDraft.audiences.includes(audience)}
+                        onChange={(event) => toggleCommunicationAudience(audience, event.target.checked)}
+                      />
+                      <span className="avatar">{communicationAudienceLabels[audience].slice(0, 1)}</span>
+                      <span><strong>{communicationAudienceLabels[audience]}</strong><small>groupe destinataire</small></span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <label className="field"><span>Canal</span><select value={communicationDraft.channel} onChange={(event) => setCommunicationDraft({ ...communicationDraft, channel: event.target.value })}>{communicationChannels.map((channel) => <option key={channel} value={channel}>{channel}</option>)}</select></label>
+              <label className="field"><span>Statut</span><select value={communicationDraft.status} onChange={(event) => setCommunicationDraft({ ...communicationDraft, status: event.target.value as CommunicationStatus })}><option value="sent">Envoyé</option><option value="to-follow-up">À relancer</option><option value="draft">Brouillon</option><option value="cancelled">Annulé</option></select></label>
+              <label className="field"><span>Date d&apos;envoi</span><input type="date" value={communicationDraft.sentAt} onChange={(event) => setCommunicationDraft({ ...communicationDraft, sentAt: event.target.value })} /></label>
+              <label className="field"><span>Date de relance</span><input type="date" value={communicationDraft.followUpDate} onChange={(event) => setCommunicationDraft({ ...communicationDraft, followUpDate: event.target.value })} /></label>
+              <label className="field full"><span>Résumé du message</span><textarea rows={4} value={communicationDraft.messageSummary} onChange={(event) => setCommunicationDraft({ ...communicationDraft, messageSummary: event.target.value })} placeholder="Sujet du message, information transmise, appel à action..." /></label>
+              <label className="field full"><span>Notes internes</span><textarea rows={3} value={communicationDraft.notes} onChange={(event) => setCommunicationDraft({ ...communicationDraft, notes: event.target.value })} placeholder="Retours observés, éléments à surveiller, prochaine étape..." /></label>
+              <label className="field full"><span>Tags</span><input value={tagsToText(communicationDraft.tags)} onChange={(event) => setCommunicationDraft({ ...communicationDraft, tags: normalizeTags(event.target.value) })} placeholder="rentrée, relance, inscription" /></label>
+              <label className="field full"><span>Auteur</span><input value={communicationDraft.author} onChange={(event) => setCommunicationDraft({ ...communicationDraft, author: event.target.value })} placeholder={authorName || "Equipe Alpha"} /></label>
+              <div className="form-actions">
+                <button type="button" className="button quiet" onClick={() => setCommunicationOpen(false)}>Annuler</button>
+                <button type="submit" className="button primary" disabled={saving || !communicationDraft.title.trim() || communicationDraft.audiences.length === 0}>{saving ? "Sauvegarde..." : "Enregistrer"}</button>
+              </div>
             </form>
           </section>
         </div>
