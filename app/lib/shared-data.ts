@@ -101,6 +101,19 @@ export type MassCommunication = {
   updatedAt: string;
 };
 
+export type StaffingPersonKey = "pierre" | "julie" | "kelly";
+
+export type StaffingDay = {
+  id: string;
+  date: string;
+  people: Record<StaffingPersonKey, {
+    staffedSessions: number;
+    unstaffedSessions: number;
+  }>;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type SchoolEventKind = "event" | "comment" | "action";
 export type SchoolType = "alpha" | "mise-a-dispo" | "mixed";
 
@@ -171,6 +184,7 @@ export const OBJECTIVES_KEY = "objectives.json";
 export const LINKS_KEY = "links.json";
 export const JOURNAL_POSTS_KEY = "journal-posts.json";
 export const MASS_COMMUNICATIONS_KEY = "mass-communications.json";
+export const STAFFING_SESSIONS_KEY = "staffing-sessions.json";
 export const SCHOOLS_KEY = "schools.json";
 export const STUDENT_HISTORY_KEY = "student-history.json";
 
@@ -182,6 +196,7 @@ const memory = globalThis as typeof globalThis & {
   __petitSuiviLinks?: SharedLink[];
   __petitSuiviJournalPosts?: JournalPost[];
   __petitSuiviMassCommunications?: MassCommunication[];
+  __petitSuiviStaffingSessions?: StaffingDay[];
   __petitSuiviSchools?: School[];
   __petitSuiviStudentHistory?: StudentHistoryYear[];
 };
@@ -468,6 +483,42 @@ export function sanitizeMassCommunication(raw: Record<string, unknown>): MassCom
     author: cleanText(raw.author) || "Equipe Alpha",
     notes: cleanText(raw.notes),
     tags: Array.from(new Set(tags)),
+    createdAt: cleanText(raw.createdAt) || now,
+    updatedAt: cleanText(raw.updatedAt) || cleanText(raw.createdAt) || now,
+  };
+}
+
+function cleanSessionCount(value: unknown) {
+  const parsed =
+    typeof value === "number"
+      ? value
+      : typeof value === "string" && value.trim()
+        ? Number(value)
+        : 0;
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 0;
+}
+
+function sanitizeStaffingPerson(raw: unknown) {
+  const record = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+  return {
+    staffedSessions: cleanSessionCount(record.staffedSessions),
+    unstaffedSessions: cleanSessionCount(record.unstaffedSessions),
+  };
+}
+
+export function sanitizeStaffingDay(raw: Record<string, unknown>): StaffingDay {
+  const now = new Date().toISOString();
+  const people = raw.people && typeof raw.people === "object" ? (raw.people as Record<string, unknown>) : {};
+  const date = cleanText(raw.date) || now.slice(0, 10);
+
+  return {
+    id: cleanText(raw.id) || `staffing-${date}`,
+    date,
+    people: {
+      pierre: sanitizeStaffingPerson(people.pierre),
+      julie: sanitizeStaffingPerson(people.julie),
+      kelly: sanitizeStaffingPerson(people.kelly),
+    },
     createdAt: cleanText(raw.createdAt) || now,
     updatedAt: cleanText(raw.updatedAt) || cleanText(raw.createdAt) || now,
   };
@@ -809,6 +860,30 @@ export async function writeMassCommunications(communications: MassCommunication[
     await store.setJSON(MASS_COMMUNICATIONS_KEY, communications);
   } catch {
     memory.__petitSuiviMassCommunications = communications;
+  }
+}
+
+export async function readStaffingSessions() {
+  try {
+    const store = taskStore();
+    const staffing = await store.get(STAFFING_SESSIONS_KEY, { type: "json", consistency: "strong" });
+    return Array.isArray(staffing)
+      ? staffing
+          .filter((day): day is Record<string, unknown> => Boolean(day && typeof day === "object"))
+          .map(sanitizeStaffingDay)
+          .sort((a, b) => dateValueForSort(b.date) - dateValueForSort(a.date))
+      : [];
+  } catch {
+    return memory.__petitSuiviStaffingSessions ?? [];
+  }
+}
+
+export async function writeStaffingSessions(staffing: StaffingDay[]) {
+  try {
+    const store = taskStore();
+    await store.setJSON(STAFFING_SESSIONS_KEY, staffing);
+  } catch {
+    memory.__petitSuiviStaffingSessions = staffing;
   }
 }
 

@@ -5,13 +5,14 @@ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "re
 type Status = "todo" | "progress" | "done";
 type Priority = "low" | "medium" | "high";
 type Density = "compact" | "comfortable";
-type AppMode = "tasks" | "recurring" | "links" | "objectives" | "history" | "journal" | "schools" | "communications";
+type AppMode = "tasks" | "recurring" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffing";
 type ViewMode = "list" | "matrix";
 type DurationBucket = "short" | "medium" | "long" | "unset";
 type ObjectiveKind = "counter" | "qualitative";
 type ObjectiveStatus = "todo" | "progress" | "done";
 type CommunicationAudience = "tuteurs" | "etablissements" | "parents" | "coordinateurs";
 type CommunicationStatus = "draft" | "sent" | "to-follow-up" | "cancelled";
+type StaffingPersonKey = "pierre" | "julie" | "kelly";
 
 type Comment = {
   id: string;
@@ -103,6 +104,19 @@ type MassCommunication = {
   author: string;
   notes: string;
   tags: string[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+type StaffingPersonStats = {
+  staffedSessions: number;
+  unstaffedSessions: number;
+};
+
+type StaffingDay = {
+  id: string;
+  date: string;
+  people: Record<StaffingPersonKey, StaffingPersonStats>;
   createdAt: string;
   updatedAt: string;
 };
@@ -336,6 +350,11 @@ const communicationStatusLabels: Record<CommunicationStatus, string> = {
 const communicationAudiences: CommunicationAudience[] = ["tuteurs", "etablissements", "parents", "coordinateurs"];
 const communicationStatuses: ("all" | CommunicationStatus)[] = ["all", "sent", "to-follow-up", "draft", "cancelled"];
 const communicationChannels = ["Email", "WhatsApp", "Téléphone", "Réunion", "Autre"];
+const staffingPeople: { key: StaffingPersonKey; label: string }[] = [
+  { key: "pierre", label: "Pierre" },
+  { key: "julie", label: "Julie" },
+  { key: "kelly", label: "Kelly" },
+];
 
 const crmTagSuggestions = [
   "Problème à résoudre",
@@ -509,6 +528,54 @@ function normalizeMassCommunication(raw: Partial<MassCommunication>): MassCommun
     tags: normalizeTags(raw.tags),
     createdAt: raw.createdAt || now,
     updatedAt: raw.updatedAt || raw.createdAt || now,
+  };
+}
+
+function normalizeSessionCount(value: unknown) {
+  const parsed =
+    typeof value === "number"
+      ? value
+      : typeof value === "string" && value.trim()
+        ? Number(value)
+        : 0;
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 0;
+}
+
+function normalizeStaffingPerson(raw: Partial<StaffingPersonStats> | undefined): StaffingPersonStats {
+  return {
+    staffedSessions: normalizeSessionCount(raw?.staffedSessions),
+    unstaffedSessions: normalizeSessionCount(raw?.unstaffedSessions),
+  };
+}
+
+function normalizeStaffingDay(raw: Partial<StaffingDay>): StaffingDay {
+  const now = new Date().toISOString();
+  const date = raw.date || now.slice(0, 10);
+  return {
+    id: raw.id || `staffing-${date}`,
+    date,
+    people: {
+      pierre: normalizeStaffingPerson(raw.people?.pierre),
+      julie: normalizeStaffingPerson(raw.people?.julie),
+      kelly: normalizeStaffingPerson(raw.people?.kelly),
+    },
+    createdAt: raw.createdAt || now,
+    updatedAt: raw.updatedAt || raw.createdAt || now,
+  };
+}
+
+function createEmptyStaffingDay(date = new Date().toISOString().slice(0, 10)): StaffingDay {
+  const now = new Date().toISOString();
+  return {
+    id: `staffing-${date}`,
+    date,
+    people: {
+      pierre: { staffedSessions: 0, unstaffedSessions: 0 },
+      julie: { staffedSessions: 0, unstaffedSessions: 0 },
+      kelly: { staffedSessions: 0, unstaffedSessions: 0 },
+    },
+    createdAt: now,
+    updatedAt: now,
   };
 }
 
@@ -793,6 +860,7 @@ export default function Home() {
   const [links, setLinks] = useState<SharedLink[]>([]);
   const [journalPosts, setJournalPosts] = useState<JournalPost[]>([]);
   const [communications, setCommunications] = useState<MassCommunication[]>([]);
+  const [staffingDays, setStaffingDays] = useState<StaffingDay[]>([]);
   const [schools, setSchools] = useState<School[]>([]);
   const [studentHistory, setStudentHistory] = useState<StudentHistoryYear[]>([]);
   const [people, setPeople] = useState<Person[]>([]);
@@ -946,6 +1014,31 @@ export default function Home() {
     }
   }, []);
 
+  const loadStaffingDays = useCallback(async () => {
+    try {
+      const response = await fetch("/api/staffing-sessions", { cache: "no-store" });
+      if (!response.ok) throw new Error("load-staffing-failed");
+      const data = (await response.json()) as { staffing?: Partial<StaffingDay>[] };
+      const today = new Date().toISOString().slice(0, 10);
+      const loadedStaffing = Array.isArray(data.staffing) ? data.staffing.map(normalizeStaffingDay) : [];
+      if (loadedStaffing.some((day) => day.date === today)) {
+        setStaffingDays(loadedStaffing);
+        return;
+      }
+      const nextStaffing = [createEmptyStaffingDay(today), ...loadedStaffing].sort(
+        (a, b) => sortDateValue(b.date) - sortDateValue(a.date),
+      );
+      setStaffingDays(nextStaffing);
+      await fetch("/api/staffing-sessions", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ staffing: nextStaffing }),
+      });
+    } catch {
+      setToast("Staffing indisponible");
+    }
+  }, []);
+
   const loadSchools = useCallback(async () => {
     try {
       const response = await fetch("/api/schools", { cache: "no-store" });
@@ -988,11 +1081,12 @@ export default function Home() {
       void loadLinks();
       void loadJournalPosts();
       void loadCommunications();
+      void loadStaffingDays();
       void loadSchools();
       void loadStudentHistory();
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadCommunications, loadSchools, loadStudentHistory]);
+  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadCommunications, loadStaffingDays, loadSchools, loadStudentHistory]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -1003,11 +1097,12 @@ export default function Home() {
       void loadLinks();
       void loadJournalPosts();
       void loadCommunications();
+      void loadStaffingDays();
       void loadSchools();
       void loadStudentHistory();
     }, 30000);
     return () => window.clearInterval(timer);
-  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadCommunications, loadSchools, loadStudentHistory]);
+  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadCommunications, loadStaffingDays, loadSchools, loadStudentHistory]);
 
   useEffect(() => {
     if (authorName.trim()) localStorage.setItem(AUTHOR_KEY, authorName.trim());
@@ -1159,6 +1254,32 @@ export default function Home() {
           sortDateValue(a.sentAt || a.followUpDate || a.createdAt),
       );
   }, [communications, communicationQuery, communicationAudienceFilter, communicationStatusFilter]);
+  const staffingSummary = useMemo(() => {
+    const today = new Date();
+    today.setHours(12, 0, 0, 0);
+    const sevenDaysAgo = today.getTime() - 6 * 24 * 60 * 60 * 1000;
+    return staffingDays.reduce(
+      (summary, day) => {
+        const dayValue = sortDateValue(day.date);
+        const dayTotals = staffingPeople.reduce(
+          (totals, person) => {
+            totals.staffed += day.people[person.key].staffedSessions;
+            totals.unstaffed += day.people[person.key].unstaffedSessions;
+            return totals;
+          },
+          { staffed: 0, unstaffed: 0 },
+        );
+        summary.totalStaffed += dayTotals.staffed;
+        summary.totalUnstaffed += dayTotals.unstaffed;
+        if (dayValue >= sevenDaysAgo && dayValue <= today.getTime()) {
+          summary.weekStaffed += dayTotals.staffed;
+          summary.weekUnstaffed += dayTotals.unstaffed;
+        }
+        return summary;
+      },
+      { totalStaffed: 0, totalUnstaffed: 0, weekStaffed: 0, weekUnstaffed: 0 },
+    );
+  }, [staffingDays]);
   const filteredSchools = useMemo(() => {
     const normalized = schoolQuery.trim().toLocaleLowerCase("fr");
     return schools
@@ -1349,6 +1470,31 @@ export default function Home() {
     } catch {
       setSyncError("Sauvegarde impossible, rechargez la page avant de continuer");
       setToast("Communication non sauvegardée");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function saveStaffingDays(nextStaffing: StaffingDay[], message: string) {
+    setSaving(true);
+    setSyncError("");
+    const normalizedStaffing = nextStaffing
+      .map(normalizeStaffingDay)
+      .sort((a, b) => sortDateValue(b.date) - sortDateValue(a.date));
+    setStaffingDays(normalizedStaffing);
+    try {
+      const response = await fetch("/api/staffing-sessions", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ staffing: normalizedStaffing }),
+      });
+      if (!response.ok) throw new Error("save-staffing-failed");
+      const data = (await response.json()) as { staffing?: Partial<StaffingDay>[] };
+      setStaffingDays(Array.isArray(data.staffing) ? data.staffing.map(normalizeStaffingDay) : []);
+      setToast(message);
+    } catch {
+      setSyncError("Sauvegarde impossible, rechargez la page avant de continuer");
+      setToast("Staffing non sauvegardé");
     } finally {
       setSaving(false);
     }
@@ -1753,6 +1899,34 @@ export default function Home() {
     await saveCommunications(
       communications.filter((communication) => communication.id !== communicationId),
       "Communication supprimée",
+    );
+  }
+
+  async function updateStaffingValue(
+    dayId: string,
+    personKey: StaffingPersonKey,
+    field: keyof StaffingPersonStats,
+    value: string,
+  ) {
+    const count = normalizeSessionCount(value);
+    const now = new Date().toISOString();
+    await saveStaffingDays(
+      staffingDays.map((day) =>
+        day.id === dayId
+          ? {
+              ...day,
+              people: {
+                ...day.people,
+                [personKey]: {
+                  ...day.people[personKey],
+                  [field]: count,
+                },
+              },
+              updatedAt: now,
+            }
+          : day,
+      ),
+      "Staffing mis à jour",
     );
   }
 
@@ -2412,8 +2586,10 @@ export default function Home() {
                   ? openNewLink
                   : appMode === "journal"
                     ? openNewJournalPost
-                    : appMode === "communications"
+                  : appMode === "communications"
                       ? openNewCommunication
+                    : appMode === "staffing"
+                      ? () => { void loadStaffingDays(); }
                     : appMode === "schools"
                       ? () => openSchoolEvent()
                   : appMode === "objectives"
@@ -2431,8 +2607,10 @@ export default function Home() {
                   ? "Nouveau lien"
                   : appMode === "journal"
                     ? "Nouveau post"
-                    : appMode === "communications"
+                  : appMode === "communications"
                       ? "Nouvelle communication"
+                    : appMode === "staffing"
+                      ? "Ligne du jour"
                     : appMode === "schools"
                       ? "Nouveau post CRM"
                   : appMode === "objectives"
@@ -2517,6 +2695,9 @@ export default function Home() {
           </button>
           <button className={appMode === "communications" ? "active" : ""} onClick={() => setAppMode("communications")}>
             Communications <span>{communications.length}</span>
+          </button>
+          <button className={appMode === "staffing" ? "active" : ""} onClick={() => setAppMode("staffing")}>
+            Staffing <span>{staffingDays.length}</span>
           </button>
           <button className={appMode === "schools" ? "active" : ""} onClick={() => setAppMode("schools")}>
             Établissements <span>{schools.length}</span>
@@ -2923,6 +3104,87 @@ export default function Home() {
                 <h3>{communications.length ? "Aucune communication ne correspond aux filtres" : "Aucune communication enregistrée"}</h3>
                 <p>{communications.length ? "Essayez une autre recherche ou retirez un filtre." : "Tracez les messages envoyés aux tuteurs, établissements, parents ou coordinateurs."}</p>
                 <button className="button primary" onClick={openNewCommunication}>Créer la première communication</button>
+              </div>
+            )}
+          </div>
+        </section>
+        : appMode === "staffing" ? <section className="task-panel">
+          <div className="panel-heading">
+            <div>
+              <h2>Staffing séances</h2>
+              <p>{`${staffingDays.length} jour${staffingDays.length > 1 ? "s" : ""} suivi${staffingDays.length > 1 ? "s" : ""} · Pierre, Julie, Kelly`}</p>
+            </div>
+            <div className="filters">
+              <button className="button quiet" onClick={() => { void loadStaffingDays(); }} disabled={saving}>↻ Actualiser</button>
+              <button className="button primary" onClick={() => { void loadStaffingDays(); }} disabled={saving}>＋ Ligne du jour</button>
+            </div>
+          </div>
+          <div className="staffing-summary" aria-label="Résumé staffing">
+            <div><span>7 jours staffées</span><strong>{staffingSummary.weekStaffed}</strong></div>
+            <div><span>7 jours non staffées</span><strong>{staffingSummary.weekUnstaffed}</strong></div>
+            <div><span>Total staffées</span><strong>{staffingSummary.totalStaffed}</strong></div>
+            <div><span>Total non staffées</span><strong>{staffingSummary.totalUnstaffed}</strong></div>
+          </div>
+          <div className="staffing-table-wrap">
+            <div className="staffing-table staffing-head" role="row">
+              <span>Date</span>
+              {staffingPeople.map((person) => <span key={person.key}>{person.label}</span>)}
+              <span>Total staffé</span>
+              <span>Total non staffé</span>
+            </div>
+            {staffingDays.length ? staffingDays.map((day) => {
+              const dayStaffedTotal = staffingPeople.reduce((total, person) => total + day.people[person.key].staffedSessions, 0);
+              const dayUnstaffedTotal = staffingPeople.reduce((total, person) => total + day.people[person.key].unstaffedSessions, 0);
+              return (
+                <article className="staffing-table staffing-row" key={day.id}>
+                  <div className="staffing-date">
+                    <strong>{formatDate(day.date)}</strong>
+                    <small>{day.date}</small>
+                  </div>
+                  {staffingPeople.map((person) => (
+                    <div className="staffing-person-cell" key={person.key}>
+                      <label>
+                        <span>Staffées</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="1"
+                          defaultValue={day.people[person.key].staffedSessions}
+                          onBlur={(event) => {
+                            const count = normalizeSessionCount(event.target.value);
+                            event.target.value = String(count);
+                            void updateStaffingValue(day.id, person.key, "staffedSessions", event.target.value);
+                          }}
+                          aria-label={`${person.label} séances staffées ${day.date}`}
+                        />
+                      </label>
+                      <label>
+                        <span>Non staffées</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="1"
+                          defaultValue={day.people[person.key].unstaffedSessions}
+                          onBlur={(event) => {
+                            const count = normalizeSessionCount(event.target.value);
+                            event.target.value = String(count);
+                            void updateStaffingValue(day.id, person.key, "unstaffedSessions", event.target.value);
+                          }}
+                          aria-label={`${person.label} séances non staffées ${day.date}`}
+                        />
+                      </label>
+                    </div>
+                  ))}
+                  <div className="staffing-total good">{dayStaffedTotal}</div>
+                  <div className={`staffing-total ${dayUnstaffedTotal > 0 ? "alert" : ""}`}>{dayUnstaffedTotal}</div>
+                </article>
+              );
+            }) : (
+              <div className="empty-state staffing-empty">
+                <span>≡</span>
+                <h3>Aucune journée suivie</h3>
+                <p>La ligne du jour sera ajoutée automatiquement pour commencer le suivi des séances staffées et non staffées.</p>
+                <button className="button primary" onClick={() => { void loadStaffingDays(); }}>Créer la ligne du jour</button>
               </div>
             )}
           </div>
