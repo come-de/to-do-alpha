@@ -5,7 +5,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "re
 type Status = "todo" | "progress" | "done";
 type Priority = "low" | "medium" | "high";
 type Density = "compact" | "comfortable";
-type AppMode = "tasks" | "recurring" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffing";
+type AppMode = "tasks" | "recurring" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffing" | "watchlist";
 type ViewMode = "list" | "matrix";
 type DurationBucket = "short" | "medium" | "long" | "unset";
 type ObjectiveKind = "counter" | "qualitative";
@@ -121,6 +121,29 @@ type StaffingDay = {
   updatedAt: string;
 };
 
+type SchoolWatchTag = "Nouvel établissement" | "Nouveau besoin" | "Suivi particulier";
+type SchoolWatchStatus = "active" | "resolved";
+type WatchlistFilter = "active" | "resolved" | "all" | SchoolWatchTag;
+
+type SchoolWatchComment = {
+  id: string;
+  text: string;
+  author: string;
+  createdAt: string;
+};
+
+type SchoolWatchItem = {
+  id: string;
+  schoolId: string;
+  reason: string;
+  tags: SchoolWatchTag[];
+  status: SchoolWatchStatus;
+  comments: SchoolWatchComment[];
+  createdAt: string;
+  updatedAt: string;
+  resolvedAt: string;
+};
+
 type SchoolEventKind = "event" | "comment" | "action";
 type SchoolType = "alpha" | "mise-a-dispo" | "mixed";
 type SchoolFilter = "all" | SchoolType | "with-posts" | "without-posts";
@@ -193,6 +216,10 @@ type ObjectiveDraft = Omit<Objective, "id" | "createdAt">;
 type LinkDraft = Omit<SharedLink, "id" | "createdAt">;
 type JournalDraft = Omit<JournalPost, "id" | "createdAt" | "updatedAt">;
 type CommunicationDraft = Omit<MassCommunication, "id" | "createdAt" | "updatedAt">;
+type SchoolWatchDraft = Omit<SchoolWatchItem, "id" | "comments" | "createdAt" | "updatedAt" | "resolvedAt"> & {
+  initialComment: string;
+  author: string;
+};
 type SchoolDraft = Omit<School, "id" | "events" | "createdAt" | "updatedAt">;
 type SchoolEventDraft = Omit<SchoolEvent, "id" | "createdAt">;
 
@@ -291,6 +318,15 @@ const emptyCommunicationDraft: CommunicationDraft = {
   tags: [],
 };
 
+const emptySchoolWatchDraft: SchoolWatchDraft = {
+  schoolId: "",
+  reason: "",
+  tags: [],
+  status: "active",
+  initialComment: "",
+  author: "",
+};
+
 const emptySchoolDraft: SchoolDraft = {
   externalId: "",
   name: "",
@@ -355,6 +391,11 @@ const staffingPeople: { key: StaffingPersonKey; label: string }[] = [
   { key: "julie", label: "Julie" },
   { key: "kelly", label: "Kelly" },
 ];
+const schoolWatchTags: SchoolWatchTag[] = ["Nouvel établissement", "Nouveau besoin", "Suivi particulier"];
+const schoolWatchStatusLabels: Record<SchoolWatchStatus, string> = {
+  active: "Actif",
+  resolved: "Résolu",
+};
 
 const crmTagSuggestions = [
   "Problème à résoudre",
@@ -561,6 +602,32 @@ function normalizeStaffingDay(raw: Partial<StaffingDay>): StaffingDay {
     },
     createdAt: raw.createdAt || now,
     updatedAt: raw.updatedAt || raw.createdAt || now,
+  };
+}
+
+function normalizeSchoolWatchItem(raw: Partial<SchoolWatchItem>): SchoolWatchItem {
+  const now = new Date().toISOString();
+  return {
+    id: raw.id || uid("watch"),
+    schoolId: raw.schoolId || "",
+    reason: raw.reason || "",
+    tags: Array.isArray(raw.tags)
+      ? Array.from(new Set(raw.tags.filter((tag): tag is SchoolWatchTag => schoolWatchTags.includes(tag as SchoolWatchTag))))
+      : [],
+    status: raw.status === "resolved" ? "resolved" : "active",
+    comments: Array.isArray(raw.comments)
+      ? raw.comments
+          .map((comment) => ({
+            id: comment.id || uid("watch-comment"),
+            text: comment.text || "",
+            author: comment.author || "Equipe Alpha",
+            createdAt: comment.createdAt || now,
+          }))
+          .filter((comment) => comment.text)
+      : [],
+    createdAt: raw.createdAt || now,
+    updatedAt: raw.updatedAt || raw.createdAt || now,
+    resolvedAt: raw.resolvedAt || "",
   };
 }
 
@@ -861,6 +928,7 @@ export default function Home() {
   const [journalPosts, setJournalPosts] = useState<JournalPost[]>([]);
   const [communications, setCommunications] = useState<MassCommunication[]>([]);
   const [staffingDays, setStaffingDays] = useState<StaffingDay[]>([]);
+  const [schoolWatchlist, setSchoolWatchlist] = useState<SchoolWatchItem[]>([]);
   const [schools, setSchools] = useState<School[]>([]);
   const [studentHistory, setStudentHistory] = useState<StudentHistoryYear[]>([]);
   const [people, setPeople] = useState<Person[]>([]);
@@ -889,6 +957,7 @@ export default function Home() {
   const [linkOpen, setLinkOpen] = useState(false);
   const [journalOpen, setJournalOpen] = useState(false);
   const [communicationOpen, setCommunicationOpen] = useState(false);
+  const [schoolWatchOpen, setSchoolWatchOpen] = useState(false);
   const [schoolOpen, setSchoolOpen] = useState(false);
   const [schoolEventOpen, setSchoolEventOpen] = useState(false);
   const [notifyOpen, setNotifyOpen] = useState(false);
@@ -897,6 +966,7 @@ export default function Home() {
   const [editingLinkId, setEditingLinkId] = useState<string | null>(null);
   const [editingJournalId, setEditingJournalId] = useState<string | null>(null);
   const [editingCommunicationId, setEditingCommunicationId] = useState<string | null>(null);
+  const [editingSchoolWatchId, setEditingSchoolWatchId] = useState<string | null>(null);
   const [editingSchoolId, setEditingSchoolId] = useState<string | null>(null);
   const [eventSchoolId, setEventSchoolId] = useState<string | null>(null);
   const [draft, setDraft] = useState<TaskDraft>(emptyDraft);
@@ -905,6 +975,7 @@ export default function Home() {
   const [linkDraft, setLinkDraft] = useState<LinkDraft>(emptyLinkDraft);
   const [journalDraft, setJournalDraft] = useState<JournalDraft>(emptyJournalDraft);
   const [communicationDraft, setCommunicationDraft] = useState<CommunicationDraft>(emptyCommunicationDraft);
+  const [schoolWatchDraft, setSchoolWatchDraft] = useState<SchoolWatchDraft>(emptySchoolWatchDraft);
   const [schoolDraft, setSchoolDraft] = useState<SchoolDraft>(emptySchoolDraft);
   const [schoolEventDraft, setSchoolEventDraft] = useState<SchoolEventDraft>(emptySchoolEventDraft);
   const [editingObjectiveId, setEditingObjectiveId] = useState<string | null>(null);
@@ -924,6 +995,10 @@ export default function Home() {
   const [communicationQuery, setCommunicationQuery] = useState("");
   const [communicationAudienceFilter, setCommunicationAudienceFilter] = useState<"all" | CommunicationAudience>("all");
   const [communicationStatusFilter, setCommunicationStatusFilter] = useState<"all" | CommunicationStatus>("all");
+  const [schoolWatchQuery, setSchoolWatchQuery] = useState("");
+  const [schoolWatchFilter, setSchoolWatchFilter] = useState<WatchlistFilter>("active");
+  const [selectedSchoolWatchId, setSelectedSchoolWatchId] = useState<string | null>(null);
+  const [schoolWatchComment, setSchoolWatchComment] = useState("");
   const [schoolQuery, setSchoolQuery] = useState("");
   const [schoolFilter, setSchoolFilter] = useState<SchoolFilter>("all");
   const [selectedSchoolId, setSelectedSchoolId] = useState<string | null>(null);
@@ -1039,6 +1114,17 @@ export default function Home() {
     }
   }, []);
 
+  const loadSchoolWatchlist = useCallback(async () => {
+    try {
+      const response = await fetch("/api/school-watchlist", { cache: "no-store" });
+      if (!response.ok) throw new Error("load-school-watchlist-failed");
+      const data = (await response.json()) as { watchlist?: Partial<SchoolWatchItem>[] };
+      setSchoolWatchlist(Array.isArray(data.watchlist) ? data.watchlist.map(normalizeSchoolWatchItem) : []);
+    } catch {
+      setToast("Établissements à suivre indisponibles");
+    }
+  }, []);
+
   const loadSchools = useCallback(async () => {
     try {
       const response = await fetch("/api/schools", { cache: "no-store" });
@@ -1082,11 +1168,12 @@ export default function Home() {
       void loadJournalPosts();
       void loadCommunications();
       void loadStaffingDays();
+      void loadSchoolWatchlist();
       void loadSchools();
       void loadStudentHistory();
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadCommunications, loadStaffingDays, loadSchools, loadStudentHistory]);
+  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadCommunications, loadStaffingDays, loadSchoolWatchlist, loadSchools, loadStudentHistory]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -1098,11 +1185,12 @@ export default function Home() {
       void loadJournalPosts();
       void loadCommunications();
       void loadStaffingDays();
+      void loadSchoolWatchlist();
       void loadSchools();
       void loadStudentHistory();
     }, 30000);
     return () => window.clearInterval(timer);
-  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadCommunications, loadStaffingDays, loadSchools, loadStudentHistory]);
+  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadCommunications, loadStaffingDays, loadSchoolWatchlist, loadSchools, loadStudentHistory]);
 
   useEffect(() => {
     if (authorName.trim()) localStorage.setItem(AUTHOR_KEY, authorName.trim());
@@ -1312,6 +1400,31 @@ export default function Home() {
   const selectedSchool = selectedSchoolId
     ? schools.find((school) => school.id === selectedSchoolId) ?? null
     : null;
+  const schoolById = useMemo(() => new Map(schools.map((school) => [school.id, school])), [schools]);
+  const filteredSchoolWatchlist = useMemo(() => {
+    const normalized = schoolWatchQuery.trim().toLocaleLowerCase("fr");
+    return schoolWatchlist
+      .filter((item) => {
+        const school = schoolById.get(item.schoolId);
+        const matchesFilter =
+          schoolWatchFilter === "all" ||
+          item.status === schoolWatchFilter ||
+          item.tags.includes(schoolWatchFilter as SchoolWatchTag);
+        if (!matchesFilter) return false;
+        if (!normalized) return true;
+        const commentsText = item.comments.map((comment) => `${comment.text} ${comment.author}`).join(" ");
+        return `${school?.name || "Établissement introuvable"} ${school?.city || ""} ${school?.coordinator || ""} ${school?.category || ""} ${school ? schoolTypeLabels[school.schoolType] : ""} ${item.reason} ${item.tags.join(" ")} ${commentsText}`
+          .toLocaleLowerCase("fr")
+          .includes(normalized);
+      })
+      .sort((a, b) => {
+        if (a.status !== b.status) return a.status === "active" ? -1 : 1;
+        return sortDateValue(b.updatedAt || b.createdAt) - sortDateValue(a.updatedAt || a.createdAt);
+      });
+  }, [schoolWatchlist, schoolById, schoolWatchQuery, schoolWatchFilter]);
+  const selectedSchoolWatchItem = selectedSchoolWatchId
+    ? schoolWatchlist.find((item) => item.id === selectedSchoolWatchId) ?? null
+    : null;
   const activeHistory = studentHistory.find((year) => year.year === activeHistoryYear) ?? null;
   const chartYears = studentHistory.filter((year) => selectedHistoryYears.includes(year.year));
   const chartDays = campaignDates(2000).map(campaignDayKey);
@@ -1495,6 +1608,31 @@ export default function Home() {
     } catch {
       setSyncError("Sauvegarde impossible, rechargez la page avant de continuer");
       setToast("Staffing non sauvegardé");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function saveSchoolWatchlist(nextWatchlist: SchoolWatchItem[], message: string) {
+    setSaving(true);
+    setSyncError("");
+    const normalizedWatchlist = nextWatchlist
+      .map(normalizeSchoolWatchItem)
+      .sort((a, b) => sortDateValue(b.updatedAt || b.createdAt) - sortDateValue(a.updatedAt || a.createdAt));
+    setSchoolWatchlist(normalizedWatchlist);
+    try {
+      const response = await fetch("/api/school-watchlist", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ watchlist: normalizedWatchlist }),
+      });
+      if (!response.ok) throw new Error("save-school-watchlist-failed");
+      const data = (await response.json()) as { watchlist?: Partial<SchoolWatchItem>[] };
+      setSchoolWatchlist(Array.isArray(data.watchlist) ? data.watchlist.map(normalizeSchoolWatchItem) : []);
+      setToast(message);
+    } catch {
+      setSyncError("Sauvegarde impossible, rechargez la page avant de continuer");
+      setToast("Suivi non sauvegardé");
     } finally {
       setSaving(false);
     }
@@ -1928,6 +2066,134 @@ export default function Home() {
       ),
       "Staffing mis à jour",
     );
+  }
+
+  function openNewSchoolWatchItem(schoolId = "") {
+    setEditingSchoolWatchId(null);
+    setSchoolWatchDraft({
+      ...emptySchoolWatchDraft,
+      schoolId,
+      author: authorName.trim() || "",
+    });
+    setSchoolWatchOpen(true);
+  }
+
+  function openEditSchoolWatchItem(item: SchoolWatchItem) {
+    setEditingSchoolWatchId(item.id);
+    setSchoolWatchDraft({
+      schoolId: item.schoolId,
+      reason: item.reason,
+      tags: item.tags,
+      status: item.status,
+      initialComment: "",
+      author: authorName.trim() || item.comments[0]?.author || "",
+    });
+    setSchoolWatchOpen(true);
+  }
+
+  function toggleSchoolWatchTag(tag: SchoolWatchTag) {
+    setSchoolWatchDraft((current) => ({
+      ...current,
+      tags: current.tags.includes(tag)
+        ? current.tags.filter((item) => item !== tag)
+        : [...current.tags, tag],
+    }));
+  }
+
+  async function saveSchoolWatchItem(event: FormEvent) {
+    event.preventDefault();
+    if (!schoolWatchDraft.schoolId || !schoolWatchDraft.reason.trim() || saving) return;
+    const now = new Date().toISOString();
+    const author = schoolWatchDraft.author.trim() || authorName.trim() || "Equipe Alpha";
+    if (author && author !== "Equipe Alpha") setAuthorName(author);
+
+    if (editingSchoolWatchId) {
+      const existingItem = schoolWatchlist.find((item) => item.id === editingSchoolWatchId);
+      await saveSchoolWatchlist(
+        schoolWatchlist.map((item) =>
+          item.id === editingSchoolWatchId
+            ? {
+                ...(existingItem ?? item),
+                schoolId: schoolWatchDraft.schoolId,
+                reason: schoolWatchDraft.reason.trim(),
+                tags: schoolWatchDraft.tags,
+                status: schoolWatchDraft.status,
+                resolvedAt:
+                  schoolWatchDraft.status === "resolved"
+                    ? existingItem?.resolvedAt || now
+                    : "",
+                updatedAt: now,
+              }
+            : item,
+        ),
+        "Suivi mis à jour",
+      );
+    } else {
+      const initialComment = schoolWatchDraft.initialComment.trim()
+        ? [{ id: uid("watch-comment"), text: schoolWatchDraft.initialComment.trim(), author, createdAt: now }]
+        : [];
+      const newItem: SchoolWatchItem = {
+        id: uid("watch"),
+        schoolId: schoolWatchDraft.schoolId,
+        reason: schoolWatchDraft.reason.trim(),
+        tags: schoolWatchDraft.tags,
+        status: "active",
+        comments: initialComment,
+        createdAt: now,
+        updatedAt: now,
+        resolvedAt: "",
+      };
+      await saveSchoolWatchlist([newItem, ...schoolWatchlist], "Établissement ajouté au suivi");
+      setSelectedSchoolWatchId(newItem.id);
+    }
+    setSchoolWatchOpen(false);
+  }
+
+  async function addSchoolWatchComment(itemId: string) {
+    const text = schoolWatchComment.trim();
+    if (!text || saving) return;
+    const now = new Date().toISOString();
+    const author = authorName.trim() || "Equipe Alpha";
+    await saveSchoolWatchlist(
+      schoolWatchlist.map((item) =>
+        item.id === itemId
+          ? {
+              ...item,
+              comments: [{ id: uid("watch-comment"), text, author, createdAt: now }, ...item.comments],
+              updatedAt: now,
+            }
+          : item,
+      ),
+      "Commentaire ajouté",
+    );
+    setSchoolWatchComment("");
+  }
+
+  async function toggleSchoolWatchStatus(item: SchoolWatchItem) {
+    const now = new Date().toISOString();
+    const nextStatus: SchoolWatchStatus = item.status === "active" ? "resolved" : "active";
+    await saveSchoolWatchlist(
+      schoolWatchlist.map((watchItem) =>
+        watchItem.id === item.id
+          ? {
+              ...watchItem,
+              status: nextStatus,
+              resolvedAt: nextStatus === "resolved" ? now : "",
+              updatedAt: now,
+            }
+          : watchItem,
+      ),
+      nextStatus === "resolved" ? "Suivi marqué résolu" : "Suivi réactivé",
+    );
+  }
+
+  async function deleteSchoolWatchItem(itemId: string) {
+    if (!window.confirm("Supprimer ce suivi d'établissement ?")) return;
+    await saveSchoolWatchlist(
+      schoolWatchlist.filter((item) => item.id !== itemId),
+      "Suivi supprimé",
+    );
+    if (selectedSchoolWatchId === itemId) setSelectedSchoolWatchId(null);
   }
 
   function openNewSchool() {
@@ -2590,6 +2856,8 @@ export default function Home() {
                       ? openNewCommunication
                     : appMode === "staffing"
                       ? () => { void loadStaffingDays(); }
+                    : appMode === "watchlist"
+                      ? () => openNewSchoolWatchItem()
                     : appMode === "schools"
                       ? () => openSchoolEvent()
                   : appMode === "objectives"
@@ -2611,6 +2879,8 @@ export default function Home() {
                       ? "Nouvelle communication"
                     : appMode === "staffing"
                       ? "Ligne du jour"
+                    : appMode === "watchlist"
+                      ? "Nouveau suivi"
                     : appMode === "schools"
                       ? "Nouveau post CRM"
                   : appMode === "objectives"
@@ -2698,6 +2968,9 @@ export default function Home() {
           </button>
           <button className={appMode === "staffing" ? "active" : ""} onClick={() => setAppMode("staffing")}>
             Staffing <span>{staffingDays.length}</span>
+          </button>
+          <button className={appMode === "watchlist" ? "active" : ""} onClick={() => setAppMode("watchlist")}>
+            À suivre <span>{schoolWatchlist.filter((item) => item.status === "active").length}</span>
           </button>
           <button className={appMode === "schools" ? "active" : ""} onClick={() => setAppMode("schools")}>
             Établissements <span>{schools.length}</span>
@@ -3189,6 +3462,116 @@ export default function Home() {
             )}
           </div>
         </section>
+        : appMode === "watchlist" ? <section className="task-panel">
+          <div className="panel-heading">
+            <div>
+              <h2>Établissements à suivre</h2>
+              <p>{`${filteredSchoolWatchlist.length} suivi${filteredSchoolWatchlist.length > 1 ? "s" : ""} affiché${filteredSchoolWatchlist.length > 1 ? "s" : ""}`}</p>
+            </div>
+            <div className="filters">
+              <label className="search-box">
+                <span aria-hidden="true">⌕</span>
+                <input value={schoolWatchQuery} onChange={(event) => setSchoolWatchQuery(event.target.value)} placeholder="Rechercher un suivi..." aria-label="Rechercher un établissement à suivre" />
+              </label>
+              <button className="button quiet" onClick={() => { void loadSchoolWatchlist(); }} disabled={saving}>↻ Actualiser</button>
+              <button className="button primary" onClick={() => openNewSchoolWatchItem()} disabled={saving || !schools.length}>＋ Nouveau suivi</button>
+            </div>
+          </div>
+          <div className="school-filter-tabs" role="group" aria-label="Filtrer les suivis">
+            {([
+              ["active", "Actifs"],
+              ["resolved", "Résolus"],
+              ["all", "Tous"],
+              ...schoolWatchTags.map((tag) => [tag, tag] as const),
+            ] as const).map(([value, label]) => (
+              <button key={value} className={schoolWatchFilter === value ? "active" : ""} onClick={() => setSchoolWatchFilter(value)}>{label}</button>
+            ))}
+          </div>
+          <div className="watchlist-layout">
+            <div className="watchlist-table-wrap">
+              <div className="watchlist-table watchlist-head" aria-hidden="true">
+                <span>Établissement</span><span>Raison</span><span>Tags</span><span>Dernier commentaire</span><span>Statut</span><span>Actions</span>
+              </div>
+              {filteredSchoolWatchlist.length ? filteredSchoolWatchlist.map((item) => {
+                const school = schoolById.get(item.schoolId);
+                const latestComment = item.comments[0];
+                return (
+                  <article className={`watchlist-table watchlist-row ${item.status === "resolved" ? "is-resolved" : ""} school-type-${school?.schoolType || "mixed"}`} key={item.id}>
+                    <button className="watchlist-school" onClick={() => setSelectedSchoolWatchId(item.id)}>
+                      <strong>{school?.name || "Établissement introuvable"}</strong>
+                      <small>{school ? [schoolTypeLabels[school.schoolType], school.city, school.coordinator].filter(Boolean).join(" · ") : "Le suivi est conservé même si l'établissement n'est plus dans la liste."}</small>
+                    </button>
+                    <button className="watchlist-reason" onClick={() => setSelectedSchoolWatchId(item.id)}>{item.reason}</button>
+                    <div className="watchlist-tags">
+                      {item.tags.map((tag) => <button key={tag} onClick={() => setSchoolWatchFilter(tag)}>{tag}</button>)}
+                    </div>
+                    <button className={`watchlist-comment-preview ${latestComment ? "has-note" : ""}`} onClick={() => setSelectedSchoolWatchId(item.id)}>
+                      {latestComment ? `${latestComment.author} : ${latestComment.text}` : "Ajouter un commentaire"}
+                    </button>
+                    <span className={`watchlist-status ${item.status}`}>{schoolWatchStatusLabels[item.status]}</span>
+                    <div className="row-actions">
+                      <button className="button quiet" onClick={() => openEditSchoolWatchItem(item)}>Modifier</button>
+                      <button className="button quiet" onClick={() => toggleSchoolWatchStatus(item)}>{item.status === "active" ? "Résoudre" : "Réactiver"}</button>
+                      <button className="icon-button danger-icon" onClick={() => deleteSchoolWatchItem(item.id)} aria-label={`Supprimer le suivi ${school?.name || item.reason}`}>×</button>
+                    </div>
+                  </article>
+                );
+              }) : (
+                <div className="empty-state watchlist-empty">
+                  <span>⌕</span>
+                  <h3>{schoolWatchlist.length ? "Aucun suivi ne correspond aux filtres" : "Aucun établissement à suivre"}</h3>
+                  <p>{schoolWatchlist.length ? "Essayez une autre recherche ou un autre filtre." : "Ajoutez les nouveaux établissements, nouveaux besoins ou situations particulières à garder à l’œil."}</p>
+                  <button className="button primary" onClick={() => openNewSchoolWatchItem()} disabled={!schools.length}>Créer le premier suivi</button>
+                </div>
+              )}
+            </div>
+            {selectedSchoolWatchItem && (
+              <aside className={`watchlist-detail school-type-${schoolById.get(selectedSchoolWatchItem.schoolId)?.schoolType || "mixed"}`}>
+                <div className="school-detail-head">
+                  <div>
+                    <p className="eyebrow">Suivi établissement</p>
+                    <h3>{schoolById.get(selectedSchoolWatchItem.schoolId)?.name || "Établissement introuvable"}</h3>
+                  </div>
+                  <button className="close-button" onClick={() => setSelectedSchoolWatchId(null)} aria-label="Fermer le suivi">×</button>
+                </div>
+                <div className="school-meta">
+                  {schoolById.get(selectedSchoolWatchItem.schoolId) ? (
+                    <>
+                      <span className={`school-type-pill school-type-${schoolById.get(selectedSchoolWatchItem.schoolId)?.schoolType}`}>{schoolTypeLabels[schoolById.get(selectedSchoolWatchItem.schoolId)!.schoolType]}</span>
+                      {schoolById.get(selectedSchoolWatchItem.schoolId)?.city && <span>{schoolById.get(selectedSchoolWatchItem.schoolId)?.city}</span>}
+                      {schoolById.get(selectedSchoolWatchItem.schoolId)?.coordinator && <span>{schoolById.get(selectedSchoolWatchItem.schoolId)?.coordinator}</span>}
+                    </>
+                  ) : <span>Établissement introuvable</span>}
+                  <span className={`watchlist-status ${selectedSchoolWatchItem.status}`}>{schoolWatchStatusLabels[selectedSchoolWatchItem.status]}</span>
+                </div>
+                <div className="watchlist-detail-reason">
+                  <small>Raison du suivi</small>
+                  <strong>{selectedSchoolWatchItem.reason}</strong>
+                </div>
+                <div className="watchlist-tags">
+                  {selectedSchoolWatchItem.tags.map((tag) => <span key={tag}>{tag}</span>)}
+                </div>
+                <div className="school-detail-actions">
+                  <button className="button quiet" onClick={() => openEditSchoolWatchItem(selectedSchoolWatchItem)}>Modifier</button>
+                  <button className="button primary" onClick={() => toggleSchoolWatchStatus(selectedSchoolWatchItem)}>{selectedSchoolWatchItem.status === "active" ? "Marquer résolu" : "Réactiver"}</button>
+                </div>
+                <div className="watchlist-comment-box">
+                  <textarea rows={3} value={schoolWatchComment} onChange={(event) => setSchoolWatchComment(event.target.value)} placeholder="Ajouter un commentaire au suivi..." />
+                  <button className="button primary" onClick={() => addSchoolWatchComment(selectedSchoolWatchItem.id)} disabled={saving || !schoolWatchComment.trim()}>Ajouter le commentaire</button>
+                </div>
+                <div className="school-detail-posts">
+                  <strong>Commentaires</strong>
+                  {selectedSchoolWatchItem.comments.length ? selectedSchoolWatchItem.comments.map((comment) => (
+                    <div key={comment.id}>
+                      <small>{formatJournalDate(comment.createdAt)} · {comment.author}</small>
+                      <span>{comment.text}</span>
+                    </div>
+                  )) : <p>Aucun commentaire pour le moment.</p>}
+                </div>
+              </aside>
+            )}
+          </div>
+        </section>
         : appMode === "schools" ? <section className="task-panel">
           <div className="panel-heading">
             <div>
@@ -3538,6 +3921,49 @@ export default function Home() {
               <div className="form-actions">
                 <button type="button" className="button quiet" onClick={() => setCommunicationOpen(false)}>Annuler</button>
                 <button type="submit" className="button primary" disabled={saving || !communicationDraft.title.trim() || communicationDraft.audiences.length === 0}>{saving ? "Sauvegarde..." : "Enregistrer"}</button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
+
+      {schoolWatchOpen && (
+        <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setSchoolWatchOpen(false)}>
+          <section className="modal notify-modal" role="dialog" aria-modal="true" aria-labelledby="watch-title">
+            <div className="modal-header">
+              <div><p className="eyebrow">Établissement à suivre</p><h2 id="watch-title">{editingSchoolWatchId ? "Modifier le suivi" : "Nouveau suivi"}</h2></div>
+              <button className="close-button" onClick={() => setSchoolWatchOpen(false)} aria-label="Fermer">×</button>
+            </div>
+            <form onSubmit={saveSchoolWatchItem} className="task-form">
+              <label className="field full">
+                <span>Établissement *</span>
+                <select autoFocus required value={schoolWatchDraft.schoolId} onChange={(event) => setSchoolWatchDraft({ ...schoolWatchDraft, schoolId: event.target.value })}>
+                  <option value="">Choisir un établissement</option>
+                  {schools
+                    .slice()
+                    .sort((a, b) => a.name.localeCompare(b.name, "fr"))
+                    .map((school) => (
+                      <option key={school.id} value={school.id}>
+                        {school.name} · {schoolTypeLabels[school.schoolType]}{school.city ? ` · ${school.city}` : ""}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              <label className="field full"><span>Raison du suivi *</span><textarea required rows={3} value={schoolWatchDraft.reason} onChange={(event) => setSchoolWatchDraft({ ...schoolWatchDraft, reason: event.target.value })} placeholder="Pourquoi cet établissement doit rester visible ?" /></label>
+              <div className="field full">
+                <span>Tags</span>
+                <div className="crm-tag-picker">
+                  {schoolWatchTags.map((tag) => (
+                    <button type="button" key={tag} className={schoolWatchDraft.tags.includes(tag) ? "active" : ""} onClick={() => toggleSchoolWatchTag(tag)}>{tag}</button>
+                  ))}
+                </div>
+              </div>
+              <label className="field"><span>Statut</span><select value={schoolWatchDraft.status} onChange={(event) => setSchoolWatchDraft({ ...schoolWatchDraft, status: event.target.value as SchoolWatchStatus })}><option value="active">Actif</option><option value="resolved">Résolu</option></select></label>
+              <label className="field"><span>Auteur</span><input value={schoolWatchDraft.author} onChange={(event) => setSchoolWatchDraft({ ...schoolWatchDraft, author: event.target.value })} placeholder={authorName || "Equipe Alpha"} /></label>
+              {!editingSchoolWatchId && <label className="field full"><span>Commentaire initial</span><textarea rows={3} value={schoolWatchDraft.initialComment} onChange={(event) => setSchoolWatchDraft({ ...schoolWatchDraft, initialComment: event.target.value })} placeholder="Premier contexte, détail du besoin ou point d'attention..." /></label>}
+              <div className="form-actions">
+                <button type="button" className="button quiet" onClick={() => setSchoolWatchOpen(false)}>Annuler</button>
+                <button type="submit" className="button primary" disabled={saving || !schoolWatchDraft.schoolId || !schoolWatchDraft.reason.trim()}>{saving ? "Sauvegarde..." : "Enregistrer"}</button>
               </div>
             </form>
           </section>

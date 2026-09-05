@@ -114,6 +114,28 @@ export type StaffingDay = {
   updatedAt: string;
 };
 
+export type SchoolWatchTag = "Nouvel établissement" | "Nouveau besoin" | "Suivi particulier";
+export type SchoolWatchStatus = "active" | "resolved";
+
+export type SchoolWatchComment = {
+  id: string;
+  text: string;
+  author: string;
+  createdAt: string;
+};
+
+export type SchoolWatchItem = {
+  id: string;
+  schoolId: string;
+  reason: string;
+  tags: SchoolWatchTag[];
+  status: SchoolWatchStatus;
+  comments: SchoolWatchComment[];
+  createdAt: string;
+  updatedAt: string;
+  resolvedAt: string;
+};
+
 export type SchoolEventKind = "event" | "comment" | "action";
 export type SchoolType = "alpha" | "mise-a-dispo" | "mixed";
 
@@ -185,6 +207,7 @@ export const LINKS_KEY = "links.json";
 export const JOURNAL_POSTS_KEY = "journal-posts.json";
 export const MASS_COMMUNICATIONS_KEY = "mass-communications.json";
 export const STAFFING_SESSIONS_KEY = "staffing-sessions.json";
+export const SCHOOL_WATCHLIST_KEY = "school-watchlist.json";
 export const SCHOOLS_KEY = "schools.json";
 export const STUDENT_HISTORY_KEY = "student-history.json";
 
@@ -197,6 +220,7 @@ const memory = globalThis as typeof globalThis & {
   __petitSuiviJournalPosts?: JournalPost[];
   __petitSuiviMassCommunications?: MassCommunication[];
   __petitSuiviStaffingSessions?: StaffingDay[];
+  __petitSuiviSchoolWatchlist?: SchoolWatchItem[];
   __petitSuiviSchools?: School[];
   __petitSuiviStudentHistory?: StudentHistoryYear[];
 };
@@ -521,6 +545,39 @@ export function sanitizeStaffingDay(raw: Record<string, unknown>): StaffingDay {
     },
     createdAt: cleanText(raw.createdAt) || now,
     updatedAt: cleanText(raw.updatedAt) || cleanText(raw.createdAt) || now,
+  };
+}
+
+function isSchoolWatchTag(value: unknown): value is SchoolWatchTag {
+  return value === "Nouvel établissement" || value === "Nouveau besoin" || value === "Suivi particulier";
+}
+
+function isSchoolWatchStatus(value: unknown): value is SchoolWatchStatus {
+  return value === "active" || value === "resolved";
+}
+
+export function sanitizeSchoolWatchItem(raw: Record<string, unknown>): SchoolWatchItem {
+  const now = new Date().toISOString();
+  return {
+    id: cleanText(raw.id) || crypto.randomUUID(),
+    schoolId: cleanText(raw.schoolId),
+    reason: cleanText(raw.reason),
+    tags: Array.isArray(raw.tags) ? Array.from(new Set(raw.tags.filter(isSchoolWatchTag))) : [],
+    status: isSchoolWatchStatus(raw.status) ? raw.status : "active",
+    comments: Array.isArray(raw.comments)
+      ? raw.comments
+          .filter((comment): comment is Record<string, unknown> => Boolean(comment && typeof comment === "object"))
+          .map((comment) => ({
+            id: cleanText(comment.id) || crypto.randomUUID(),
+            text: cleanText(comment.text),
+            author: cleanText(comment.author) || "Equipe Alpha",
+            createdAt: cleanText(comment.createdAt) || now,
+          }))
+          .filter((comment) => comment.text)
+      : [],
+    createdAt: cleanText(raw.createdAt) || now,
+    updatedAt: cleanText(raw.updatedAt) || cleanText(raw.createdAt) || now,
+    resolvedAt: cleanText(raw.resolvedAt),
   };
 }
 
@@ -884,6 +941,31 @@ export async function writeStaffingSessions(staffing: StaffingDay[]) {
     await store.setJSON(STAFFING_SESSIONS_KEY, staffing);
   } catch {
     memory.__petitSuiviStaffingSessions = staffing;
+  }
+}
+
+export async function readSchoolWatchlist() {
+  try {
+    const store = taskStore();
+    const watchlist = await store.get(SCHOOL_WATCHLIST_KEY, { type: "json", consistency: "strong" });
+    return Array.isArray(watchlist)
+      ? watchlist
+          .filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object"))
+          .map(sanitizeSchoolWatchItem)
+          .filter((item) => item.schoolId && item.reason)
+          .sort((a, b) => dateValueForSort(b.updatedAt || b.createdAt) - dateValueForSort(a.updatedAt || a.createdAt))
+      : [];
+  } catch {
+    return memory.__petitSuiviSchoolWatchlist ?? [];
+  }
+}
+
+export async function writeSchoolWatchlist(watchlist: SchoolWatchItem[]) {
+  try {
+    const store = taskStore();
+    await store.setJSON(SCHOOL_WATCHLIST_KEY, watchlist);
+  } catch {
+    memory.__petitSuiviSchoolWatchlist = watchlist;
   }
 }
 

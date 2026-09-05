@@ -177,6 +177,37 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .staffing-total.good { border-color: rgba(16,185,129,.24); color: var(--green-dark); background: var(--green-pale); }
 .staffing-total.alert { border-color: #ffd4e5; color: var(--red); background: var(--red-pale); }
 .staffing-empty { border-top: 1px solid var(--line); }
+.watchlist-layout { padding: 12px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 360px); gap: 12px; align-items: start; }
+.watchlist-table-wrap { min-width: 0; }
+.watchlist-table { min-width: 980px; display: grid; grid-template-columns: minmax(180px, 1.1fr) minmax(190px, 1.2fr) minmax(145px, .8fr) minmax(170px, 1fr) 78px 220px; gap: 8px; align-items: center; }
+.watchlist-head { padding: 0 0 7px; color: var(--muted); font-size: 10px; font-weight: 850; text-transform: uppercase; letter-spacing: .07em; }
+.watchlist-row { margin-bottom: 7px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 11px; background: linear-gradient(135deg, rgba(255,255,255,.98), rgba(236,253,245,.58)); box-shadow: 0 4px 14px rgba(14,165,233,.035); position: relative; overflow: hidden; }
+.watchlist-row::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: linear-gradient(180deg, var(--blue-main), var(--green)); }
+.watchlist-row.school-type-mise-a-dispo { border-color: #ffd4e5; background: linear-gradient(135deg, rgba(255,255,255,.98), rgba(255,241,247,.7)); }
+.watchlist-row.school-type-mise-a-dispo::before { background: linear-gradient(180deg, var(--red), #f472b6); }
+.watchlist-row.school-type-mixed::before { background: linear-gradient(180deg, #7fa0af, var(--blue-dark)); }
+.watchlist-row.is-resolved { opacity: .72; }
+.watchlist-school, .watchlist-reason, .watchlist-comment-preview { appearance: none; min-width: 0; border: 0; padding: 0; background: transparent; text-align: left; cursor: pointer; }
+.watchlist-school strong { display: block; color: var(--blue-title); font-size: 13px; line-height: 1.18; }
+.watchlist-school small { display: block; margin-top: 3px; color: var(--muted); font-size: 10.5px; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.watchlist-reason { color: var(--ink); font-size: 12px; line-height: 1.35; }
+.watchlist-comment-preview { padding: 5px 7px; border: 1px dashed var(--line); border-radius: 8px; color: var(--muted); font-size: 11px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.watchlist-comment-preview.has-note { border-style: solid; color: var(--blue-dark); background: rgba(255,255,255,.75); }
+.watchlist-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+.watchlist-tags button, .watchlist-tags span { border: 1px solid rgba(16,185,129,.22); border-radius: 999px; padding: 3px 7px; color: var(--green-dark); background: var(--green-pale); font-size: 10px; font-weight: 800; cursor: pointer; }
+.watchlist-tags span { cursor: default; }
+.watchlist-status { border: 1px solid rgba(16,185,129,.24); border-radius: 999px; padding: 4px 8px; color: var(--green-dark); background: var(--green-pale); font-size: 10.5px; font-weight: 850; text-align: center; white-space: nowrap; }
+.watchlist-status.resolved { border-color: var(--line); color: var(--muted); background: var(--soft); }
+.watchlist-detail { position: sticky; top: 12px; border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: linear-gradient(135deg, rgba(255,255,255,.98), rgba(236,253,245,.7)); box-shadow: 0 8px 26px rgba(14,165,233,.06); overflow: hidden; }
+.watchlist-detail::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: linear-gradient(180deg, var(--blue-main), var(--green)); }
+.watchlist-detail.school-type-mise-a-dispo { border-color: #ffd4e5; background: linear-gradient(135deg, rgba(255,255,255,.98), rgba(255,241,247,.8)); }
+.watchlist-detail.school-type-mise-a-dispo::before { background: linear-gradient(180deg, var(--red), #f472b6); }
+.watchlist-detail-reason { margin-top: 10px; padding: 9px 10px; border: 1px solid rgba(14,165,233,.14); border-radius: 10px; background: rgba(255,255,255,.72); display: grid; gap: 3px; }
+.watchlist-detail-reason small { color: var(--muted); font-size: 9.5px; text-transform: uppercase; letter-spacing: .07em; font-weight: 800; }
+.watchlist-detail-reason strong { color: var(--blue-title); font-size: 12.5px; line-height: 1.35; }
+.watchlist-comment-box { margin-top: 10px; display: grid; gap: 7px; }
+.watchlist-comment-box textarea { width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px; color: var(--ink); background: white; resize: vertical; }
+.watchlist-empty { border-top: 1px solid var(--line); }
 .school-crm-list { padding: 12px; display: grid; gap: 10px; }
 .school-card { border: 1px solid var(--line); border-radius: 12px; padding: 13px; background: linear-gradient(135deg, rgba(255,255,255,.98), rgba(236,253,245,.72)); box-shadow: 0 5px 18px rgba(14,165,233,.05); position: relative; overflow: hidden; }
 .school-card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 5px; background: linear-gradient(180deg, var(--blue-main), var(--green)); }
@@ -603,6 +634,13 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .staffing-row .staffing-person-cell:nth-of-type(4)::before { content: "Kelly"; }
   .staffing-person-cell input { min-height: 32px; }
   .staffing-total { min-height: 30px; }
+  .watchlist-layout { grid-template-columns: 1fr; padding: 8px; gap: 8px; }
+  .watchlist-head { display: none; }
+  .watchlist-table.watchlist-row { min-width: 0; grid-template-columns: 1fr; gap: 7px; padding: 8px 9px; }
+  .watchlist-table-wrap { overflow: visible; }
+  .watchlist-school small, .watchlist-comment-preview { white-space: normal; }
+  .watchlist-row .row-actions { justify-content: flex-start; }
+  .watchlist-detail { position: static; padding: 9px; border-radius: 10px; }
   .school-card { padding: 9px; border-radius: 10px; }
   .school-card-header { flex-direction: column; gap: 8px; }
   .school-card-header h3 { font-size: 15px; }
