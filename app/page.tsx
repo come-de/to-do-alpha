@@ -1426,8 +1426,8 @@ export default function Home() {
     ? schoolWatchlist.find((item) => item.id === selectedSchoolWatchId) ?? null
     : null;
   const dashboardFocus = useMemo(() => {
-    const activeLateTasks = tasks
-      .filter(isLate)
+    const progressTasks = tasks
+      .filter((task) => task.status === "progress")
       .sort((a, b) => priorityRank[a.priority] - priorityRank[b.priority] || dateValue(a.endDate || a.startDate) - dateValue(b.endDate || b.startDate));
     const highPriorityTasks = tasks
       .filter((task) => task.status !== "done" && task.priority === "high" && !isLate(task))
@@ -1435,13 +1435,10 @@ export default function Home() {
     const watchItems = schoolWatchlist
       .filter((item) => item.status === "active")
       .sort((a, b) => sortDateValue(b.updatedAt || b.createdAt) - sortDateValue(a.updatedAt || a.createdAt));
-    const followUpCommunications = communications
-      .filter((communication) => communication.status === "to-follow-up")
-      .sort((a, b) => {
-        const lateDiff = Number(isCommunicationFollowUpLate(b)) - Number(isCommunicationFollowUpLate(a));
-        if (lateDiff !== 0) return lateDiff;
-        return dateValue(a.followUpDate) - dateValue(b.followUpDate);
-      });
+    const latestCrmItem =
+      schools
+        .flatMap((school) => school.events.map((event): CrmFeedItem => ({ school, event })))
+        .sort((a, b) => sortDateValue(b.event.date || b.event.createdAt) - sortDateValue(a.event.date || a.event.createdAt))[0] ?? null;
     const staffingIssue = staffingDays
       .map((day) => {
         const totals = staffingPeople.reduce(
@@ -1458,13 +1455,13 @@ export default function Home() {
       .sort((a, b) => sortDateValue(b.day.date) - sortDateValue(a.day.date))[0];
 
     return {
-      lateTasks: activeLateTasks,
+      progressTasks,
       highPriorityTasks,
       watchItems,
-      followUpCommunications,
+      latestCrmItem,
       staffingIssue,
     };
-  }, [tasks, schoolWatchlist, communications, staffingDays]);
+  }, [tasks, schoolWatchlist, schools, staffingDays]);
   const activeHistory = studentHistory.find((year) => year.year === activeHistoryYear) ?? null;
   const chartYears = studentHistory.filter((year) => selectedHistoryYears.includes(year.year));
   const chartDays = campaignDates(2000).map(campaignDayKey);
@@ -2960,11 +2957,11 @@ export default function Home() {
               </div>
             </div>
             <div className="cockpit-grid">
-              <button className={`cockpit-card ${dashboardFocus.lateTasks.length ? "is-critical" : ""}`} onClick={() => { setStatusFilter("late"); setPriorityFilter("all"); setOwnerFilter("all"); }}>
-                <span className="cockpit-icon" aria-hidden="true">⏰</span>
-                <strong>{dashboardFocus.lateTasks.length}</strong>
-                <small>Tâches en retard</small>
-                <em>{dashboardFocus.lateTasks[0]?.title || "Aucun retard"}</em>
+              <button className={`cockpit-card ${dashboardFocus.progressTasks.length ? "is-important" : ""}`} onClick={() => { setStatusFilter("progress"); setPriorityFilter("all"); setOwnerFilter("all"); }}>
+                <span className="cockpit-icon" aria-hidden="true">◒</span>
+                <strong>{dashboardFocus.progressTasks.length}</strong>
+                <small>Tâches en cours</small>
+                <em>{dashboardFocus.progressTasks[0]?.title || "Aucune tâche en cours"}</em>
               </button>
               <button className={`cockpit-card ${dashboardFocus.highPriorityTasks.length ? "is-important" : ""}`} onClick={() => { setStatusFilter("all"); setPriorityFilter("high"); setOwnerFilter("all"); }}>
                 <span className="cockpit-icon" aria-hidden="true">🔥</span>
@@ -2982,63 +2979,24 @@ export default function Home() {
                     : "Liste calme"}
                 </em>
               </button>
-              <button className={`cockpit-card ${dashboardFocus.followUpCommunications.length ? "is-followup" : ""}`} onClick={() => { setAppMode("communications"); setCommunicationStatusFilter("to-follow-up"); }}>
-                <span className="cockpit-icon" aria-hidden="true">📣</span>
-                <strong>{dashboardFocus.followUpCommunications.length}</strong>
-                <small>Communications à relancer</small>
-                <em>
-                  {dashboardFocus.followUpCommunications[0]
-                    ? dashboardFocus.followUpCommunications[0].followUpDate
-                      ? `Relance ${formatDate(dashboardFocus.followUpCommunications[0].followUpDate)}`
-                      : dashboardFocus.followUpCommunications[0].title
-                    : "Aucune relance"}
-                </em>
-              </button>
               <button className={`cockpit-card ${dashboardFocus.staffingIssue ? "is-staffing" : ""}`} onClick={() => setAppMode("staffing")}>
                 <span className="cockpit-icon" aria-hidden="true">👥</span>
                 <strong>{dashboardFocus.staffingIssue?.unstaffed ?? 0}</strong>
                 <small>Séances non staffées</small>
                 <em>{dashboardFocus.staffingIssue ? `${formatDate(dashboardFocus.staffingIssue.day.date)} · ${dashboardFocus.staffingIssue.staffed} staffées` : "Derniers jours OK"}</em>
               </button>
-            </div>
-          </section>
-        )}
-
-        {appMode === "tasks" && (
-          <section className="journal-highlight" aria-label="Journal de l'Etude Alpha">
-            <div className="journal-highlight-mark" aria-hidden="true">✦</div>
-            <div className="journal-highlight-content">
-              <p className="eyebrow">Journal de l’Étude Alpha</p>
-              {latestJournalPost ? (
-                <>
-                  <h2>{latestJournalPost.title}</h2>
-                  <p>{excerpt(latestJournalPost.content, 210)}</p>
-                  <div className="journal-meta">
-                    <span>{latestJournalPost.author}</span>
-                    <span>{formatJournalDate(latestJournalPost.publishedAt)}</span>
-                    {latestJournalPost.tags.slice(0, 3).map((tag) => <span className="journal-tag" key={tag}>#{tag}</span>)}
-                  </div>
-                </>
-              ) : (
-                <>
-                  <h2>Écrire la première trace de la rentrée</h2>
-                  <p>Gardez les décisions, les apprentissages et les petites victoires de l’équipe au même endroit.</p>
-                  <div className="journal-meta">
-                    <span>Carnet de bord partagé</span>
-                    <span>Lisible plus tard</span>
-                  </div>
-                </>
-              )}
-            </div>
-            <div className="journal-highlight-actions">
-              <button className="button primary" onClick={() => setAppMode("journal")}>
-                Lire le journal
+              <button className={`cockpit-card ${latestJournalPost ? "is-journal" : ""}`} onClick={() => setAppMode("journal")}>
+                <span className="cockpit-icon" aria-hidden="true">✍️</span>
+                <strong>{latestJournalPost ? "1" : "0"}</strong>
+                <small>Journal Alpha</small>
+                <em>{latestJournalPost?.title || "Écrire le premier post"}</em>
               </button>
-              {!latestJournalPost && (
-                <button className="button quiet" onClick={openNewJournalPost}>
-                  Créer le premier post
-                </button>
-              )}
+              <button className={`cockpit-card ${dashboardFocus.latestCrmItem ? "is-crm" : ""}`} onClick={() => setAppMode("schools")}>
+                <span className="cockpit-icon" aria-hidden="true">🏫</span>
+                <strong>{dashboardFocus.latestCrmItem ? "1" : "0"}</strong>
+                <small>Dernier post CRM</small>
+                <em>{dashboardFocus.latestCrmItem ? `${dashboardFocus.latestCrmItem.school.name} · ${dashboardFocus.latestCrmItem.event.title || "Post"}` : "Aucun post CRM"}</em>
+              </button>
             </div>
           </section>
         )}
