@@ -110,6 +110,8 @@ export type StaffingDay = {
     staffedSessions: number;
     unstaffedSessions: number;
   }>;
+  totalStaffedSessions: number;
+  totalUnstaffedSessions: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -534,15 +536,32 @@ export function sanitizeStaffingDay(raw: Record<string, unknown>): StaffingDay {
   const now = new Date().toISOString();
   const people = raw.people && typeof raw.people === "object" ? (raw.people as Record<string, unknown>) : {};
   const date = cleanText(raw.date) || now.slice(0, 10);
+  const sanitizedPeople = {
+    pierre: sanitizeStaffingPerson(people.pierre),
+    julie: sanitizeStaffingPerson(people.julie),
+    kelly: sanitizeStaffingPerson(people.kelly),
+  };
+  const peopleTotals = Object.values(sanitizedPeople).reduce(
+    (totals, person) => {
+      totals.staffed += person.staffedSessions;
+      totals.unstaffed += person.unstaffedSessions;
+      return totals;
+    },
+    { staffed: 0, unstaffed: 0 },
+  );
 
   return {
     id: cleanText(raw.id) || `staffing-${date}`,
     date,
-    people: {
-      pierre: sanitizeStaffingPerson(people.pierre),
-      julie: sanitizeStaffingPerson(people.julie),
-      kelly: sanitizeStaffingPerson(people.kelly),
-    },
+    people: sanitizedPeople,
+    totalStaffedSessions:
+      raw.totalStaffedSessions === undefined || raw.totalStaffedSessions === null
+        ? peopleTotals.staffed
+        : cleanSessionCount(raw.totalStaffedSessions),
+    totalUnstaffedSessions:
+      raw.totalUnstaffedSessions === undefined || raw.totalUnstaffedSessions === null
+        ? peopleTotals.unstaffed
+        : cleanSessionCount(raw.totalUnstaffedSessions),
     createdAt: cleanText(raw.createdAt) || now,
     updatedAt: cleanText(raw.updatedAt) || cleanText(raw.createdAt) || now,
   };

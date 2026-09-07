@@ -117,6 +117,8 @@ type StaffingDay = {
   id: string;
   date: string;
   people: Record<StaffingPersonKey, StaffingPersonStats>;
+  totalStaffedSessions: number;
+  totalUnstaffedSessions: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -589,17 +591,51 @@ function normalizeStaffingPerson(raw: Partial<StaffingPersonStats> | undefined):
   };
 }
 
+function staffingPeopleTotals(people: Record<StaffingPersonKey, StaffingPersonStats>) {
+  return staffingPeople.reduce(
+    (totals, person) => {
+      totals.staffed += people[person.key].staffedSessions;
+      totals.unstaffed += people[person.key].unstaffedSessions;
+      return totals;
+    },
+    { staffed: 0, unstaffed: 0 },
+  );
+}
+
+function staffingDayTotals(day: StaffingDay) {
+  return {
+    staffed: normalizeSessionCount(day.totalStaffedSessions),
+    unstaffed: normalizeSessionCount(day.totalUnstaffedSessions),
+  };
+}
+
+function staffingUnstaffedPercent(staffed: number, unstaffed: number) {
+  const total = staffed + unstaffed;
+  if (total <= 0) return 0;
+  return Math.round((unstaffed / total) * 100);
+}
+
 function normalizeStaffingDay(raw: Partial<StaffingDay>): StaffingDay {
   const now = new Date().toISOString();
   const date = raw.date || now.slice(0, 10);
+  const people = {
+    pierre: normalizeStaffingPerson(raw.people?.pierre),
+    julie: normalizeStaffingPerson(raw.people?.julie),
+    kelly: normalizeStaffingPerson(raw.people?.kelly),
+  };
+  const peopleTotals = staffingPeopleTotals(people);
   return {
     id: raw.id || `staffing-${date}`,
     date,
-    people: {
-      pierre: normalizeStaffingPerson(raw.people?.pierre),
-      julie: normalizeStaffingPerson(raw.people?.julie),
-      kelly: normalizeStaffingPerson(raw.people?.kelly),
-    },
+    people,
+    totalStaffedSessions:
+      raw.totalStaffedSessions === undefined || raw.totalStaffedSessions === null
+        ? peopleTotals.staffed
+        : normalizeSessionCount(raw.totalStaffedSessions),
+    totalUnstaffedSessions:
+      raw.totalUnstaffedSessions === undefined || raw.totalUnstaffedSessions === null
+        ? peopleTotals.unstaffed
+        : normalizeSessionCount(raw.totalUnstaffedSessions),
     createdAt: raw.createdAt || now,
     updatedAt: raw.updatedAt || raw.createdAt || now,
   };
@@ -641,6 +677,8 @@ function createEmptyStaffingDay(date = new Date().toISOString().slice(0, 10)): S
       julie: { staffedSessions: 0, unstaffedSessions: 0 },
       kelly: { staffedSessions: 0, unstaffedSessions: 0 },
     },
+    totalStaffedSessions: 0,
+    totalUnstaffedSessions: 0,
     createdAt: now,
     updatedAt: now,
   };
@@ -1349,14 +1387,7 @@ export default function Home() {
     return staffingDays.reduce(
       (summary, day) => {
         const dayValue = sortDateValue(day.date);
-        const dayTotals = staffingPeople.reduce(
-          (totals, person) => {
-            totals.staffed += day.people[person.key].staffedSessions;
-            totals.unstaffed += day.people[person.key].unstaffedSessions;
-            return totals;
-          },
-          { staffed: 0, unstaffed: 0 },
-        );
+        const dayTotals = staffingDayTotals(day);
         summary.totalStaffed += dayTotals.staffed;
         summary.totalUnstaffed += dayTotals.unstaffed;
         if (dayValue >= sevenDaysAgo && dayValue <= today.getTime()) {
@@ -1368,6 +1399,35 @@ export default function Home() {
       { totalStaffed: 0, totalUnstaffed: 0, weekStaffed: 0, weekUnstaffed: 0 },
     );
   }, [staffingDays]);
+  const staffingChart = useMemo(() => {
+    const points = staffingDays
+      .slice()
+      .sort((a, b) => sortDateValue(a.date) - sortDateValue(b.date))
+      .slice(-14)
+      .map((day) => {
+        const totals = staffingDayTotals(day);
+        return {
+          date: day.date,
+          total: totals.staffed + totals.unstaffed,
+          unstaffed: totals.unstaffed,
+        };
+      });
+    const maxValue = Math.max(1, ...points.flatMap((point) => [point.total, point.unstaffed]));
+    const pathFor = (field: "total" | "unstaffed") =>
+      points
+        .map((point, index) => {
+          const x = points.length <= 1 ? 0 : (index / (points.length - 1)) * 100;
+          const y = 42 - (point[field] / maxValue) * 36;
+          return `${x.toFixed(1)},${y.toFixed(1)}`;
+        })
+        .join(" ");
+    return {
+      points,
+      totalPath: pathFor("total"),
+      unstaffedPath: pathFor("unstaffed"),
+      unstaffedPercent: staffingUnstaffedPercent(staffingSummary.totalStaffed, staffingSummary.totalUnstaffed),
+    };
+  }, [staffingDays, staffingSummary.totalStaffed, staffingSummary.totalUnstaffed]);
   const filteredSchools = useMemo(() => {
     const normalized = schoolQuery.trim().toLocaleLowerCase("fr");
     return schools
@@ -1441,14 +1501,7 @@ export default function Home() {
         .sort((a, b) => sortDateValue(b.event.date || b.event.createdAt) - sortDateValue(a.event.date || a.event.createdAt))[0] ?? null;
     const staffingIssue = staffingDays
       .map((day) => {
-        const totals = staffingPeople.reduce(
-          (summary, person) => {
-            summary.staffed += day.people[person.key].staffedSessions;
-            summary.unstaffed += day.people[person.key].unstaffedSessions;
-            return summary;
-          },
-          { staffed: 0, unstaffed: 0 },
-        );
+        const totals = staffingDayTotals(day);
         return { day, ...totals };
       })
       .filter((item) => item.unstaffed > 0)
@@ -2086,22 +2139,46 @@ export default function Home() {
     const count = normalizeSessionCount(value);
     const now = new Date().toISOString();
     await saveStaffingDays(
+      staffingDays.map((day) => {
+        if (day.id !== dayId) return day;
+        const people = {
+          ...day.people,
+          [personKey]: {
+            ...day.people[personKey],
+            [field]: count,
+          },
+        };
+        const peopleTotals = staffingPeopleTotals(people);
+        return {
+          ...day,
+          people,
+          totalStaffedSessions: field === "staffedSessions" ? peopleTotals.staffed : day.totalStaffedSessions,
+          totalUnstaffedSessions: field === "unstaffedSessions" ? peopleTotals.unstaffed : day.totalUnstaffedSessions,
+          updatedAt: now,
+        };
+      }),
+      "Staffing mis à jour",
+    );
+  }
+
+  async function updateStaffingTotal(
+    dayId: string,
+    field: "totalStaffedSessions" | "totalUnstaffedSessions",
+    value: string,
+  ) {
+    const count = normalizeSessionCount(value);
+    const now = new Date().toISOString();
+    await saveStaffingDays(
       staffingDays.map((day) =>
         day.id === dayId
           ? {
               ...day,
-              people: {
-                ...day.people,
-                [personKey]: {
-                  ...day.people[personKey],
-                  [field]: count,
-                },
-              },
+              [field]: count,
               updatedAt: now,
             }
           : day,
       ),
-      "Staffing mis à jour",
+      "Total staffing mis à jour",
     );
   }
 
@@ -3443,6 +3520,23 @@ export default function Home() {
               <button className="button primary" onClick={() => { void loadStaffingDays(); }} disabled={saving}>＋ Ligne du jour</button>
             </div>
           </div>
+          <div className="staffing-mini-chart" aria-label="Évolution globale des séances">
+            <div className="staffing-chart-copy">
+              <span>Global</span>
+              <strong>{staffingSummary.totalStaffed + staffingSummary.totalUnstaffed} séances</strong>
+              <small>{staffingChart.unstaffedPercent}% non staffées</small>
+            </div>
+            <svg viewBox="0 0 100 46" role="img" aria-label="Courbes total séances et séances non staffées">
+              <line x1="0" y1="42" x2="100" y2="42" />
+              <polyline className="total-line" points={staffingChart.totalPath || "0,42 100,42"} />
+              <polyline className="unstaffed-line" points={staffingChart.unstaffedPath || "0,42 100,42"} />
+            </svg>
+            <div className="staffing-chart-legend">
+              <span><i className="total-dot" /> Total</span>
+              <span><i className="unstaffed-dot" /> Non staffées</span>
+              <small>{staffingChart.points.length ? `${staffingChart.points.length} dernier${staffingChart.points.length > 1 ? "s" : ""} jour${staffingChart.points.length > 1 ? "s" : ""}` : "Aucune donnée"}</small>
+            </div>
+          </div>
           <div className="staffing-summary" aria-label="Résumé staffing">
             <div><span>7 jours staffées</span><strong>{staffingSummary.weekStaffed}</strong></div>
             <div><span>7 jours non staffées</span><strong>{staffingSummary.weekUnstaffed}</strong></div>
@@ -3457,8 +3551,7 @@ export default function Home() {
               <span>Total non staffé</span>
             </div>
             {staffingDays.length ? staffingDays.map((day) => {
-              const dayStaffedTotal = staffingPeople.reduce((total, person) => total + day.people[person.key].staffedSessions, 0);
-              const dayUnstaffedTotal = staffingPeople.reduce((total, person) => total + day.people[person.key].unstaffedSessions, 0);
+              const dayTotals = staffingDayTotals(day);
               return (
                 <article className="staffing-table staffing-row" key={day.id}>
                   <div className="staffing-date">
@@ -3499,8 +3592,36 @@ export default function Home() {
                       </label>
                     </div>
                   ))}
-                  <div className="staffing-total good">{dayStaffedTotal}</div>
-                  <div className={`staffing-total ${dayUnstaffedTotal > 0 ? "alert" : ""}`}>{dayUnstaffedTotal}</div>
+                  <label className="staffing-total-input good">
+                    <span>Total staffé</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      defaultValue={dayTotals.staffed}
+                      onBlur={(event) => {
+                        const count = normalizeSessionCount(event.target.value);
+                        event.target.value = String(count);
+                        void updateStaffingTotal(day.id, "totalStaffedSessions", event.target.value);
+                      }}
+                      aria-label={`Total séances staffées ${day.date}`}
+                    />
+                  </label>
+                  <label className={`staffing-total-input ${dayTotals.unstaffed > 0 ? "alert" : ""}`}>
+                    <span>Total non staffé</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      defaultValue={dayTotals.unstaffed}
+                      onBlur={(event) => {
+                        const count = normalizeSessionCount(event.target.value);
+                        event.target.value = String(count);
+                        void updateStaffingTotal(day.id, "totalUnstaffedSessions", event.target.value);
+                      }}
+                      aria-label={`Total séances non staffées ${day.date}`}
+                    />
+                  </label>
                 </article>
               );
             }) : (
