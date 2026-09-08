@@ -349,7 +349,8 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
 .hero-copy { max-width: 720px; color: var(--muted); font-size: 15px; line-height: 1.55; margin: 13px 0 0; }
 
 .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 7px; }
-.main-tabs { display: flex; gap: 0; align-items: flex-end; margin-bottom: 9px; padding: 0 6px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+.tabs-shell { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; margin-bottom: 9px; border-bottom: 1px solid var(--line); }
+.main-tabs { min-width: 0; display: flex; gap: 0; align-items: flex-end; padding: 0 6px; overflow-x: auto; }
 .main-tabs button { min-height: 40px; margin-bottom: -1px; border: 1px solid transparent; border-bottom: 0; border-radius: 12px 12px 0 0; padding: 7px 12px 9px; background: rgba(255,255,255,.58); color: var(--muted); font-size: 12px; font-weight: 850; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; transition: .16s ease; }
 .main-tabs button:hover { color: var(--blue-dark); background: rgba(255,255,255,.9); }
 .main-tabs button.active { border-color: var(--line); background: linear-gradient(180deg, white, rgba(247,255,252,.98)); color: var(--blue-title); box-shadow: 0 -2px 0 var(--green) inset, 0 7px 18px rgba(14,165,233,.06); }
@@ -357,6 +358,8 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
 .main-tabs button.active .tab-icon { background: linear-gradient(135deg, rgba(14,165,233,.15), rgba(16,185,129,.16)); }
 .tab-count { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: rgba(213,231,239,.7); color: var(--blue-dark); font-size: 10px; font-weight: 900; }
 .main-tabs button.active .tab-count { color: white; background: linear-gradient(135deg, var(--blue-main), var(--green)); }
+.copy-tab-link { flex: 0 0 auto; min-height: 31px; margin: 0 0 4px; border: 1px solid rgba(14,165,233,.2); border-radius: 999px; padding: 5px 10px; background: rgba(255,255,255,.88); color: var(--blue-dark); font-size: 10.5px; font-weight: 850; cursor: pointer; white-space: nowrap; }
+.copy-tab-link:hover { border-color: #9fd6ea; background: white; transform: translateY(-1px); }
 .daily-cockpit { margin: -3px 0 8px; padding: 8px; border: 1px solid rgba(14,165,233,.18); border-radius: 12px; background: rgba(255,255,255,.94); box-shadow: 0 6px 20px rgba(14,165,233,.04); }
 .cockpit-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
 .cockpit-heading .eyebrow { margin-bottom: 2px; font-size: 9.5px; }
@@ -624,10 +627,12 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .cockpit-card strong { font-size: 17px; }
   .cockpit-card small { font-size: 8px; letter-spacing: .03em; }
   .cockpit-card em { margin-top: 2px; font-size: 9.5px; }
-  .main-tabs { overflow-x: auto; margin-bottom: 6px; padding: 0 3px; }
+  .tabs-shell { align-items: stretch; gap: 6px; margin-bottom: 6px; }
+  .main-tabs { overflow-x: auto; padding: 0 3px; }
   .main-tabs button { min-height: 36px; padding: 6px 9px 8px; font-size: 11.5px; white-space: nowrap; }
   .tab-icon { width: 20px; height: 20px; border-radius: 7px; font-size: 12px; }
   .tab-count { min-width: 17px; height: 17px; font-size: 9.5px; }
+  .copy-tab-link { min-height: 30px; margin-bottom: 3px; padding: 5px 8px; font-size: 9.5px; }
   .stat-card { min-width: 92px; padding: 5px 7px; gap: 5px; }
   .stat-card strong { font-size: 14px; }
   .stat-card small { font-size: 8.5px; }

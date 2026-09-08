@@ -233,6 +233,57 @@ type CrmFeedItem = {
 const AUTHOR_KEY = "petit-suivi-auteur-v2";
 const DENSITY_KEY = "petit-suivi-densite-v2";
 
+const appModeSlugs: Record<AppMode, string> = {
+  tasks: "taches",
+  recurring: "recurrences",
+  links: "liens",
+  objectives: "objectifs",
+  history: "historique",
+  journal: "journal",
+  schools: "etablissements",
+  communications: "communications",
+  staffing: "staffing",
+  watchlist: "a-suivre",
+};
+
+const appModeAliases: Record<string, AppMode> = {
+  taches: "tasks",
+  tâches: "tasks",
+  tasks: "tasks",
+  liens: "links",
+  links: "links",
+  objectifs: "objectives",
+  objectives: "objectives",
+  historique: "history",
+  history: "history",
+  journal: "journal",
+  etablissements: "schools",
+  établissements: "schools",
+  schools: "schools",
+  communications: "communications",
+  staffing: "staffing",
+  "a-suivre": "watchlist",
+  "à-suivre": "watchlist",
+  suivis: "watchlist",
+  watchlist: "watchlist",
+};
+
+function normalizeUrlToken(value: string | null) {
+  return (value || "")
+    .trim()
+    .toLocaleLowerCase("fr")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function appModeFromUrl(url: URL) {
+  const fromSearch = normalizeUrlToken(url.searchParams.get("onglet") || url.searchParams.get("tab"));
+  const fromHash = normalizeUrlToken(url.hash.replace(/^#/, ""));
+  return appModeAliases[fromSearch] || appModeAliases[fromHash] || null;
+}
+
 const emptyDraft: TaskDraft = {
   title: "",
   description: "",
@@ -978,7 +1029,9 @@ export default function Home() {
   const [statusFilter, setStatusFilter] = useState<"all" | Status | "late">("all");
   const [priorityFilter, setPriorityFilter] = useState<"all" | Priority>("all");
   const [ownerFilter, setOwnerFilter] = useState("all");
-  const [appMode, setAppMode] = useState<AppMode>("tasks");
+  const [appMode, setAppModeState] = useState<AppMode>(() =>
+    typeof window === "undefined" ? "tasks" : appModeFromUrl(new URL(window.location.href)) || "tasks",
+  );
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [density, setDensity] = useState<Density>(() =>
     typeof window === "undefined" || localStorage.getItem(DENSITY_KEY) !== "comfortable"
@@ -1041,6 +1094,10 @@ export default function Home() {
   const [schoolFilter, setSchoolFilter] = useState<SchoolFilter>("all");
   const [selectedSchoolId, setSelectedSchoolId] = useState<string | null>(null);
   const importRef = useRef<HTMLInputElement>(null);
+
+  const setAppMode = useCallback((mode: AppMode) => {
+    setAppModeState(mode);
+  }, []);
 
   const loadTasks = useCallback(async (silent = false) => {
     try {
@@ -1195,6 +1252,27 @@ export default function Home() {
       setToast("Historique eleves indisponible");
     }
   }, []);
+
+  useEffect(() => {
+    const syncModeFromUrl = () => {
+      const mode = appModeFromUrl(new URL(window.location.href));
+      setAppModeState(mode || "tasks");
+    };
+    window.addEventListener("popstate", syncModeFromUrl);
+    window.addEventListener("hashchange", syncModeFromUrl);
+    return () => {
+      window.removeEventListener("popstate", syncModeFromUrl);
+      window.removeEventListener("hashchange", syncModeFromUrl);
+    };
+  }, []);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const nextSlug = appModeSlugs[appMode];
+    if (url.searchParams.get("onglet") === nextSlug) return;
+    url.searchParams.set("onglet", nextSlug);
+    window.history.replaceState(null, "", `${url.pathname}?${url.searchParams.toString()}${url.hash}`);
+  }, [appMode]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -2572,6 +2650,18 @@ export default function Home() {
     );
   }
 
+  async function copyCurrentTabLink() {
+    const url = new URL(window.location.href);
+    url.searchParams.set("onglet", appModeSlugs[appMode]);
+    const link = `${url.origin}${url.pathname}?${url.searchParams.toString()}${url.hash}`;
+    try {
+      await navigator.clipboard.writeText(link);
+      setToast("Lien de l'onglet copié");
+    } catch {
+      window.prompt("Copiez ce lien", link);
+    }
+  }
+
   async function saveTask(event: FormEvent) {
     event.preventDefault();
     if (!draft.title.trim() || !draft.owner.trim() || !draft.startDate || saving) return;
@@ -3078,33 +3168,38 @@ export default function Home() {
           </section>
         )}
 
-        <div className="main-tabs" role="group" aria-label="Choisir le type de suivi">
-          <button className={appMode === "tasks" ? "active" : ""} onClick={() => setAppMode("tasks")}>
-            <span className="tab-icon" aria-hidden="true">✅</span> Tâches
-          </button>
-          <button className={appMode === "links" ? "active" : ""} onClick={() => setAppMode("links")}>
-            <span className="tab-icon" aria-hidden="true">🔗</span> Liens <span className="tab-count">{links.length}</span>
-          </button>
-          <button className={appMode === "watchlist" ? "active" : ""} onClick={() => setAppMode("watchlist")}>
-            <span className="tab-icon" aria-hidden="true">👀</span> À suivre <span className="tab-count">{schoolWatchlist.filter((item) => item.status === "active").length}</span>
-          </button>
-          <button className={appMode === "schools" ? "active" : ""} onClick={() => setAppMode("schools")}>
-            <span className="tab-icon" aria-hidden="true">🏫</span> Établissements <span className="tab-count">{schools.length}</span>
-          </button>
-          <button className={appMode === "communications" ? "active" : ""} onClick={() => setAppMode("communications")}>
-            <span className="tab-icon" aria-hidden="true">📣</span> Communications <span className="tab-count">{communications.length}</span>
-          </button>
-          <button className={appMode === "staffing" ? "active" : ""} onClick={() => setAppMode("staffing")}>
-            <span className="tab-icon" aria-hidden="true">👥</span> Staffing <span className="tab-count">{staffingDays.length}</span>
-          </button>
-          <button className={appMode === "objectives" ? "active" : ""} onClick={() => setAppMode("objectives")}>
-            <span className="tab-icon" aria-hidden="true">🎯</span> Objectifs <span className="tab-count">{qualitativeObjectives.length}</span>
-          </button>
-          <button className={appMode === "history" ? "active" : ""} onClick={() => setAppMode("history")}>
-            <span className="tab-icon" aria-hidden="true">📈</span> Historique <span className="tab-count">{studentHistory.length}</span>
-          </button>
-          <button className={appMode === "journal" ? "active" : ""} onClick={() => setAppMode("journal")}>
-            <span className="tab-icon" aria-hidden="true">✍️</span> Journal <span className="tab-count">{journalPosts.length}</span>
+        <div className="tabs-shell">
+          <div className="main-tabs" role="group" aria-label="Choisir le type de suivi">
+            <button className={appMode === "tasks" ? "active" : ""} onClick={() => setAppMode("tasks")}>
+              <span className="tab-icon" aria-hidden="true">✅</span> Tâches
+            </button>
+            <button className={appMode === "links" ? "active" : ""} onClick={() => setAppMode("links")}>
+              <span className="tab-icon" aria-hidden="true">🔗</span> Liens <span className="tab-count">{links.length}</span>
+            </button>
+            <button className={appMode === "watchlist" ? "active" : ""} onClick={() => setAppMode("watchlist")}>
+              <span className="tab-icon" aria-hidden="true">👀</span> À suivre <span className="tab-count">{schoolWatchlist.filter((item) => item.status === "active").length}</span>
+            </button>
+            <button className={appMode === "schools" ? "active" : ""} onClick={() => setAppMode("schools")}>
+              <span className="tab-icon" aria-hidden="true">🏫</span> Établissements <span className="tab-count">{schools.length}</span>
+            </button>
+            <button className={appMode === "communications" ? "active" : ""} onClick={() => setAppMode("communications")}>
+              <span className="tab-icon" aria-hidden="true">📣</span> Communications <span className="tab-count">{communications.length}</span>
+            </button>
+            <button className={appMode === "staffing" ? "active" : ""} onClick={() => setAppMode("staffing")}>
+              <span className="tab-icon" aria-hidden="true">👥</span> Staffing <span className="tab-count">{staffingDays.length}</span>
+            </button>
+            <button className={appMode === "objectives" ? "active" : ""} onClick={() => setAppMode("objectives")}>
+              <span className="tab-icon" aria-hidden="true">🎯</span> Objectifs <span className="tab-count">{qualitativeObjectives.length}</span>
+            </button>
+            <button className={appMode === "history" ? "active" : ""} onClick={() => setAppMode("history")}>
+              <span className="tab-icon" aria-hidden="true">📈</span> Historique <span className="tab-count">{studentHistory.length}</span>
+            </button>
+            <button className={appMode === "journal" ? "active" : ""} onClick={() => setAppMode("journal")}>
+              <span className="tab-icon" aria-hidden="true">✍️</span> Journal <span className="tab-count">{journalPosts.length}</span>
+            </button>
+          </div>
+          <button className="copy-tab-link" onClick={copyCurrentTabLink} type="button">
+            Copier le lien
           </button>
         </div>
 
