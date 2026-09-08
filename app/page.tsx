@@ -3082,6 +3082,9 @@ export default function Home() {
           <button className={appMode === "tasks" ? "active" : ""} onClick={() => setAppMode("tasks")}>
             <span className="tab-icon" aria-hidden="true">✅</span> Tâches
           </button>
+          <button className={appMode === "links" ? "active" : ""} onClick={() => setAppMode("links")}>
+            <span className="tab-icon" aria-hidden="true">🔗</span> Liens <span className="tab-count">{links.length}</span>
+          </button>
           <button className={appMode === "watchlist" ? "active" : ""} onClick={() => setAppMode("watchlist")}>
             <span className="tab-icon" aria-hidden="true">👀</span> À suivre <span className="tab-count">{schoolWatchlist.filter((item) => item.status === "active").length}</span>
           </button>
@@ -3094,9 +3097,6 @@ export default function Home() {
           <button className={appMode === "staffing" ? "active" : ""} onClick={() => setAppMode("staffing")}>
             <span className="tab-icon" aria-hidden="true">👥</span> Staffing <span className="tab-count">{staffingDays.length}</span>
           </button>
-          <button className={appMode === "recurring" ? "active" : ""} onClick={() => setAppMode("recurring")}>
-            <span className="tab-icon" aria-hidden="true">🔁</span> Récurrences <span className="tab-count">{recurringTasks.length}</span>
-          </button>
           <button className={appMode === "objectives" ? "active" : ""} onClick={() => setAppMode("objectives")}>
             <span className="tab-icon" aria-hidden="true">🎯</span> Objectifs <span className="tab-count">{qualitativeObjectives.length}</span>
           </button>
@@ -3105,9 +3105,6 @@ export default function Home() {
           </button>
           <button className={appMode === "journal" ? "active" : ""} onClick={() => setAppMode("journal")}>
             <span className="tab-icon" aria-hidden="true">✍️</span> Journal <span className="tab-count">{journalPosts.length}</span>
-          </button>
-          <button className={appMode === "links" ? "active" : ""} onClick={() => setAppMode("links")}>
-            <span className="tab-icon" aria-hidden="true">🔗</span> Liens <span className="tab-count">{links.length}</span>
           </button>
         </div>
 
