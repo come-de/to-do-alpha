@@ -125,6 +125,7 @@ export type TutorReportEntry = {
   school: string;
   studentCount: number;
   missingReportCount: number;
+  comment: string;
 };
 
 export type TutorReportSnapshot = {
@@ -599,6 +600,7 @@ export function sanitizeTutorReportEntry(raw: Record<string, unknown>): TutorRep
     school: cleanText(raw.school),
     studentCount: cleanSessionCount(raw.studentCount),
     missingReportCount: cleanSessionCount(raw.missingReportCount),
+    comment: cleanText(raw.comment),
   };
 }
 

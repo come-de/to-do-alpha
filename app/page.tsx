@@ -132,6 +132,7 @@ type TutorReportEntry = {
   school: string;
   studentCount: number;
   missingReportCount: number;
+  comment: string;
 };
 
 type TutorReportSnapshot = {
@@ -155,7 +156,7 @@ type TutorReportAggregate = {
     school: string;
     studentCount: number;
     missingReportCount: number;
-    snapshotComment: string;
+    comment: string;
   }[];
   dateCount: number;
   totalMissing: number;
@@ -769,6 +770,7 @@ function normalizeTutorReportEntry(
     school: raw.school || "",
     studentCount: normalizeSessionCount(raw.studentCount),
     missingReportCount: normalizeSessionCount(raw.missingReportCount),
+    comment: raw.comment || "",
   };
 }
 
@@ -821,6 +823,7 @@ function parseTutorReportPaste(value: string): TutorReportEntry[] {
         school: cells[4] || "",
         studentCount: cells[5] || "",
         missingReportCount: cells[6] || "",
+        comment: "",
       }),
     )
     .filter((entry) => entry.tutorId || entry.lastName || entry.firstName || entry.phone || entry.school);
@@ -1696,7 +1699,7 @@ export default function Home() {
           school: entry.school,
           studentCount: entry.studentCount,
           missingReportCount: entry.missingReportCount,
-          snapshotComment: report.comment,
+          comment: entry.comment || report.comment,
         });
         existing.totalMissing += entry.missingReportCount;
         existing.totalStudents += entry.studentCount;
@@ -2524,10 +2527,15 @@ export default function Home() {
     }
     const now = new Date().toISOString();
     const existing = tutorReports.find((report) => report.date === tutorReportDate);
+    const existingComments = new Map(
+      (existing?.entries ?? [])
+        .filter((entry) => entry.comment.trim())
+        .map((entry) => [tutorIdentityKey(entry), entry.comment] as const),
+    );
     const nextSnapshot = normalizeTutorReportSnapshot({
       id: existing?.id || `tutor-reports-${tutorReportDate}`,
       date: tutorReportDate,
-      entries,
+      entries: entries.map((entry) => ({ ...entry, comment: entry.comment || existingComments.get(tutorIdentityKey(entry)) || "" })),
       createdAt: existing?.createdAt || now,
       updatedAt: now,
       comment: existing?.comment || "",
@@ -2546,13 +2554,21 @@ export default function Home() {
     setTutorReportDate(nextReports[0]?.date || new Date().toISOString().slice(0, 10));
   }
 
-  async function updateTutorReportComment(date: string, commentValue: string) {
+  async function updateTutorReportEntryComment(date: string, entryId: string, commentValue: string) {
     const now = new Date().toISOString();
     await saveTutorReports(
       tutorReports.map((report) =>
-        report.date === date ? { ...report, comment: commentValue.trim(), updatedAt: now } : report,
+        report.date === date
+          ? {
+              ...report,
+              entries: report.entries.map((entry) =>
+                entry.id === entryId ? { ...entry, comment: commentValue.trim() } : entry,
+              ),
+              updatedAt: now,
+            }
+          : report,
       ),
-      "Commentaire de date sauvegardé",
+      "Commentaire tuteur sauvegardé",
     );
   }
 
@@ -3198,8 +3214,8 @@ export default function Home() {
           <div className="tutor-history-title">
             <span className="history-badge">Historique</span>
             <div>
-              <h3>Vue globale depuis toujours</h3>
-              <p>Les tuteurs qui reviennent le plus souvent avec des bilans non faits, toutes les dates confondues.</p>
+              <h3>Vue depuis le début de l’année</h3>
+              <p>Les tuteurs qui reviennent le plus souvent avec des bilans non faits.</p>
             </div>
           </div>
           <div className="tutor-history-metrics" aria-label="Résumé historique des bilans tuteurs">
@@ -3221,8 +3237,8 @@ export default function Home() {
         <div className="tutor-report-top tutor-report-all-time">
           <div className="tutor-report-top-head">
             <div>
-              <strong>Top 10 depuis toujours</strong>
-              <span>Nombre total de bilans non faits, toutes les dates confondues.</span>
+              <strong>Top 10 depuis le début de l’année</strong>
+              <span>Nombre total de bilans non faits depuis le début de l’année.</span>
             </div>
           </div>
           {tutorReportAllTimeTop10.length ? (
@@ -3326,22 +3342,6 @@ export default function Home() {
             <strong>Importer une liste Excel</strong>
             <span>Ordre attendu : ID, Nom, Prénom, Téléphone, Établissement, Nb élèves, Nb bilans non faits.</span>
           </div>
-          {activeTutorReport && (
-            <label className="tutor-report-comment">
-              <span>Commentaire pour cette date</span>
-              <textarea
-                key={activeTutorReport.date}
-                defaultValue={activeTutorReport.comment}
-                rows={2}
-                onBlur={(event) => {
-                  if (event.target.value.trim() !== activeTutorReport.comment) {
-                    void updateTutorReportComment(activeTutorReport.date, event.target.value);
-                  }
-                }}
-                placeholder="Ex. Relance envoyée, extraction incomplète, point à vérifier..."
-              />
-            </label>
-          )}
           <textarea
             value={tutorReportPaste}
             onChange={(event) => setTutorReportPaste(event.target.value)}
@@ -3385,6 +3385,7 @@ export default function Home() {
             <span>Établissement</span>
             <span>Élèves</span>
             <span>Bilans non faits</span>
+            <span>Commentaire</span>
             <span>Actions</span>
           </div>
           {filteredTutorReportEntries.length ? (
@@ -3399,6 +3400,17 @@ export default function Home() {
                 <span>{entry.school || "—"}</span>
                 <span>{entry.studentCount}</span>
                 <span className="missing">{entry.missingReportCount}</span>
+                <input
+                  className="tutor-row-comment"
+                  defaultValue={entry.comment}
+                  placeholder="Commentaire..."
+                  onBlur={(event) => {
+                    if (event.target.value.trim() !== entry.comment) {
+                      void updateTutorReportEntryComment(activeTutorReport?.date || tutorReportDate, entry.id, event.target.value);
+                    }
+                  }}
+                  aria-label={`Commentaire pour ${tutorDisplayName(entry)}`}
+                />
                 <button className="icon-button danger-icon inline-delete" onClick={() => { void deleteTutorReportEntry(activeTutorReport?.date || tutorReportDate, entry.id); }} aria-label={`Supprimer ${tutorDisplayName(entry)}`}>
                   ×
                 </button>
@@ -5086,7 +5098,7 @@ export default function Home() {
                     </div>
                     <em>{item.missingReportCount} bilan{item.missingReportCount > 1 ? "s" : ""}</em>
                     <small>{item.studentCount} élève{item.studentCount > 1 ? "s" : ""}</small>
-                    {item.snapshotComment && <p>{item.snapshotComment}</p>}
+                    {item.comment && <p>{item.comment}</p>}
                   </article>
                 ))}
               </div>
