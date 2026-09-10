@@ -137,6 +137,12 @@ export type TutorReportSnapshot = {
   updatedAt: string;
 };
 
+export type TutorReportComment = {
+  tutorKey: string;
+  comment: string;
+  updatedAt: string;
+};
+
 export type SchoolWatchTag = "Nouvel établissement" | "Nouveau besoin" | "Suivi particulier";
 export type SchoolWatchStatus = "active" | "resolved";
 
@@ -231,6 +237,7 @@ export const JOURNAL_POSTS_KEY = "journal-posts.json";
 export const MASS_COMMUNICATIONS_KEY = "mass-communications.json";
 export const STAFFING_SESSIONS_KEY = "staffing-sessions.json";
 export const TUTOR_REPORTS_KEY = "tutor-reports.json";
+export const TUTOR_REPORT_COMMENTS_KEY = "tutor-report-comments.json";
 export const SCHOOL_WATCHLIST_KEY = "school-watchlist.json";
 export const SCHOOLS_KEY = "schools.json";
 export const STUDENT_HISTORY_KEY = "student-history.json";
@@ -245,6 +252,7 @@ const memory = globalThis as typeof globalThis & {
   __petitSuiviMassCommunications?: MassCommunication[];
   __petitSuiviStaffingSessions?: StaffingDay[];
   __petitSuiviTutorReports?: TutorReportSnapshot[];
+  __petitSuiviTutorReportComments?: TutorReportComment[];
   __petitSuiviSchoolWatchlist?: SchoolWatchItem[];
   __petitSuiviSchools?: School[];
   __petitSuiviStudentHistory?: StudentHistoryYear[];
@@ -619,6 +627,14 @@ export function sanitizeTutorReportSnapshot(raw: Record<string, unknown>): Tutor
       : [],
     createdAt: cleanText(raw.createdAt) || now,
     updatedAt: cleanText(raw.updatedAt) || cleanText(raw.createdAt) || now,
+  };
+}
+
+export function sanitizeTutorReportComment(raw: Record<string, unknown>): TutorReportComment {
+  return {
+    tutorKey: cleanText(raw.tutorKey),
+    comment: cleanText(raw.comment),
+    updatedAt: cleanText(raw.updatedAt) || new Date().toISOString(),
   };
 }
 
@@ -1039,6 +1055,30 @@ export async function writeTutorReports(reports: TutorReportSnapshot[]) {
     await store.setJSON(TUTOR_REPORTS_KEY, reports);
   } catch {
     memory.__petitSuiviTutorReports = reports;
+  }
+}
+
+export async function readTutorReportComments() {
+  try {
+    const store = taskStore();
+    const comments = await store.get(TUTOR_REPORT_COMMENTS_KEY, { type: "json", consistency: "strong" });
+    return Array.isArray(comments)
+      ? comments
+          .filter((comment): comment is Record<string, unknown> => Boolean(comment && typeof comment === "object"))
+          .map(sanitizeTutorReportComment)
+          .filter((comment) => comment.tutorKey)
+      : [];
+  } catch {
+    return memory.__petitSuiviTutorReportComments ?? [];
+  }
+}
+
+export async function writeTutorReportComments(comments: TutorReportComment[]) {
+  try {
+    const store = taskStore();
+    await store.setJSON(TUTOR_REPORT_COMMENTS_KEY, comments);
+  } catch {
+    memory.__petitSuiviTutorReportComments = comments;
   }
 }
 

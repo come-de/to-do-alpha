@@ -144,6 +144,12 @@ type TutorReportSnapshot = {
   updatedAt: string;
 };
 
+type TutorReportComment = {
+  tutorKey: string;
+  comment: string;
+  updatedAt: string;
+};
+
 type TutorReportAggregate = {
   key: string;
   tutorId: string;
@@ -789,6 +795,14 @@ function normalizeTutorReportSnapshot(raw: Partial<TutorReportSnapshot>): TutorR
   };
 }
 
+function normalizeTutorReportComment(raw: Partial<TutorReportComment>): TutorReportComment {
+  return {
+    tutorKey: raw.tutorKey || "",
+    comment: raw.comment || "",
+    updatedAt: raw.updatedAt || new Date().toISOString(),
+  };
+}
+
 function parseTutorReportPaste(value: string): TutorReportEntry[] {
   return value
     .split(/\r?\n/)
@@ -1155,6 +1169,7 @@ export default function Home() {
   const [communications, setCommunications] = useState<MassCommunication[]>([]);
   const [staffingDays, setStaffingDays] = useState<StaffingDay[]>([]);
   const [tutorReports, setTutorReports] = useState<TutorReportSnapshot[]>([]);
+  const [tutorReportComments, setTutorReportComments] = useState<TutorReportComment[]>([]);
   const [schoolWatchlist, setSchoolWatchlist] = useState<SchoolWatchItem[]>([]);
   const [schools, setSchools] = useState<School[]>([]);
   const [studentHistory, setStudentHistory] = useState<StudentHistoryYear[]>([]);
@@ -1235,6 +1250,7 @@ export default function Home() {
   const [tutorReportPaste, setTutorReportPaste] = useState("");
   const [tutorReportQuery, setTutorReportQuery] = useState("");
   const [selectedTutorReportKey, setSelectedTutorReportKey] = useState<string | null>(null);
+  const [visibleTutorReportCount, setVisibleTutorReportCount] = useState(10);
   const importRef = useRef<HTMLInputElement>(null);
 
   const setAppMode = useCallback((mode: AppMode) => {
@@ -1366,6 +1382,21 @@ export default function Home() {
     }
   }, []);
 
+  const loadTutorReportComments = useCallback(async () => {
+    try {
+      const response = await fetch("/api/tutor-report-comments", { cache: "no-store" });
+      if (!response.ok) throw new Error("load-tutor-report-comments-failed");
+      const data = (await response.json()) as { comments?: Partial<TutorReportComment>[] };
+      setTutorReportComments(
+        Array.isArray(data.comments)
+          ? data.comments.map(normalizeTutorReportComment).filter((comment) => comment.tutorKey)
+          : [],
+      );
+    } catch {
+      setToast("Commentaires tuteurs indisponibles");
+    }
+  }, []);
+
   const loadSchoolWatchlist = useCallback(async () => {
     try {
       const response = await fetch("/api/school-watchlist", { cache: "no-store" });
@@ -1442,12 +1473,13 @@ export default function Home() {
       void loadCommunications();
       void loadStaffingDays();
       void loadTutorReports();
+      void loadTutorReportComments();
       void loadSchoolWatchlist();
       void loadSchools();
       void loadStudentHistory();
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadCommunications, loadStaffingDays, loadTutorReports, loadSchoolWatchlist, loadSchools, loadStudentHistory]);
+  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadCommunications, loadStaffingDays, loadTutorReports, loadTutorReportComments, loadSchoolWatchlist, loadSchools, loadStudentHistory]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -1460,12 +1492,13 @@ export default function Home() {
       void loadCommunications();
       void loadStaffingDays();
       void loadTutorReports();
+      void loadTutorReportComments();
       void loadSchoolWatchlist();
       void loadSchools();
       void loadStudentHistory();
     }, 30000);
     return () => window.clearInterval(timer);
-  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadCommunications, loadStaffingDays, loadTutorReports, loadSchoolWatchlist, loadSchools, loadStudentHistory]);
+  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadCommunications, loadStaffingDays, loadTutorReports, loadTutorReportComments, loadSchoolWatchlist, loadSchools, loadStudentHistory]);
 
   useEffect(() => {
     if (authorName.trim()) localStorage.setItem(AUTHOR_KEY, authorName.trim());
@@ -1715,18 +1748,17 @@ export default function Home() {
       }))
       .sort((a, b) => b.totalMissing - a.totalMissing || b.dateCount - a.dateCount);
   }, [tutorReports]);
-  const tutorReportAllTimeTop10 = useMemo(() => tutorReportAggregates.slice(0, 10), [tutorReportAggregates]);
+  const tutorReportCommentByKey = useMemo(
+    () => new Map(tutorReportComments.map((comment) => [comment.tutorKey, comment.comment])),
+    [tutorReportComments],
+  );
+  const visibleTutorReportAggregates = useMemo(
+    () => tutorReportAggregates.slice(0, visibleTutorReportCount),
+    [tutorReportAggregates, visibleTutorReportCount],
+  );
   const selectedTutorReport = useMemo(
     () => tutorReportAggregates.find((item) => item.key === selectedTutorReportKey) ?? null,
     [tutorReportAggregates, selectedTutorReportKey],
-  );
-  const tutorReportTop10 = useMemo(
-    () =>
-      (activeTutorReport?.entries ?? [])
-        .slice()
-        .sort((a, b) => b.missingReportCount - a.missingReportCount || b.studentCount - a.studentCount)
-        .slice(0, 10),
-    [activeTutorReport],
   );
   const filteredTutorReportEntries = useMemo(() => {
     const normalized = tutorReportQuery.trim().toLocaleLowerCase("fr");
@@ -2034,6 +2066,35 @@ export default function Home() {
     } catch {
       setSyncError("Sauvegarde impossible, rechargez la page avant de continuer");
       setToast("Bilans tuteurs non sauvegardés");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function saveTutorReportComments(nextComments: TutorReportComment[], message: string) {
+    setSaving(true);
+    setSyncError("");
+    const normalizedComments = nextComments
+      .map(normalizeTutorReportComment)
+      .filter((comment) => comment.tutorKey);
+    setTutorReportComments(normalizedComments);
+    try {
+      const response = await fetch("/api/tutor-report-comments", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ comments: normalizedComments }),
+      });
+      if (!response.ok) throw new Error("save-tutor-report-comments-failed");
+      const data = (await response.json()) as { comments?: Partial<TutorReportComment>[] };
+      setTutorReportComments(
+        Array.isArray(data.comments)
+          ? data.comments.map(normalizeTutorReportComment).filter((comment) => comment.tutorKey)
+          : [],
+      );
+      setToast(message);
+    } catch {
+      setSyncError("Sauvegarde impossible, rechargez la page avant de continuer");
+      setToast("Commentaire tuteur non sauvegardé");
     } finally {
       setSaving(false);
     }
@@ -2570,6 +2631,16 @@ export default function Home() {
       ),
       "Commentaire tuteur sauvegardé",
     );
+  }
+
+  async function updateTutorReportGlobalComment(tutorKey: string, commentValue: string) {
+    const now = new Date().toISOString();
+    const trimmedComment = commentValue.trim();
+    const withoutTutor = tutorReportComments.filter((commentItem) => commentItem.tutorKey !== tutorKey);
+    const nextComments = trimmedComment
+      ? [...withoutTutor, { tutorKey, comment: trimmedComment, updatedAt: now }]
+      : withoutTutor;
+    await saveTutorReportComments(nextComments, "Commentaire global sauvegardé");
   }
 
   async function deleteTutorReportEntry(date: string, entryId: string) {
@@ -3241,28 +3312,44 @@ export default function Home() {
               <span>Nombre total de bilans non faits depuis le début de l’année.</span>
             </div>
           </div>
-          {tutorReportAllTimeTop10.length ? (
+          {visibleTutorReportAggregates.length ? (
             <div className="tutor-top-list">
-              {tutorReportAllTimeTop10.map((tutor, index) => (
-                <button
+              {visibleTutorReportAggregates.map((tutor, index) => (
+                <article
                   className="tutor-top-card"
                   key={tutor.key}
-                  onClick={() => setSelectedTutorReportKey(tutor.key)}
-                  type="button"
                 >
                   <span className="rank">#{index + 1}</span>
                   <div>
-                    <strong>{tutorDisplayName(tutor)}</strong>
+                    <button className="tutor-card-name" onClick={() => setSelectedTutorReportKey(tutor.key)} type="button">
+                      {tutorDisplayName(tutor)}
+                    </button>
                     <small>
                       {tutor.dateCount} date{tutor.dateCount > 1 ? "s" : ""} · {tutor.schools.slice(0, 2).join(", ") || "Établissement non renseigné"}
                     </small>
+                    <input
+                      className="tutor-global-comment"
+                      defaultValue={tutorReportCommentByKey.get(tutor.key) || ""}
+                      placeholder="Commentaire général..."
+                      onBlur={(event) => {
+                        if (event.target.value.trim() !== (tutorReportCommentByKey.get(tutor.key) || "")) {
+                          void updateTutorReportGlobalComment(tutor.key, event.target.value);
+                        }
+                      }}
+                      aria-label={`Commentaire général pour ${tutorDisplayName(tutor)}`}
+                    />
                   </div>
                   <em>{tutor.totalMissing} bilan{tutor.totalMissing > 1 ? "s" : ""}</em>
-                </button>
+                </article>
               ))}
             </div>
           ) : (
             <p className="compact-empty">Aucun historique global pour le moment.</p>
+          )}
+          {visibleTutorReportAggregates.length < tutorReportAggregates.length && (
+            <button className="button quiet tutor-load-more" onClick={() => setVisibleTutorReportCount((count) => count + 10)} type="button">
+              Voir les 10 suivants
+            </button>
           )}
         </div>
 
@@ -3310,31 +3397,6 @@ export default function Home() {
             <span>Élèves concernés</span>
             <strong>{totalStudents}</strong>
           </div>
-        </div>
-
-        <div className="tutor-report-top">
-          <div className="tutor-report-top-head">
-            <div>
-              <strong>Top 10 à traiter en priorité</strong>
-              <span>Classé par nombre de bilans non faits</span>
-            </div>
-          </div>
-          {tutorReportTop10.length ? (
-            <div className="tutor-top-list">
-              {tutorReportTop10.map((entry, index) => (
-                <article key={entry.id}>
-                  <span className="rank">#{index + 1}</span>
-                  <div>
-                    <strong>{`${entry.firstName} ${entry.lastName}`.trim() || entry.tutorId || "Tuteur sans nom"}</strong>
-                    <small>{entry.school || "Établissement non renseigné"}</small>
-                  </div>
-                  <em>{entry.missingReportCount} bilan{entry.missingReportCount > 1 ? "s" : ""}</em>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <p className="compact-empty">Aucune donnée importée pour cette date.</p>
-          )}
         </div>
 
         <div className="tutor-report-import">
@@ -5088,6 +5150,10 @@ export default function Home() {
                 <span>ID : <strong>{selectedTutorReport.tutorId || "—"}</strong></span>
                 <span>Téléphone : <strong>{selectedTutorReport.phone || "—"}</strong></span>
                 <span>Établissements : <strong>{selectedTutorReport.schools.join(", ") || "—"}</strong></span>
+              </div>
+              <div className="tutor-detail-global-comment">
+                <strong>Commentaire général</strong>
+                <p>{tutorReportCommentByKey.get(selectedTutorReport.key) || "Aucun commentaire général pour ce tuteur."}</p>
               </div>
               <div className="tutor-detail-timeline">
                 {selectedTutorReport.dates.map((item, index) => (

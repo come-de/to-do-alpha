@@ -235,13 +235,16 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .tutor-report-top-head span { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; }
 .tutor-top-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 6px; }
 .tutor-top-list article, .tutor-top-card { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 7px 8px; border: 1px solid rgba(14,165,233,.16); border-radius: 10px; background: rgba(255,255,255,.9); }
-.tutor-top-card { width: 100%; text-align: left; cursor: pointer; transition: .16s ease; }
+.tutor-top-card { width: 100%; text-align: left; transition: .16s ease; }
 .tutor-top-card:hover { border-color: #8ed8ef; background: white; transform: translateY(-1px); box-shadow: 0 8px 18px rgba(14,165,233,.08); }
 .tutor-top-list .rank { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 9px; color: white; background: linear-gradient(135deg, var(--blue-main), var(--green)); font-size: 11px; font-weight: 900; }
-.tutor-top-list strong { display: block; color: var(--blue-title); font-size: 12.5px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tutor-top-list strong, .tutor-card-name { display: block; max-width: 100%; border: 0; padding: 0; color: var(--blue-title); background: transparent; font-size: 12.5px; line-height: 1.2; font-weight: 900; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.tutor-card-name:hover { color: var(--green-dark); text-decoration: underline; text-underline-offset: 2px; }
 .tutor-top-list small { display: block; margin-top: 2px; color: var(--muted); font-size: 10.5px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tutor-top-list em { justify-self: end; padding: 4px 7px; border: 1px solid #ffd4e5; border-radius: 999px; color: var(--red); background: var(--red-pale); font-size: 11px; font-style: normal; font-weight: 900; white-space: nowrap; }
-.tutor-report-all-time { margin: 0 12px 12px; border: 1px solid rgba(14,165,233,.18); border-radius: 13px; background: linear-gradient(135deg, rgba(255,255,255,.96), rgba(236,253,245,.7)); box-shadow: 0 8px 24px rgba(14,165,233,.055); }
+.tutor-global-comment { width: 100%; min-height: 29px; margin-top: 6px; border: 1px solid rgba(124,58,237,.16); border-radius: 8px; padding: 5px 7px; color: var(--blue-title); background: rgba(255,255,255,.92); font-size: 11px; }
+.tutor-load-more { width: fit-content; margin-top: 9px; }
+.tutor-report-all-time { margin: 0 12px 24px; border: 1px solid rgba(14,165,233,.18); border-radius: 13px; background: linear-gradient(135deg, rgba(255,255,255,.96), rgba(236,253,245,.7)); box-shadow: 0 8px 24px rgba(14,165,233,.055); }
 .tutor-report-date-workspace { margin: 12px; border: 1px solid rgba(14,165,233,.22); border-top: 6px solid var(--blue-main); border-radius: 14px; overflow: hidden; background: rgba(255,255,255,.78); box-shadow: 0 8px 24px rgba(14,165,233,.045); }
 .tutor-date-section-heading { padding: 12px; border-bottom: 1px solid var(--line); background: linear-gradient(135deg, rgba(255,255,255,.96), rgba(244,251,252,.82)); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .tutor-date-section-heading > div:first-child { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 10px; align-items: center; }
@@ -277,6 +280,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .tutor-detail-info { display: flex; flex-wrap: wrap; gap: 6px; }
 .tutor-detail-info span { padding: 5px 8px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); background: white; font-size: 11px; }
 .tutor-detail-info strong { color: var(--blue-title); }
+.tutor-detail-global-comment { border: 1px solid rgba(124,58,237,.16); border-radius: 10px; padding: 9px 10px; background: rgba(245,243,255,.72); }
+.tutor-detail-global-comment strong { display: block; color: #5b21b6; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+.tutor-detail-global-comment p { margin: 4px 0 0; color: var(--ink); font-size: 12px; line-height: 1.4; }
 .tutor-detail-timeline { max-height: 360px; overflow: auto; display: grid; gap: 7px; padding-right: 3px; }
 .tutor-detail-timeline article { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 7px; padding: 9px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,.9); }
 .tutor-detail-timeline strong { display: block; color: var(--blue-title); font-size: 12.5px; }
@@ -802,7 +808,8 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .tutor-history-metrics { grid-template-columns: 1fr; gap: 6px; }
   .tutor-history-metrics div { padding: 8px 9px; }
   .tutor-history-metrics strong { font-size: 20px; }
-  .tutor-report-all-time, .tutor-report-date-workspace { margin: 8px; border-radius: 12px; }
+  .tutor-report-all-time { margin: 8px 8px 16px; border-radius: 12px; }
+  .tutor-report-date-workspace { margin: 8px; border-radius: 12px; }
   .tutor-date-section-heading { padding: 9px; flex-direction: column; align-items: stretch; gap: 8px; }
   .tutor-report-top, .tutor-report-import, .tutor-report-table-wrap { padding: 8px; }
   .tutor-top-list { grid-template-columns: 1fr; }

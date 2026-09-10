@@ -42,7 +42,7 @@ export default function AccessPage() {
               autoFocus
               value={code}
               onChange={(event) => setCode(event.target.value)}
-              placeholder="Alpha_The_Best"
+              placeholder="Entrez le code d’accès"
               type="password"
               autoComplete="current-password"
             />
