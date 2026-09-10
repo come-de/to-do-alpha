@@ -130,6 +130,7 @@ export type TutorReportEntry = {
 export type TutorReportSnapshot = {
   id: string;
   date: string;
+  comment: string;
   entries: TutorReportEntry[];
   createdAt: string;
   updatedAt: string;
@@ -607,6 +608,7 @@ export function sanitizeTutorReportSnapshot(raw: Record<string, unknown>): Tutor
   return {
     id: cleanText(raw.id) || `tutor-reports-${date}`,
     date,
+    comment: cleanText(raw.comment),
     entries: Array.isArray(raw.entries)
       ? raw.entries
           .filter((entry): entry is Record<string, unknown> => Boolean(entry && typeof entry === "object"))
