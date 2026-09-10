@@ -5,7 +5,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "re
 type Status = "todo" | "progress" | "done";
 type Priority = "low" | "medium" | "high";
 type Density = "compact" | "comfortable";
-type AppMode = "tasks" | "recurring" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffing" | "watchlist";
+type AppMode = "tasks" | "recurring" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffing" | "watchlist" | "tutorReports";
 type ViewMode = "list" | "matrix";
 type DurationBucket = "short" | "medium" | "long" | "unset";
 type ObjectiveKind = "counter" | "qualitative";
@@ -119,6 +119,25 @@ type StaffingDay = {
   people: Record<StaffingPersonKey, StaffingPersonStats>;
   totalStaffedSessions: number;
   totalUnstaffedSessions: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type TutorReportEntry = {
+  id: string;
+  tutorId: string;
+  lastName: string;
+  firstName: string;
+  phone: string;
+  school: string;
+  studentCount: number;
+  missingReportCount: number;
+};
+
+type TutorReportSnapshot = {
+  id: string;
+  date: string;
+  entries: TutorReportEntry[];
   createdAt: string;
   updatedAt: string;
 };
@@ -244,6 +263,7 @@ const appModeSlugs: Record<AppMode, string> = {
   communications: "communications",
   staffing: "staffing",
   watchlist: "a-suivre",
+  tutorReports: "bilans-tuteurs",
 };
 
 const appModeAliases: Record<string, AppMode> = {
@@ -262,6 +282,12 @@ const appModeAliases: Record<string, AppMode> = {
   schools: "schools",
   communications: "communications",
   staffing: "staffing",
+  "bilans-tuteurs": "tutorReports",
+  bilans: "tutorReports",
+  tuteurs: "tutorReports",
+  tutorreports: "tutorReports",
+  tutorReports: "tutorReports",
+  "tutor-reports": "tutorReports",
   "a-suivre": "watchlist",
   "à-suivre": "watchlist",
   suivis: "watchlist",
@@ -692,6 +718,73 @@ function normalizeStaffingDay(raw: Partial<StaffingDay>): StaffingDay {
   };
 }
 
+function normalizeTutorReportEntry(
+  raw: Partial<Omit<TutorReportEntry, "studentCount" | "missingReportCount">> & {
+    studentCount?: unknown;
+    missingReportCount?: unknown;
+  },
+): TutorReportEntry {
+  return {
+    id: raw.id || uid("tutor-report-entry"),
+    tutorId: raw.tutorId || "",
+    lastName: raw.lastName || "",
+    firstName: raw.firstName || "",
+    phone: raw.phone || "",
+    school: raw.school || "",
+    studentCount: normalizeSessionCount(raw.studentCount),
+    missingReportCount: normalizeSessionCount(raw.missingReportCount),
+  };
+}
+
+function normalizeTutorReportSnapshot(raw: Partial<TutorReportSnapshot>): TutorReportSnapshot {
+  const now = new Date().toISOString();
+  const date = raw.date || now.slice(0, 10);
+  return {
+    id: raw.id || `tutor-reports-${date}`,
+    date,
+    entries: Array.isArray(raw.entries)
+      ? raw.entries.map(normalizeTutorReportEntry).filter((entry) => entry.tutorId || entry.lastName || entry.firstName || entry.phone || entry.school)
+      : [],
+    createdAt: raw.createdAt || now,
+    updatedAt: raw.updatedAt || raw.createdAt || now,
+  };
+}
+
+function parseTutorReportPaste(value: string): TutorReportEntry[] {
+  return value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const cells = line.includes("\t")
+        ? line.split("\t")
+        : line.includes(";")
+          ? line.split(";")
+          : line.split(",");
+      return cells.map((cell) => cell.trim());
+    })
+    .filter((cells) => {
+      const normalized = cells.join(" ").toLocaleLowerCase("fr");
+      return !(
+        normalized.includes("nom") &&
+        normalized.includes("prenom") &&
+        (normalized.includes("bilan") || normalized.includes("élève") || normalized.includes("eleve"))
+      );
+    })
+    .map((cells) =>
+      normalizeTutorReportEntry({
+        tutorId: cells[0] || "",
+        lastName: cells[1] || "",
+        firstName: cells[2] || "",
+        phone: cells[3] || "",
+        school: cells[4] || "",
+        studentCount: cells[5] || "",
+        missingReportCount: cells[6] || "",
+      }),
+    )
+    .filter((entry) => entry.tutorId || entry.lastName || entry.firstName || entry.phone || entry.school);
+}
+
 function normalizeSchoolWatchItem(raw: Partial<SchoolWatchItem>): SchoolWatchItem {
   const now = new Date().toISOString();
   return {
@@ -1017,6 +1110,7 @@ export default function Home() {
   const [journalPosts, setJournalPosts] = useState<JournalPost[]>([]);
   const [communications, setCommunications] = useState<MassCommunication[]>([]);
   const [staffingDays, setStaffingDays] = useState<StaffingDay[]>([]);
+  const [tutorReports, setTutorReports] = useState<TutorReportSnapshot[]>([]);
   const [schoolWatchlist, setSchoolWatchlist] = useState<SchoolWatchItem[]>([]);
   const [schools, setSchools] = useState<School[]>([]);
   const [studentHistory, setStudentHistory] = useState<StudentHistoryYear[]>([]);
@@ -1093,6 +1187,9 @@ export default function Home() {
   const [schoolQuery, setSchoolQuery] = useState("");
   const [schoolFilter, setSchoolFilter] = useState<SchoolFilter>("all");
   const [selectedSchoolId, setSelectedSchoolId] = useState<string | null>(null);
+  const [tutorReportDate, setTutorReportDate] = useState(new Date().toISOString().slice(0, 10));
+  const [tutorReportPaste, setTutorReportPaste] = useState("");
+  const [tutorReportQuery, setTutorReportQuery] = useState("");
   const importRef = useRef<HTMLInputElement>(null);
 
   const setAppMode = useCallback((mode: AppMode) => {
@@ -1209,6 +1306,21 @@ export default function Home() {
     }
   }, []);
 
+  const loadTutorReports = useCallback(async () => {
+    try {
+      const response = await fetch("/api/tutor-reports", { cache: "no-store" });
+      if (!response.ok) throw new Error("load-tutor-reports-failed");
+      const data = (await response.json()) as { reports?: Partial<TutorReportSnapshot>[] };
+      const reports = Array.isArray(data.reports) ? data.reports.map(normalizeTutorReportSnapshot) : [];
+      setTutorReports(reports);
+      if (reports.length) {
+        setTutorReportDate((current) => (reports.some((report) => report.date === current) ? current : reports[0].date));
+      }
+    } catch {
+      setToast("Bilans tuteurs indisponibles");
+    }
+  }, []);
+
   const loadSchoolWatchlist = useCallback(async () => {
     try {
       const response = await fetch("/api/school-watchlist", { cache: "no-store" });
@@ -1284,12 +1396,13 @@ export default function Home() {
       void loadJournalPosts();
       void loadCommunications();
       void loadStaffingDays();
+      void loadTutorReports();
       void loadSchoolWatchlist();
       void loadSchools();
       void loadStudentHistory();
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadCommunications, loadStaffingDays, loadSchoolWatchlist, loadSchools, loadStudentHistory]);
+  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadCommunications, loadStaffingDays, loadTutorReports, loadSchoolWatchlist, loadSchools, loadStudentHistory]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -1301,12 +1414,13 @@ export default function Home() {
       void loadJournalPosts();
       void loadCommunications();
       void loadStaffingDays();
+      void loadTutorReports();
       void loadSchoolWatchlist();
       void loadSchools();
       void loadStudentHistory();
     }, 30000);
     return () => window.clearInterval(timer);
-  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadCommunications, loadStaffingDays, loadSchoolWatchlist, loadSchools, loadStudentHistory]);
+  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadCommunications, loadStaffingDays, loadTutorReports, loadSchoolWatchlist, loadSchools, loadStudentHistory]);
 
   useEffect(() => {
     if (authorName.trim()) localStorage.setItem(AUTHOR_KEY, authorName.trim());
@@ -1506,6 +1620,29 @@ export default function Home() {
       unstaffedPercent: staffingUnstaffedPercent(staffingSummary.totalStaffed, staffingSummary.totalUnstaffed),
     };
   }, [staffingDays, staffingSummary.totalStaffed, staffingSummary.totalUnstaffed]);
+  const activeTutorReport = useMemo(
+    () => tutorReports.find((report) => report.date === tutorReportDate) ?? null,
+    [tutorReports, tutorReportDate],
+  );
+  const tutorReportTop10 = useMemo(
+    () =>
+      (activeTutorReport?.entries ?? [])
+        .slice()
+        .sort((a, b) => b.missingReportCount - a.missingReportCount || b.studentCount - a.studentCount)
+        .slice(0, 10),
+    [activeTutorReport],
+  );
+  const filteredTutorReportEntries = useMemo(() => {
+    const normalized = tutorReportQuery.trim().toLocaleLowerCase("fr");
+    return (activeTutorReport?.entries ?? [])
+      .filter((entry) => {
+        if (!normalized) return true;
+        return `${entry.tutorId} ${entry.lastName} ${entry.firstName} ${entry.phone} ${entry.school}`
+          .toLocaleLowerCase("fr")
+          .includes(normalized);
+      })
+      .sort((a, b) => b.missingReportCount - a.missingReportCount || a.lastName.localeCompare(b.lastName, "fr"));
+  }, [activeTutorReport, tutorReportQuery]);
   const filteredSchools = useMemo(() => {
     const normalized = schoolQuery.trim().toLocaleLowerCase("fr");
     return schools
@@ -1776,6 +1913,31 @@ export default function Home() {
     } catch {
       setSyncError("Sauvegarde impossible, rechargez la page avant de continuer");
       setToast("Staffing non sauvegardé");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function saveTutorReports(nextReports: TutorReportSnapshot[], message: string) {
+    setSaving(true);
+    setSyncError("");
+    const normalizedReports = nextReports
+      .map(normalizeTutorReportSnapshot)
+      .sort((a, b) => sortDateValue(b.date) - sortDateValue(a.date));
+    setTutorReports(normalizedReports);
+    try {
+      const response = await fetch("/api/tutor-reports", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reports: normalizedReports }),
+      });
+      if (!response.ok) throw new Error("save-tutor-reports-failed");
+      const data = (await response.json()) as { reports?: Partial<TutorReportSnapshot>[] };
+      setTutorReports(Array.isArray(data.reports) ? data.reports.map(normalizeTutorReportSnapshot) : []);
+      setToast(message);
+    } catch {
+      setSyncError("Sauvegarde impossible, rechargez la page avant de continuer");
+      setToast("Bilans tuteurs non sauvegardés");
     } finally {
       setSaving(false);
     }
@@ -2258,6 +2420,36 @@ export default function Home() {
       ),
       "Total staffing mis à jour",
     );
+  }
+
+  async function importTutorReportPaste() {
+    if (!tutorReportDate || saving) return;
+    const entries = parseTutorReportPaste(tutorReportPaste);
+    if (!entries.length) {
+      setToast("Aucune ligne valide à importer");
+      return;
+    }
+    const now = new Date().toISOString();
+    const existing = tutorReports.find((report) => report.date === tutorReportDate);
+    const nextSnapshot = normalizeTutorReportSnapshot({
+      id: existing?.id || `tutor-reports-${tutorReportDate}`,
+      date: tutorReportDate,
+      entries,
+      createdAt: existing?.createdAt || now,
+      updatedAt: now,
+    });
+    await saveTutorReports(
+      [nextSnapshot, ...tutorReports.filter((report) => report.date !== tutorReportDate)],
+      existing ? "Bilans tuteurs remplacés" : "Bilans tuteurs importés",
+    );
+    setTutorReportPaste("");
+  }
+
+  async function deleteTutorReportSnapshot(date: string) {
+    if (!window.confirm(`Supprimer les bilans tuteurs du ${formatFullDate(date)} ?`)) return;
+    const nextReports = tutorReports.filter((report) => report.date !== date);
+    await saveTutorReports(nextReports, "Bilans tuteurs supprimés");
+    setTutorReportDate(nextReports[0]?.date || new Date().toISOString().slice(0, 10));
   }
 
   function openNewSchoolWatchItem(schoolId = "") {
@@ -2852,6 +3044,166 @@ export default function Home() {
     return historyYear.entries.reduce<number | null>((latest, entry) => entry.value ?? latest, null);
   }
 
+  function renderTutorReportsSection() {
+    const totalMissing = (activeTutorReport?.entries ?? []).reduce(
+      (total, entry) => total + entry.missingReportCount,
+      0,
+    );
+    const totalStudents = (activeTutorReport?.entries ?? []).reduce(
+      (total, entry) => total + entry.studentCount,
+      0,
+    );
+    const reportLabel = activeTutorReport
+      ? `${activeTutorReport.entries.length} tuteur${activeTutorReport.entries.length > 1 ? "s" : ""} au ${formatFullDate(activeTutorReport.date)}`
+      : "Choisissez une date et collez une liste Excel pour commencer.";
+
+    return (
+      <section className="task-panel tutor-report-panel">
+        <div className="panel-heading">
+          <div>
+            <h2>Bilans tuteurs non faits</h2>
+            <p>{reportLabel}</p>
+          </div>
+          <div className="filters">
+            <input
+              className="date-input"
+              type="date"
+              value={tutorReportDate}
+              onChange={(event) => setTutorReportDate(event.target.value)}
+              aria-label="Date du suivi des bilans tuteurs"
+            />
+            {tutorReports.length > 0 && (
+              <select
+                value={tutorReportDate}
+                onChange={(event) => setTutorReportDate(event.target.value)}
+                aria-label="Choisir une date importée"
+              >
+                {tutorReports.map((report) => (
+                  <option key={report.date} value={report.date}>
+                    {formatFullDate(report.date)}
+                  </option>
+                ))}
+              </select>
+            )}
+            <button className="button quiet" onClick={() => { void loadTutorReports(); }} disabled={saving}>
+              ↻ Actualiser
+            </button>
+          </div>
+        </div>
+
+        <div className="tutor-report-summary" aria-label="Résumé des bilans tuteurs">
+          <div>
+            <span>Tuteurs listés</span>
+            <strong>{activeTutorReport?.entries.length ?? 0}</strong>
+          </div>
+          <div>
+            <span>Bilans non faits</span>
+            <strong>{totalMissing}</strong>
+          </div>
+          <div>
+            <span>Élèves concernés</span>
+            <strong>{totalStudents}</strong>
+          </div>
+        </div>
+
+        <div className="tutor-report-top">
+          <div className="tutor-report-top-head">
+            <div>
+              <strong>Top 10 à traiter en priorité</strong>
+              <span>Classé par nombre de bilans non faits</span>
+            </div>
+          </div>
+          {tutorReportTop10.length ? (
+            <div className="tutor-top-list">
+              {tutorReportTop10.map((entry, index) => (
+                <article key={entry.id}>
+                  <span className="rank">#{index + 1}</span>
+                  <div>
+                    <strong>{`${entry.firstName} ${entry.lastName}`.trim() || entry.tutorId || "Tuteur sans nom"}</strong>
+                    <small>{entry.school || "Établissement non renseigné"}</small>
+                  </div>
+                  <em>{entry.missingReportCount} bilan{entry.missingReportCount > 1 ? "s" : ""}</em>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className="compact-empty">Aucune donnée importée pour cette date.</p>
+          )}
+        </div>
+
+        <div className="tutor-report-import">
+          <div>
+            <strong>Importer une liste Excel</strong>
+            <span>Ordre attendu : ID, Nom, Prénom, Téléphone, Établissement, Nb élèves, Nb bilans non faits.</span>
+          </div>
+          <textarea
+            value={tutorReportPaste}
+            onChange={(event) => setTutorReportPaste(event.target.value)}
+            placeholder={`Collez ici les lignes Excel pour le ${tutorReportDate || "jour choisi"}…`}
+            aria-label="Liste Excel des tuteurs avec bilans non faits"
+          />
+          <div className="import-actions">
+            <button className="button primary" onClick={() => { void importTutorReportPaste(); }} disabled={saving || !tutorReportDate || !tutorReportPaste.trim()}>
+              Importer / remplacer cette date
+            </button>
+            {activeTutorReport && (
+              <button className="button quiet danger-text" onClick={() => { void deleteTutorReportSnapshot(activeTutorReport.date); }} disabled={saving}>
+                Supprimer cette date
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="panel-heading tutor-report-table-heading">
+          <div>
+            <h3>Détail de la date</h3>
+            <p>{filteredTutorReportEntries.length} ligne{filteredTutorReportEntries.length > 1 ? "s" : ""} affichée{filteredTutorReportEntries.length > 1 ? "s" : ""}</p>
+          </div>
+          <label className="search-box">
+            <span aria-hidden="true">⌕</span>
+            <input
+              value={tutorReportQuery}
+              onChange={(event) => setTutorReportQuery(event.target.value)}
+              placeholder="Rechercher tuteur, téléphone, établissement..."
+              aria-label="Rechercher dans les bilans tuteurs"
+            />
+          </label>
+        </div>
+
+        <div className="tutor-report-table-wrap">
+          <div className="tutor-report-table tutor-report-head" aria-hidden="true">
+            <span>ID</span>
+            <span>Nom</span>
+            <span>Prénom</span>
+            <span>Téléphone</span>
+            <span>Établissement</span>
+            <span>Élèves</span>
+            <span>Bilans non faits</span>
+          </div>
+          {filteredTutorReportEntries.length ? (
+            filteredTutorReportEntries.map((entry) => (
+              <article className="tutor-report-table tutor-report-row" key={entry.id}>
+                <span>{entry.tutorId || "—"}</span>
+                <strong>{entry.lastName || "—"}</strong>
+                <span>{entry.firstName || "—"}</span>
+                <span>{entry.phone || "—"}</span>
+                <span>{entry.school || "—"}</span>
+                <span>{entry.studentCount}</span>
+                <span className="missing">{entry.missingReportCount}</span>
+              </article>
+            ))
+          ) : (
+            <div className="empty-state tutor-report-empty">
+              <span>🧾</span>
+              <h3>{activeTutorReport ? "Aucune ligne ne correspond à la recherche" : "Aucune liste importée"}</h3>
+              <p>{activeTutorReport ? "Essayez une autre recherche." : "Choisissez une date, copiez les lignes depuis Excel, puis importez-les."}</p>
+            </div>
+          )}
+        </div>
+      </section>
+    );
+  }
+
   function renderStudentHistorySection() {
     let carriedValue: number | null = null;
     let previousKnownValue: number | null = null;
@@ -3060,6 +3412,8 @@ export default function Home() {
                       ? openNewCommunication
                     : appMode === "staffing"
                       ? () => { void loadStaffingDays(); }
+                    : appMode === "tutorReports"
+                      ? () => { void loadTutorReports(); }
                     : appMode === "watchlist"
                       ? () => openNewSchoolWatchItem()
                     : appMode === "schools"
@@ -3083,6 +3437,8 @@ export default function Home() {
                       ? "Nouvelle communication"
                     : appMode === "staffing"
                       ? "Ligne du jour"
+                    : appMode === "tutorReports"
+                      ? "Actualiser bilans"
                     : appMode === "watchlist"
                       ? "Nouveau suivi"
                     : appMode === "schools"
@@ -3187,6 +3543,9 @@ export default function Home() {
             </button>
             <button className={appMode === "staffing" ? "active" : ""} onClick={() => setAppMode("staffing")}>
               <span className="tab-icon" aria-hidden="true">👥</span> Staffing <span className="tab-count">{staffingDays.length}</span>
+            </button>
+            <button className={appMode === "tutorReports" ? "active" : ""} onClick={() => setAppMode("tutorReports")}>
+              <span className="tab-icon" aria-hidden="true">🧾</span> Bilans tuteurs <span className="tab-count">{tutorReports.length}</span>
             </button>
             <button className={appMode === "objectives" ? "active" : ""} onClick={() => setAppMode("objectives")}>
               <span className="tab-icon" aria-hidden="true">🎯</span> Objectifs <span className="tab-count">{qualitativeObjectives.length}</span>
@@ -3726,6 +4085,7 @@ export default function Home() {
             )}
           </div>
         </section>
+        : appMode === "tutorReports" ? renderTutorReportsSection()
         : appMode === "watchlist" ? <section className="task-panel">
           <div className="panel-heading">
             <div>

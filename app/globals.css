@@ -200,6 +200,38 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .staffing-total-input input { width: 100%; min-height: 24px; border: 1px solid rgba(213,231,239,.85); border-radius: 7px; padding: 3px 5px; color: var(--blue-title); background: rgba(255,255,255,.92); font-size: 13px; font-weight: 900; text-align: center; }
 .staffing-total-input input:focus { outline: 2px solid rgba(14,165,233,.18); border-color: var(--blue-main); }
 .staffing-empty { border-top: 1px solid var(--line); }
+.date-input { min-height: 34px; border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px; color: var(--blue-title); background: white; font-weight: 760; }
+.danger-text { color: var(--red) !important; }
+.compact-empty { margin: 8px 0 0; color: var(--muted); font-size: 12px; }
+.tutor-report-summary { padding: 10px 12px; border-bottom: 1px solid var(--line); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.tutor-report-summary div { border: 1px solid rgba(14,165,233,.16); border-radius: 10px; padding: 8px 10px; background: rgba(255,255,255,.8); }
+.tutor-report-summary span { display: block; color: var(--muted); font-size: 10px; font-weight: 850; text-transform: uppercase; letter-spacing: .06em; }
+.tutor-report-summary strong { display: block; margin-top: 2px; color: var(--blue-title); font-size: 22px; line-height: 1; letter-spacing: -.04em; }
+.tutor-report-top { padding: 10px 12px; border-bottom: 1px solid var(--line); background: linear-gradient(135deg, rgba(244,251,252,.7), rgba(236,253,245,.38)); }
+.tutor-report-top-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.tutor-report-top-head strong { display: block; color: var(--blue-title); font-size: 14px; line-height: 1.2; }
+.tutor-report-top-head span { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; }
+.tutor-top-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 6px; }
+.tutor-top-list article { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 7px 8px; border: 1px solid rgba(14,165,233,.16); border-radius: 10px; background: rgba(255,255,255,.9); }
+.tutor-top-list .rank { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 9px; color: white; background: linear-gradient(135deg, var(--blue-main), var(--green)); font-size: 11px; font-weight: 900; }
+.tutor-top-list strong { display: block; color: var(--blue-title); font-size: 12.5px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tutor-top-list small { display: block; margin-top: 2px; color: var(--muted); font-size: 10.5px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tutor-top-list em { justify-self: end; padding: 4px 7px; border: 1px solid #ffd4e5; border-radius: 999px; color: var(--red); background: var(--red-pale); font-size: 11px; font-style: normal; font-weight: 900; white-space: nowrap; }
+.tutor-report-import { padding: 10px 12px; border-bottom: 1px solid var(--line); display: grid; gap: 8px; }
+.tutor-report-import strong { display: block; color: var(--blue-title); font-size: 13px; }
+.tutor-report-import span { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; }
+.tutor-report-import textarea { width: 100%; min-height: 112px; resize: vertical; border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px; color: var(--ink); background: rgba(255,255,255,.9); font-size: 12px; line-height: 1.45; }
+.import-actions { display: flex; flex-wrap: wrap; gap: 7px; }
+.tutor-report-table-heading { border-bottom: 1px solid var(--line); }
+.tutor-report-table-heading h3 { margin: 0; color: var(--blue-title); font-size: 15px; }
+.tutor-report-table-wrap { padding: 10px 12px 12px; overflow-x: auto; }
+.tutor-report-table { min-width: 980px; display: grid; grid-template-columns: 110px 125px 125px 135px minmax(220px, 1fr) 76px 124px; gap: 8px; align-items: center; }
+.tutor-report-head { padding: 0 0 7px; color: var(--muted); font-size: 10px; font-weight: 850; text-transform: uppercase; letter-spacing: .07em; }
+.tutor-report-row { margin-bottom: 7px; padding: 8px 9px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,.88); box-shadow: 0 4px 14px rgba(14,165,233,.035); }
+.tutor-report-row span, .tutor-report-row strong { min-width: 0; color: var(--ink); font-size: 12px; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tutor-report-row strong { color: var(--blue-title); font-weight: 850; }
+.tutor-report-row .missing { justify-self: start; min-width: 38px; padding: 4px 8px; border: 1px solid #ffd4e5; border-radius: 999px; color: var(--red); background: var(--red-pale); text-align: center; font-weight: 900; }
+.tutor-report-empty { border-top: 0; }
 .watchlist-layout { padding: 12px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 360px); gap: 12px; align-items: start; }
 .watchlist-table-wrap { min-width: 0; }
 .watchlist-table { min-width: 980px; display: grid; grid-template-columns: minmax(180px, 1.1fr) minmax(190px, 1.2fr) minmax(145px, .8fr) minmax(170px, 1fr) 78px 220px; gap: 8px; align-items: center; }
@@ -708,6 +740,18 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .staffing-total { min-height: 30px; }
   .staffing-total-input { min-height: 30px; padding: 5px 6px; }
   .staffing-total-input input { min-height: 30px; }
+  .tutor-report-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 8px; gap: 6px; }
+  .tutor-report-summary div { padding: 7px 8px; }
+  .tutor-report-summary strong { font-size: 17px; }
+  .tutor-report-top, .tutor-report-import, .tutor-report-table-wrap { padding: 8px; }
+  .tutor-top-list { grid-template-columns: 1fr; }
+  .tutor-report-import textarea { min-height: 96px; font-size: 11.5px; }
+  .tutor-report-head { display: none; }
+  .tutor-report-table-wrap { overflow: visible; }
+  .tutor-report-table.tutor-report-row { min-width: 0; grid-template-columns: 1fr 1fr; gap: 5px 8px; padding: 8px; }
+  .tutor-report-row span, .tutor-report-row strong { font-size: 11.5px; white-space: normal; }
+  .tutor-report-row span:nth-child(5) { grid-column: 1 / -1; }
+  .tutor-report-row .missing { justify-self: stretch; }
   .watchlist-layout { grid-template-columns: 1fr; padding: 8px; gap: 8px; }
   .watchlist-head { display: none; }
   .watchlist-table.watchlist-row { min-width: 0; grid-template-columns: 1fr; gap: 7px; padding: 8px 9px; }

@@ -116,6 +116,25 @@ export type StaffingDay = {
   updatedAt: string;
 };
 
+export type TutorReportEntry = {
+  id: string;
+  tutorId: string;
+  lastName: string;
+  firstName: string;
+  phone: string;
+  school: string;
+  studentCount: number;
+  missingReportCount: number;
+};
+
+export type TutorReportSnapshot = {
+  id: string;
+  date: string;
+  entries: TutorReportEntry[];
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type SchoolWatchTag = "Nouvel établissement" | "Nouveau besoin" | "Suivi particulier";
 export type SchoolWatchStatus = "active" | "resolved";
 
@@ -209,6 +228,7 @@ export const LINKS_KEY = "links.json";
 export const JOURNAL_POSTS_KEY = "journal-posts.json";
 export const MASS_COMMUNICATIONS_KEY = "mass-communications.json";
 export const STAFFING_SESSIONS_KEY = "staffing-sessions.json";
+export const TUTOR_REPORTS_KEY = "tutor-reports.json";
 export const SCHOOL_WATCHLIST_KEY = "school-watchlist.json";
 export const SCHOOLS_KEY = "schools.json";
 export const STUDENT_HISTORY_KEY = "student-history.json";
@@ -222,6 +242,7 @@ const memory = globalThis as typeof globalThis & {
   __petitSuiviJournalPosts?: JournalPost[];
   __petitSuiviMassCommunications?: MassCommunication[];
   __petitSuiviStaffingSessions?: StaffingDay[];
+  __petitSuiviTutorReports?: TutorReportSnapshot[];
   __petitSuiviSchoolWatchlist?: SchoolWatchItem[];
   __petitSuiviSchools?: School[];
   __petitSuiviStudentHistory?: StudentHistoryYear[];
@@ -562,6 +583,36 @@ export function sanitizeStaffingDay(raw: Record<string, unknown>): StaffingDay {
       raw.totalUnstaffedSessions === undefined || raw.totalUnstaffedSessions === null
         ? peopleTotals.unstaffed
         : cleanSessionCount(raw.totalUnstaffedSessions),
+    createdAt: cleanText(raw.createdAt) || now,
+    updatedAt: cleanText(raw.updatedAt) || cleanText(raw.createdAt) || now,
+  };
+}
+
+export function sanitizeTutorReportEntry(raw: Record<string, unknown>): TutorReportEntry {
+  return {
+    id: cleanText(raw.id) || crypto.randomUUID(),
+    tutorId: cleanText(raw.tutorId),
+    lastName: cleanText(raw.lastName),
+    firstName: cleanText(raw.firstName),
+    phone: cleanText(raw.phone),
+    school: cleanText(raw.school),
+    studentCount: cleanSessionCount(raw.studentCount),
+    missingReportCount: cleanSessionCount(raw.missingReportCount),
+  };
+}
+
+export function sanitizeTutorReportSnapshot(raw: Record<string, unknown>): TutorReportSnapshot {
+  const now = new Date().toISOString();
+  const date = cleanText(raw.date) || now.slice(0, 10);
+  return {
+    id: cleanText(raw.id) || `tutor-reports-${date}`,
+    date,
+    entries: Array.isArray(raw.entries)
+      ? raw.entries
+          .filter((entry): entry is Record<string, unknown> => Boolean(entry && typeof entry === "object"))
+          .map(sanitizeTutorReportEntry)
+          .filter((entry) => entry.tutorId || entry.lastName || entry.firstName || entry.phone || entry.school)
+      : [],
     createdAt: cleanText(raw.createdAt) || now,
     updatedAt: cleanText(raw.updatedAt) || cleanText(raw.createdAt) || now,
   };
@@ -960,6 +1011,30 @@ export async function writeStaffingSessions(staffing: StaffingDay[]) {
     await store.setJSON(STAFFING_SESSIONS_KEY, staffing);
   } catch {
     memory.__petitSuiviStaffingSessions = staffing;
+  }
+}
+
+export async function readTutorReports() {
+  try {
+    const store = taskStore();
+    const reports = await store.get(TUTOR_REPORTS_KEY, { type: "json", consistency: "strong" });
+    return Array.isArray(reports)
+      ? reports
+          .filter((snapshot): snapshot is Record<string, unknown> => Boolean(snapshot && typeof snapshot === "object"))
+          .map(sanitizeTutorReportSnapshot)
+          .sort((a, b) => dateValueForSort(b.date) - dateValueForSort(a.date))
+      : [];
+  } catch {
+    return memory.__petitSuiviTutorReports ?? [];
+  }
+}
+
+export async function writeTutorReports(reports: TutorReportSnapshot[]) {
+  try {
+    const store = taskStore();
+    await store.setJSON(TUTOR_REPORTS_KEY, reports);
+  } catch {
+    memory.__petitSuiviTutorReports = reports;
   }
 }
 
