@@ -3176,38 +3176,45 @@ export default function Home() {
     const reportLabel = activeTutorReport
       ? `${activeTutorReport.entries.length} tuteur${activeTutorReport.entries.length > 1 ? "s" : ""} au ${formatFullDate(activeTutorReport.date)}`
       : "Choisissez une date et collez une liste Excel pour commencer.";
+    const allTimeMissing = tutorReportAggregates.reduce((total, tutor) => total + tutor.totalMissing, 0);
+    const allTimeDates = new Set(tutorReports.map((report) => report.date)).size;
+    const allTimeTutorCount = tutorReportAggregates.length;
 
     return (
       <section className="task-panel tutor-report-panel">
         <div className="panel-heading">
           <div>
             <h2>Bilans tuteurs non faits</h2>
-            <p>{reportLabel}</p>
+            <p>Historique global en haut, mise à jour par date en bas.</p>
           </div>
           <div className="filters">
-            <input
-              className="date-input"
-              type="date"
-              value={tutorReportDate}
-              onChange={(event) => setTutorReportDate(event.target.value)}
-              aria-label="Date du suivi des bilans tuteurs"
-            />
-            {tutorReports.length > 0 && (
-              <select
-                value={tutorReportDate}
-                onChange={(event) => setTutorReportDate(event.target.value)}
-                aria-label="Choisir une date importée"
-              >
-                {tutorReports.map((report) => (
-                  <option key={report.date} value={report.date}>
-                    {formatFullDate(report.date)}
-                  </option>
-                ))}
-              </select>
-            )}
             <button className="button quiet" onClick={() => { void loadTutorReports(); }} disabled={saving}>
               ↻ Actualiser
             </button>
+          </div>
+        </div>
+
+        <div className="tutor-history-hero">
+          <div className="tutor-history-title">
+            <span className="history-badge">Historique</span>
+            <div>
+              <h3>Vue globale depuis toujours</h3>
+              <p>Les tuteurs qui reviennent le plus souvent avec des bilans non faits, toutes les dates confondues.</p>
+            </div>
+          </div>
+          <div className="tutor-history-metrics" aria-label="Résumé historique des bilans tuteurs">
+            <div>
+              <span>Tuteurs concernés</span>
+              <strong>{allTimeTutorCount}</strong>
+            </div>
+            <div>
+              <span>Dates importées</span>
+              <strong>{allTimeDates}</strong>
+            </div>
+            <div>
+              <span>Bilans non faits</span>
+              <strong>{allTimeMissing}</strong>
+            </div>
           </div>
         </div>
 
@@ -3242,6 +3249,37 @@ export default function Home() {
             <p className="compact-empty">Aucun historique global pour le moment.</p>
           )}
         </div>
+
+        <div className="tutor-report-date-workspace">
+          <div className="tutor-date-section-heading">
+            <div>
+              <span className="history-badge muted">Mise à jour</span>
+              <h3>Données par date</h3>
+              <p>{reportLabel}</p>
+            </div>
+            <div className="filters">
+              <input
+                className="date-input"
+                type="date"
+                value={tutorReportDate}
+                onChange={(event) => setTutorReportDate(event.target.value)}
+                aria-label="Date du suivi des bilans tuteurs"
+              />
+              {tutorReports.length > 0 && (
+                <select
+                  value={tutorReportDate}
+                  onChange={(event) => setTutorReportDate(event.target.value)}
+                  aria-label="Choisir une date importée"
+                >
+                  {tutorReports.map((report) => (
+                    <option key={report.date} value={report.date}>
+                      {formatFullDate(report.date)}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          </div>
 
         <div className="tutor-report-summary" aria-label="Résumé des bilans tuteurs">
           <div>
@@ -3373,6 +3411,7 @@ export default function Home() {
               <p>{activeTutorReport ? "Essayez une autre recherche." : "Choisissez une date, copiez les lignes depuis Excel, puis importez-les."}</p>
             </div>
           )}
+        </div>
         </div>
       </section>
     );

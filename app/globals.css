@@ -203,13 +203,23 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .date-input { min-height: 34px; border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px; color: var(--blue-title); background: white; font-weight: 760; }
 .danger-text { color: var(--red) !important; }
 .compact-empty { margin: 8px 0 0; color: var(--muted); font-size: 12px; }
+.tutor-history-hero { margin: 12px; padding: 14px; border: 1px solid rgba(14,165,233,.22); border-radius: 14px; background: radial-gradient(circle at 0 0, rgba(16,185,129,.16), transparent 34%), linear-gradient(135deg, rgba(224,247,255,.92), rgba(247,255,252,.98)); box-shadow: 0 10px 26px rgba(14,165,233,.07); }
+.tutor-history-title { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
+.history-badge { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; border: 1px solid rgba(14,165,233,.22); border-radius: 999px; padding: 5px 9px; color: white; background: linear-gradient(135deg, var(--blue-main), var(--green)); font-size: 10px; font-weight: 950; text-transform: uppercase; letter-spacing: .08em; box-shadow: 0 8px 18px rgba(14,165,233,.12); }
+.history-badge.muted { color: var(--blue-dark); background: white; box-shadow: none; }
+.tutor-history-title h3, .tutor-date-section-heading h3 { margin: 0; color: var(--blue-title); font-size: 22px; line-height: 1.05; letter-spacing: -.035em; }
+.tutor-history-title p, .tutor-date-section-heading p { margin: 4px 0 0; color: var(--muted); font-size: 12px; line-height: 1.35; }
+.tutor-history-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+.tutor-history-metrics div { border: 1px solid rgba(14,165,233,.18); border-radius: 12px; padding: 11px 12px; background: rgba(255,255,255,.86); box-shadow: 0 6px 18px rgba(14,165,233,.055); }
+.tutor-history-metrics span { display: block; color: var(--muted); font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: .07em; }
+.tutor-history-metrics strong { display: block; margin-top: 5px; color: var(--blue-title); font-size: 28px; line-height: .95; letter-spacing: -.05em; }
 .tutor-report-summary { padding: 10px 12px; border-bottom: 1px solid var(--line); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .tutor-report-summary div { border: 1px solid rgba(14,165,233,.16); border-radius: 10px; padding: 8px 10px; background: rgba(255,255,255,.8); }
 .tutor-report-summary span { display: block; color: var(--muted); font-size: 10px; font-weight: 850; text-transform: uppercase; letter-spacing: .06em; }
 .tutor-report-summary strong { display: block; margin-top: 2px; color: var(--blue-title); font-size: 22px; line-height: 1; letter-spacing: -.04em; }
 .tutor-report-top { padding: 10px 12px; border-bottom: 1px solid var(--line); background: linear-gradient(135deg, rgba(244,251,252,.7), rgba(236,253,245,.38)); }
 .tutor-report-top-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
-.tutor-report-top-head strong { display: block; color: var(--blue-title); font-size: 14px; line-height: 1.2; }
+.tutor-report-top-head strong { display: block; color: var(--blue-title); font-size: 15px; line-height: 1.2; letter-spacing: -.02em; }
 .tutor-report-top-head span { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; }
 .tutor-top-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 6px; }
 .tutor-top-list article, .tutor-top-card { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 7px 8px; border: 1px solid rgba(14,165,233,.16); border-radius: 10px; background: rgba(255,255,255,.9); }
@@ -219,7 +229,11 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .tutor-top-list strong { display: block; color: var(--blue-title); font-size: 12.5px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tutor-top-list small { display: block; margin-top: 2px; color: var(--muted); font-size: 10.5px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tutor-top-list em { justify-self: end; padding: 4px 7px; border: 1px solid #ffd4e5; border-radius: 999px; color: var(--red); background: var(--red-pale); font-size: 11px; font-style: normal; font-weight: 900; white-space: nowrap; }
-.tutor-report-all-time { border-bottom-color: rgba(14,165,233,.2); background: linear-gradient(135deg, rgba(224,247,255,.72), rgba(236,253,245,.52)); }
+.tutor-report-all-time { margin: 0 12px 12px; border: 1px solid rgba(14,165,233,.18); border-radius: 13px; background: linear-gradient(135deg, rgba(255,255,255,.96), rgba(236,253,245,.7)); box-shadow: 0 8px 24px rgba(14,165,233,.055); }
+.tutor-report-date-workspace { margin: 12px; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: rgba(255,255,255,.78); box-shadow: 0 8px 24px rgba(14,165,233,.045); }
+.tutor-date-section-heading { padding: 12px; border-bottom: 1px solid var(--line); background: linear-gradient(135deg, rgba(255,255,255,.96), rgba(244,251,252,.82)); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.tutor-date-section-heading > div:first-child { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 10px; align-items: center; }
+.tutor-date-section-heading h3, .tutor-date-section-heading p { grid-column: 2; }
 .tutor-report-import { padding: 10px 12px; border-bottom: 1px solid var(--line); display: grid; gap: 8px; }
 .tutor-report-import strong { display: block; color: var(--blue-title); font-size: 13px; }
 .tutor-report-import span { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; }
@@ -768,6 +782,15 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .tutor-report-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 8px; gap: 6px; }
   .tutor-report-summary div { padding: 7px 8px; }
   .tutor-report-summary strong { font-size: 17px; }
+  .tutor-history-hero { margin: 8px; padding: 10px; border-radius: 12px; }
+  .tutor-history-title { gap: 8px; margin-bottom: 9px; }
+  .tutor-history-title h3, .tutor-date-section-heading h3 { font-size: 17px; }
+  .tutor-history-title p, .tutor-date-section-heading p { font-size: 11px; }
+  .tutor-history-metrics { grid-template-columns: 1fr; gap: 6px; }
+  .tutor-history-metrics div { padding: 8px 9px; }
+  .tutor-history-metrics strong { font-size: 20px; }
+  .tutor-report-all-time, .tutor-report-date-workspace { margin: 8px; border-radius: 12px; }
+  .tutor-date-section-heading { padding: 9px; flex-direction: column; align-items: stretch; gap: 8px; }
   .tutor-report-top, .tutor-report-import, .tutor-report-table-wrap { padding: 8px; }
   .tutor-top-list { grid-template-columns: 1fr; }
   .tutor-report-import textarea { min-height: 96px; font-size: 11.5px; }
