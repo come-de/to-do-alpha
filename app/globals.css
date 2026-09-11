@@ -144,6 +144,19 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .journal-tags { margin-top: 9px; }
 .journal-tags button { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
 .journal-tags button:hover { border-color: #9fd6ea; background: white; transform: translateY(-1px); }
+.post-social { margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(213,231,239,.78); display: grid; gap: 7px; }
+.post-social-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; }
+.post-social-bar small { color: var(--muted); font-size: 10.5px; }
+.social-like-button { min-height: 28px; padding: 5px 9px; font-size: 11px; }
+.social-like-button span { margin-left: 4px; color: var(--blue-dark); font-weight: 950; }
+.post-comments { display: grid; gap: 5px; }
+.post-comments article { border: 1px solid rgba(14,165,233,.13); border-radius: 9px; padding: 6px 8px; background: rgba(255,255,255,.72); }
+.post-comments strong { color: var(--blue-title); font-size: 11.5px; }
+.post-comments span { margin-left: 6px; color: var(--muted); font-size: 10px; }
+.post-comments p { margin: 3px 0 0; color: var(--ink); font-size: 11.5px; line-height: 1.35; }
+.post-comment-form { display: grid; grid-template-columns: minmax(90px, .4fr) minmax(140px, 1fr) auto; gap: 6px; align-items: center; }
+.post-comment-form input { min-height: 30px; border: 1px solid var(--line); border-radius: 9px; padding: 6px 8px; color: var(--blue-title); background: white; font-size: 11.5px; }
+.post-comment-form button { min-height: 30px; padding: 5px 9px; font-size: 11px; }
 .journal-empty { border-top: 1px solid var(--line); }
 .communication-list { padding: 12px; display: grid; gap: 9px; }
 .communication-card { border: 1px solid var(--line); border-radius: 11px; padding: 10px 12px; background: linear-gradient(135deg, rgba(255,255,255,.98), rgba(244,251,252,.78)); display: grid; grid-template-columns: 58px minmax(0, 1fr) auto; gap: 12px; align-items: start; box-shadow: 0 4px 15px rgba(14,165,233,.045); position: relative; overflow: hidden; }
@@ -813,6 +826,8 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .journal-card-head h3 { font-size: 14px; }
   .journal-card-body p { font-size: 11.5px; line-height: 1.45; }
   .journal-card > .row-actions { grid-column: 2; justify-content: flex-start; }
+  .post-comment-form { grid-template-columns: 1fr; gap: 5px; }
+  .post-comments article { padding: 6px 7px; }
   .communication-card { grid-template-columns: 46px minmax(0, 1fr); gap: 8px; padding: 8px 9px; border-radius: 10px; }
   .communication-date { min-height: 46px; border-radius: 9px; }
   .communication-date span { font-size: 16px; }

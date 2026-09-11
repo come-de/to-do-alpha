@@ -21,6 +21,19 @@ type Comment = {
   createdAt: string;
 };
 
+type SocialLike = {
+  id: string;
+  author: string;
+  createdAt: string;
+};
+
+type SocialComment = {
+  id: string;
+  text: string;
+  author: string;
+  createdAt: string;
+};
+
 type CompletionNotification = {
   personId: string;
   sentAt: string;
@@ -87,6 +100,8 @@ type JournalPost = {
   author: string;
   tags: string[];
   personIds: string[];
+  likes: SocialLike[];
+  comments: SocialComment[];
   publishedAt: string;
   createdAt: string;
   updatedAt: string;
@@ -239,6 +254,8 @@ type SchoolEvent = {
   note: string;
   author: string;
   tags: string[];
+  likes: SocialLike[];
+  comments: SocialComment[];
   date: string;
   createdAt: string;
 };
@@ -298,14 +315,14 @@ type TaskDraft = Omit<Task, "id" | "comments" | "completionNotifications" | "cre
 type RecurringDraft = Omit<RecurringTask, "id" | "createdAt">;
 type ObjectiveDraft = Omit<Objective, "id" | "createdAt">;
 type LinkDraft = Omit<SharedLink, "id" | "createdAt">;
-type JournalDraft = Omit<JournalPost, "id" | "createdAt" | "updatedAt">;
+type JournalDraft = Omit<JournalPost, "id" | "createdAt" | "updatedAt" | "likes" | "comments">;
 type CommunicationDraft = Omit<MassCommunication, "id" | "createdAt" | "updatedAt">;
 type SchoolWatchDraft = Omit<SchoolWatchItem, "id" | "comments" | "createdAt" | "updatedAt" | "resolvedAt"> & {
   initialComment: string;
   author: string;
 };
 type SchoolDraft = Omit<School, "id" | "events" | "createdAt" | "updatedAt">;
-type SchoolEventDraft = Omit<SchoolEvent, "id" | "createdAt">;
+type SchoolEventDraft = Omit<SchoolEvent, "id" | "createdAt" | "likes" | "comments">;
 
 type CrmFeedItem = {
   school: School;
@@ -724,6 +741,23 @@ function normalizeJournalPost(raw: Partial<JournalPost>): JournalPost {
     author: raw.author || "Equipe Alpha",
     tags: normalizeTags(raw.tags),
     personIds: Array.isArray(raw.personIds) ? raw.personIds.filter(Boolean) : [],
+    likes: Array.isArray(raw.likes)
+      ? raw.likes.map((like) => ({
+          id: like.id || uid("like"),
+          author: like.author || "Anonyme",
+          createdAt: like.createdAt || now,
+        }))
+      : [],
+    comments: Array.isArray(raw.comments)
+      ? raw.comments
+          .map((comment) => ({
+            id: comment.id || uid("social-comment"),
+            text: comment.text || "",
+            author: comment.author || "Anonyme",
+            createdAt: comment.createdAt || now,
+          }))
+          .filter((comment) => comment.text.trim())
+      : [],
     publishedAt: raw.publishedAt || now,
     createdAt: raw.createdAt || now,
     updatedAt: raw.updatedAt || raw.createdAt || now,
@@ -1182,6 +1216,23 @@ function normalizeSchoolEvent(raw: Partial<SchoolEvent>): SchoolEvent {
     note: raw.note || "",
     author: raw.author || "Equipe Alpha",
     tags: normalizeTags(raw.tags),
+    likes: Array.isArray(raw.likes)
+      ? raw.likes.map((like) => ({
+          id: like.id || uid("like"),
+          author: like.author || "Anonyme",
+          createdAt: like.createdAt || now,
+        }))
+      : [],
+    comments: Array.isArray(raw.comments)
+      ? raw.comments
+          .map((comment) => ({
+            id: comment.id || uid("social-comment"),
+            text: comment.text || "",
+            author: comment.author || "Anonyme",
+            createdAt: comment.createdAt || now,
+          }))
+          .filter((comment) => comment.text.trim())
+      : [],
     date: raw.date || raw.createdAt || now,
     createdAt: raw.createdAt || now,
   };
@@ -2902,7 +2953,7 @@ export default function Home() {
       );
     } else {
       await saveJournalPosts(
-        [{ ...cleanDraft, id: uid("journal"), createdAt: now }, ...journalPosts],
+        [{ ...cleanDraft, id: uid("journal"), likes: [], comments: [], createdAt: now }, ...journalPosts],
         "Post ajoute au journal",
       );
     }
@@ -2912,6 +2963,39 @@ export default function Home() {
   async function deleteJournalPost(postId: string) {
     if (!window.confirm("Supprimer ce post du journal ?")) return;
     await saveJournalPosts(journalPosts.filter((post) => post.id !== postId), "Post supprime");
+  }
+
+  async function likeJournalPost(postId: string) {
+    const now = new Date().toISOString();
+    const author = authorName.trim() || "Anonyme";
+    await saveJournalPosts(
+      journalPosts.map((post) =>
+        post.id === postId
+          ? { ...post, likes: [...post.likes, { id: uid("like"), author, createdAt: now }], updatedAt: now }
+          : post,
+      ),
+      "Like ajouté",
+    );
+  }
+
+  async function addJournalComment(postId: string, event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const author = String(data.get("author") || "").trim() || authorName.trim() || "Anonyme";
+    const text = String(data.get("comment") || "").trim();
+    if (!text) return;
+    const now = new Date().toISOString();
+    if (author !== "Anonyme") setAuthorName(author);
+    await saveJournalPosts(
+      journalPosts.map((post) =>
+        post.id === postId
+          ? { ...post, comments: [...post.comments, { id: uid("social-comment"), author, text, createdAt: now }], updatedAt: now }
+          : post,
+      ),
+      "Commentaire ajouté",
+    );
+    form.reset();
   }
 
   function openNewCommunication() {
@@ -3502,6 +3586,8 @@ export default function Home() {
       note: schoolEventDraft.note.trim(),
       author: schoolEventDraft.author.trim() || authorName.trim() || "Equipe Alpha",
       tags: normalizeTags(schoolEventDraft.tags),
+      likes: [],
+      comments: [],
       date: schoolEventDraft.date ? new Date(`${schoolEventDraft.date}T12:00:00`).toISOString() : now,
       createdAt: now,
     };
@@ -3522,6 +3608,55 @@ export default function Home() {
     );
     setSchoolEventOpen(false);
     setEventSchoolId(null);
+  }
+
+  async function likeSchoolEvent(schoolId: string, eventId: string) {
+    const now = new Date().toISOString();
+    const author = authorName.trim() || "Anonyme";
+    await saveSchools(
+      schools.map((school) =>
+        school.id === schoolId
+          ? {
+              ...school,
+              events: school.events.map((event) =>
+                event.id === eventId
+                  ? { ...event, likes: [...event.likes, { id: uid("like"), author, createdAt: now }] }
+                  : event,
+              ),
+              updatedAt: now,
+            }
+          : school,
+      ),
+      "Like CRM ajouté",
+    );
+  }
+
+  async function addSchoolEventComment(schoolId: string, eventId: string, formEvent: FormEvent<HTMLFormElement>) {
+    formEvent.preventDefault();
+    const form = formEvent.currentTarget;
+    const data = new FormData(form);
+    const author = String(data.get("author") || "").trim() || authorName.trim() || "Anonyme";
+    const text = String(data.get("comment") || "").trim();
+    if (!text) return;
+    const now = new Date().toISOString();
+    if (author !== "Anonyme") setAuthorName(author);
+    await saveSchools(
+      schools.map((school) =>
+        school.id === schoolId
+          ? {
+              ...school,
+              events: school.events.map((event) =>
+                event.id === eventId
+                  ? { ...event, comments: [...event.comments, { id: uid("social-comment"), author, text, createdAt: now }] }
+                  : event,
+              ),
+              updatedAt: now,
+            }
+          : school,
+      ),
+      "Commentaire CRM ajouté",
+    );
+    form.reset();
   }
 
   function openNewQualitativeObjective() {
@@ -4308,6 +4443,41 @@ export default function Home() {
     );
   }
 
+  function renderSocialControls(
+    likes: SocialLike[],
+    comments: SocialComment[],
+    onLike: () => void,
+    onComment: (event: FormEvent<HTMLFormElement>) => void,
+    label: string,
+  ) {
+    return (
+      <div className="post-social">
+        <div className="post-social-bar">
+          <button className="button quiet social-like-button" type="button" onClick={onLike} disabled={saving}>
+            👍 J’aime <span>{likes.length}</span>
+          </button>
+          {likes.length > 0 && <small>Aimé par {likes.slice(-3).map((like) => like.author).join(", ")}{likes.length > 3 ? "…" : ""}</small>}
+        </div>
+        {comments.length > 0 && (
+          <div className="post-comments">
+            {comments.slice(-3).map((comment) => (
+              <article key={comment.id}>
+                <strong>{comment.author}</strong>
+                <span>{formatJournalDate(comment.createdAt)}</span>
+                <p>{comment.text}</p>
+              </article>
+            ))}
+          </div>
+        )}
+        <form className="post-comment-form" onSubmit={onComment}>
+          <input name="author" placeholder={authorName || "Votre nom"} aria-label={`Nom pour commenter ${label}`} />
+          <input name="comment" placeholder="Ajouter un commentaire..." aria-label={`Commentaire pour ${label}`} />
+          <button className="button quiet" type="submit" disabled={saving}>Commenter</button>
+        </form>
+      </div>
+    );
+  }
+
   function renderStudentHistorySection() {
     let carriedValue: number | null = null;
     let previousKnownValue: number | null = null;
@@ -4982,6 +5152,13 @@ export default function Home() {
                       return <button key={person.id} onClick={() => setJournalPersonFilter(person.id)}><span className="avatar">{ownerInitials(person.name)}</span>{person.name}</button>;
                     })}
                   </div>
+                  {renderSocialControls(
+                    post.likes,
+                    post.comments,
+                    () => { void likeJournalPost(post.id); },
+                    (event) => { void addJournalComment(post.id, event); },
+                    post.title,
+                  )}
                 </div>
                 <div className="row-actions">
                   <button className="button quiet" onClick={() => openEditJournalPost(post)}>Modifier</button>
@@ -5364,6 +5541,13 @@ export default function Home() {
                       <div className="school-event-tags">
                         {event.tags.map((tag) => <button key={tag} onClick={() => setSchoolQuery(tag)}>#{tag}</button>)}
                       </div>
+                    )}
+                    {renderSocialControls(
+                      event.likes,
+                      event.comments,
+                      () => { void likeSchoolEvent(school.id, event.id); },
+                      (formEvent) => { void addSchoolEventComment(school.id, event.id, formEvent); },
+                      event.title || school.name,
                     )}
                   </div>
                 </article>

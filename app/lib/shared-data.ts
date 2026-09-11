@@ -11,6 +11,19 @@ export type CompletionNotification = {
   sentAt: string;
 };
 
+export type SocialLike = {
+  id: string;
+  author: string;
+  createdAt: string;
+};
+
+export type SocialComment = {
+  id: string;
+  text: string;
+  author: string;
+  createdAt: string;
+};
+
 export type Task = {
   id: string;
   title: string;
@@ -77,6 +90,8 @@ export type JournalPost = {
   author: string;
   tags: string[];
   personIds: string[];
+  likes: SocialLike[];
+  comments: SocialComment[];
   publishedAt: string;
   createdAt: string;
   updatedAt: string;
@@ -204,6 +219,8 @@ export type SchoolEvent = {
   note: string;
   author: string;
   tags: string[];
+  likes: SocialLike[];
+  comments: SocialComment[];
   date: string;
   createdAt: string;
 };
@@ -519,6 +536,25 @@ export function sanitizeSharedLink(raw: Record<string, unknown>): SharedLink {
   };
 }
 
+function sanitizeSocialLike(raw: Record<string, unknown>): SocialLike {
+  const now = new Date().toISOString();
+  return {
+    id: cleanText(raw.id) || crypto.randomUUID(),
+    author: cleanText(raw.author) || "Anonyme",
+    createdAt: cleanText(raw.createdAt) || now,
+  };
+}
+
+function sanitizeSocialComment(raw: Record<string, unknown>): SocialComment {
+  const now = new Date().toISOString();
+  return {
+    id: cleanText(raw.id) || crypto.randomUUID(),
+    text: cleanText(raw.text),
+    author: cleanText(raw.author) || "Anonyme",
+    createdAt: cleanText(raw.createdAt) || now,
+  };
+}
+
 export function sanitizeJournalPost(raw: Record<string, unknown>): JournalPost {
   const now = new Date().toISOString();
   return {
@@ -533,6 +569,17 @@ export function sanitizeJournalPost(raw: Record<string, unknown>): JournalPost {
           .map((tag) => tag.trim())
           .filter(Boolean),
     personIds: Array.isArray(raw.personIds) ? raw.personIds.map(cleanText).filter(Boolean) : [],
+    likes: Array.isArray(raw.likes)
+      ? raw.likes
+          .filter((like): like is Record<string, unknown> => Boolean(like && typeof like === "object"))
+          .map(sanitizeSocialLike)
+      : [],
+    comments: Array.isArray(raw.comments)
+      ? raw.comments
+          .filter((comment): comment is Record<string, unknown> => Boolean(comment && typeof comment === "object"))
+          .map(sanitizeSocialComment)
+          .filter((comment) => comment.text)
+      : [],
     publishedAt: cleanText(raw.publishedAt) || now,
     createdAt: cleanText(raw.createdAt) || now,
     updatedAt: cleanText(raw.updatedAt) || cleanText(raw.createdAt) || now,
@@ -906,6 +953,17 @@ export function sanitizeSchool(raw: Record<string, unknown>): School {
                   .split(",")
                   .map((tag) => tag.trim())
                   .filter(Boolean),
+            likes: Array.isArray(event.likes)
+              ? event.likes
+                  .filter((like): like is Record<string, unknown> => Boolean(like && typeof like === "object"))
+                  .map(sanitizeSocialLike)
+              : [],
+            comments: Array.isArray(event.comments)
+              ? event.comments
+                  .filter((comment): comment is Record<string, unknown> => Boolean(comment && typeof comment === "object"))
+                  .map(sanitizeSocialComment)
+                  .filter((comment) => comment.text)
+              : [],
             date: cleanText(event.date) || cleanText(event.createdAt) || now,
             createdAt: cleanText(event.createdAt) || now,
           }))
