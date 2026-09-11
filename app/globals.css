@@ -233,6 +233,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .tutor-report-top-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
 .tutor-report-top-head strong { display: block; color: var(--blue-title); font-size: 15px; line-height: 1.2; letter-spacing: -.02em; }
 .tutor-report-top-head span { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; }
+.tutor-report-global-search { min-width: min(320px, 100%); display: flex; align-items: center; gap: 6px; border: 1px solid rgba(14,165,233,.2); border-radius: 999px; padding: 6px 10px; background: white; color: var(--muted); }
+.tutor-report-global-search input { width: 100%; min-width: 0; border: 0; outline: 0; color: var(--blue-title); background: transparent; font-size: 12px; font-weight: 750; }
+.tutor-report-global-search input::placeholder { color: #7c8fa2; }
 .tutor-history-controls { display: flex; align-items: end; justify-content: flex-end; flex-wrap: wrap; gap: 7px; margin: 8px 0 0; }
 .tutor-history-controls label { display: grid; gap: 3px; min-width: 145px; }
 .tutor-history-controls span { color: var(--blue-title); font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: .06em; }
@@ -258,6 +261,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .tutor-report-import { padding: 10px 12px; border-bottom: 1px solid var(--line); display: grid; gap: 8px; }
 .tutor-report-import strong { display: block; color: var(--blue-title); font-size: 13px; }
 .tutor-report-import span { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; }
+.tutor-report-file-picker { width: fit-content; max-width: 100%; display: grid; gap: 4px; padding: 8px 10px; border: 1px dashed rgba(14,165,233,.35); border-radius: 10px; background: rgba(244,251,252,.72); }
+.tutor-report-file-picker span { margin: 0; color: var(--blue-title); font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: .05em; }
+.tutor-report-file-picker input { max-width: 320px; color: var(--muted); font-size: 11px; }
 .tutor-report-import textarea { width: 100%; min-height: 112px; resize: vertical; border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px; color: var(--ink); background: rgba(255,255,255,.9); font-size: 12px; line-height: 1.45; }
 .tutor-report-comment { display: grid; gap: 5px; }
 .tutor-report-comment span { color: var(--blue-title); font-size: 11px; font-weight: 850; text-transform: uppercase; letter-spacing: .05em; }

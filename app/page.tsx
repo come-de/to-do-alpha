@@ -370,6 +370,10 @@ function normalizeUrlToken(value: string | null) {
     .replace(/^-+|-+$/g, "");
 }
 
+function digitsOnly(value: string) {
+  return value.replace(/\D/g, "");
+}
+
 function tutorIdentityKey(entry: Pick<TutorReportEntry, "tutorId" | "lastName" | "firstName" | "phone">) {
   const explicitId = entry.tutorId.trim();
   if (explicitId) return `id:${explicitId.toLocaleLowerCase("fr")}`;
@@ -1551,6 +1555,7 @@ export default function Home() {
   const [tutorReportEndDate, setTutorReportEndDate] = useState(new Date().toISOString().slice(0, 10));
   const [tutorReportPaste, setTutorReportPaste] = useState("");
   const [tutorReportQuery, setTutorReportQuery] = useState("");
+  const [tutorReportGlobalQuery, setTutorReportGlobalQuery] = useState("");
   const [selectedTutorReportKey, setSelectedTutorReportKey] = useState<string | null>(null);
   const [visibleTutorReportCount, setVisibleTutorReportCount] = useState(10);
   const [tutorTrackingDate, setTutorTrackingDate] = useState(new Date().toISOString().slice(0, 10));
@@ -2052,9 +2057,26 @@ export default function Home() {
     () => new Map(tutorReportComments.map((comment) => [comment.tutorKey, comment.comment])),
     [tutorReportComments],
   );
+  const filteredTutorReportAggregates = useMemo(() => {
+    const query = tutorReportGlobalQuery.trim().toLocaleLowerCase("fr");
+    const phoneQuery = digitsOnly(tutorReportGlobalQuery);
+    if (!query && !phoneQuery) return tutorReportAggregates;
+    return tutorReportAggregates.filter((tutor) => {
+      const text = `${tutor.tutorId} ${tutor.lastName} ${tutor.firstName} ${tutor.phone} ${tutor.schools.join(" ")} ${tutorReportCommentByKey.get(tutor.key) || ""}`
+        .toLocaleLowerCase("fr")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+      const phone = digitsOnly(tutor.phone);
+      return text.includes(
+        query
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, ""),
+      ) || Boolean(phoneQuery && phone.includes(phoneQuery));
+    });
+  }, [tutorReportAggregates, tutorReportCommentByKey, tutorReportGlobalQuery]);
   const visibleTutorReportAggregates = useMemo(
-    () => tutorReportAggregates.slice(0, visibleTutorReportCount),
-    [tutorReportAggregates, visibleTutorReportCount],
+    () => filteredTutorReportAggregates.slice(0, visibleTutorReportCount),
+    [filteredTutorReportAggregates, visibleTutorReportCount],
   );
   const selectedTutorReport = useMemo(
     () => tutorReportAggregates.find((item) => item.key === selectedTutorReportKey) ?? null,
@@ -3052,6 +3074,17 @@ export default function Home() {
     setTutorReportPaste("");
   }
 
+  async function importTutorReportFile(file: File | undefined) {
+    if (!file) return;
+    try {
+      const text = await file.text();
+      setTutorReportPaste(text);
+      setToast(`Fichier chargé pour le ${formatFullDate(tutorReportDate)}`);
+    } catch {
+      setToast("Fichier illisible. Exportez-le en CSV ou TSV puis réessayez.");
+    }
+  }
+
   async function deleteTutorReportSnapshot(date: string) {
     if (!window.confirm(`Supprimer les bilans tuteurs du ${formatFullDate(date)} ?`)) return;
     const nextReports = tutorReports.filter((report) => report.date !== date);
@@ -3981,9 +4014,9 @@ export default function Home() {
     const reportLabel = activeTutorReport
       ? `${activeTutorReport.entries.length} tuteur${activeTutorReport.entries.length > 1 ? "s" : ""} au ${formatFullDate(activeTutorReport.date)}`
       : "Choisissez une date et collez une liste Excel pour commencer.";
-    const allTimeMissing = tutorReportAggregates.reduce((total, tutor) => total + tutor.totalMissing, 0);
+    const allTimeMissing = filteredTutorReportAggregates.reduce((total, tutor) => total + tutor.totalMissing, 0);
     const allTimeDates = new Set(filteredTutorReportsForGlobal.map((report) => report.date)).size;
-    const allTimeTutorCount = tutorReportAggregates.length;
+    const allTimeTutorCount = filteredTutorReportAggregates.length;
     const globalPeriodLabel = `${tutorReportStartDate ? formatFullDate(tutorReportStartDate) : "le début"} → ${tutorReportEndDate ? formatFullDate(tutorReportEndDate) : "aujourd’hui"}`;
 
     return (
@@ -4043,6 +4076,18 @@ export default function Home() {
               <strong>Top 10 de la période</strong>
               <span>Nombre total de bilans non faits sur la période choisie.</span>
             </div>
+            <label className="tutor-report-global-search">
+              <span aria-hidden="true">⌕</span>
+              <input
+                value={tutorReportGlobalQuery}
+                onChange={(event) => {
+                  setTutorReportGlobalQuery(event.target.value);
+                  setVisibleTutorReportCount(10);
+                }}
+                placeholder="Rechercher nom, téléphone, ID..."
+                aria-label="Rechercher un tuteur dans le suivi global"
+              />
+            </label>
           </div>
           {visibleTutorReportAggregates.length ? (
             <div className="tutor-top-list">
@@ -4083,7 +4128,7 @@ export default function Home() {
           ) : (
             <p className="compact-empty">Aucun historique global pour le moment.</p>
           )}
-          {visibleTutorReportAggregates.length < tutorReportAggregates.length && (
+          {visibleTutorReportAggregates.length < filteredTutorReportAggregates.length && (
             <button className="button quiet tutor-load-more" onClick={() => setVisibleTutorReportCount((count) => count + 10)} type="button">
               Voir les 10 suivants
             </button>
@@ -4138,9 +4183,20 @@ export default function Home() {
 
         <div className="tutor-report-import">
           <div>
-            <strong>Importer une liste Excel</strong>
-            <span>Ordre attendu : ID, Nom, Prénom, Téléphone, Établissement, Nb élèves, Nb bilans non faits.</span>
+            <strong>Importer une liste pour le {tutorReportDate ? formatFullDate(tutorReportDate) : "jour choisi"}</strong>
+            <span>Choisissez d’abord la date au-dessus, même pour une date passée. Formats fichier conseillés : CSV ou TSV. Ordre attendu : ID, Nom, Prénom, Téléphone, Établissement, Nb élèves, Nb bilans non faits.</span>
           </div>
+          <label className="tutor-report-file-picker">
+            <span>Charger un fichier CSV / TSV</span>
+            <input
+              type="file"
+              accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain"
+              onChange={(event) => {
+                void importTutorReportFile(event.target.files?.[0]);
+                event.currentTarget.value = "";
+              }}
+            />
+          </label>
           <textarea
             value={tutorReportPaste}
             onChange={(event) => setTutorReportPaste(event.target.value)}
