@@ -2084,15 +2084,23 @@ export default function Home() {
   );
   const filteredTutorReportEntries = useMemo(() => {
     const normalized = tutorReportQuery.trim().toLocaleLowerCase("fr");
+    const phoneQuery = digitsOnly(tutorReportQuery);
     return (activeTutorReport?.entries ?? [])
       .filter((entry) => {
         if (!normalized) return true;
-        return `${entry.tutorId} ${entry.lastName} ${entry.firstName} ${entry.phone} ${entry.school}`
+        const globalComment = tutorReportCommentByKey.get(tutorIdentityKey(entry)) || "";
+        const text = `${entry.tutorId} ${entry.lastName} ${entry.firstName} ${entry.phone} ${entry.school} ${entry.comment} ${globalComment}`
           .toLocaleLowerCase("fr")
-          .includes(normalized);
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "");
+        return text.includes(
+          normalized
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, ""),
+        ) || Boolean(phoneQuery && digitsOnly(entry.phone).includes(phoneQuery));
       })
       .sort((a, b) => b.missingReportCount - a.missingReportCount || a.lastName.localeCompare(b.lastName, "fr"));
-  }, [activeTutorReport, tutorReportQuery]);
+  }, [activeTutorReport, tutorReportCommentByKey, tutorReportQuery]);
   const latestTutorTrackingSnapshot = tutorTracking.snapshots[0] ?? null;
   const tutorTrackingCommentByKey = useMemo(
     () => new Map(tutorTracking.comments.map((commentItem) => [commentItem.tutorKey, commentItem.comment])),
@@ -4240,37 +4248,53 @@ export default function Home() {
             <span>Établissement</span>
             <span>Élèves</span>
             <span>Bilans non faits</span>
-            <span>Commentaire</span>
+            <span>Commentaire global</span>
+            <span>Commentaire date</span>
             <span>Actions</span>
           </div>
           {filteredTutorReportEntries.length ? (
-            filteredTutorReportEntries.map((entry) => (
-              <article className="tutor-report-table tutor-report-row" key={entry.id}>
-                <span>{entry.tutorId || "—"}</span>
-                <button className="tutor-name-button" onClick={() => setSelectedTutorReportKey(tutorIdentityKey(entry))} type="button">
-                  {entry.lastName || "—"}
-                </button>
-                <span>{entry.firstName || "—"}</span>
-                <span>{entry.phone || "—"}</span>
-                <span>{entry.school || "—"}</span>
-                <span>{entry.studentCount}</span>
-                <span className="missing">{entry.missingReportCount}</span>
-                <input
-                  className="tutor-row-comment"
-                  defaultValue={entry.comment}
-                  placeholder="Commentaire..."
-                  onBlur={(event) => {
-                    if (event.target.value.trim() !== entry.comment) {
-                      void updateTutorReportEntryComment(activeTutorReport?.date || tutorReportDate, entry.id, event.target.value);
-                    }
-                  }}
-                  aria-label={`Commentaire pour ${tutorDisplayName(entry)}`}
-                />
-                <button className="icon-button danger-icon inline-delete" onClick={() => { void deleteTutorReportEntry(activeTutorReport?.date || tutorReportDate, entry.id); }} aria-label={`Supprimer ${tutorDisplayName(entry)}`}>
-                  ×
-                </button>
-              </article>
-            ))
+            filteredTutorReportEntries.map((entry) => {
+              const tutorKey = tutorIdentityKey(entry);
+              const globalComment = tutorReportCommentByKey.get(tutorKey) || "";
+              return (
+                <article className="tutor-report-table tutor-report-row" key={entry.id}>
+                  <span>{entry.tutorId || "—"}</span>
+                  <button className="tutor-name-button" onClick={() => setSelectedTutorReportKey(tutorKey)} type="button">
+                    {entry.lastName || "—"}
+                  </button>
+                  <span>{entry.firstName || "—"}</span>
+                  <span>{entry.phone || "—"}</span>
+                  <span>{entry.school || "—"}</span>
+                  <span>{entry.studentCount}</span>
+                  <span className="missing">{entry.missingReportCount}</span>
+                  <input
+                    className="tutor-row-comment global-comment"
+                    defaultValue={globalComment}
+                    placeholder="Commentaire global..."
+                    onBlur={(event) => {
+                      if (event.target.value.trim() !== globalComment) {
+                        void updateTutorReportGlobalComment(tutorKey, event.target.value);
+                      }
+                    }}
+                    aria-label={`Commentaire global pour ${tutorDisplayName(entry)}`}
+                  />
+                  <input
+                    className="tutor-row-comment"
+                    defaultValue={entry.comment}
+                    placeholder="Commentaire date..."
+                    onBlur={(event) => {
+                      if (event.target.value.trim() !== entry.comment) {
+                        void updateTutorReportEntryComment(activeTutorReport?.date || tutorReportDate, entry.id, event.target.value);
+                      }
+                    }}
+                    aria-label={`Commentaire de date pour ${tutorDisplayName(entry)}`}
+                  />
+                  <button className="icon-button danger-icon inline-delete" onClick={() => { void deleteTutorReportEntry(activeTutorReport?.date || tutorReportDate, entry.id); }} aria-label={`Supprimer ${tutorDisplayName(entry)}`}>
+                    ×
+                  </button>
+                </article>
+              );
+            })
           ) : (
             <div className="empty-state tutor-report-empty">
               <span>🧾</span>

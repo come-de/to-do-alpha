@@ -272,7 +272,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .tutor-report-table-heading { border-bottom: 1px solid var(--line); }
 .tutor-report-table-heading h3 { margin: 0; color: var(--blue-title); font-size: 15px; }
 .tutor-report-table-wrap { padding: 10px 12px 12px; overflow-x: auto; }
-.tutor-report-table { min-width: 1200px; display: grid; grid-template-columns: 100px 118px 118px 125px minmax(190px, 1fr) 66px 110px minmax(180px, .9fr) 48px; gap: 8px; align-items: center; }
+.tutor-report-table { min-width: 1360px; display: grid; grid-template-columns: 100px 118px 118px 125px minmax(180px, 1fr) 66px 110px minmax(170px, .8fr) minmax(170px, .8fr) 48px; gap: 8px; align-items: center; }
 .tutor-report-head { padding: 0 0 7px; color: var(--muted); font-size: 10px; font-weight: 850; text-transform: uppercase; letter-spacing: .07em; }
 .tutor-report-row { margin-bottom: 7px; padding: 8px 9px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,.88); box-shadow: 0 4px 14px rgba(14,165,233,.035); }
 .tutor-report-row span, .tutor-report-row strong { min-width: 0; color: var(--ink); font-size: 12px; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -280,6 +280,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .tutor-name-button { min-width: 0; border: 0; padding: 0; color: var(--blue-dark); background: transparent; font-size: 12px; font-weight: 900; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
 .tutor-name-button:hover { color: var(--green-dark); text-decoration: underline; text-underline-offset: 2px; }
 .tutor-report-row .missing { justify-self: start; min-width: 38px; padding: 4px 8px; border: 1px solid #ffd4e5; border-radius: 999px; color: var(--red); background: var(--red-pale); text-align: center; font-weight: 900; }
+.tutor-row-comment.global-comment { border-color: rgba(124,58,237,.2); background: rgba(245,243,255,.55); }
 .tutor-row-comment { width: 100%; min-height: 30px; border: 1px solid var(--line); border-radius: 8px; padding: 5px 7px; color: var(--blue-title); background: white; font-size: 11.5px; }
 .tutor-report-row .inline-delete { position: static; justify-self: start; }
 .tutor-report-empty { border-top: 0; }
