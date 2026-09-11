@@ -143,6 +143,35 @@ export type TutorReportComment = {
   updatedAt: string;
 };
 
+export type TutorTrackingRecord = {
+  key: string;
+  tutorId: string;
+  lastName: string;
+  firstName: string;
+  phone: string;
+  email: string;
+  school: string;
+};
+
+export type TutorTrackingSnapshot = {
+  id: string;
+  date: string;
+  records: TutorTrackingRecord[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type TutorTrackingComment = {
+  tutorKey: string;
+  comment: string;
+  updatedAt: string;
+};
+
+export type TutorTrackingData = {
+  snapshots: TutorTrackingSnapshot[];
+  comments: TutorTrackingComment[];
+};
+
 export type SchoolWatchTag = "Nouvel établissement" | "Nouveau besoin" | "Suivi particulier";
 export type SchoolWatchStatus = "active" | "resolved";
 
@@ -238,6 +267,7 @@ export const MASS_COMMUNICATIONS_KEY = "mass-communications.json";
 export const STAFFING_SESSIONS_KEY = "staffing-sessions.json";
 export const TUTOR_REPORTS_KEY = "tutor-reports.json";
 export const TUTOR_REPORT_COMMENTS_KEY = "tutor-report-comments.json";
+export const TUTOR_TRACKING_KEY = "tutor-tracking.json";
 export const SCHOOL_WATCHLIST_KEY = "school-watchlist.json";
 export const SCHOOLS_KEY = "schools.json";
 export const STUDENT_HISTORY_KEY = "student-history.json";
@@ -253,6 +283,7 @@ const memory = globalThis as typeof globalThis & {
   __petitSuiviStaffingSessions?: StaffingDay[];
   __petitSuiviTutorReports?: TutorReportSnapshot[];
   __petitSuiviTutorReportComments?: TutorReportComment[];
+  __petitSuiviTutorTracking?: TutorTrackingData;
   __petitSuiviSchoolWatchlist?: SchoolWatchItem[];
   __petitSuiviSchools?: School[];
   __petitSuiviStudentHistory?: StudentHistoryYear[];
@@ -635,6 +666,71 @@ export function sanitizeTutorReportComment(raw: Record<string, unknown>): TutorR
     tutorKey: cleanText(raw.tutorKey),
     comment: cleanText(raw.comment),
     updatedAt: cleanText(raw.updatedAt) || new Date().toISOString(),
+  };
+}
+
+export function sanitizeTutorTrackingRecord(raw: Record<string, unknown>): TutorTrackingRecord {
+  const tutorId = cleanText(raw.tutorId);
+  const lastName = cleanText(raw.lastName);
+  const firstName = cleanText(raw.firstName);
+  const phone = cleanText(raw.phone);
+  const fallbackKey = `${lastName} ${firstName} ${phone}`
+    .trim()
+    .toLocaleLowerCase("fr")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return {
+    key: cleanText(raw.key) || (tutorId ? `id:${tutorId.toLocaleLowerCase("fr")}` : `name:${fallbackKey}`),
+    tutorId,
+    lastName,
+    firstName,
+    phone,
+    email: cleanText(raw.email),
+    school: cleanText(raw.school),
+  };
+}
+
+export function sanitizeTutorTrackingSnapshot(raw: Record<string, unknown>): TutorTrackingSnapshot {
+  const now = new Date().toISOString();
+  const date = cleanText(raw.date) || now.slice(0, 10);
+  return {
+    id: cleanText(raw.id) || `tutor-tracking-${date}`,
+    date,
+    records: Array.isArray(raw.records)
+      ? raw.records
+          .filter((record): record is Record<string, unknown> => Boolean(record && typeof record === "object"))
+          .map(sanitizeTutorTrackingRecord)
+          .filter((record) => record.key && (record.tutorId || record.lastName || record.firstName || record.phone || record.email))
+      : [],
+    createdAt: cleanText(raw.createdAt) || now,
+    updatedAt: cleanText(raw.updatedAt) || cleanText(raw.createdAt) || now,
+  };
+}
+
+export function sanitizeTutorTrackingComment(raw: Record<string, unknown>): TutorTrackingComment {
+  return {
+    tutorKey: cleanText(raw.tutorKey),
+    comment: cleanText(raw.comment),
+    updatedAt: cleanText(raw.updatedAt) || new Date().toISOString(),
+  };
+}
+
+export function sanitizeTutorTrackingData(raw: Record<string, unknown>): TutorTrackingData {
+  return {
+    snapshots: Array.isArray(raw.snapshots)
+      ? raw.snapshots
+          .filter((snapshot): snapshot is Record<string, unknown> => Boolean(snapshot && typeof snapshot === "object"))
+          .map(sanitizeTutorTrackingSnapshot)
+          .sort((a, b) => dateValueForSort(b.date) - dateValueForSort(a.date))
+      : [],
+    comments: Array.isArray(raw.comments)
+      ? raw.comments
+          .filter((comment): comment is Record<string, unknown> => Boolean(comment && typeof comment === "object"))
+          .map(sanitizeTutorTrackingComment)
+          .filter((comment) => comment.tutorKey)
+      : [],
   };
 }
 
@@ -1079,6 +1175,28 @@ export async function writeTutorReportComments(comments: TutorReportComment[]) {
     await store.setJSON(TUTOR_REPORT_COMMENTS_KEY, comments);
   } catch {
     memory.__petitSuiviTutorReportComments = comments;
+  }
+}
+
+export async function readTutorTracking() {
+  try {
+    const store = taskStore();
+    const tracking = await store.get(TUTOR_TRACKING_KEY, { type: "json", consistency: "strong" });
+    return tracking && typeof tracking === "object"
+      ? sanitizeTutorTrackingData(tracking as Record<string, unknown>)
+      : { snapshots: [], comments: [] };
+  } catch {
+    return memory.__petitSuiviTutorTracking ?? { snapshots: [], comments: [] };
+  }
+}
+
+export async function writeTutorTracking(tracking: TutorTrackingData) {
+  const sanitizedTracking = sanitizeTutorTrackingData(tracking as unknown as Record<string, unknown>);
+  try {
+    const store = taskStore();
+    await store.setJSON(TUTOR_TRACKING_KEY, sanitizedTracking);
+  } catch {
+    memory.__petitSuiviTutorTracking = sanitizedTracking;
   }
 }
 
