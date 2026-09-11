@@ -173,6 +173,7 @@ type TutorTrackingRecord = {
   phone: string;
   email: string;
   school: string;
+  wantedCity: string;
 };
 
 type TutorTrackingSnapshot = {
@@ -906,6 +907,7 @@ function normalizeTutorTrackingRecord(raw: Partial<TutorTrackingRecord>): TutorT
     phone: raw.phone || "",
     email: raw.email || "",
     school: raw.school || "",
+    wantedCity: raw.wantedCity || "",
   };
   return {
     ...record,
@@ -1042,9 +1044,12 @@ function parseTutorTrackingCsv(value: string): TutorTrackingRecord[] {
       "email",
       "etablissement",
       "etablissements",
+      "ville",
+      "villesouhaitee",
+      "villesouhaitees",
     ].includes(cell),
   );
-  const headers = hasHeader ? firstRow : ["id", "nom", "prenom", "telephone", "etablissement", "email"];
+  const headers = hasHeader ? firstRow : ["id", "nom", "prenom", "telephone", "etablissement", "email", "villesouhaitee"];
   const dataRows = hasHeader ? rows.slice(1) : rows;
   const indexFor = (aliases: string[]) => {
     for (const alias of aliases) {
@@ -1059,6 +1064,7 @@ function parseTutorTrackingCsv(value: string): TutorTrackingRecord[] {
   const phoneIndex = indexFor(["telephone", "numerodetelephone", "tel", "phone", "mobile"]);
   const emailIndex = indexFor(["email", "mail", "courriel"]);
   const schoolIndex = indexFor(["etablissement", "etablissements", "school", "ecole"]);
+  const wantedCityIndex = indexFor(["villesouhaitees", "villesouhaitee", "villesouhaites", "villesouhaite", "ville"]);
   const valueAt = (row: string[], index: number) => (index >= 0 ? row[index] || "" : "");
   const byKey = new Map<string, TutorTrackingRecord>();
   dataRows.forEach((row) => {
@@ -1069,6 +1075,7 @@ function parseTutorTrackingCsv(value: string): TutorTrackingRecord[] {
       phone: valueAt(row, phoneIndex),
       email: valueAt(row, emailIndex),
       school: valueAt(row, schoolIndex),
+      wantedCity: valueAt(row, wantedCityIndex),
     });
     if (record.key !== "name:" && (record.tutorId || record.lastName || record.firstName || record.phone || record.email)) {
       byKey.set(record.key, record);
@@ -2263,7 +2270,7 @@ export default function Home() {
     return source
       .filter((tutor) => {
         if (!normalized) return true;
-        return `${tutor.tutorId} ${tutor.lastName} ${tutor.firstName} ${tutor.phone} ${tutor.email} ${tutor.school} ${tutorTrackingCommentByKey.get(tutor.key) || ""}`
+        return `${tutor.tutorId} ${tutor.lastName} ${tutor.firstName} ${tutor.phone} ${tutor.email} ${tutor.wantedCity} ${tutorTrackingCommentByKey.get(tutor.key) || ""}`
           .toLocaleLowerCase("fr")
           .includes(normalized);
       })
@@ -3331,6 +3338,44 @@ export default function Home() {
     }
   }
 
+  function exportVisibleTutorTrackingCsv() {
+    const header = [
+      "Vue",
+      "ID",
+      "Nom",
+      "Prénom",
+      "Téléphone",
+      "Email",
+      "Ville souhaitée",
+      "Arrivé le",
+      "Dernière présence",
+      "Statut comparaison",
+      "Commentaire",
+    ];
+    const rows = filteredTutorTracking.map((tutor) => [
+      tutorTrackingView === "new" ? "Nouveau" : tutorTrackingView === "exited" ? "Sorti" : "Actuel",
+      tutor.tutorId,
+      tutor.lastName,
+      tutor.firstName,
+      tutor.phone,
+      tutor.email,
+      tutor.wantedCity,
+      tutor.firstSeen,
+      tutor.lastSeen,
+      tutor.isCurrent ? "Présent à la date finale" : "Absent à la date finale",
+      tutorTrackingCommentByKey.get(tutor.key) || "",
+    ]);
+    const csv = "\uFEFF" + [header, ...rows].map((row) => row.map(csvCell).join(";")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `tuteurs-affiches-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    setToast("Export CSV tuteurs téléchargé");
+  }
+
   async function deleteTutorTrackingSnapshot(date: string) {
     if (!window.confirm(`Supprimer l'import tuteurs du ${formatFullDate(date)} ?`)) return;
     const nextSnapshots = tutorTracking.snapshots.filter((snapshot) => snapshot.date !== date);
@@ -4070,7 +4115,7 @@ export default function Home() {
         <div className="tutor-tracking-import">
           <div>
             <strong>Importer un CSV de tuteurs</strong>
-            <span>Colonnes reconnues : id, nom, prénom, téléphone, email, établissement. Sans en-tête : ID, Nom, Prénom, Téléphone, Établissement, Email.</span>
+            <span>Colonnes reconnues : id, nom, prénom, téléphone, email, ville souhaitée. Sans en-tête : ID, Nom, Prénom, Téléphone, Établissement, Email, Ville souhaitée.</span>
           </div>
           <div className="tutor-tracking-file-row">
             <input type="file" accept=".csv,text/csv,.txt" onChange={(event) => { void importTutorTrackingFile(event.target.files?.[0]); event.currentTarget.value = ""; }} />
@@ -4104,8 +4149,11 @@ export default function Home() {
           </div>
           <label className="search-box">
             <span aria-hidden="true">⌕</span>
-            <input value={tutorTrackingQuery} onChange={(event) => setTutorTrackingQuery(event.target.value)} placeholder="Rechercher nom, téléphone, établissement..." />
+            <input value={tutorTrackingQuery} onChange={(event) => setTutorTrackingQuery(event.target.value)} placeholder="Rechercher nom, téléphone, ville..." />
           </label>
+          <button className="button quiet" onClick={exportVisibleTutorTrackingCsv} disabled={!filteredTutorTracking.length} type="button">
+            Export CSV
+          </button>
         </div>
 
         <div className="tutor-tracking-list">
@@ -4113,7 +4161,7 @@ export default function Home() {
             <article className={`tutor-tracking-card ${tutor.isCurrent ? "is-current" : "is-exited"}`} key={tutor.key}>
               <div>
                 <strong>{tutorTrackingDisplayName(tutor)}</strong>
-                <small>{tutor.school || "Établissement non renseigné"}</small>
+                <small>{tutor.wantedCity || "Ville souhaitée non renseignée"}</small>
                 <div className="tutor-tracking-meta">
                   {tutor.tutorId && <span>ID {tutor.tutorId}</span>}
                   {tutor.phone && <span>{tutor.phone}</span>}

@@ -166,6 +166,7 @@ export type TutorTrackingRecord = {
   phone: string;
   email: string;
   school: string;
+  wantedCity: string;
 };
 
 export type TutorTrackingSnapshot = {
@@ -736,6 +737,7 @@ export function sanitizeTutorTrackingRecord(raw: Record<string, unknown>): Tutor
     phone,
     email: cleanText(raw.email),
     school: cleanText(raw.school),
+    wantedCity: cleanText(raw.wantedCity),
   };
 }
 
