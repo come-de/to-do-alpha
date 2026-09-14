@@ -188,6 +188,31 @@ export type TutorTrackingData = {
   comments: TutorTrackingComment[];
 };
 
+export type AvailabilityRow = {
+  tutorId: string;
+  lastName: string;
+  firstName: string;
+  grade: string;
+  phone: string;
+  date: string;
+  school: string;
+  className: string;
+  timeSlot: string;
+  sessionId: string;
+  visitCount: string;
+  group: string;
+  studentCount: string;
+  groupScore: string;
+};
+
+export type AvailabilityImport = {
+  id: string;
+  importedAt: string;
+  fileName: string;
+  rows: AvailabilityRow[];
+  createdAt: string;
+};
+
 export type SchoolWatchTag = "Nouvel établissement" | "Nouveau besoin" | "Suivi particulier";
 export type SchoolWatchStatus = "active" | "resolved";
 
@@ -286,6 +311,7 @@ export const STAFFING_SESSIONS_KEY = "staffing-sessions.json";
 export const TUTOR_REPORTS_KEY = "tutor-reports.json";
 export const TUTOR_REPORT_COMMENTS_KEY = "tutor-report-comments.json";
 export const TUTOR_TRACKING_KEY = "tutor-tracking.json";
+export const AVAILABILITY_IMPORTS_KEY = "availability-imports.json";
 export const SCHOOL_WATCHLIST_KEY = "school-watchlist.json";
 export const SCHOOLS_KEY = "schools.json";
 export const STUDENT_HISTORY_KEY = "student-history.json";
@@ -302,6 +328,7 @@ const memory = globalThis as typeof globalThis & {
   __petitSuiviTutorReports?: TutorReportSnapshot[];
   __petitSuiviTutorReportComments?: TutorReportComment[];
   __petitSuiviTutorTracking?: TutorTrackingData;
+  __petitSuiviAvailabilityImports?: AvailabilityImport[];
   __petitSuiviSchoolWatchlist?: SchoolWatchItem[];
   __petitSuiviSchools?: School[];
   __petitSuiviStudentHistory?: StudentHistoryYear[];
@@ -783,6 +810,41 @@ export function sanitizeTutorTrackingData(raw: Record<string, unknown>): TutorTr
   };
 }
 
+export function sanitizeAvailabilityRow(raw: Record<string, unknown>): AvailabilityRow {
+  return {
+    tutorId: cleanText(raw.tutorId),
+    lastName: cleanText(raw.lastName),
+    firstName: cleanText(raw.firstName),
+    grade: cleanText(raw.grade),
+    phone: cleanText(raw.phone),
+    date: cleanText(raw.date),
+    school: cleanText(raw.school),
+    className: cleanText(raw.className),
+    timeSlot: cleanText(raw.timeSlot),
+    sessionId: cleanText(raw.sessionId),
+    visitCount: cleanText(raw.visitCount),
+    group: cleanText(raw.group),
+    studentCount: cleanText(raw.studentCount),
+    groupScore: cleanText(raw.groupScore),
+  };
+}
+
+export function sanitizeAvailabilityImport(raw: Record<string, unknown>): AvailabilityImport {
+  const now = new Date().toISOString();
+  return {
+    id: cleanText(raw.id) || crypto.randomUUID(),
+    importedAt: cleanText(raw.importedAt) || now,
+    fileName: cleanText(raw.fileName) || "disponibilites.csv",
+    rows: Array.isArray(raw.rows)
+      ? raw.rows
+          .filter((row): row is Record<string, unknown> => Boolean(row && typeof row === "object"))
+          .map(sanitizeAvailabilityRow)
+          .filter((row) => row.tutorId && row.date)
+      : [],
+    createdAt: cleanText(raw.createdAt) || now,
+  };
+}
+
 function isSchoolWatchTag(value: unknown): value is SchoolWatchTag {
   return value === "Nouvel établissement" || value === "Nouveau besoin" || value === "Suivi particulier";
 }
@@ -1257,6 +1319,31 @@ export async function writeTutorTracking(tracking: TutorTrackingData) {
     await store.setJSON(TUTOR_TRACKING_KEY, sanitizedTracking);
   } catch {
     memory.__petitSuiviTutorTracking = sanitizedTracking;
+  }
+}
+
+export async function readAvailabilityImports() {
+  try {
+    const store = taskStore();
+    const imports = await store.get(AVAILABILITY_IMPORTS_KEY, { type: "json" });
+    return Array.isArray(imports)
+      ? imports
+          .filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object"))
+          .map(sanitizeAvailabilityImport)
+          .sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt))
+      : [];
+  } catch {
+    return memory.__petitSuiviAvailabilityImports ?? [];
+  }
+}
+
+export async function writeAvailabilityImports(imports: AvailabilityImport[]) {
+  const sanitizedImports = imports.map((item) => sanitizeAvailabilityImport(item as unknown as Record<string, unknown>));
+  try {
+    const store = taskStore();
+    await store.setJSON(AVAILABILITY_IMPORTS_KEY, sanitizedImports);
+  } catch {
+    memory.__petitSuiviAvailabilityImports = sanitizedImports;
   }
 }
 

@@ -349,6 +349,43 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .tutor-tracking-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 3px 7px; color: var(--blue-dark); background: rgba(255,255,255,.84); font-size: 10.5px; font-weight: 750; }
 .tutor-tracking-card input { width: 100%; min-height: 34px; border: 1px solid var(--line); border-radius: 9px; padding: 6px 8px; color: var(--blue-title); background: white; font-size: 12px; }
 .tutor-tracking-empty { border-top: 0; }
+
+.availability-import-box { margin: 0 12px 10px; padding: 10px; border: 1px solid rgba(16,185,129,.22); border-radius: 12px; background: linear-gradient(135deg, rgba(236,253,245,.75), rgba(255,255,255,.95)); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.availability-import-box strong { display: block; color: var(--blue-title); font-size: 13px; }
+.availability-import-box span { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; }
+.import-button { display: inline-flex; align-items: center; justify-content: center; min-height: 34px; border: 1px dashed rgba(14,165,233,.45); border-radius: 999px; padding: 7px 12px; color: var(--blue-dark); background: white; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: .04em; cursor: pointer; white-space: nowrap; }
+.import-button input { display: none; }
+.availability-controls { padding: 0 12px 10px; display: grid; grid-template-columns: 150px repeat(2, minmax(190px, 1fr)) auto; gap: 8px; align-items: end; }
+.availability-controls label { display: grid; gap: 4px; color: var(--blue-title); font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: .06em; }
+.availability-controls input, .availability-controls select { min-height: 34px; border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px; color: var(--blue-title); background: white; font-size: 12px; font-weight: 760; }
+.availability-summary { padding: 0 12px 10px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; }
+.availability-summary div { border: 1px solid rgba(14,165,233,.16); border-radius: 10px; padding: 8px 10px; background: rgba(255,255,255,.82); }
+.availability-summary div.highlight { border-color: rgba(16,185,129,.34); background: var(--green-pale); }
+.availability-summary span { display: block; color: var(--muted); font-size: 9.5px; font-weight: 900; text-transform: uppercase; letter-spacing: .06em; }
+.availability-summary strong { display: block; margin-top: 3px; color: var(--blue-title); font-size: 22px; line-height: .95; }
+.availability-history { margin: 0 12px 10px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.76); display: grid; grid-template-columns: minmax(170px, .35fr) minmax(0, 1fr); gap: 10px; }
+.availability-history h3 { margin: 0; color: var(--blue-title); font-size: 14px; }
+.availability-history p { margin: 3px 0 0; color: var(--muted); font-size: 11px; }
+.availability-history-list { display: grid; gap: 6px; max-height: 150px; overflow: auto; }
+.availability-history-list > div { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: center; border: 1px solid rgba(213,231,239,.72); border-radius: 9px; padding: 6px 8px; background: white; }
+.availability-history-list span { min-width: 0; color: var(--blue-title); font-size: 11px; font-weight: 820; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.availability-history-list small { color: var(--muted); font-size: 10px; white-space: nowrap; }
+.availability-tabs { display: flex; align-items: center; gap: 6px; padding: 0 12px 10px; overflow-x: auto; }
+.availability-tabs button { border: 1px solid var(--line); border-radius: 999px; padding: 6px 10px; color: var(--muted); background: white; font-size: 11px; font-weight: 850; white-space: nowrap; cursor: pointer; }
+.availability-tabs button.active, .availability-tabs button:hover { border-color: rgba(16,185,129,.32); color: var(--green-dark); background: var(--green-pale); }
+.availability-tabs .ghost-button { margin-left: auto; }
+.availability-results { padding: 0 12px 12px; display: grid; gap: 8px; }
+.availability-results.is-new .availability-card { border-color: rgba(16,185,129,.28); box-shadow: 0 8px 22px rgba(16,185,129,.07); }
+.availability-card { border: 1px solid var(--line); border-radius: 12px; padding: 10px; background: rgba(255,255,255,.92); box-shadow: 0 4px 14px rgba(14,165,233,.035); }
+.availability-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.availability-card h3 { margin: 0; color: var(--blue-title); font-size: 14px; line-height: 1.15; }
+.availability-card p { margin: 3px 0 0; color: var(--muted); font-size: 11px; }
+.availability-card-header > span { border-radius: 999px; padding: 4px 8px; color: var(--green-dark); background: var(--green-pale); font-size: 10px; font-weight: 900; white-space: nowrap; }
+.availability-slots { margin-top: 8px; display: grid; gap: 5px; }
+.availability-slots div { display: grid; grid-template-columns: 120px minmax(0, 1fr) auto; gap: 8px; align-items: center; border: 1px solid rgba(213,231,239,.72); border-radius: 9px; padding: 6px 8px; background: rgba(244,251,252,.48); }
+.availability-slots strong { color: var(--blue-dark); font-size: 11px; }
+.availability-slots span { min-width: 0; color: var(--ink); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.availability-slots small { color: var(--muted); font-size: 10px; white-space: nowrap; }
 .watchlist-layout { padding: 12px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 360px); gap: 12px; align-items: start; }
 .watchlist-table-wrap { min-width: 0; }
 .watchlist-table { min-width: 980px; display: grid; grid-template-columns: minmax(180px, 1.1fr) minmax(190px, 1.2fr) minmax(145px, .8fr) minmax(170px, 1fr) 78px 220px; gap: 8px; align-items: center; }
@@ -903,6 +940,22 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .tutor-tracking-tabs { padding: 0 8px 8px; }
   .tutor-tracking-list { padding: 8px; }
   .tutor-tracking-card { grid-template-columns: 1fr; gap: 8px; padding: 8px; }
+  .availability-import-box { margin: 0 8px 8px; padding: 8px; flex-direction: column; align-items: stretch; gap: 8px; }
+  .import-button { width: 100%; }
+  .availability-controls { grid-template-columns: 1fr; padding: 0 8px 8px; gap: 6px; }
+  .availability-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 0 8px 8px; gap: 6px; }
+  .availability-summary div { padding: 7px 8px; }
+  .availability-summary strong { font-size: 18px; }
+  .availability-history { margin: 0 8px 8px; padding: 8px; grid-template-columns: 1fr; gap: 7px; }
+  .availability-history-list > div { grid-template-columns: minmax(0, 1fr) auto; }
+  .availability-history-list .text-button { grid-column: 1 / -1; justify-self: start; }
+  .availability-tabs { padding: 0 8px 8px; }
+  .availability-tabs .ghost-button { margin-left: 0; }
+  .availability-results { padding: 0 8px 8px; }
+  .availability-card { padding: 8px; border-radius: 10px; }
+  .availability-card-header { flex-direction: column; gap: 6px; }
+  .availability-slots div { grid-template-columns: 1fr; gap: 2px; padding: 6px 7px; }
+  .availability-slots span { white-space: normal; }
   .watchlist-layout { grid-template-columns: 1fr; padding: 8px; gap: 8px; }
   .watchlist-head { display: none; }
   .watchlist-table.watchlist-row { min-width: 0; grid-template-columns: 1fr; gap: 7px; padding: 8px 9px; }

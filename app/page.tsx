@@ -5,7 +5,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "re
 type Status = "todo" | "progress" | "done";
 type Priority = "low" | "medium" | "high";
 type Density = "compact" | "comfortable";
-type AppMode = "tasks" | "recurring" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffing" | "watchlist" | "tutorReports" | "tutors";
+type AppMode = "tasks" | "recurring" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffing" | "watchlist" | "tutorReports" | "tutors" | "availability";
 type ViewMode = "list" | "matrix";
 type DurationBucket = "short" | "medium" | "long" | "unset";
 type ObjectiveKind = "counter" | "qualitative";
@@ -195,6 +195,42 @@ type TutorTrackingData = {
   comments: TutorTrackingComment[];
 };
 
+type AvailabilityRow = {
+  tutorId: string;
+  lastName: string;
+  firstName: string;
+  grade: string;
+  phone: string;
+  date: string;
+  school: string;
+  className: string;
+  timeSlot: string;
+  sessionId: string;
+  visitCount: string;
+  group: string;
+  studentCount: string;
+  groupScore: string;
+};
+
+type AvailabilityImport = {
+  id: string;
+  importedAt: string;
+  fileName: string;
+  rows: AvailabilityRow[];
+  createdAt: string;
+};
+
+type AvailabilityTutor = {
+  tutorId: string;
+  lastName: string;
+  firstName: string;
+  phone: string;
+  grade: string;
+  rows: AvailabilityRow[];
+};
+
+type AvailabilityComparisonView = "new" | "lost" | "same";
+
 type TutorTrackingSummary = TutorTrackingRecord & {
   firstSeen: string;
   lastSeen: string;
@@ -346,6 +382,7 @@ const appModeSlugs: Record<AppMode, string> = {
   watchlist: "a-suivre",
   tutorReports: "bilans-tuteurs",
   tutors: "tuteurs",
+  availability: "comparaison-dispos",
 };
 
 const appModeAliases: Record<string, AppMode> = {
@@ -369,6 +406,12 @@ const appModeAliases: Record<string, AppMode> = {
   tuteurs: "tutors",
   "suivi-tuteurs": "tutors",
   tutors: "tutors",
+  disponibilites: "availability",
+  disponibilités: "availability",
+  "comparaison-dispos": "availability",
+  "comparaison-disponibilites": "availability",
+  "comparaison-disponibilités": "availability",
+  availability: "availability",
   tutorreports: "tutorReports",
   tutorReports: "tutorReports",
   "tutor-reports": "tutorReports",
@@ -950,6 +993,64 @@ function normalizeTutorTrackingData(raw: Partial<TutorTrackingData>): TutorTrack
   };
 }
 
+function normalizeAvailabilityRow(raw: Partial<AvailabilityRow>): AvailabilityRow {
+  return {
+    tutorId: raw.tutorId || "",
+    lastName: raw.lastName || "",
+    firstName: raw.firstName || "",
+    grade: raw.grade || "",
+    phone: raw.phone || "",
+    date: raw.date || "",
+    school: raw.school || "",
+    className: raw.className || "",
+    timeSlot: raw.timeSlot || "",
+    sessionId: raw.sessionId || "",
+    visitCount: raw.visitCount || "",
+    group: raw.group || "",
+    studentCount: raw.studentCount || "",
+    groupScore: raw.groupScore || "",
+  };
+}
+
+function normalizeAvailabilityImport(raw: Partial<AvailabilityImport>): AvailabilityImport {
+  const now = new Date().toISOString();
+  return {
+    id: raw.id || uid("availability"),
+    importedAt: raw.importedAt || now,
+    fileName: raw.fileName || "disponibilites.csv",
+    rows: Array.isArray(raw.rows)
+      ? raw.rows.map(normalizeAvailabilityRow).filter((row) => row.tutorId && row.date)
+      : [],
+    createdAt: raw.createdAt || now,
+  };
+}
+
+function availabilityTutorName(tutor: Pick<AvailabilityTutor, "firstName" | "lastName" | "tutorId">) {
+  return `${tutor.firstName} ${tutor.lastName}`.trim() || tutor.tutorId || "Tuteur sans nom";
+}
+
+function groupAvailabilityTutors(rows: AvailabilityRow[], date: string) {
+  const byTutor = new Map<string, AvailabilityTutor>();
+  rows
+    .filter((row) => row.date === date && row.tutorId)
+    .forEach((row) => {
+      const existing = byTutor.get(row.tutorId);
+      if (existing) {
+        existing.rows.push(row);
+        return;
+      }
+      byTutor.set(row.tutorId, {
+        tutorId: row.tutorId,
+        lastName: row.lastName,
+        firstName: row.firstName,
+        phone: row.phone,
+        grade: row.grade,
+        rows: [row],
+      });
+    });
+  return byTutor;
+}
+
 function parseCsvLine(line: string, delimiter?: string) {
   const cells: string[] = [];
   let current = "";
@@ -1024,6 +1125,59 @@ function normalizedHeader(value: string) {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, "");
+}
+
+function parseAvailabilityCsv(value: string): AvailabilityRow[] {
+  const rows = parseCsvRows(value).filter((row) => row.some(Boolean));
+  if (!rows.length) return [];
+  const firstRow = rows[0].map(normalizedHeader);
+  const hasHeader = firstRow.some((cell) => ["id", "nomtuteur", "prenomtuteur", "date", "heureducreneau", "iddelaseance"].includes(cell));
+  const headers = hasHeader
+    ? firstRow
+    : ["id", "nomtuteur", "prenomtuteur", "grade", "telephone", "date", "etablissement", "classe", "heureducreneau", "iddelaseance", "nombredevisites", "groupe", "nbreleves", "scorepourlegroupe"];
+  const dataRows = hasHeader ? rows.slice(1) : rows;
+  const indexFor = (aliases: string[]) => {
+    for (const alias of aliases) {
+      const index = headers.findIndex((header) => header === alias);
+      if (index >= 0) return index;
+    }
+    return -1;
+  };
+  const valueAt = (row: string[], index: number) => (index >= 0 ? row[index] || "" : "");
+  const idIndex = indexFor(["id", "idtuteur", "tutorid"]);
+  const lastNameIndex = indexFor(["nomtuteur", "nom", "lastname"]);
+  const firstNameIndex = indexFor(["prenomtuteur", "prenom", "firstname"]);
+  const gradeIndex = indexFor(["grade"]);
+  const phoneIndex = indexFor(["telephone", "tel", "phone"]);
+  const dateIndex = indexFor(["date"]);
+  const schoolIndex = indexFor(["etablissement", "etablissements", "school"]);
+  const classIndex = indexFor(["classe", "class"]);
+  const timeSlotIndex = indexFor(["heureducreneau", "heurecreneau", "creneau", "horaire"]);
+  const sessionIdIndex = indexFor(["iddelaseance", "idseance", "sessionid"]);
+  const visitCountIndex = indexFor(["nombredevisites", "visites", "nbvisites"]);
+  const groupIndex = indexFor(["groupe", "group"]);
+  const studentCountIndex = indexFor(["nbreleves", "nbeleves", "nombreeleves"]);
+  const groupScoreIndex = indexFor(["scorepourlegroupe", "scoregroupe"]);
+  return dataRows
+    .map((row) =>
+      normalizeAvailabilityRow({
+        tutorId: valueAt(row, idIndex),
+        lastName: valueAt(row, lastNameIndex),
+        firstName: valueAt(row, firstNameIndex),
+        grade: valueAt(row, gradeIndex),
+        phone: valueAt(row, phoneIndex),
+        date: valueAt(row, dateIndex),
+        school: valueAt(row, schoolIndex),
+        className: valueAt(row, classIndex),
+        timeSlot: valueAt(row, timeSlotIndex),
+        sessionId: valueAt(row, sessionIdIndex),
+        visitCount: valueAt(row, visitCountIndex),
+        group: valueAt(row, groupIndex),
+        studentCount: valueAt(row, studentCountIndex),
+        groupScore: valueAt(row, groupScoreIndex),
+      }),
+    )
+    .filter((row) => row.tutorId && row.date);
 }
 
 function parseTutorTrackingCsv(value: string): TutorTrackingRecord[] {
@@ -1532,6 +1686,7 @@ export default function Home() {
   const [tutorReports, setTutorReports] = useState<TutorReportSnapshot[]>([]);
   const [tutorReportComments, setTutorReportComments] = useState<TutorReportComment[]>([]);
   const [tutorTracking, setTutorTracking] = useState<TutorTrackingData>({ snapshots: [], comments: [] });
+  const [availabilityImports, setAvailabilityImports] = useState<AvailabilityImport[]>([]);
   const [schoolWatchlist, setSchoolWatchlist] = useState<SchoolWatchItem[]>([]);
   const [schools, setSchools] = useState<School[]>([]);
   const [studentHistory, setStudentHistory] = useState<StudentHistoryYear[]>([]);
@@ -1622,6 +1777,10 @@ export default function Home() {
   const [tutorTrackingCsv, setTutorTrackingCsv] = useState("");
   const [tutorTrackingQuery, setTutorTrackingQuery] = useState("");
   const [tutorTrackingView, setTutorTrackingView] = useState<"new" | "exited" | "current">("new");
+  const [availabilityDate, setAvailabilityDate] = useState(new Date().toISOString().slice(0, 10));
+  const [availabilityReferenceId, setAvailabilityReferenceId] = useState("");
+  const [availabilityRecentId, setAvailabilityRecentId] = useState("");
+  const [availabilityView, setAvailabilityView] = useState<AvailabilityComparisonView>("new");
   const importRef = useRef<HTMLInputElement>(null);
 
   const setAppMode = useCallback((mode: AppMode) => {
@@ -1790,6 +1949,33 @@ export default function Home() {
     }
   }, []);
 
+  const loadAvailabilityImports = useCallback(async () => {
+    try {
+      const response = await fetch("/api/availability-imports", { cache: "no-store" });
+      if (!response.ok) throw new Error("load-availability-imports-failed");
+      const data = (await response.json()) as { imports?: Partial<AvailabilityImport>[] };
+      const imports = Array.isArray(data.imports)
+        ? data.imports
+            .map(normalizeAvailabilityImport)
+            .sort((a, b) => sortDateValue(b.importedAt) - sortDateValue(a.importedAt))
+        : [];
+      setAvailabilityImports(imports);
+      if (imports.length) {
+        setAvailabilityRecentId((current) => (imports.some((item) => item.id === current) ? current : imports[0].id));
+        setAvailabilityReferenceId((current) =>
+          imports.some((item) => item.id === current) ? current : imports[1]?.id || imports[0].id,
+        );
+        setAvailabilityDate((current) =>
+          imports.some((item) => item.rows.some((row) => row.date === current))
+            ? current
+            : imports[0].rows[0]?.date || current,
+        );
+      }
+    } catch {
+      setToast("Imports de disponibilités indisponibles");
+    }
+  }, []);
+
   const loadSchoolWatchlist = useCallback(async () => {
     try {
       const response = await fetch("/api/school-watchlist", { cache: "no-store" });
@@ -1868,12 +2054,13 @@ export default function Home() {
       void loadTutorReports();
       void loadTutorReportComments();
       void loadTutorTracking();
+      void loadAvailabilityImports();
       void loadSchoolWatchlist();
       void loadSchools();
       void loadStudentHistory();
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadCommunications, loadStaffingDays, loadTutorReports, loadTutorReportComments, loadTutorTracking, loadSchoolWatchlist, loadSchools, loadStudentHistory]);
+  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadCommunications, loadStaffingDays, loadTutorReports, loadTutorReportComments, loadTutorTracking, loadAvailabilityImports, loadSchoolWatchlist, loadSchools, loadStudentHistory]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -1888,12 +2075,13 @@ export default function Home() {
       void loadTutorReports();
       void loadTutorReportComments();
       void loadTutorTracking();
+      void loadAvailabilityImports();
       void loadSchoolWatchlist();
       void loadSchools();
       void loadStudentHistory();
     }, 30000);
     return () => window.clearInterval(timer);
-  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadCommunications, loadStaffingDays, loadTutorReports, loadTutorReportComments, loadTutorTracking, loadSchoolWatchlist, loadSchools, loadStudentHistory]);
+  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadCommunications, loadStaffingDays, loadTutorReports, loadTutorReportComments, loadTutorTracking, loadAvailabilityImports, loadSchoolWatchlist, loadSchools, loadStudentHistory]);
 
   useEffect(() => {
     if (authorName.trim()) localStorage.setItem(AUTHOR_KEY, authorName.trim());
@@ -2280,6 +2468,47 @@ export default function Home() {
         return sortDateValue(dateB) - sortDateValue(dateA);
       });
   }, [comparedAddedTutors, comparedCurrentTutors, comparedExitedTutors, tutorTrackingCommentByKey, tutorTrackingQuery, tutorTrackingView]);
+  const selectedAvailabilityReference = useMemo(
+    () => availabilityImports.find((item) => item.id === availabilityReferenceId) ?? null,
+    [availabilityImports, availabilityReferenceId],
+  );
+  const selectedAvailabilityRecent = useMemo(
+    () => availabilityImports.find((item) => item.id === availabilityRecentId) ?? null,
+    [availabilityImports, availabilityRecentId],
+  );
+  const availabilityDates = useMemo(
+    () =>
+      Array.from(new Set(availabilityImports.flatMap((item) => item.rows.map((row) => row.date)).filter(Boolean))).sort(
+        (a, b) => sortDateValue(a) - sortDateValue(b),
+      ),
+    [availabilityImports],
+  );
+  const availabilityComparison = useMemo(() => {
+    const referenceMap = selectedAvailabilityReference
+      ? groupAvailabilityTutors(selectedAvailabilityReference.rows, availabilityDate)
+      : new Map<string, AvailabilityTutor>();
+    const recentMap = selectedAvailabilityRecent
+      ? groupAvailabilityTutors(selectedAvailabilityRecent.rows, availabilityDate)
+      : new Map<string, AvailabilityTutor>();
+    const newTutors = Array.from(recentMap.values()).filter((tutor) => !referenceMap.has(tutor.tutorId));
+    const lostTutors = Array.from(referenceMap.values()).filter((tutor) => !recentMap.has(tutor.tutorId));
+    const sameTutors = Array.from(recentMap.values()).filter((tutor) => referenceMap.has(tutor.tutorId));
+    const sortTutors = (items: AvailabilityTutor[]) =>
+      items.sort((a, b) => availabilityTutorName(a).localeCompare(availabilityTutorName(b), "fr"));
+    return {
+      referenceCount: referenceMap.size,
+      recentCount: recentMap.size,
+      newTutors: sortTutors(newTutors),
+      lostTutors: sortTutors(lostTutors),
+      sameTutors: sortTutors(sameTutors),
+    };
+  }, [availabilityDate, selectedAvailabilityRecent, selectedAvailabilityReference]);
+  const displayedAvailabilityTutors =
+    availabilityView === "new"
+      ? availabilityComparison.newTutors
+      : availabilityView === "lost"
+        ? availabilityComparison.lostTutors
+        : availabilityComparison.sameTutors;
   const filteredSchools = useMemo(() => {
     const normalized = schoolQuery.trim().toLocaleLowerCase("fr");
     return schools
@@ -2627,6 +2856,37 @@ export default function Home() {
     } catch {
       setSyncError("Sauvegarde impossible, rechargez la page avant de continuer");
       setToast("Suivi tuteurs non sauvegardé");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function saveAvailabilityImports(nextImports: AvailabilityImport[], message: string) {
+    setSaving(true);
+    setSyncError("");
+    const normalizedImports = nextImports
+      .map(normalizeAvailabilityImport)
+      .sort((a, b) => sortDateValue(b.importedAt) - sortDateValue(a.importedAt));
+    setAvailabilityImports(normalizedImports);
+    try {
+      const response = await fetch("/api/availability-imports", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imports: normalizedImports }),
+      });
+      if (!response.ok) throw new Error("save-availability-imports-failed");
+      const data = (await response.json()) as { imports?: Partial<AvailabilityImport>[] };
+      setAvailabilityImports(
+        Array.isArray(data.imports)
+          ? data.imports
+              .map(normalizeAvailabilityImport)
+              .sort((a, b) => sortDateValue(b.importedAt) - sortDateValue(a.importedAt))
+          : [],
+      );
+      setToast(message);
+    } catch {
+      setSyncError("Sauvegarde impossible, rechargez la page avant de continuer");
+      setToast("Import de disponibilités non sauvegardé");
     } finally {
       setSaving(false);
     }
@@ -3393,6 +3653,92 @@ export default function Home() {
     await saveTutorTracking({ ...tutorTracking, comments: nextComments }, "Commentaire tuteur sauvegardé");
   }
 
+  async function importAvailabilityFile(file: File | undefined) {
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const rows = parseAvailabilityCsv(text);
+      if (!rows.length) {
+        setToast("Aucune disponibilité valide à importer");
+        return;
+      }
+      const now = new Date().toISOString();
+      const nextImport = normalizeAvailabilityImport({
+        id: uid("availability"),
+        importedAt: now,
+        fileName: file.name || "disponibilites.csv",
+        rows,
+        createdAt: now,
+      });
+      const previousNewestId = availabilityImports[0]?.id || "";
+      await saveAvailabilityImports([nextImport, ...availabilityImports], "Import de disponibilités ajouté");
+      setAvailabilityRecentId(nextImport.id);
+      setAvailabilityReferenceId(previousNewestId || nextImport.id);
+      setAvailabilityDate(rows[0]?.date || availabilityDate);
+      setAvailabilityView("new");
+    } catch {
+      setToast("Fichier CSV illisible");
+    }
+  }
+
+  async function deleteAvailabilityImport(importId: string) {
+    const importItem = availabilityImports.find((item) => item.id === importId);
+    if (!importItem) return;
+    if (!window.confirm(`Supprimer l'import "${importItem.fileName}" du ${formatJournalDate(importItem.importedAt)} ?`)) return;
+    const nextImports = availabilityImports.filter((item) => item.id !== importId);
+    await saveAvailabilityImports(nextImports, "Import de disponibilités supprimé");
+    if (availabilityRecentId === importId) setAvailabilityRecentId(nextImports[0]?.id || "");
+    if (availabilityReferenceId === importId) setAvailabilityReferenceId(nextImports[1]?.id || nextImports[0]?.id || "");
+  }
+
+  function exportAvailabilityCategoryCsv() {
+    const categoryLabel =
+      availabilityView === "new"
+        ? "Nouvelle disponibilité"
+        : availabilityView === "lost"
+          ? "Disponibilité perdue"
+          : "Disponibilité inchangée";
+    const header = [
+      "Catégorie",
+      "Date analysée",
+      "ID",
+      "Nom",
+      "Prénom",
+      "Téléphone",
+      "Grade",
+      "Créneaux",
+      "Établissements",
+      "Classes",
+      "Groupes",
+      "IDs séances",
+      "Nombre de créneaux",
+    ];
+    const rows = displayedAvailabilityTutors.map((tutor) => [
+      categoryLabel,
+      availabilityDate,
+      tutor.tutorId,
+      tutor.lastName,
+      tutor.firstName,
+      tutor.phone,
+      tutor.grade,
+      tutor.rows.map((row) => row.timeSlot).filter(Boolean).join(" | "),
+      tutor.rows.map((row) => row.school).filter(Boolean).join(" | "),
+      tutor.rows.map((row) => row.className).filter(Boolean).join(" | "),
+      tutor.rows.map((row) => row.group).filter(Boolean).join(" | "),
+      tutor.rows.map((row) => row.sessionId).filter(Boolean).join(" | "),
+      tutor.rows.length,
+    ]);
+    const csv = "\uFEFF" + [header, ...rows].map((row) => row.map(csvCell).join(";")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `comparaison-disponibilites-${availabilityView}-${availabilityDate || "date"}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    setToast("Export CSV téléchargé");
+  }
+
   function openNewSchoolWatchItem(schoolId = "") {
     setEditingSchoolWatchId(null);
     setSchoolWatchDraft({
@@ -4034,6 +4380,159 @@ export default function Home() {
     const historyYear = activeHistory ?? chartYears[0] ?? studentHistory[0];
     if (!historyYear) return null;
     return historyYear.entries.reduce<number | null>((latest, entry) => entry.value ?? latest, null);
+  }
+
+  function renderAvailabilityComparisonSection() {
+    const importLabel = (item: AvailabilityImport) => `${formatJournalDate(item.importedAt)} · ${item.fileName}`;
+    const summaryCards = [
+      { label: "Référence", value: availabilityComparison.referenceCount },
+      { label: "Récent", value: availabilityComparison.recentCount },
+      { label: "Nouvelles", value: availabilityComparison.newTutors.length },
+      { label: "Perdues", value: availabilityComparison.lostTutors.length },
+      { label: "Inchangées", value: availabilityComparison.sameTutors.length },
+    ];
+    return (
+      <section className="task-panel availability-panel">
+        <div className="panel-heading">
+          <div>
+            <p className="eyebrow">Comparaison des disponibilités</p>
+            <h2>Repérer les nouveaux tuteurs disponibles</h2>
+            <p className="panel-intro">
+              Importez plusieurs CSV, choisissez une date, puis comparez deux versions. La comparaison se fait par ID tuteur.
+            </p>
+          </div>
+          <button type="button" className="ghost-button" onClick={() => void loadAvailabilityImports()}>
+            ↻ Actualiser
+          </button>
+        </div>
+
+        <div className="availability-import-box">
+          <div>
+            <strong>Importer un CSV de disponibilités</strong>
+            <span>Chaque fichier est conservé dans l’historique partagé avec sa date et son heure d’import.</span>
+          </div>
+          <label className="import-button">
+            Choisir un fichier CSV
+            <input
+              type="file"
+              accept=".csv,text/csv,.txt"
+              onChange={(event) => {
+                void importAvailabilityFile(event.target.files?.[0]);
+                event.currentTarget.value = "";
+              }}
+            />
+          </label>
+        </div>
+
+        <div className="availability-controls">
+          <label>
+            Date à analyser
+            <input list="availability-dates" type="date" value={availabilityDate} onChange={(event) => setAvailabilityDate(event.target.value)} />
+            <datalist id="availability-dates">
+              {availabilityDates.map((date) => (
+                <option key={date} value={date} />
+              ))}
+            </datalist>
+          </label>
+          <label>
+            Fichier de référence
+            <select value={availabilityReferenceId} onChange={(event) => setAvailabilityReferenceId(event.target.value)}>
+              <option value="">Sélectionner</option>
+              {availabilityImports.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {importLabel(item)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Fichier récent
+            <select value={availabilityRecentId} onChange={(event) => setAvailabilityRecentId(event.target.value)}>
+              <option value="">Sélectionner</option>
+              {availabilityImports.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {importLabel(item)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button type="button" className="primary-button" onClick={() => setAvailabilityView("new")}>
+            Comparer
+          </button>
+        </div>
+
+        <div className="availability-summary" aria-label="Résumé comparaison disponibilités">
+          {summaryCards.map((card) => (
+            <div key={card.label} className={card.label === "Nouvelles" ? "highlight" : ""}>
+              <span>{card.label}</span>
+              <strong>{card.value}</strong>
+            </div>
+          ))}
+        </div>
+
+        <div className="availability-history">
+          <div>
+            <h3>Imports historiques</h3>
+            <p>{availabilityImports.length ? `${availabilityImports.length} import(s) conservé(s)` : "Aucun import pour l’instant."}</p>
+          </div>
+          <div className="availability-history-list">
+            {availabilityImports.map((item) => (
+              <div key={item.id}>
+                <span>{importLabel(item)}</span>
+                <small>{item.rows.length} ligne(s)</small>
+                <button type="button" className="text-button danger" onClick={() => void deleteAvailabilityImport(item.id)}>
+                  Supprimer
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="availability-tabs">
+          <button type="button" className={availabilityView === "new" ? "active" : ""} onClick={() => setAvailabilityView("new")}>
+            ✨ Nouvelles ({availabilityComparison.newTutors.length})
+          </button>
+          <button type="button" className={availabilityView === "lost" ? "active" : ""} onClick={() => setAvailabilityView("lost")}>
+            ↘ Perdues ({availabilityComparison.lostTutors.length})
+          </button>
+          <button type="button" className={availabilityView === "same" ? "active" : ""} onClick={() => setAvailabilityView("same")}>
+            = Inchangées ({availabilityComparison.sameTutors.length})
+          </button>
+          <button type="button" className="ghost-button" onClick={exportAvailabilityCategoryCsv} disabled={!displayedAvailabilityTutors.length}>
+            Export CSV
+          </button>
+        </div>
+
+        <div className={`availability-results ${availabilityView === "new" ? "is-new" : ""}`}>
+          {!selectedAvailabilityReference || !selectedAvailabilityRecent ? (
+            <div className="empty-state compact">Importez au moins deux fichiers, puis choisissez une date et deux imports à comparer.</div>
+          ) : displayedAvailabilityTutors.length ? (
+            displayedAvailabilityTutors.map((tutor) => (
+              <article key={tutor.tutorId} className="availability-card">
+                <div className="availability-card-header">
+                  <div>
+                    <h3>{availabilityTutorName(tutor)}</h3>
+                    <p>ID {tutor.tutorId} · {tutor.phone || "téléphone non renseigné"}{tutor.grade ? ` · ${tutor.grade}` : ""}</p>
+                  </div>
+                  <span>{tutor.rows.length} créneau{tutor.rows.length > 1 ? "x" : ""}</span>
+                </div>
+                <div className="availability-slots">
+                  {tutor.rows.map((row, index) => (
+                    <div key={`${row.sessionId || row.timeSlot}-${index}`}>
+                      <strong>{row.timeSlot || "Horaire non renseigné"}</strong>
+                      <span>{row.school || "Établissement non renseigné"} · {row.className || "classe n/a"} · {row.group || "groupe n/a"}</span>
+                      {row.sessionId ? <small>Séance {row.sessionId}</small> : null}
+                    </div>
+                  ))}
+                </div>
+              </article>
+            ))
+          ) : (
+            <div className="empty-state compact">Aucun tuteur dans cette catégorie pour la date choisie.</div>
+          )}
+        </div>
+      </section>
+    );
   }
 
   function renderTutorTrackingSection() {
@@ -4736,6 +5235,8 @@ export default function Home() {
                       ? () => { void loadStaffingDays(); }
                     : appMode === "tutors"
                       ? () => { void loadTutorTracking(); }
+                    : appMode === "availability"
+                      ? () => { void loadAvailabilityImports(); }
                     : appMode === "tutorReports"
                       ? () => { void loadTutorReports(); }
                     : appMode === "watchlist"
@@ -4763,6 +5264,8 @@ export default function Home() {
                       ? "Ligne du jour"
                     : appMode === "tutors"
                       ? "Actualiser tuteurs"
+                    : appMode === "availability"
+                      ? "Actualiser dispos"
                     : appMode === "tutorReports"
                       ? "Actualiser bilans"
                     : appMode === "watchlist"
@@ -4872,6 +5375,9 @@ export default function Home() {
             </button>
             <button className={appMode === "tutors" ? "active" : ""} onClick={() => setAppMode("tutors")}>
               <span className="tab-icon" aria-hidden="true">👨‍🏫</span> Tuteurs <span className="tab-count">{tutorTrackingCounts.current}</span>
+            </button>
+            <button className={appMode === "availability" ? "active" : ""} onClick={() => setAppMode("availability")}>
+              <span className="tab-icon" aria-hidden="true">📆</span> Comparaison dispos <span className="tab-count">{availabilityImports.length}</span>
             </button>
             <button className={appMode === "tutorReports" ? "active" : ""} onClick={() => setAppMode("tutorReports")}>
               <span className="tab-icon" aria-hidden="true">🧾</span> Bilans tuteurs <span className="tab-count">{tutorReports.length}</span>
@@ -5422,6 +5928,7 @@ export default function Home() {
           </div>
         </section>
         : appMode === "tutors" ? renderTutorTrackingSection()
+        : appMode === "availability" ? renderAvailabilityComparisonSection()
         : appMode === "tutorReports" ? renderTutorReportsSection()
         : appMode === "watchlist" ? <section className="task-panel">
           <div className="panel-heading">
