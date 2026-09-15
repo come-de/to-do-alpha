@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-type FileKind = "availability" | "assignments" | "enrollments";
+type FileKind = "availability" | "assignments" | "enrollments" | "tutors";
 type StoredImport = {
   id: string;
   importedAt: string;
@@ -11,10 +11,11 @@ type StoredImport = {
   sourceRowCount?: number;
 };
 
-const fileConfig: Record<FileKind, { title: string; description: string; endpoint: string; icon: string }> = {
-  availability: { title: "Disponibilités des tuteurs", description: "Utilisées dans Comparaison dispos et Couverture tuteurs.", endpoint: "/api/availability-imports", icon: "📆" },
-  assignments: { title: "Séances affectées", description: "Utilisées dans Couverture tuteurs.", endpoint: "/api/tutor-assignment-imports", icon: "🧩" },
-  enrollments: { title: "Inscriptions parents", description: "Utilisées dans Comparaison inscriptions.", endpoint: "/api/enrollment-imports", icon: "🎒" },
+const fileConfig: Record<FileKind, { title: string; description: string; endpoint: string; icon: string; canUpload: boolean }> = {
+  availability: { title: "Disponibilités des tuteurs", description: "Utilisées dans Comparaison dispos et Couverture tuteurs.", endpoint: "/api/availability-imports", icon: "📆", canUpload: true },
+  assignments: { title: "Séances affectées", description: "Utilisées dans Couverture tuteurs.", endpoint: "/api/tutor-assignment-imports", icon: "🧩", canUpload: true },
+  enrollments: { title: "Inscriptions parents", description: "Utilisées dans Comparaison inscriptions.", endpoint: "/api/enrollment-imports", icon: "🎒", canUpload: true },
+  tutors: { title: "Listes de tuteurs", description: "Imports datés utilisés dans l’onglet Tuteurs.", endpoint: "/api/tutor-tracking", icon: "👨‍🏫", canUpload: false },
 };
 
 function formatDate(value: string) {
@@ -23,7 +24,7 @@ function formatDate(value: string) {
 }
 
 export default function FilesHub({ onOpen }: { onOpen: (kind: FileKind) => void }) {
-  const [files, setFiles] = useState<Record<FileKind, StoredImport[]>>({ availability: [], assignments: [], enrollments: [] });
+  const [files, setFiles] = useState<Record<FileKind, StoredImport[]>>({ availability: [], assignments: [], enrollments: [], tutors: [] });
   const [draftNames, setDraftNames] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -31,12 +32,15 @@ export default function FilesHub({ onOpen }: { onOpen: (kind: FileKind) => void 
   const load = useCallback(async (silent = false) => {
     try {
       const kinds = Object.keys(fileConfig) as FileKind[];
-      const responses = await Promise.all(kinds.map((kind) => fetch(`${fileConfig[kind].endpoint}?summary=1`, { cache: "no-store" })));
+      const responses = await Promise.all(kinds.map((kind) => fetch(kind === "tutors" ? fileConfig[kind].endpoint : `${fileConfig[kind].endpoint}?summary=1`, { cache: "no-store" })));
       const payloads = await Promise.all(responses.map((response) => response.json()));
-      const next = { availability: [], assignments: [], enrollments: [] } as Record<FileKind, StoredImport[]>;
+      const next = { availability: [], assignments: [], enrollments: [], tutors: [] } as Record<FileKind, StoredImport[]>;
       responses.forEach((response, index) => {
         if (!response.ok) throw new Error(payloads[index]?.detail || payloads[index]?.error || "Chargement impossible");
-        next[kinds[index]] = Array.isArray(payloads[index]?.imports) ? payloads[index].imports : [];
+        const kind = kinds[index];
+        next[kind] = kind === "tutors"
+          ? (payloads[index]?.tracking?.snapshots ?? []).map((snapshot: { id: string; date: string; records?: unknown[]; createdAt?: string; updatedAt?: string }) => ({ id: snapshot.id, importedAt: snapshot.updatedAt || snapshot.createdAt || snapshot.date, displayName: `Liste tuteurs du ${snapshot.date}`, fileName: `${snapshot.records?.length ?? 0} tuteurs`, sourceRowCount: snapshot.records?.length ?? 0 }))
+          : Array.isArray(payloads[index]?.imports) ? payloads[index].imports : [];
       });
       setFiles(next);
       setDraftNames(Object.fromEntries(kinds.flatMap((kind) => next[kind].map((item) => [item.id, item.displayName]))));
@@ -52,7 +56,7 @@ export default function FilesHub({ onOpen }: { onOpen: (kind: FileKind) => void 
   }, [load]);
 
   async function upload(kind: FileKind, file: File | undefined) {
-    if (!file) return;
+    if (!file || kind === "tutors") return;
     setSaving(true);
     setMessage("Import en cours…");
     try {
@@ -73,6 +77,7 @@ export default function FilesHub({ onOpen }: { onOpen: (kind: FileKind) => void 
   }
 
   async function rename(kind: FileKind, item: StoredImport) {
+    if (kind === "tutors") return;
     const displayName = (draftNames[item.id] || "").trim();
     if (!displayName) return setMessage("Le nom du fichier est obligatoire");
     setSaving(true);
@@ -102,12 +107,12 @@ export default function FilesHub({ onOpen }: { onOpen: (kind: FileKind) => void 
           const config = fileConfig[kind];
           return <article className="files-category" key={kind}>
             <div className="files-category-heading"><span>{config.icon}</span><div><h3>{config.title}</h3><p>{config.description}</p></div></div>
-            <div className="files-category-actions"><label className="import-button">Importer un CSV<input type="file" accept=".csv,text/csv" disabled={saving} onChange={(event) => { void upload(kind, event.target.files?.[0]); event.currentTarget.value = ""; }} /></label><button type="button" className="text-button" onClick={() => onOpen(kind)}>Ouvrir l’analyse</button></div>
+            <div className="files-category-actions">{config.canUpload ? <label className="import-button">Importer un CSV<input type="file" accept=".csv,text/csv" disabled={saving} onChange={(event) => { void upload(kind, event.target.files?.[0]); event.currentTarget.value = ""; }} /></label> : <span className="files-managed-note">Import depuis l’onglet Tuteurs</span>}<button type="button" className="text-button" onClick={() => onOpen(kind)}>Ouvrir l’analyse</button></div>
             <div className="files-list">
               {files[kind].length ? files[kind].map((item) => <div key={item.id}>
-                <input value={draftNames[item.id] ?? item.displayName} onChange={(event) => setDraftNames((current) => ({ ...current, [item.id]: event.target.value }))} onKeyDown={(event) => { if (event.key === "Enter") void rename(kind, item); }} aria-label={`Nom du fichier ${item.fileName}`} />
+                {kind === "tutors" ? <strong className="files-static-name">{item.displayName}</strong> : <input value={draftNames[item.id] ?? item.displayName} onChange={(event) => setDraftNames((current) => ({ ...current, [item.id]: event.target.value }))} onKeyDown={(event) => { if (event.key === "Enter") void rename(kind, item); }} aria-label={`Nom du fichier ${item.fileName}`} />}
                 <small>{formatDate(item.importedAt)} · {item.fileName}{item.sourceRowCount ? ` · ${item.sourceRowCount} lignes` : ""}</small>
-                <button type="button" className="text-button" onClick={() => void rename(kind, item)}>Enregistrer</button>
+                {kind !== "tutors" ? <button type="button" className="text-button" onClick={() => void rename(kind, item)}>Enregistrer</button> : null}
               </div>) : <p className="files-empty">Aucun fichier enregistré.</p>}
             </div>
           </article>;

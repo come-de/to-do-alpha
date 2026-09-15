@@ -237,6 +237,17 @@ export type TutorAssignmentImport = {
   createdAt: string;
 };
 
+export type TutorCoverageNoteStatus = "to-check" | "unavailable" | "confirmed" | "contacted";
+
+export type TutorCoverageNote = {
+  id: string;
+  tutorId: string;
+  date: string;
+  status: TutorCoverageNoteStatus;
+  note: string;
+  updatedAt: string;
+};
+
 export type EnrollmentRow = {
   studentId: string;
   firstName: string;
@@ -356,6 +367,7 @@ export const TUTOR_REPORT_COMMENTS_KEY = "tutor-report-comments.json";
 export const TUTOR_TRACKING_KEY = "tutor-tracking.json";
 export const AVAILABILITY_IMPORTS_KEY = "availability-imports.json";
 export const TUTOR_ASSIGNMENT_IMPORTS_KEY = "tutor-assignment-imports.json";
+export const TUTOR_COVERAGE_NOTES_KEY = "tutor-coverage-notes.json";
 export const ENROLLMENT_IMPORTS_KEY = "enrollment-imports.json";
 export const SCHOOL_WATCHLIST_KEY = "school-watchlist.json";
 export const SCHOOLS_KEY = "schools.json";
@@ -375,6 +387,7 @@ const memory = globalThis as typeof globalThis & {
   __petitSuiviTutorTracking?: TutorTrackingData;
   __petitSuiviAvailabilityImports?: AvailabilityImport[];
   __petitSuiviTutorAssignmentImports?: TutorAssignmentImport[];
+  __petitSuiviTutorCoverageNotes?: TutorCoverageNote[];
   __petitSuiviEnrollmentImports?: EnrollmentImport[];
   __petitSuiviSchoolWatchlist?: SchoolWatchItem[];
   __petitSuiviSchools?: School[];
@@ -1095,6 +1108,20 @@ export function sanitizeTutorAssignmentImport(raw: Record<string, unknown>): Tut
           .filter((row) => row.tutorId && row.date && row.timeSlot)
       : [],
     createdAt: cleanText(raw.createdAt) || now,
+  };
+}
+
+export function sanitizeTutorCoverageNote(raw: Record<string, unknown>): TutorCoverageNote {
+  const status = raw.status === "unavailable" || raw.status === "confirmed" || raw.status === "contacted"
+    ? raw.status
+    : "to-check";
+  return {
+    id: cleanText(raw.id) || crypto.randomUUID(),
+    tutorId: cleanText(raw.tutorId),
+    date: cleanText(raw.date),
+    status,
+    note: cleanText(raw.note),
+    updatedAt: cleanText(raw.updatedAt) || new Date().toISOString(),
   };
 }
 
@@ -1862,6 +1889,37 @@ export async function deleteTutorAssignmentImportById(id: string) {
   const existing = await readTutorAssignmentIndex();
   await store.setJSON(TUTOR_ASSIGNMENT_IMPORTS_KEY, existing.filter((item) => item.id !== id).map((item) => ({ ...item, rows: [] })));
   await store.delete(tutorAssignmentRowsKey(id));
+}
+
+export async function readTutorCoverageNotes() {
+  try {
+    const store = taskStore();
+    const notes = await store.get(TUTOR_COVERAGE_NOTES_KEY, { type: "json", consistency: "strong" });
+    return Array.isArray(notes)
+      ? notes
+          .filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object"))
+          .map(sanitizeTutorCoverageNote)
+          .filter((item) => item.tutorId && item.date)
+      : [];
+  } catch (error) {
+    if (!canUseMemoryFallback()) throw error;
+    return memory.__petitSuiviTutorCoverageNotes ?? [];
+  }
+}
+
+export async function upsertTutorCoverageNote(input: Record<string, unknown>) {
+  const nextNote = sanitizeTutorCoverageNote({ ...input, updatedAt: new Date().toISOString() });
+  if (!nextNote.tutorId || !nextNote.date) throw new Error("Tuteur ou date manquant");
+  const notes = await readTutorCoverageNotes();
+  const nextNotes = [nextNote, ...notes.filter((item) => !(item.tutorId === nextNote.tutorId && item.date === nextNote.date))];
+  try {
+    const store = taskStore();
+    await store.setJSON(TUTOR_COVERAGE_NOTES_KEY, nextNotes);
+  } catch (error) {
+    if (!canUseMemoryFallback()) throw error;
+    memory.__petitSuiviTutorCoverageNotes = nextNotes;
+  }
+  return nextNote;
 }
 
 function enrollmentRowsKey(id: string) {

@@ -429,6 +429,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .coverage-results { padding: 0 12px 12px; display: grid; gap: 7px; }
 .coverage-card { display: grid; grid-template-columns: minmax(170px, .55fr) minmax(260px, 1fr) minmax(280px, 1.1fr); gap: 8px; padding: 8px; border: 1px solid var(--line); border-left: 4px solid var(--green); border-radius: 10px; background: white; }
 .coverage-card.extra { border-left-color: var(--blue-main); }
+.coverage-card.is-unavailable { border-left-color: var(--red); background: linear-gradient(90deg, var(--red-pale), white 24%); }
 .coverage-person h3 { margin: 0; color: var(--blue-title); font-size: 12px; }
 .coverage-person p { margin: 3px 0 0; color: var(--muted); font-size: 9.5px; }
 .coverage-slots { min-width: 0; padding: 6px 7px; border-radius: 8px; background: var(--soft); display: grid; align-content: start; gap: 3px; }
@@ -437,6 +438,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .coverage-card.extra .coverage-slots.available { background: #eefaff; }
 .coverage-slots strong { color: var(--blue-title); font-size: 9px; text-transform: uppercase; letter-spacing: .035em; }
 .coverage-slots span, .coverage-slots small { min-width: 0; color: var(--muted); font-size: 9.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.coverage-note-editor { grid-column: 1 / -1; display: grid; grid-template-columns: 190px minmax(220px, 1fr) auto; gap: 6px; padding-top: 6px; border-top: 1px solid var(--line); }
+.coverage-note-editor select, .coverage-note-editor input { width: 100%; min-width: 0; height: 29px; border: 1px solid var(--line); border-radius: 7px; padding: 0 7px; background: white; color: var(--blue-title); font-size: 9.5px; }
+.coverage-note-editor .text-button { white-space: nowrap; }
 .files-grid { padding: 0 12px 12px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .files-category { min-width: 0; border: 1px solid var(--line); border-radius: 11px; background: rgba(255,255,255,.9); overflow: hidden; }
 .files-category-heading { min-height: 65px; padding: 9px; display: flex; align-items: flex-start; gap: 8px; background: linear-gradient(135deg, var(--soft), white); }
@@ -450,6 +454,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .files-list input { width: 100%; min-width: 0; height: 27px; border: 1px solid var(--line); border-radius: 7px; padding: 0 7px; color: var(--blue-title); background: var(--soft); font-size: 10px; font-weight: 750; }
 .files-list small { grid-column: 1 / -1; min-width: 0; color: var(--muted); font-size: 8.8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .files-empty { margin: 4px; color: var(--muted); font-size: 10px; }
+.files-managed-note { color: var(--muted); font-size: 9px; font-weight: 720; }
+.files-static-name { min-width: 0; color: var(--blue-title); font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .availability-tabs { display: flex; align-items: center; gap: 6px; padding: 0 12px 10px; overflow-x: auto; }
 .availability-tabs button { border: 1px solid var(--line); border-radius: 999px; padding: 6px 10px; color: var(--muted); background: white; font-size: 11px; font-weight: 850; white-space: nowrap; cursor: pointer; }
 .availability-tabs button.active, .availability-tabs button:hover { border-color: rgba(16,185,129,.32); color: var(--green-dark); background: var(--green-pale); }
@@ -851,6 +857,7 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .coverage-controls label:last-child { grid-column: 1 / -1; }
   .coverage-card { grid-template-columns: minmax(150px, .5fr) 1fr; }
   .coverage-card .coverage-slots.available { grid-column: 1 / -1; }
+  .coverage-note-editor { grid-template-columns: 160px minmax(0, 1fr) auto; }
   .files-grid { grid-template-columns: 1fr; }
 }
 
@@ -1052,6 +1059,7 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .coverage-summary > div:last-child { grid-column: 1 / -1; }
   .coverage-card { grid-template-columns: 1fr; }
   .coverage-card .coverage-slots.available { grid-column: auto; }
+  .coverage-note-editor { grid-template-columns: 1fr; }
   .coverage-results, .files-grid { padding: 0 8px 8px; }
   .availability-history-list .text-button { grid-column: 1 / -1; justify-self: start; }
   .availability-tabs { padding: 0 8px 8px; }

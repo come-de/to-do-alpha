@@ -6042,7 +6042,7 @@ export default function Home() {
         : appMode === "availability" ? renderAvailabilityComparisonSection()
         : appMode === "enrollments" ? <EnrollmentComparison />
         : appMode === "coverage" ? <TutorCoverageComparison />
-        : appMode === "files" ? <FilesHub onOpen={(kind) => setAppMode(kind === "availability" ? "availability" : kind === "assignments" ? "coverage" : "enrollments")} />
+        : appMode === "files" ? <FilesHub onOpen={(kind) => setAppMode(kind === "availability" ? "availability" : kind === "assignments" ? "coverage" : kind === "tutors" ? "tutors" : "enrollments")} />
         : appMode === "tutorReports" ? renderTutorReportsSection()
         : appMode === "watchlist" ? <section className="task-panel">
           <div className="panel-heading">

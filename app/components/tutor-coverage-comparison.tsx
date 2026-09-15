@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { AvailabilityImport, AvailabilityRow, TutorAssignmentImport, TutorAssignmentRow } from "@/app/lib/shared-data";
+import type { AvailabilityImport, AvailabilityRow, TutorAssignmentImport, TutorAssignmentRow, TutorCoverageNote, TutorCoverageNoteStatus } from "@/app/lib/shared-data";
 
 type CoverageView = "unassigned" | "extra";
 type TutorCoverage = {
@@ -9,9 +9,11 @@ type TutorCoverage = {
   firstName: string;
   lastName: string;
   grade: string;
+  phone: string;
   availability: AvailabilityRow[];
   assignments: TutorAssignmentRow[];
 };
+type NoteDraft = { status: TutorCoverageNoteStatus; note: string };
 
 function timestamp(value: string) {
   const parsed = new Date(value).getTime();
@@ -41,7 +43,7 @@ function overlaps(left: ReturnType<typeof parseInterval>, right: ReturnType<type
 function uniqueAvailability(rows: AvailabilityRow[]) {
   const seen = new Set<string>();
   return rows.filter((row) => {
-    const key = `${row.sessionId}|${row.timeSlot}|${row.school}`;
+    const key = `${row.timeSlot.trim().toLocaleLowerCase("fr")}|${row.school.trim().toLocaleLowerCase("fr")}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -74,21 +76,31 @@ export default function TutorCoverageComparison() {
   const [school, setSchool] = useState("all");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [notes, setNotes] = useState<TutorCoverageNote[]>([]);
+  const [noteDrafts, setNoteDrafts] = useState<Record<string, NoteDraft>>({});
 
   const load = useCallback(async (silent = false) => {
     try {
-      const [availabilityResponse, assignmentResponse] = await Promise.all([
+      const [availabilityResponse, assignmentResponse, notesResponse] = await Promise.all([
         fetch("/api/availability-imports", { cache: "no-store" }),
         fetch("/api/tutor-assignment-imports", { cache: "no-store" }),
+        fetch("/api/tutor-coverage-notes", { cache: "no-store" }),
       ]);
       const availabilityData = await availabilityResponse.json() as { imports?: AvailabilityImport[]; error?: string; detail?: string };
       const assignmentData = await assignmentResponse.json() as { imports?: TutorAssignmentImport[]; error?: string; detail?: string };
+      const notesData = await notesResponse.json() as { notes?: TutorCoverageNote[]; error?: string; detail?: string };
       if (!availabilityResponse.ok) throw new Error(availabilityData.detail || availabilityData.error || "Disponibilités indisponibles");
       if (!assignmentResponse.ok) throw new Error(assignmentData.detail || assignmentData.error || "Séances affectées indisponibles");
+      if (!notesResponse.ok) throw new Error(notesData.detail || notesData.error || "Annotations indisponibles");
       const nextAvailability = (availabilityData.imports ?? []).sort((a, b) => timestamp(b.importedAt) - timestamp(a.importedAt));
       const nextAssignments = (assignmentData.imports ?? []).sort((a, b) => timestamp(b.importedAt) - timestamp(a.importedAt));
       setAvailabilityImports(nextAvailability);
       setAssignmentImports(nextAssignments);
+      setNotes(notesData.notes ?? []);
+      setNoteDrafts((current) => ({
+        ...Object.fromEntries((notesData.notes ?? []).map((item) => [`${item.date}:${item.tutorId}`, { status: item.status, note: item.note }])),
+        ...current,
+      }));
       setAvailabilityId((current) => nextAvailability.some((item) => item.id === current) ? current : nextAvailability[0]?.id || "");
       setAssignmentId((current) => nextAssignments.some((item) => item.id === current) ? current : nextAssignments[0]?.id || "");
       if (!silent) setMessage("Fichiers actualisés");
@@ -127,6 +139,7 @@ export default function TutorCoverageComparison() {
       firstName: availability[0]?.firstName || assignments[0]?.firstName || "",
       lastName: availability[0]?.lastName || assignments[0]?.lastName || "",
       grade: availability[0]?.grade || assignments[0]?.grade || "",
+      phone: availability[0]?.phone || "",
       availability: uniqueAvailability(availability),
       assignments: uniqueAssignments(assignments),
     });
@@ -191,17 +204,42 @@ export default function TutorCoverageComparison() {
     }
   }
 
+  async function saveNote(tutorId: string) {
+    if (!activeDate) return;
+    const key = `${activeDate}:${tutorId}`;
+    const draft = noteDrafts[key] ?? { status: "to-check" as const, note: "" };
+    setSaving(true);
+    try {
+      const response = await fetch("/api/tutor-coverage-notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tutorId, date: activeDate, status: draft.status, note: draft.note }),
+      });
+      const data = await response.json() as { notes?: TutorCoverageNote[]; error?: string; detail?: string };
+      if (!response.ok) throw new Error(data.detail || data.error || "Sauvegarde impossible");
+      setNotes(data.notes ?? []);
+      setMessage("Suivi du tuteur sauvegardé");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Sauvegarde impossible");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   function exportResults() {
-    const rows = [["Catégorie", "Date", "ID tuteur", "Prénom", "Nom", "Grade", "Disponibilités supplémentaires", "Séances affectées"]];
+    const rows = [["Catégorie", "Date", "ID tuteur", "Prénom", "Nom", "Téléphone", "Grade", "Disponibilités supplémentaires", "Séances affectées", "Statut de suivi", "Commentaire"]];
     displayed.forEach((tutor) => rows.push([
       view === "unassigned" ? "Disponible sans séance" : "Disponible sur un autre horaire",
       activeDate,
       tutor.tutorId,
       tutor.firstName,
       tutor.lastName,
+      tutor.phone,
       tutor.grade,
       tutor.availability.map((row) => `${row.timeSlot} — ${row.school}`).join(" | "),
       tutor.assignments.map((row) => `${row.timeSlot} — ${row.school}`).join(" | "),
+      notes.find((item) => item.tutorId === tutor.tutorId && item.date === activeDate)?.status || "",
+      notes.find((item) => item.tutorId === tutor.tutorId && item.date === activeDate)?.note || "",
     ]));
     const blob = new Blob([`\uFEFF${rows.map((row) => row.map(csvCell).join(";")).join("\r\n")}`], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -250,13 +288,23 @@ export default function TutorCoverageComparison() {
       <div className="coverage-results">
         {!availabilityImport || !assignmentImport ? <div className="empty-state compact">Choisissez un fichier de disponibilités et un fichier de séances affectées.</div>
           : !activeDate ? <div className="empty-state compact">Ces deux fichiers n’ont aucune date commune.</div>
-          : displayed.length ? displayed.map((tutor) => (
-            <article className={`coverage-card ${view}`} key={tutor.tutorId}>
-              <div className="coverage-person"><h3>{`${tutor.firstName} ${tutor.lastName}`.trim() || tutor.tutorId}</h3><p>ID {tutor.tutorId}{tutor.grade ? ` · ${tutor.grade}` : ""}</p></div>
+          : displayed.length ? displayed.map((tutor) => {
+            const noteKey = `${activeDate}:${tutor.tutorId}`;
+            const savedNote = notes.find((item) => item.tutorId === tutor.tutorId && item.date === activeDate);
+            const noteDraft = noteDrafts[noteKey] ?? { status: savedNote?.status || "to-check", note: savedNote?.note || "" };
+            return <article className={`coverage-card ${view} ${savedNote?.status === "unavailable" ? "is-unavailable" : ""}`} key={tutor.tutorId}>
+              <div className="coverage-person"><h3>{`${tutor.firstName} ${tutor.lastName}`.trim() || tutor.tutorId}</h3><p>ID {tutor.tutorId}{tutor.phone ? ` · ${tutor.phone}` : ""}{tutor.grade ? ` · ${tutor.grade}` : ""}</p></div>
               {tutor.assignments.length ? <div className="coverage-slots assigned"><strong>Séance(s) affectée(s)</strong>{tutor.assignments.map((row, index) => <span key={`${row.timeSlot}-${row.school}-${index}`}>{row.timeSlot} · {row.school}{row.absent ? " · absent" : ""}</span>)}</div> : <div className="coverage-slots assigned empty"><strong>Aucune séance affectée</strong></div>}
               <div className="coverage-slots available"><strong>{view === "extra" ? "Disponibilité(s) sans chevauchement" : "Disponibilité(s) déclarée(s)"}</strong>{tutor.availability.slice(0, 8).map((row, index) => <span key={`${row.sessionId}-${index}`}>{row.timeSlot} · {row.school}</span>)}{tutor.availability.length > 8 ? <small>+ {tutor.availability.length - 8} autre(s)</small> : null}</div>
-            </article>
-          )) : <div className="empty-state compact">Aucun tuteur ne correspond aux critères.</div>}
+              <div className="coverage-note-editor">
+                <select value={noteDraft.status} onChange={(event) => setNoteDrafts((current) => ({ ...current, [noteKey]: { ...noteDraft, status: event.target.value as TutorCoverageNoteStatus } }))} aria-label={`Statut de ${tutor.firstName} ${tutor.lastName}`}>
+                  <option value="to-check">À vérifier</option><option value="unavailable">N’est plus disponible</option><option value="confirmed">Disponibilité confirmée</option><option value="contacted">Contacté</option>
+                </select>
+                <input value={noteDraft.note} onChange={(event) => setNoteDrafts((current) => ({ ...current, [noteKey]: { ...noteDraft, note: event.target.value } }))} placeholder="Commentaire pour ce tuteur et cette date…" />
+                <button type="button" className="text-button" onClick={() => void saveNote(tutor.tutorId)} disabled={saving}>Enregistrer</button>
+              </div>
+            </article>;
+          }) : <div className="empty-state compact">Aucun tuteur ne correspond aux critères.</div>}
       </div>
     </section>
   );
