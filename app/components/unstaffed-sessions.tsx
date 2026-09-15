@@ -325,16 +325,35 @@ export default function UnstaffedSessions() {
           <div className="unstaffed-table-wrap"><table><thead><tr><th>Horaire</th><th>Établissement</th><th>Type</th><th>Groupe</th><th>Classes</th><th>Élèves</th><th>Salle</th></tr></thead><tbody>
             {rows.map((row) => <Fragment key={row.sessionId}>
               <tr className={row.candidates.length ? "has-candidates" : ""}><td><strong>{row.startTime || "—"}–{row.endTime || "—"}</strong><small>#{row.sessionId}</small></td><td>{row.school}</td><td><span className="session-category">{row.category || "—"}</span></td><td>{row.group || "—"}</td><td><div className="class-tags">{row.classes.length ? row.classes.map((item) => <span key={item}>{item}</span>) : <em>Non précisée</em>}</div></td><td>{row.studentCount || "—"}</td><td>{row.room || "—"}</td></tr>
-              <tr className={`session-candidates-row ${row.candidates.length ? "has-results" : ""}`}><td colSpan={7}>
+              {(() => {
+                const candidates = row.candidates.filter((candidate) => candidate.personStatus === "candidate");
+                const freeTutors = row.candidates.filter((candidate) => candidate.personStatus === "tutor" && !candidate.hasConflict);
+                const busyTutors = row.candidates.filter((candidate) => candidate.personStatus === "tutor" && candidate.hasConflict);
+                const unknownPeople = row.candidates.filter((candidate) => candidate.personStatus === "unknown");
+                const freeTutorNames = freeTutors.map((candidate) => `${candidate.firstName} ${candidate.lastName}`.trim() || `ID ${candidate.personId}`);
+                const visibleFreeTutorNames = freeTutorNames.slice(0, 2).join(", ");
+                return <tr className={`session-candidates-row ${row.candidates.length ? "has-results" : ""} ${freeTutors.length ? "has-free-tutor" : ""}`}><td colSpan={7}>
                 {row.candidates.length ? <details>
-                  <summary><span>🙋 {row.candidates.length} personne{row.candidates.length > 1 ? "s" : ""} mobilisable{row.candidates.length > 1 ? "s" : ""}</span><small>{row.candidates.filter((candidate) => candidate.sources.includes("interest")).length} intérêt · {row.candidates.filter((candidate) => candidate.sources.includes("availability")).length} disponibilité · cliquer pour le détail</small></summary>
+                  <summary>
+                    <div className="candidate-summary-content">
+                      {freeTutors.length ? <strong className="free-tutor-callout">✓ {freeTutors.length} tuteur{freeTutors.length > 1 ? "s" : ""} sans chevauchement · {visibleFreeTutorNames}{freeTutorNames.length > 2 ? ` +${freeTutorNames.length - 2}` : ""}</strong> : null}
+                      <div className="candidate-counts">
+                        {candidates.length ? <span className="candidate-count candidate">{candidates.length} candidat{candidates.length > 1 ? "s" : ""}</span> : null}
+                        {freeTutors.length ? <span className="candidate-count free">{freeTutors.length} tuteur{freeTutors.length > 1 ? "s" : ""} libre{freeTutors.length > 1 ? "s" : ""}</span> : null}
+                        {busyTutors.length ? <span className="candidate-count conflict">{busyTutors.length} tuteur{busyTutors.length > 1 ? "s" : ""} avec chevauchement</span> : null}
+                        {unknownPeople.length ? <span className="candidate-count unknown">{unknownPeople.length} statut{unknownPeople.length > 1 ? "s" : ""} inconnu{unknownPeople.length > 1 ? "s" : ""}</span> : null}
+                      </div>
+                    </div>
+                    <small>Voir les coordonnées, sources et autres séances</small>
+                  </summary>
                   <div className="session-candidate-list">{row.candidates.map((candidate) => <article className={candidate.hasConflict ? "has-conflict" : ""} key={candidate.personId}>
                     <div className="candidate-name"><div><strong>{`${candidate.firstName} ${candidate.lastName}`.trim() || `Personne ${candidate.personId}`}</strong><span className={`person-status ${candidate.personStatus}`}>{candidate.personStatus === "tutor" ? "Tuteur" : candidate.personStatus === "candidate" ? "Candidat" : "Statut inconnu"}</span></div><small>ID {candidate.personId}{candidate.phone ? ` · ${candidate.phone}` : ""}</small></div>
                     <div className="candidate-sources">{candidate.sources.map((source) => <span className={source} key={source}>{source === "interest" ? "Intérêt déclaré" : "Disponible"}</span>)}{candidate.validatedInterest ? <span className="validated">Intérêt validé</span> : null}</div>
                     <div className="candidate-assignments">{candidate.assignments.length ? <><strong>{candidate.hasConflict ? "Chevauchement à vérifier" : "Autre séance ce jour"}</strong>{candidate.assignments.map((assignment, index) => <span key={`${assignment.timeSlot}-${assignment.school}-${index}`}>{assignment.timeSlot} · {assignment.school}</span>)}</> : <span className="candidate-free">Aucune autre séance affectée ce jour</span>}</div>
                   </article>)}</div>
                 </details> : <span className="no-candidates">Aucune personne trouvée dans les sources sélectionnées</span>}
-              </td></tr>
+              </td></tr>;
+              })()}
             </Fragment>)}
           </tbody></table></div>
         </article>) : <div className="empty-state"><span>✓</span><h3>Aucune séance à afficher</h3><p>Modifiez les filtres ou choisissez un autre fichier.</p></div>}

@@ -5,11 +5,12 @@ import EnrollmentComparison from "@/app/components/enrollment-comparison";
 import FilesHub from "@/app/components/files-hub";
 import TutorCoverageComparison from "@/app/components/tutor-coverage-comparison";
 import UnstaffedSessions from "@/app/components/unstaffed-sessions";
+import TutorAvailabilityFeed from "@/app/components/tutor-availability-feed";
 
 type Status = "todo" | "progress" | "done";
 type Priority = "low" | "medium" | "high";
 type Density = "compact" | "comfortable";
-type AppMode = "tasks" | "recurring" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffing" | "watchlist" | "tutorReports" | "tutors" | "availability" | "enrollments" | "coverage" | "unstaffed" | "files";
+type AppMode = "tasks" | "recurring" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffing" | "watchlist" | "tutorReports" | "tutors" | "availability" | "availabilityFeed" | "enrollments" | "coverage" | "unstaffed" | "files";
 type ViewMode = "list" | "matrix";
 type DurationBucket = "short" | "medium" | "long" | "unset";
 type ObjectiveKind = "counter" | "qualitative";
@@ -390,6 +391,7 @@ const appModeSlugs: Record<AppMode, string> = {
   tutorReports: "bilans-tuteurs",
   tutors: "tuteurs",
   availability: "comparaison-dispos",
+  availabilityFeed: "fil-disponibilites",
   enrollments: "comparaison-inscriptions",
   coverage: "couverture-tuteurs",
   unstaffed: "seances-non-affectees",
@@ -423,6 +425,9 @@ const appModeAliases: Record<string, AppMode> = {
   "comparaison-disponibilites": "availability",
   "comparaison-disponibilités": "availability",
   availability: "availability",
+  "fil-disponibilites": "availabilityFeed",
+  "fil-disponibilités": "availabilityFeed",
+  "disponibilites-du-jour": "availabilityFeed",
   inscriptions: "enrollments",
   "comparaison-inscriptions": "enrollments",
   parents: "enrollments",
@@ -5333,6 +5338,8 @@ export default function Home() {
                       ? () => { void loadTutorTracking(); }
                     : appMode === "availability"
                       ? () => { void loadAvailabilityImports(); }
+                    : appMode === "availabilityFeed"
+                      ? () => setAppMode("availabilityFeed")
                     : appMode === "enrollments"
                       ? () => setAppMode("enrollments")
                     : appMode === "coverage"
@@ -5370,6 +5377,8 @@ export default function Home() {
                       ? "Actualiser tuteurs"
                     : appMode === "availability"
                       ? "Actualiser dispos"
+                    : appMode === "availabilityFeed"
+                      ? "Voir le fil"
                     : appMode === "enrollments"
                       ? "Comparer inscriptions"
                     : appMode === "coverage"
@@ -5493,6 +5502,9 @@ export default function Home() {
             </button>
             <button className={appMode === "availability" ? "active" : ""} onClick={() => setAppMode("availability")}>
               <span className="tab-icon" aria-hidden="true">📆</span> Comparaison dispos <span className="tab-count">{availabilityImports.length}</span>
+            </button>
+            <button className={appMode === "availabilityFeed" ? "active" : ""} onClick={() => setAppMode("availabilityFeed")}>
+              <span className="tab-icon" aria-hidden="true">🕒</span> Fil des disponibilités
             </button>
             <button className={appMode === "enrollments" ? "active" : ""} onClick={() => setAppMode("enrollments")}>
               <span className="tab-icon" aria-hidden="true">🎒</span> Inscriptions
@@ -6053,6 +6065,7 @@ export default function Home() {
         </section>
         : appMode === "tutors" ? renderTutorTrackingSection()
         : appMode === "availability" ? renderAvailabilityComparisonSection()
+        : appMode === "availabilityFeed" ? <TutorAvailabilityFeed />
         : appMode === "enrollments" ? <EnrollmentComparison />
         : appMode === "coverage" ? <TutorCoverageComparison />
         : appMode === "unstaffed" ? <UnstaffedSessions />

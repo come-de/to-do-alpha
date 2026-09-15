@@ -1168,10 +1168,19 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
 .unstaffed-day tr.has-candidates td { border-top-color: rgba(16,185,129,.22); background: rgba(236,253,245,.18); }
 .session-candidates-row td { padding: 3px 7px 6px; background: rgba(244,251,252,.38); }
 .session-candidates-row.has-results td { background: rgba(236,253,245,.32); }
+.session-candidates-row.has-free-tutor td { padding-top: 5px; padding-bottom: 7px; border-top: 1px solid rgba(16,185,129,.42); border-bottom: 1px solid rgba(16,185,129,.28); background: linear-gradient(90deg, rgba(209,250,229,.82), rgba(236,253,245,.46)); box-shadow: inset 4px 0 0 var(--green); }
 .session-candidates-row details { width: 100%; }
 .session-candidates-row summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--green-dark); font-size: 8.8px; font-weight: 850; cursor: pointer; list-style: none; }
 .session-candidates-row summary::-webkit-details-marker { display: none; }
 .session-candidates-row summary small { color: var(--muted); font-size: 7.8px; font-weight: 650; }
+.candidate-summary-content { min-width: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 5px 8px; }
+.free-tutor-callout { color: #047857; font-size: 9px; font-weight: 900; }
+.candidate-counts { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+.candidate-count { display: inline-flex; border-radius: 999px; padding: 2px 6px; font-size: 7.7px; font-weight: 850; white-space: nowrap; }
+.candidate-count.candidate { color: #6d28d9; background: #f3e8ff; border: 1px solid rgba(109,40,217,.16); }
+.candidate-count.free { color: #047857; background: white; border: 1px solid rgba(16,185,129,.35); }
+.candidate-count.conflict { color: var(--red); background: var(--red-pale); border: 1px solid rgba(190,24,93,.2); }
+.candidate-count.unknown { color: var(--muted); background: #eef2f5; border: 1px solid rgba(95,117,137,.16); }
 .no-candidates { color: var(--muted); font-size: 8px; }
 .session-candidate-list { margin-top: 5px; display: grid; gap: 4px; }
 .session-candidate-list article { padding: 5px 6px; border: 1px solid rgba(16,185,129,.2); border-radius: 7px; background: white; display: grid; grid-template-columns: minmax(150px,.65fr) minmax(150px,.55fr) minmax(260px,1.4fr); gap: 7px; align-items: center; }
@@ -1219,6 +1228,71 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .unstaffed-day table { min-width: 780px; }
   .session-candidate-list article { grid-template-columns: 1fr; }
   .candidate-assignments { grid-column: auto; }
+  .session-candidates-row summary { align-items: flex-start; flex-direction: column; }
+}
+
+.tutor-feed-sources { margin: 0 12px 8px; padding: 8px; border: 1px solid var(--line); border-radius: 10px; background: linear-gradient(100deg, var(--soft), white); display: grid; grid-template-columns: repeat(3, minmax(180px,1fr)) auto; gap: 7px; align-items: end; }
+.tutor-feed-sources label { min-width: 0; display: grid; gap: 3px; color: var(--muted); font-size: 8px; font-weight: 850; text-transform: uppercase; letter-spacing: .04em; }
+.tutor-feed-sources select, .tutor-feed-controls select, .tutor-feed-controls input { width: 100%; min-width: 0; height: 31px; border: 1px solid var(--line); border-radius: 8px; padding: 0 8px; color: var(--blue-title); background: white; font-size: 9.5px; text-overflow: ellipsis; }
+.tutor-feed-sources small { max-width: 190px; align-self: center; color: var(--green-dark); font-size: 8px; font-weight: 720; line-height: 1.3; }
+.tutor-feed-date-tabs { padding: 0 12px 8px; display: flex; gap: 5px; overflow-x: auto; }
+.tutor-feed-date-tabs button { flex: 0 0 auto; border: 1px solid var(--line); border-radius: 999px; padding: 5px 9px; color: var(--muted); background: white; font-size: 9px; font-weight: 820; cursor: pointer; }
+.tutor-feed-date-tabs button.active { border-color: rgba(14,165,233,.38); color: var(--blue-dark); background: #eefaff; }
+.tutor-feed-controls { margin: 0 12px 7px; display: grid; grid-template-columns: minmax(220px,.8fr) minmax(260px,1.3fr) 150px 165px; gap: 7px; align-items: center; }
+.tutor-feed-controls > div strong { display: block; color: var(--blue-title); font-size: 13px; text-transform: capitalize; }
+.tutor-feed-controls > div span { display: block; margin-top: 2px; color: var(--muted); font-size: 8.5px; }
+.tutor-feed-kpis { margin: 0 12px 8px; display: flex; gap: 5px; flex-wrap: wrap; }
+.tutor-feed-kpis span { border: 1px solid var(--line); border-radius: 999px; padding: 4px 8px; color: var(--muted); background: white; font-size: 8.5px; }
+.tutor-feed-kpis strong { color: var(--blue-title); }
+.tutor-feed-kpis span.free { border-color: rgba(16,185,129,.3); color: var(--green-dark); background: var(--green-pale); }
+.tutor-feed-list { position: relative; padding: 0 12px 12px 31px; display: grid; gap: 7px; }
+.tutor-feed-list::before { content: ""; position: absolute; left: 20px; top: 6px; bottom: 18px; width: 2px; border-radius: 2px; background: linear-gradient(var(--blue-main), var(--green)); opacity: .34; }
+.tutor-feed-card { position: relative; display: grid; grid-template-columns: 72px minmax(170px,.58fr) minmax(320px,1.45fr) minmax(260px,1fr); gap: 8px; padding: 8px; border: 1px solid var(--line); border-radius: 10px; background: white; }
+.tutor-feed-card::before { content: ""; position: absolute; left: -16px; top: 16px; width: 9px; height: 9px; border: 2px solid white; border-radius: 50%; background: var(--blue-main); box-shadow: 0 0 0 2px rgba(14,165,233,.24); }
+.tutor-feed-card.is-free { border-color: rgba(16,185,129,.34); background: linear-gradient(90deg, rgba(236,253,245,.72), white 25%); box-shadow: inset 4px 0 0 var(--green); }
+.tutor-feed-card.is-free::before { background: var(--green); box-shadow: 0 0 0 2px rgba(16,185,129,.24); }
+.tutor-feed-time { align-self: start; padding: 5px; border-radius: 8px; background: var(--soft); text-align: center; }
+.tutor-feed-time strong { display: block; color: var(--blue-title); font-size: 12px; }
+.tutor-feed-time span { color: var(--muted); font-size: 7.5px; }
+.tutor-feed-person > div { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.tutor-feed-person h3 { margin: 0; color: var(--blue-title); font-size: 11px; }
+.tutor-feed-person p { margin: 3px 0 0; color: var(--muted); font-size: 8px; }
+.tutor-feed-opportunities { display: grid; gap: 4px; }
+.tutor-feed-opportunities > div { min-width: 0; display: grid; grid-template-columns: 95px minmax(0,1fr) auto; gap: 6px; align-items: center; padding: 4px 6px; border-radius: 7px; background: var(--soft); }
+.tutor-feed-opportunities strong { color: var(--blue-dark); font-size: 8.5px; }
+.tutor-feed-opportunities span { min-width: 0; color: var(--ink); font-size: 8.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tutor-feed-opportunities em { border-radius: 999px; padding: 2px 5px; color: #6d28d9; background: #f3e8ff; font-size: 7px; font-style: normal; font-weight: 760; white-space: nowrap; }
+.tutor-feed-assignments { min-width: 0; align-self: start; display: grid; gap: 2px; padding: 5px 6px; border-radius: 8px; background: #fff7fb; }
+.tutor-feed-assignments strong { color: var(--red); font-size: 8.5px; }
+.tutor-feed-assignments span { min-width: 0; color: var(--muted); font-size: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tutor-feed-card.is-free .tutor-feed-assignments { background: var(--green-pale); }
+.tutor-feed-card.is-free .tutor-feed-assignments strong { color: var(--green-dark); }
+.tutor-feed-card.slot-card.status-tutor { border-color: rgba(16,185,129,.4); background: linear-gradient(90deg, rgba(236,253,245,.78), white 24%); box-shadow: inset 4px 0 0 var(--green); }
+.tutor-feed-card.slot-card.status-tutor::before { background: var(--green); box-shadow: 0 0 0 2px rgba(16,185,129,.24); }
+.tutor-feed-card.slot-card.status-candidate { border-left: 4px solid #8b5cf6; }
+.tutor-feed-card.slot-card.status-candidate::before { background: #8b5cf6; box-shadow: 0 0 0 2px rgba(139,92,246,.2); }
+.tutor-feed-card.slot-card.no-other-assignment .tutor-feed-assignments { background: var(--green-pale); }
+.tutor-feed-card.slot-card.no-other-assignment .tutor-feed-assignments strong { color: var(--green-dark); }
+
+@media (max-width: 1000px) {
+  .tutor-feed-sources { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .tutor-feed-sources small { max-width: none; }
+  .tutor-feed-controls { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .tutor-feed-card { grid-template-columns: 65px minmax(150px,.55fr) minmax(0,1.45fr); }
+  .tutor-feed-assignments { grid-column: 2 / -1; }
+}
+
+@media (max-width: 640px) {
+  .tutor-feed-sources, .tutor-feed-controls { margin: 0 8px 7px; grid-template-columns: 1fr; }
+  .tutor-feed-date-tabs { padding: 0 8px 7px; }
+  .tutor-feed-kpis { margin: 0 8px 7px; }
+  .tutor-feed-list { padding: 0 8px 8px 25px; }
+  .tutor-feed-list::before { left: 15px; }
+  .tutor-feed-card { grid-template-columns: 58px minmax(0,1fr); }
+  .tutor-feed-card::before { left: -15px; }
+  .tutor-feed-opportunities, .tutor-feed-assignments { grid-column: 1 / -1; }
+  .tutor-feed-opportunities > div { grid-template-columns: 1fr; gap: 2px; }
+  .tutor-feed-opportunities span { white-space: normal; }
 }
 
 @media (prefers-reduced-motion: reduce) {
