@@ -4547,21 +4547,23 @@ export default function Home() {
                 <small>
                   {formatJournalDate(item.importedAt)} · {item.fileName} · {item.rows.length} ligne(s) · {new Set(item.rows.map((row) => row.date).filter(Boolean)).size} date(s)
                 </small>
-                <button type="button" className="text-button" onClick={() => void renameAvailabilityImport(item.id)}>
-                  Enregistrer le nom
-                </button>
-                <button
-                  type="button"
-                  className="text-button"
-                  onClick={() => void downloadAvailabilityOriginalCsv(item)}
-                  disabled={!item.hasRawCsv && !item.rawCsv}
-                  title={item.hasRawCsv || item.rawCsv ? "Télécharger le fichier CSV original" : "Ancien import sans CSV original sauvegardé"}
-                >
-                  Télécharger CSV
-                </button>
-                <button type="button" className="text-button danger" onClick={() => void deleteAvailabilityImport(item.id)}>
-                  Supprimer
-                </button>
+                <div className="availability-history-actions">
+                  <button type="button" className="text-button" onClick={() => void renameAvailabilityImport(item.id)}>
+                    Enregistrer le nom
+                  </button>
+                  <button
+                    type="button"
+                    className="text-button"
+                    onClick={() => void downloadAvailabilityOriginalCsv(item)}
+                    disabled={!item.hasRawCsv && !item.rawCsv}
+                    title={item.hasRawCsv || item.rawCsv ? "Télécharger le fichier CSV original" : "Ancien import sans CSV original sauvegardé"}
+                  >
+                    Télécharger CSV
+                  </button>
+                  <button type="button" className="text-button danger" onClick={() => void deleteAvailabilityImport(item.id)}>
+                    Supprimer
+                  </button>
+                </div>
               </div>
             ))}
           </div>

@@ -330,8 +330,10 @@ export default function EnrollmentComparison() {
             <div key={item.id}>
               <label className="availability-import-name"><span>Nom de l’import</span><input value={nameDrafts[item.id] ?? item.displayName} onChange={(event) => setNameDrafts((current) => ({ ...current, [item.id]: event.target.value }))} onKeyDown={(event) => { if (event.key === "Enter") void renameImport(item.id); }} /></label>
               <small>{importDate(item.importedAt)} · {item.fileName} · {item.rows.length} inscrit(s) sur {item.sourceRowCount} ligne(s)</small>
-              <button type="button" className="text-button" onClick={() => void renameImport(item.id)}>Enregistrer le nom</button>
-              <button type="button" className="text-button danger" onClick={() => void deleteImport(item)}>Supprimer</button>
+              <div className="availability-history-actions">
+                <button type="button" className="text-button" onClick={() => void renameImport(item.id)}>Enregistrer le nom</button>
+                <button type="button" className="text-button danger" onClick={() => void deleteImport(item)}>Supprimer</button>
+              </div>
             </div>
           ))}
         </div>
