@@ -216,6 +216,27 @@ export type AvailabilityImport = {
   createdAt: string;
 };
 
+export type TutorAssignmentRow = {
+  tutorId: string;
+  firstName: string;
+  lastName: string;
+  grade: string;
+  school: string;
+  date: string;
+  timeSlot: string;
+  absent: boolean;
+};
+
+export type TutorAssignmentImport = {
+  id: string;
+  importedAt: string;
+  displayName: string;
+  fileName: string;
+  sourceRowCount: number;
+  rows: TutorAssignmentRow[];
+  createdAt: string;
+};
+
 export type EnrollmentRow = {
   studentId: string;
   firstName: string;
@@ -334,6 +355,7 @@ export const TUTOR_REPORTS_KEY = "tutor-reports.json";
 export const TUTOR_REPORT_COMMENTS_KEY = "tutor-report-comments.json";
 export const TUTOR_TRACKING_KEY = "tutor-tracking.json";
 export const AVAILABILITY_IMPORTS_KEY = "availability-imports.json";
+export const TUTOR_ASSIGNMENT_IMPORTS_KEY = "tutor-assignment-imports.json";
 export const ENROLLMENT_IMPORTS_KEY = "enrollment-imports.json";
 export const SCHOOL_WATCHLIST_KEY = "school-watchlist.json";
 export const SCHOOLS_KEY = "schools.json";
@@ -352,6 +374,7 @@ const memory = globalThis as typeof globalThis & {
   __petitSuiviTutorReportComments?: TutorReportComment[];
   __petitSuiviTutorTracking?: TutorTrackingData;
   __petitSuiviAvailabilityImports?: AvailabilityImport[];
+  __petitSuiviTutorAssignmentImports?: TutorAssignmentImport[];
   __petitSuiviEnrollmentImports?: EnrollmentImport[];
   __petitSuiviSchoolWatchlist?: SchoolWatchItem[];
   __petitSuiviSchools?: School[];
@@ -1001,6 +1024,80 @@ export function sanitizeAvailabilityImport(raw: Record<string, unknown>): Availa
   };
 }
 
+export function sanitizeTutorAssignmentRow(raw: Record<string, unknown>): TutorAssignmentRow {
+  return {
+    tutorId: cleanText(raw.tutorId),
+    firstName: cleanText(raw.firstName),
+    lastName: cleanText(raw.lastName),
+    grade: cleanText(raw.grade),
+    school: cleanText(raw.school),
+    date: cleanText(raw.date),
+    timeSlot: cleanText(raw.timeSlot),
+    absent: raw.absent === true || ["oui", "yes", "true", "1"].includes(cleanText(raw.absent).toLocaleLowerCase("fr")),
+  };
+}
+
+export function parseTutorAssignmentCsv(value: string) {
+  const csvRows = parseCsvRows(value).filter((row) => row.some(Boolean));
+  if (!csvRows.length) return { rows: [] as TutorAssignmentRow[], sourceRowCount: 0 };
+  const headers = csvRows[0].map(normalizedHeader);
+  const indexFor = (aliases: string[]) => {
+    for (const alias of aliases) {
+      const index = headers.findIndex((header) => header === alias);
+      if (index >= 0) return index;
+    }
+    return -1;
+  };
+  const valueAt = (row: string[], index: number) => (index >= 0 ? row[index] || "" : "");
+  const tutorIdIndex = indexFor(["iddututeur", "idtuteur", "id"]);
+  const lastNameIndex = indexFor(["nomdututeur", "nomtuteur", "nom"]);
+  const firstNameIndex = indexFor(["prenomdututeur", "prenomtuteur", "prenom"]);
+  const gradeIndex = indexFor(["gradedututeur", "grade"]);
+  const schoolIndex = indexFor(["etablissement", "ecole"]);
+  const dateIndex = indexFor(["datedelaprestation", "date"]);
+  const timeSlotIndex = indexFor(["horairesducreneau", "heureducreneau", "creneau"]);
+  const absentIndex = indexFor(["absent", "absence"]);
+  if (tutorIdIndex < 0 || dateIndex < 0 || timeSlotIndex < 0) {
+    throw new Error("Colonnes tuteur, date ou horaires introuvables dans le CSV des séances affectées");
+  }
+  const dataRows = csvRows.slice(1);
+  return {
+    sourceRowCount: dataRows.length,
+    rows: dataRows
+      .map((row) =>
+        sanitizeTutorAssignmentRow({
+          tutorId: valueAt(row, tutorIdIndex),
+          lastName: valueAt(row, lastNameIndex),
+          firstName: valueAt(row, firstNameIndex),
+          grade: valueAt(row, gradeIndex),
+          school: valueAt(row, schoolIndex),
+          date: valueAt(row, dateIndex),
+          timeSlot: valueAt(row, timeSlotIndex),
+          absent: valueAt(row, absentIndex),
+        }),
+      )
+      .filter((row) => row.tutorId && row.date && row.timeSlot),
+  };
+}
+
+export function sanitizeTutorAssignmentImport(raw: Record<string, unknown>): TutorAssignmentImport {
+  const now = new Date().toISOString();
+  return {
+    id: cleanText(raw.id) || crypto.randomUUID(),
+    importedAt: cleanText(raw.importedAt) || now,
+    displayName: cleanText(raw.displayName) || cleanText(raw.fileName) || "Séances affectées",
+    fileName: cleanText(raw.fileName) || "seances-affectees.csv",
+    sourceRowCount: Math.max(0, Math.round(Number(raw.sourceRowCount) || 0)),
+    rows: Array.isArray(raw.rows)
+      ? raw.rows
+          .filter((row): row is Record<string, unknown> => Boolean(row && typeof row === "object"))
+          .map(sanitizeTutorAssignmentRow)
+          .filter((row) => row.tutorId && row.date && row.timeSlot)
+      : [],
+    createdAt: cleanText(raw.createdAt) || now,
+  };
+}
+
 export function sanitizeEnrollmentRow(raw: Record<string, unknown>): EnrollmentRow {
   return {
     studentId: cleanText(raw.studentId),
@@ -1616,6 +1713,10 @@ async function readAvailabilityIndex() {
     : [];
 }
 
+export async function readAvailabilityImportSummaries() {
+  return (await readAvailabilityIndex()).map((item) => ({ ...item, rows: [], rawCsv: "" }));
+}
+
 export async function createAvailabilityImportFromCsv(input: { fileName: string; rawCsv: string }) {
   const now = new Date().toISOString();
   const rows = parseAvailabilityCsv(input.rawCsv);
@@ -1671,6 +1772,98 @@ export async function readAvailabilityRawCsv(id: string) {
   return legacyImport?.rawCsv || "";
 }
 
+function tutorAssignmentRowsKey(id: string) {
+  return `tutor-assignment-imports/${id}.rows.json`;
+}
+
+async function readTutorAssignmentIndex() {
+  const store = taskStore();
+  const imports = await store.get(TUTOR_ASSIGNMENT_IMPORTS_KEY, { type: "json", consistency: "strong" });
+  return Array.isArray(imports)
+    ? imports
+        .filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object"))
+        .map(sanitizeTutorAssignmentImport)
+        .sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt))
+    : [];
+}
+
+export async function readTutorAssignmentImportSummaries() {
+  return (await readTutorAssignmentIndex()).map((item) => ({ ...item, rows: [] }));
+}
+
+export async function readTutorAssignmentImports() {
+  try {
+    const store = taskStore();
+    const imports = await readTutorAssignmentIndex();
+    const hydrated = await Promise.all(
+      imports.map(async (item) => {
+        if (item.rows.length) return item;
+        const rows = await store.get(tutorAssignmentRowsKey(item.id), { type: "json", consistency: "strong" });
+        return {
+          ...item,
+          rows: Array.isArray(rows)
+            ? rows
+                .filter((row): row is Record<string, unknown> => Boolean(row && typeof row === "object"))
+                .map(sanitizeTutorAssignmentRow)
+                .filter((row) => row.tutorId && row.date && row.timeSlot)
+            : [],
+        };
+      }),
+    );
+    return hydrated.sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt));
+  } catch (error) {
+    if (!canUseMemoryFallback()) throw error;
+    return memory.__petitSuiviTutorAssignmentImports ?? [];
+  }
+}
+
+export async function createTutorAssignmentImportFromCsv(input: { fileName: string; rawCsv: string }) {
+  const now = new Date().toISOString();
+  const parsed = parseTutorAssignmentCsv(input.rawCsv);
+  if (!parsed.rows.length) throw new Error("Aucune séance affectée valide dans ce CSV");
+  const nextImport = sanitizeTutorAssignmentImport({
+    id: crypto.randomUUID(),
+    importedAt: now,
+    displayName: input.fileName.replace(/\.[^.]+$/, "") || "Séances affectées",
+    fileName: input.fileName || "seances-affectees.csv",
+    sourceRowCount: parsed.sourceRowCount,
+    rows: parsed.rows,
+    createdAt: now,
+  });
+  try {
+    const store = taskStore();
+    await store.setJSON(tutorAssignmentRowsKey(nextImport.id), nextImport.rows);
+    const existing = await readTutorAssignmentIndex();
+    await store.setJSON(
+      TUTOR_ASSIGNMENT_IMPORTS_KEY,
+      [{ ...nextImport, rows: [] }, ...existing.filter((item) => item.id !== nextImport.id).map((item) => ({ ...item, rows: [] }))],
+    );
+  } catch (error) {
+    if (!canUseMemoryFallback()) throw error;
+    memory.__petitSuiviTutorAssignmentImports = [nextImport, ...(memory.__petitSuiviTutorAssignmentImports ?? [])];
+  }
+  return nextImport;
+}
+
+export async function updateTutorAssignmentImportName(id: string, displayName: string) {
+  const store = taskStore();
+  const existing = await readTutorAssignmentIndex();
+  if (!existing.some((item) => item.id === id)) throw new Error("Import introuvable");
+  const cleanedName = cleanText(displayName);
+  if (!cleanedName) throw new Error("Le nom de l’import est obligatoire");
+  await store.setJSON(
+    TUTOR_ASSIGNMENT_IMPORTS_KEY,
+    existing.map((item) => (item.id === id ? { ...item, displayName: cleanedName, rows: [] } : { ...item, rows: [] })),
+  );
+}
+
+export async function deleteTutorAssignmentImportById(id: string) {
+  const store = taskStore();
+  const existing = await readTutorAssignmentIndex();
+  await store.setJSON(TUTOR_ASSIGNMENT_IMPORTS_KEY, existing.filter((item) => item.id !== id).map((item) => ({ ...item, rows: [] })));
+  await store.delete(tutorAssignmentRowsKey(id));
+}
+
 function enrollmentRowsKey(id: string) {
   return `enrollment-imports/${id}.rows.json`;
 }
@@ -1684,6 +1877,10 @@ async function readEnrollmentIndex() {
         .map(sanitizeEnrollmentImport)
         .sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt))
     : [];
+}
+
+export async function readEnrollmentImportSummaries() {
+  return (await readEnrollmentIndex()).map((item) => ({ ...item, rows: [] }));
 }
 
 export async function readEnrollmentImports() {

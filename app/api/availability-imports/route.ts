@@ -3,6 +3,7 @@ import {
   createAvailabilityImportFromCsv,
   deleteAvailabilityImportById,
   readAvailabilityImports,
+  readAvailabilityImportSummaries,
   readAvailabilityRawCsv,
   sanitizeAvailabilityImport,
   updateAvailabilityImportName,
@@ -35,6 +36,9 @@ export async function GET(request: Request) {
           "Content-Type": "text/csv; charset=utf-8",
         },
       });
+    }
+    if (url.searchParams.get("summary") === "1") {
+      return json({ imports: await readAvailabilityImportSummaries() });
     }
     return json({ imports: await readAvailabilityImports() });
   } catch (error) {

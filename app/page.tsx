@@ -2,11 +2,13 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import EnrollmentComparison from "@/app/components/enrollment-comparison";
+import FilesHub from "@/app/components/files-hub";
+import TutorCoverageComparison from "@/app/components/tutor-coverage-comparison";
 
 type Status = "todo" | "progress" | "done";
 type Priority = "low" | "medium" | "high";
 type Density = "compact" | "comfortable";
-type AppMode = "tasks" | "recurring" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffing" | "watchlist" | "tutorReports" | "tutors" | "availability" | "enrollments";
+type AppMode = "tasks" | "recurring" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffing" | "watchlist" | "tutorReports" | "tutors" | "availability" | "enrollments" | "coverage" | "files";
 type ViewMode = "list" | "matrix";
 type DurationBucket = "short" | "medium" | "long" | "unset";
 type ObjectiveKind = "counter" | "qualitative";
@@ -388,6 +390,8 @@ const appModeSlugs: Record<AppMode, string> = {
   tutors: "tuteurs",
   availability: "comparaison-dispos",
   enrollments: "comparaison-inscriptions",
+  coverage: "couverture-tuteurs",
+  files: "fichiers",
 };
 
 const appModeAliases: Record<string, AppMode> = {
@@ -420,6 +424,11 @@ const appModeAliases: Record<string, AppMode> = {
   inscriptions: "enrollments",
   "comparaison-inscriptions": "enrollments",
   parents: "enrollments",
+  couverture: "coverage",
+  "couverture-tuteurs": "coverage",
+  affectations: "coverage",
+  fichiers: "files",
+  files: "files",
   tutorreports: "tutorReports",
   tutorReports: "tutorReports",
   "tutor-reports": "tutorReports",
@@ -5320,6 +5329,10 @@ export default function Home() {
                       ? () => { void loadAvailabilityImports(); }
                     : appMode === "enrollments"
                       ? () => setAppMode("enrollments")
+                    : appMode === "coverage"
+                      ? () => setAppMode("coverage")
+                    : appMode === "files"
+                      ? () => setAppMode("files")
                     : appMode === "tutorReports"
                       ? () => { void loadTutorReports(); }
                     : appMode === "watchlist"
@@ -5351,6 +5364,10 @@ export default function Home() {
                       ? "Actualiser dispos"
                     : appMode === "enrollments"
                       ? "Comparer inscriptions"
+                    : appMode === "coverage"
+                      ? "Analyser la couverture"
+                    : appMode === "files"
+                      ? "Gérer les fichiers"
                     : appMode === "tutorReports"
                       ? "Actualiser bilans"
                     : appMode === "watchlist"
@@ -5466,6 +5483,12 @@ export default function Home() {
             </button>
             <button className={appMode === "enrollments" ? "active" : ""} onClick={() => setAppMode("enrollments")}>
               <span className="tab-icon" aria-hidden="true">🎒</span> Inscriptions
+            </button>
+            <button className={appMode === "coverage" ? "active" : ""} onClick={() => setAppMode("coverage")}>
+              <span className="tab-icon" aria-hidden="true">🧩</span> Couverture tuteurs
+            </button>
+            <button className={appMode === "files" ? "active" : ""} onClick={() => setAppMode("files")}>
+              <span className="tab-icon" aria-hidden="true">🗂️</span> Fichiers
             </button>
             <button className={appMode === "tutorReports" ? "active" : ""} onClick={() => setAppMode("tutorReports")}>
               <span className="tab-icon" aria-hidden="true">🧾</span> Bilans tuteurs <span className="tab-count">{tutorReports.length}</span>
@@ -6018,6 +6041,8 @@ export default function Home() {
         : appMode === "tutors" ? renderTutorTrackingSection()
         : appMode === "availability" ? renderAvailabilityComparisonSection()
         : appMode === "enrollments" ? <EnrollmentComparison />
+        : appMode === "coverage" ? <TutorCoverageComparison />
+        : appMode === "files" ? <FilesHub onOpen={(kind) => setAppMode(kind === "availability" ? "availability" : kind === "assignments" ? "coverage" : "enrollments")} />
         : appMode === "tutorReports" ? renderTutorReportsSection()
         : appMode === "watchlist" ? <section className="task-panel">
           <div className="panel-heading">

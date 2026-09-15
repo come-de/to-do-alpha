@@ -3,6 +3,7 @@ import {
   createEnrollmentImportFromCsv,
   deleteEnrollmentImportById,
   readEnrollmentImports,
+  readEnrollmentImportSummaries,
   updateEnrollmentImportName,
 } from "@/app/lib/shared-data";
 
@@ -13,8 +14,11 @@ function json(data: unknown, status = 200) {
   return NextResponse.json(data, { status, headers: { "Cache-Control": "no-store" } });
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    if (new URL(request.url).searchParams.get("summary") === "1") {
+      return json({ imports: await readEnrollmentImportSummaries() });
+    }
     return json({ imports: await readEnrollmentImports() });
   } catch (error) {
     const detail = error instanceof Error ? error.message : "Impossible de charger les imports";

@@ -412,6 +412,44 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .enrollment-student-card details { grid-column: 1 / -1; border-top: 1px solid var(--line); padding-top: 5px; }
 .enrollment-student-card summary { color: var(--blue-main); font-size: 9px; font-weight: 780; cursor: pointer; }
 .enrollment-student-card pre { margin: 6px 0 0; padding: 7px; border-radius: 7px; background: var(--soft); color: var(--ink); font: 10px/1.45 inherit; white-space: pre-wrap; }
+.coverage-upload-grid { margin: 0 12px 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.coverage-upload-grid > div { min-width: 0; padding: 8px 9px; border: 1px solid var(--line); border-radius: 10px; background: linear-gradient(135deg, var(--soft), white); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.coverage-upload-grid strong { display: block; color: var(--blue-title); font-size: 11px; }
+.coverage-upload-grid span { display: block; margin-top: 2px; color: var(--muted); font-size: 9.5px; }
+.coverage-controls { margin: 0 12px 8px; display: grid; grid-template-columns: 1.1fr 1.1fr .7fr .9fr .8fr; gap: 6px; }
+.coverage-controls label { min-width: 0; display: grid; gap: 3px; color: var(--muted); font-size: 8.5px; font-weight: 850; text-transform: uppercase; letter-spacing: .045em; }
+.coverage-controls select, .coverage-controls input { width: 100%; min-width: 0; height: 31px; border: 1px solid var(--line); border-radius: 8px; padding: 0 8px; background: white; color: var(--blue-title); font-size: 10px; text-transform: none; text-overflow: ellipsis; }
+.coverage-summary { margin: 0 12px 8px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.coverage-summary > div { min-height: 45px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 9px; background: var(--soft); display: flex; align-items: center; justify-content: space-between; gap: 7px; }
+.coverage-summary span { color: var(--muted); font-size: 8.8px; font-weight: 760; }
+.coverage-summary strong { color: var(--blue-title); font-size: 18px; }
+.coverage-summary .highlight { border-color: rgba(16,185,129,.32); background: var(--green-pale); }
+.coverage-summary .highlight strong { color: var(--green-dark); }
+.coverage-summary .secondary { border-color: rgba(14,165,233,.28); background: #eefaff; }
+.coverage-results { padding: 0 12px 12px; display: grid; gap: 7px; }
+.coverage-card { display: grid; grid-template-columns: minmax(170px, .55fr) minmax(260px, 1fr) minmax(280px, 1.1fr); gap: 8px; padding: 8px; border: 1px solid var(--line); border-left: 4px solid var(--green); border-radius: 10px; background: white; }
+.coverage-card.extra { border-left-color: var(--blue-main); }
+.coverage-person h3 { margin: 0; color: var(--blue-title); font-size: 12px; }
+.coverage-person p { margin: 3px 0 0; color: var(--muted); font-size: 9.5px; }
+.coverage-slots { min-width: 0; padding: 6px 7px; border-radius: 8px; background: var(--soft); display: grid; align-content: start; gap: 3px; }
+.coverage-slots.assigned { background: #fff7fb; }
+.coverage-slots.available { background: var(--green-pale); }
+.coverage-card.extra .coverage-slots.available { background: #eefaff; }
+.coverage-slots strong { color: var(--blue-title); font-size: 9px; text-transform: uppercase; letter-spacing: .035em; }
+.coverage-slots span, .coverage-slots small { min-width: 0; color: var(--muted); font-size: 9.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.files-grid { padding: 0 12px 12px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.files-category { min-width: 0; border: 1px solid var(--line); border-radius: 11px; background: rgba(255,255,255,.9); overflow: hidden; }
+.files-category-heading { min-height: 65px; padding: 9px; display: flex; align-items: flex-start; gap: 8px; background: linear-gradient(135deg, var(--soft), white); }
+.files-category-heading > span { width: 27px; height: 27px; flex: 0 0 27px; display: grid; place-items: center; border-radius: 8px; background: rgba(14,165,233,.1); }
+.files-category-heading h3 { margin: 0; color: var(--blue-title); font-size: 12px; }
+.files-category-heading p { margin: 3px 0 0; color: var(--muted); font-size: 9.5px; line-height: 1.3; }
+.files-category-actions { padding: 7px 9px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 7px; }
+.files-category-actions .import-button { min-height: 29px; padding: 5px 9px; font-size: 9px; }
+.files-list { max-height: 330px; padding: 7px; overflow: auto; display: grid; gap: 6px; }
+.files-list > div { padding: 6px; border: 1px solid var(--line); border-radius: 8px; background: white; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 6px; align-items: center; }
+.files-list input { width: 100%; min-width: 0; height: 27px; border: 1px solid var(--line); border-radius: 7px; padding: 0 7px; color: var(--blue-title); background: var(--soft); font-size: 10px; font-weight: 750; }
+.files-list small { grid-column: 1 / -1; min-width: 0; color: var(--muted); font-size: 8.8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.files-empty { margin: 4px; color: var(--muted); font-size: 10px; }
 .availability-tabs { display: flex; align-items: center; gap: 6px; padding: 0 12px 10px; overflow-x: auto; }
 .availability-tabs button { border: 1px solid var(--line); border-radius: 999px; padding: 6px 10px; color: var(--muted); background: white; font-size: 11px; font-weight: 850; white-space: nowrap; cursor: pointer; }
 .availability-tabs button.active, .availability-tabs button:hover { border-color: rgba(16,185,129,.32); color: var(--green-dark); background: var(--green-pale); }
@@ -809,6 +847,11 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .availability-controls > button { grid-column: 1 / -1; justify-self: end; }
   .availability-history-list > div { grid-template-columns: minmax(180px, .8fr) minmax(0, 1.2fr); }
   .availability-history-actions { grid-column: 1 / -1; justify-content: flex-end; }
+  .coverage-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .coverage-controls label:last-child { grid-column: 1 / -1; }
+  .coverage-card { grid-template-columns: minmax(150px, .5fr) 1fr; }
+  .coverage-card .coverage-slots.available { grid-column: 1 / -1; }
+  .files-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 720px) {
@@ -1003,6 +1046,13 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .enrollment-history .availability-history-list > div { grid-template-columns: minmax(0, 1fr) auto; }
   .enrollment-student-card { grid-template-columns: 1fr auto; }
   .enrollment-student-card > strong { grid-column: 1 / -1; }
+  .coverage-upload-grid, .coverage-controls { grid-template-columns: 1fr; margin: 0 8px 8px; }
+  .coverage-controls label:last-child { grid-column: auto; }
+  .coverage-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0 8px 8px; }
+  .coverage-summary > div:last-child { grid-column: 1 / -1; }
+  .coverage-card { grid-template-columns: 1fr; }
+  .coverage-card .coverage-slots.available { grid-column: auto; }
+  .coverage-results, .files-grid { padding: 0 8px 8px; }
   .availability-history-list .text-button { grid-column: 1 / -1; justify-self: start; }
   .availability-tabs { padding: 0 8px 8px; }
   .availability-tabs .ghost-button { margin-left: 0; }
