@@ -208,10 +208,30 @@ export type AvailabilityRow = {
 export type AvailabilityImport = {
   id: string;
   importedAt: string;
+  displayName: string;
   fileName: string;
   rows: AvailabilityRow[];
   rawCsv: string;
   hasRawCsv: boolean;
+  createdAt: string;
+};
+
+export type EnrollmentRow = {
+  studentId: string;
+  firstName: string;
+  lastName: string;
+  className: string;
+  school: string;
+  slots: string;
+};
+
+export type EnrollmentImport = {
+  id: string;
+  importedAt: string;
+  displayName: string;
+  fileName: string;
+  sourceRowCount: number;
+  rows: EnrollmentRow[];
   createdAt: string;
 };
 
@@ -314,6 +334,7 @@ export const TUTOR_REPORTS_KEY = "tutor-reports.json";
 export const TUTOR_REPORT_COMMENTS_KEY = "tutor-report-comments.json";
 export const TUTOR_TRACKING_KEY = "tutor-tracking.json";
 export const AVAILABILITY_IMPORTS_KEY = "availability-imports.json";
+export const ENROLLMENT_IMPORTS_KEY = "enrollment-imports.json";
 export const SCHOOL_WATCHLIST_KEY = "school-watchlist.json";
 export const SCHOOLS_KEY = "schools.json";
 export const STUDENT_HISTORY_KEY = "student-history.json";
@@ -331,6 +352,7 @@ const memory = globalThis as typeof globalThis & {
   __petitSuiviTutorReportComments?: TutorReportComment[];
   __petitSuiviTutorTracking?: TutorTrackingData;
   __petitSuiviAvailabilityImports?: AvailabilityImport[];
+  __petitSuiviEnrollmentImports?: EnrollmentImport[];
   __petitSuiviSchoolWatchlist?: SchoolWatchItem[];
   __petitSuiviSchools?: School[];
   __petitSuiviStudentHistory?: StudentHistoryYear[];
@@ -965,6 +987,7 @@ export function sanitizeAvailabilityImport(raw: Record<string, unknown>): Availa
   return {
     id: cleanText(raw.id) || crypto.randomUUID(),
     importedAt: cleanText(raw.importedAt) || now,
+    displayName: cleanText(raw.displayName) || cleanText(raw.fileName) || "Import de disponibilités",
     fileName: cleanText(raw.fileName) || "disponibilites.csv",
     rows: Array.isArray(raw.rows)
       ? raw.rows
@@ -974,6 +997,72 @@ export function sanitizeAvailabilityImport(raw: Record<string, unknown>): Availa
       : [],
     rawCsv: typeof raw.rawCsv === "string" ? raw.rawCsv : "",
     hasRawCsv: raw.hasRawCsv === true || (typeof raw.rawCsv === "string" && raw.rawCsv.length > 0),
+    createdAt: cleanText(raw.createdAt) || now,
+  };
+}
+
+export function sanitizeEnrollmentRow(raw: Record<string, unknown>): EnrollmentRow {
+  return {
+    studentId: cleanText(raw.studentId),
+    firstName: cleanText(raw.firstName),
+    lastName: cleanText(raw.lastName),
+    className: cleanText(raw.className),
+    school: cleanText(raw.school),
+    slots: cleanText(raw.slots),
+  };
+}
+
+export function parseEnrollmentCsv(value: string) {
+  const csvRows = parseCsvRows(value).filter((row) => row.some(Boolean));
+  if (!csvRows.length) return { rows: [] as EnrollmentRow[], sourceRowCount: 0 };
+  const headers = csvRows[0].map(normalizedHeader);
+  const indexFor = (aliases: string[]) => {
+    for (const alias of aliases) {
+      const index = headers.findIndex((header) => header === alias);
+      if (index >= 0) return index;
+    }
+    return -1;
+  };
+  const valueAt = (row: string[], index: number) => (index >= 0 ? row[index] || "" : "");
+  const studentIdIndex = indexFor(["iddelenfant", "iddelefant", "idenfant", "studentid"]);
+  const firstNameIndex = indexFor(["prenomdelenfant", "prenomenfant", "firstname"]);
+  const lastNameIndex = indexFor(["nomdelenfant", "nomenfant", "lastname"]);
+  const classIndex = indexFor(["classe", "class"]);
+  const schoolIndex = indexFor(["ecole", "etablissement", "school"]);
+  const slotsIndex = indexFor(["creneaux", "creneau", "slots"]);
+  if (studentIdIndex < 0 || slotsIndex < 0) {
+    throw new Error("Colonnes « Id de l’enfant » ou « Creneaux » introuvables");
+  }
+  const dataRows = csvRows.slice(1);
+  const rows = dataRows
+    .map((row) =>
+      sanitizeEnrollmentRow({
+        studentId: valueAt(row, studentIdIndex),
+        firstName: valueAt(row, firstNameIndex),
+        lastName: valueAt(row, lastNameIndex),
+        className: valueAt(row, classIndex),
+        school: valueAt(row, schoolIndex),
+        slots: valueAt(row, slotsIndex),
+      }),
+    )
+    .filter((row) => row.studentId && row.slots);
+  return { rows, sourceRowCount: dataRows.length };
+}
+
+export function sanitizeEnrollmentImport(raw: Record<string, unknown>): EnrollmentImport {
+  const now = new Date().toISOString();
+  return {
+    id: cleanText(raw.id) || crypto.randomUUID(),
+    importedAt: cleanText(raw.importedAt) || now,
+    displayName: cleanText(raw.displayName) || cleanText(raw.fileName) || "Export inscriptions",
+    fileName: cleanText(raw.fileName) || "parents.csv",
+    sourceRowCount: Math.max(0, Math.round(Number(raw.sourceRowCount) || 0)),
+    rows: Array.isArray(raw.rows)
+      ? raw.rows
+          .filter((row): row is Record<string, unknown> => Boolean(row && typeof row === "object"))
+          .map(sanitizeEnrollmentRow)
+          .filter((row) => row.studentId && row.slots)
+      : [],
     createdAt: cleanText(raw.createdAt) || now,
   };
 }
@@ -1534,6 +1623,7 @@ export async function createAvailabilityImportFromCsv(input: { fileName: string;
   const nextImport = sanitizeAvailabilityImport({
     id: crypto.randomUUID(),
     importedAt: now,
+    displayName: input.fileName.replace(/\.[^.]+$/, "") || "Import de disponibilités",
     fileName: input.fileName || "disponibilites.csv",
     rows,
     rawCsv: input.rawCsv,
@@ -1552,6 +1642,20 @@ export async function createAvailabilityImportFromCsv(input: { fileName: string;
   return { ...nextImport, rawCsv: "" };
 }
 
+export async function updateAvailabilityImportName(id: string, displayName: string) {
+  const store = taskStore();
+  const existingImports = await readAvailabilityIndex();
+  const matchingImport = existingImports.find((item) => item.id === id);
+  if (!matchingImport) throw new Error("Import introuvable");
+  const cleanedName = cleanText(displayName);
+  if (!cleanedName) throw new Error("Le nom de l’import est obligatoire");
+  const nextImports = existingImports.map((item) =>
+    item.id === id ? { ...item, displayName: cleanedName, rows: [], rawCsv: "" } : { ...item, rows: [], rawCsv: "" },
+  );
+  await store.setJSON(AVAILABILITY_IMPORTS_KEY, nextImports);
+  return { ...matchingImport, displayName: cleanedName };
+}
+
 export async function deleteAvailabilityImportById(id: string) {
   const store = taskStore();
   const existingImports = await readAvailabilityIndex();
@@ -1565,6 +1669,96 @@ export async function readAvailabilityRawCsv(id: string) {
   if (rawCsv) return rawCsv;
   const legacyImport = (await readAvailabilityIndex()).find((item) => item.id === id);
   return legacyImport?.rawCsv || "";
+}
+
+function enrollmentRowsKey(id: string) {
+  return `enrollment-imports/${id}.rows.json`;
+}
+
+async function readEnrollmentIndex() {
+  const store = taskStore();
+  const imports = await store.get(ENROLLMENT_IMPORTS_KEY, { type: "json", consistency: "strong" });
+  return Array.isArray(imports)
+    ? imports
+        .filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object"))
+        .map(sanitizeEnrollmentImport)
+        .sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt))
+    : [];
+}
+
+export async function readEnrollmentImports() {
+  try {
+    const store = taskStore();
+    const imports = await readEnrollmentIndex();
+    const hydrated = await Promise.all(
+      imports.map(async (item) => {
+        if (item.rows.length) return item;
+        const rows = await store.get(enrollmentRowsKey(item.id), { type: "json", consistency: "strong" });
+        return {
+          ...item,
+          rows: Array.isArray(rows)
+            ? rows
+                .filter((row): row is Record<string, unknown> => Boolean(row && typeof row === "object"))
+                .map(sanitizeEnrollmentRow)
+                .filter((row) => row.studentId && row.slots)
+            : [],
+        };
+      }),
+    );
+    return hydrated.sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt));
+  } catch (error) {
+    if (!canUseMemoryFallback()) throw error;
+    return memory.__petitSuiviEnrollmentImports ?? [];
+  }
+}
+
+export async function createEnrollmentImportFromCsv(input: { fileName: string; rawCsv: string }) {
+  const now = new Date().toISOString();
+  const parsed = parseEnrollmentCsv(input.rawCsv);
+  if (!parsed.rows.length) throw new Error("Aucun élève avec des créneaux dans ce CSV");
+  const nextImport = sanitizeEnrollmentImport({
+    id: crypto.randomUUID(),
+    importedAt: now,
+    displayName: input.fileName.replace(/\.[^.]+$/, "") || "Export inscriptions",
+    fileName: input.fileName || "parents.csv",
+    sourceRowCount: parsed.sourceRowCount,
+    rows: parsed.rows,
+    createdAt: now,
+  });
+  try {
+    const store = taskStore();
+    await store.setJSON(enrollmentRowsKey(nextImport.id), nextImport.rows);
+    const existing = await readEnrollmentIndex();
+    const nextIndex = [
+      { ...nextImport, rows: [] },
+      ...existing.filter((item) => item.id !== nextImport.id).map((item) => ({ ...item, rows: [] })),
+    ].sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt));
+    await store.setJSON(ENROLLMENT_IMPORTS_KEY, nextIndex);
+  } catch (error) {
+    if (!canUseMemoryFallback()) throw error;
+    memory.__petitSuiviEnrollmentImports = [nextImport, ...(memory.__petitSuiviEnrollmentImports ?? [])];
+  }
+  return nextImport;
+}
+
+export async function updateEnrollmentImportName(id: string, displayName: string) {
+  const store = taskStore();
+  const existing = await readEnrollmentIndex();
+  const matching = existing.find((item) => item.id === id);
+  if (!matching) throw new Error("Import introuvable");
+  const cleanedName = cleanText(displayName);
+  if (!cleanedName) throw new Error("Le nom de l’import est obligatoire");
+  await store.setJSON(
+    ENROLLMENT_IMPORTS_KEY,
+    existing.map((item) => (item.id === id ? { ...item, displayName: cleanedName, rows: [] } : { ...item, rows: [] })),
+  );
+}
+
+export async function deleteEnrollmentImportById(id: string) {
+  const store = taskStore();
+  const existing = await readEnrollmentIndex();
+  await store.setJSON(ENROLLMENT_IMPORTS_KEY, existing.filter((item) => item.id !== id).map((item) => ({ ...item, rows: [] })));
+  await store.delete(enrollmentRowsKey(id));
 }
 
 export async function readSchoolWatchlist() {

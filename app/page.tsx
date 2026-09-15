@@ -1,11 +1,12 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import EnrollmentComparison from "@/app/components/enrollment-comparison";
 
 type Status = "todo" | "progress" | "done";
 type Priority = "low" | "medium" | "high";
 type Density = "compact" | "comfortable";
-type AppMode = "tasks" | "recurring" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffing" | "watchlist" | "tutorReports" | "tutors" | "availability";
+type AppMode = "tasks" | "recurring" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffing" | "watchlist" | "tutorReports" | "tutors" | "availability" | "enrollments";
 type ViewMode = "list" | "matrix";
 type DurationBucket = "short" | "medium" | "long" | "unset";
 type ObjectiveKind = "counter" | "qualitative";
@@ -215,6 +216,7 @@ type AvailabilityRow = {
 type AvailabilityImport = {
   id: string;
   importedAt: string;
+  displayName: string;
   fileName: string;
   rows: AvailabilityRow[];
   rawCsv: string;
@@ -385,6 +387,7 @@ const appModeSlugs: Record<AppMode, string> = {
   tutorReports: "bilans-tuteurs",
   tutors: "tuteurs",
   availability: "comparaison-dispos",
+  enrollments: "comparaison-inscriptions",
 };
 
 const appModeAliases: Record<string, AppMode> = {
@@ -414,6 +417,9 @@ const appModeAliases: Record<string, AppMode> = {
   "comparaison-disponibilites": "availability",
   "comparaison-disponibilités": "availability",
   availability: "availability",
+  inscriptions: "enrollments",
+  "comparaison-inscriptions": "enrollments",
+  parents: "enrollments",
   tutorreports: "tutorReports",
   tutorReports: "tutorReports",
   "tutor-reports": "tutorReports",
@@ -1019,6 +1025,7 @@ function normalizeAvailabilityImport(raw: Partial<AvailabilityImport>): Availabi
   return {
     id: raw.id || uid("availability"),
     importedAt: raw.importedAt || now,
+    displayName: raw.displayName || raw.fileName?.replace(/\.[^.]+$/, "") || "Import de disponibilités",
     fileName: raw.fileName || "disponibilites.csv",
     rows: Array.isArray(raw.rows)
       ? raw.rows.map(normalizeAvailabilityRow).filter((row) => row.tutorId && row.date)
@@ -1742,6 +1749,7 @@ export default function Home() {
   const [availabilityReferenceId, setAvailabilityReferenceId] = useState("");
   const [availabilityRecentId, setAvailabilityRecentId] = useState("");
   const [availabilityView, setAvailabilityView] = useState<AvailabilityComparisonView>("new");
+  const [availabilityNameDrafts, setAvailabilityNameDrafts] = useState<Record<string, string>>({});
   const importRef = useRef<HTMLInputElement>(null);
 
   const setAppMode = useCallback((mode: AppMode) => {
@@ -1921,6 +1929,7 @@ export default function Home() {
             .sort((a, b) => sortDateValue(b.importedAt) - sortDateValue(a.importedAt))
         : [];
       setAvailabilityImports(imports);
+      setAvailabilityNameDrafts(Object.fromEntries(imports.map((item) => [item.id, item.displayName])));
       if (imports.length) {
         setAvailabilityRecentId((current) => (imports.some((item) => item.id === current) ? current : imports[0].id));
         setAvailabilityReferenceId((current) =>
@@ -3626,6 +3635,7 @@ export default function Home() {
           ? [importedItem, ...availabilityImports]
           : availabilityImports;
       setAvailabilityImports(imports);
+      setAvailabilityNameDrafts(Object.fromEntries(imports.map((item) => [item.id, item.displayName])));
       if (importedItem) {
         setAvailabilityRecentId(importedItem.id);
         setAvailabilityReferenceId(previousNewestId || importedItem.id);
@@ -3665,6 +3675,41 @@ export default function Home() {
       console.error(error);
       setSyncError("Suppression impossible, rechargez la page avant de continuer");
       setToast(error instanceof Error ? `Import non supprimé : ${error.message}` : "Import non supprimé");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function renameAvailabilityImport(importId: string) {
+    const displayName = (availabilityNameDrafts[importId] || "").trim();
+    if (!displayName) {
+      setToast("Donnez un nom à cet import");
+      return;
+    }
+    setSaving(true);
+    setSyncError("");
+    try {
+      const response = await fetch("/api/availability-imports", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: importId, displayName }),
+      });
+      const data = (await response.json()) as {
+        imports?: Partial<AvailabilityImport>[];
+        error?: string;
+        detail?: string;
+      };
+      if (!response.ok) throw new Error(data.detail || data.error || "rename-availability-import-failed");
+      const imports = Array.isArray(data.imports)
+        ? data.imports
+            .map(normalizeAvailabilityImport)
+            .sort((a, b) => sortDateValue(b.importedAt) - sortDateValue(a.importedAt))
+        : availabilityImports.map((item) => (item.id === importId ? { ...item, displayName } : item));
+      setAvailabilityImports(imports);
+      setAvailabilityNameDrafts(Object.fromEntries(imports.map((item) => [item.id, item.displayName])));
+      setToast("Nom de l’import sauvegardé");
+    } catch (error) {
+      setToast(error instanceof Error ? `Nom non sauvegardé : ${error.message}` : "Nom non sauvegardé");
     } finally {
       setSaving(false);
     }
@@ -4386,7 +4431,7 @@ export default function Home() {
   }
 
   function renderAvailabilityComparisonSection() {
-    const importLabel = (item: AvailabilityImport) => `${formatJournalDate(item.importedAt)} · ${item.fileName}`;
+    const importLabel = (item: AvailabilityImport) => `${item.displayName} · ${formatJournalDate(item.importedAt)}`;
     const summaryCards = [
       { label: "Tuteurs référence", value: availabilityComparison.referenceCount },
       { label: "Tuteurs récent", value: availabilityComparison.recentCount },
@@ -4486,10 +4531,25 @@ export default function Home() {
           <div className="availability-history-list">
             {availabilityImports.map((item) => (
               <div key={item.id}>
-                <span>{importLabel(item)}</span>
+                <label className="availability-import-name">
+                  <span>Nom de l’import</span>
+                  <input
+                    value={availabilityNameDrafts[item.id] ?? item.displayName}
+                    onChange={(event) =>
+                      setAvailabilityNameDrafts((current) => ({ ...current, [item.id]: event.target.value }))
+                    }
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") void renameAvailabilityImport(item.id);
+                    }}
+                    aria-label={`Nom de l’import ${item.fileName}`}
+                  />
+                </label>
                 <small>
-                  {item.rows.length} ligne(s) · {new Set(item.rows.map((row) => row.date).filter(Boolean)).size} date(s) · {item.hasRawCsv || item.rawCsv ? "CSV original disponible" : "CSV original non disponible"}
+                  {formatJournalDate(item.importedAt)} · {item.fileName} · {item.rows.length} ligne(s) · {new Set(item.rows.map((row) => row.date).filter(Boolean)).size} date(s)
                 </small>
+                <button type="button" className="text-button" onClick={() => void renameAvailabilityImport(item.id)}>
+                  Enregistrer le nom
+                </button>
                 <button
                   type="button"
                   className="text-button"
@@ -5256,6 +5316,8 @@ export default function Home() {
                       ? () => { void loadTutorTracking(); }
                     : appMode === "availability"
                       ? () => { void loadAvailabilityImports(); }
+                    : appMode === "enrollments"
+                      ? () => setAppMode("enrollments")
                     : appMode === "tutorReports"
                       ? () => { void loadTutorReports(); }
                     : appMode === "watchlist"
@@ -5285,6 +5347,8 @@ export default function Home() {
                       ? "Actualiser tuteurs"
                     : appMode === "availability"
                       ? "Actualiser dispos"
+                    : appMode === "enrollments"
+                      ? "Comparer inscriptions"
                     : appMode === "tutorReports"
                       ? "Actualiser bilans"
                     : appMode === "watchlist"
@@ -5397,6 +5461,9 @@ export default function Home() {
             </button>
             <button className={appMode === "availability" ? "active" : ""} onClick={() => setAppMode("availability")}>
               <span className="tab-icon" aria-hidden="true">📆</span> Comparaison dispos <span className="tab-count">{availabilityImports.length}</span>
+            </button>
+            <button className={appMode === "enrollments" ? "active" : ""} onClick={() => setAppMode("enrollments")}>
+              <span className="tab-icon" aria-hidden="true">🎒</span> Inscriptions
             </button>
             <button className={appMode === "tutorReports" ? "active" : ""} onClick={() => setAppMode("tutorReports")}>
               <span className="tab-icon" aria-hidden="true">🧾</span> Bilans tuteurs <span className="tab-count">{tutorReports.length}</span>
@@ -5948,6 +6015,7 @@ export default function Home() {
         </section>
         : appMode === "tutors" ? renderTutorTrackingSection()
         : appMode === "availability" ? renderAvailabilityComparisonSection()
+        : appMode === "enrollments" ? <EnrollmentComparison />
         : appMode === "tutorReports" ? renderTutorReportsSection()
         : appMode === "watchlist" ? <section className="task-panel">
           <div className="panel-heading">

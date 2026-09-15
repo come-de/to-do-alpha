@@ -5,6 +5,7 @@ import {
   readAvailabilityImports,
   readAvailabilityRawCsv,
   sanitizeAvailabilityImport,
+  updateAvailabilityImportName,
   writeAvailabilityImports,
 } from "@/app/lib/shared-data";
 
@@ -71,6 +72,20 @@ export async function PUT(request: Request) {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to save availability imports";
     return json({ error: "Unable to save availability imports", detail: message }, 500);
+  }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const body = (await request.json()) as { id?: unknown; displayName?: unknown };
+    if (typeof body.id !== "string" || typeof body.displayName !== "string") {
+      return json({ error: "Invalid import name" }, 400);
+    }
+    await updateAvailabilityImportName(body.id, body.displayName);
+    return json({ imports: await readAvailabilityImports() });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to rename availability import";
+    return json({ error: "Unable to rename availability import", detail: message }, 500);
   }
 }
 
