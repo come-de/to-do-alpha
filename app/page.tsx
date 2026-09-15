@@ -1055,6 +1055,16 @@ function groupAvailabilityTutors(rows: AvailabilityRow[], date: string) {
   return byTutor;
 }
 
+function bestAvailabilityDate(rows: AvailabilityRow[], preferredDate = new Date().toISOString().slice(0, 10)) {
+  const counts = rows.reduce((map, row) => {
+    if (!row.date) return map;
+    map.set(row.date, (map.get(row.date) || 0) + 1);
+    return map;
+  }, new Map<string, number>());
+  if (counts.has(preferredDate)) return preferredDate;
+  return Array.from(counts.entries()).sort((a, b) => b[1] - a[1] || sortDateValue(a[0]) - sortDateValue(b[0]))[0]?.[0] || "";
+}
+
 function parseCsvLine(line: string, delimiter?: string) {
   const cells: string[] = [];
   let current = "";
@@ -1919,7 +1929,7 @@ export default function Home() {
         setAvailabilityDate((current) =>
           imports.some((item) => item.rows.some((row) => row.date === current))
             ? current
-            : imports[0].rows[0]?.date || current,
+            : bestAvailabilityDate(imports.flatMap((item) => item.rows)) || current,
         );
       }
     } catch (error) {
@@ -2434,12 +2444,25 @@ export default function Home() {
       ),
     [availabilityImports],
   );
+  const availabilityDateCounts = useMemo(
+    () =>
+      availabilityImports.reduce((map, item) => {
+        item.rows.forEach((row) => {
+          if (!row.date) return;
+          map.set(row.date, (map.get(row.date) || 0) + 1);
+        });
+        return map;
+      }, new Map<string, number>()),
+    [availabilityImports],
+  );
   const availabilityComparison = useMemo(() => {
+    const referenceRows = selectedAvailabilityReference?.rows.filter((row) => row.date === availabilityDate) ?? [];
+    const recentRows = selectedAvailabilityRecent?.rows.filter((row) => row.date === availabilityDate) ?? [];
     const referenceMap = selectedAvailabilityReference
-      ? groupAvailabilityTutors(selectedAvailabilityReference.rows, availabilityDate)
+      ? groupAvailabilityTutors(referenceRows, availabilityDate)
       : new Map<string, AvailabilityTutor>();
     const recentMap = selectedAvailabilityRecent
-      ? groupAvailabilityTutors(selectedAvailabilityRecent.rows, availabilityDate)
+      ? groupAvailabilityTutors(recentRows, availabilityDate)
       : new Map<string, AvailabilityTutor>();
     const newTutors = Array.from(recentMap.values()).filter((tutor) => !referenceMap.has(tutor.tutorId));
     const lostTutors = Array.from(referenceMap.values()).filter((tutor) => !recentMap.has(tutor.tutorId));
@@ -2449,6 +2472,8 @@ export default function Home() {
     return {
       referenceCount: referenceMap.size,
       recentCount: recentMap.size,
+      referenceRowsCount: referenceRows.length,
+      recentRowsCount: recentRows.length,
       newTutors: sortTutors(newTutors),
       lostTutors: sortTutors(lostTutors),
       sameTutors: sortTutors(sameTutors),
@@ -3604,7 +3629,7 @@ export default function Home() {
       if (importedItem) {
         setAvailabilityRecentId(importedItem.id);
         setAvailabilityReferenceId(previousNewestId || importedItem.id);
-        setAvailabilityDate(importedItem.rows[0]?.date || availabilityDate);
+        setAvailabilityDate(bestAvailabilityDate(importedItem.rows) || availabilityDate);
       }
       setAvailabilityView("new");
       setToast("Import de disponibilités ajouté · sauvegardé sur Netlify");
@@ -4363,11 +4388,11 @@ export default function Home() {
   function renderAvailabilityComparisonSection() {
     const importLabel = (item: AvailabilityImport) => `${formatJournalDate(item.importedAt)} · ${item.fileName}`;
     const summaryCards = [
-      { label: "Référence", value: availabilityComparison.referenceCount },
-      { label: "Récent", value: availabilityComparison.recentCount },
+      { label: "Tuteurs référence", value: availabilityComparison.referenceCount },
+      { label: "Tuteurs récent", value: availabilityComparison.recentCount },
+      { label: "Créneaux récent", value: availabilityComparison.recentRowsCount },
       { label: "Nouvelles", value: availabilityComparison.newTutors.length },
       { label: "Perdues", value: availabilityComparison.lostTutors.length },
-      { label: "Inchangées", value: availabilityComparison.sameTutors.length },
     ];
     return (
       <section className="task-panel availability-panel">
@@ -4376,7 +4401,7 @@ export default function Home() {
             <p className="eyebrow">Comparaison des disponibilités</p>
             <h2>Repérer les nouveaux tuteurs disponibles</h2>
             <p className="panel-intro">
-              Importez plusieurs CSV, choisissez une date, puis comparez deux versions. La comparaison se fait par ID tuteur.
+              Importez plusieurs CSV, choisissez une date, puis comparez deux versions. La comparaison se fait par ID tuteur et uniquement pour la date sélectionnée.
             </p>
           </div>
           <button type="button" className="ghost-button" onClick={() => void loadAvailabilityImports()}>
@@ -4405,12 +4430,17 @@ export default function Home() {
         <div className="availability-controls">
           <label>
             Date à analyser
-            <input list="availability-dates" type="date" value={availabilityDate} onChange={(event) => setAvailabilityDate(event.target.value)} />
-            <datalist id="availability-dates">
-              {availabilityDates.map((date) => (
-                <option key={date} value={date} />
-              ))}
-            </datalist>
+            {availabilityDates.length ? (
+              <select value={availabilityDate} onChange={(event) => setAvailabilityDate(event.target.value)}>
+                {availabilityDates.map((date) => (
+                  <option key={date} value={date}>
+                    {formatFullDate(date)} · {availabilityDateCounts.get(date) || 0} ligne(s)
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input type="date" value={availabilityDate} onChange={(event) => setAvailabilityDate(event.target.value)} />
+            )}
           </label>
           <label>
             Fichier de référence
@@ -4458,7 +4488,7 @@ export default function Home() {
               <div key={item.id}>
                 <span>{importLabel(item)}</span>
                 <small>
-                  {item.rows.length} ligne(s) · {item.hasRawCsv || item.rawCsv ? "CSV original disponible" : "CSV original non disponible"}
+                  {item.rows.length} ligne(s) · {new Set(item.rows.map((row) => row.date).filter(Boolean)).size} date(s) · {item.hasRawCsv || item.rawCsv ? "CSV original disponible" : "CSV original non disponible"}
                 </small>
                 <button
                   type="button"
