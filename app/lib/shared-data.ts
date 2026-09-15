@@ -211,6 +211,7 @@ export type AvailabilityImport = {
   fileName: string;
   rows: AvailabilityRow[];
   rawCsv: string;
+  hasRawCsv: boolean;
   createdAt: string;
 };
 
@@ -834,6 +835,131 @@ export function sanitizeAvailabilityRow(raw: Record<string, unknown>): Availabil
   };
 }
 
+function parseCsvLine(line: string, delimiter?: string) {
+  const cells: string[] = [];
+  let current = "";
+  let quoted = false;
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index];
+    const next = line[index + 1];
+    if (char === "\"" && quoted && next === "\"") {
+      current += "\"";
+      index += 1;
+    } else if (char === "\"") {
+      quoted = !quoted;
+    } else if ((delimiter ? char === delimiter : char === "," || char === ";" || char === "\t") && !quoted) {
+      cells.push(current.trim());
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+  cells.push(current.trim());
+  return cells;
+}
+
+function detectCsvDelimiter(value: string) {
+  const firstLine = value.split(/\r?\n/).find((line) => line.trim()) || "";
+  const delimiters = [";", "\t", ","];
+  return delimiters
+    .map((delimiter) => ({ delimiter, count: parseCsvLine(firstLine, delimiter).length }))
+    .sort((a, b) => b.count - a.count)[0]?.delimiter || ";";
+}
+
+function parseCsvRows(value: string) {
+  const delimiter = detectCsvDelimiter(value);
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let current = "";
+  let quoted = false;
+  for (let index = 0; index < value.length; index += 1) {
+    const char = value[index];
+    const next = value[index + 1];
+    if (char === "\"" && quoted && next === "\"") {
+      current += "\"";
+      index += 1;
+    } else if (char === "\"") {
+      quoted = !quoted;
+    } else if (char === delimiter && !quoted) {
+      row.push(current.trim());
+      current = "";
+    } else if ((char === "\n" || char === "\r") && !quoted) {
+      if (char === "\r" && next === "\n") index += 1;
+      row.push(current.trim());
+      if (row.some(Boolean)) rows.push(row);
+      row = [];
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+  row.push(current.trim());
+  if (row.some(Boolean)) rows.push(row);
+  return rows;
+}
+
+function normalizedHeader(value: string) {
+  return value
+    .trim()
+    .toLocaleLowerCase("fr")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "");
+}
+
+export function parseAvailabilityCsv(value: string): AvailabilityRow[] {
+  const rows = parseCsvRows(value).filter((row) => row.some(Boolean));
+  if (!rows.length) return [];
+  const firstRow = rows[0].map(normalizedHeader);
+  const hasHeader = firstRow.some((cell) => ["id", "nomtuteur", "prenomtuteur", "date", "heureducreneau", "iddelaseance"].includes(cell));
+  const headers = hasHeader
+    ? firstRow
+    : ["id", "nomtuteur", "prenomtuteur", "grade", "telephone", "date", "etablissement", "classe", "heureducreneau", "iddelaseance", "nombredevisites", "groupe", "nbreleves", "scorepourlegroupe"];
+  const dataRows = hasHeader ? rows.slice(1) : rows;
+  const indexFor = (aliases: string[]) => {
+    for (const alias of aliases) {
+      const index = headers.findIndex((header) => header === alias);
+      if (index >= 0) return index;
+    }
+    return -1;
+  };
+  const valueAt = (row: string[], index: number) => (index >= 0 ? row[index] || "" : "");
+  const idIndex = indexFor(["id", "idtuteur", "tutorid"]);
+  const lastNameIndex = indexFor(["nomtuteur", "nom", "lastname"]);
+  const firstNameIndex = indexFor(["prenomtuteur", "prenom", "firstname"]);
+  const gradeIndex = indexFor(["grade"]);
+  const phoneIndex = indexFor(["telephone", "tel", "phone"]);
+  const dateIndex = indexFor(["date"]);
+  const schoolIndex = indexFor(["etablissement", "etablissements", "school"]);
+  const classIndex = indexFor(["classe", "class"]);
+  const timeSlotIndex = indexFor(["heureducreneau", "heurecreneau", "creneau", "horaire"]);
+  const sessionIdIndex = indexFor(["iddelaseance", "idseance", "sessionid"]);
+  const visitCountIndex = indexFor(["nombredevisites", "visites", "nbvisites"]);
+  const groupIndex = indexFor(["groupe", "group"]);
+  const studentCountIndex = indexFor(["nbreleves", "nbeleves", "nombreeleves"]);
+  const groupScoreIndex = indexFor(["scorepourlegroupe", "scoregroupe"]);
+  return dataRows
+    .map((row) =>
+      sanitizeAvailabilityRow({
+        tutorId: valueAt(row, idIndex),
+        lastName: valueAt(row, lastNameIndex),
+        firstName: valueAt(row, firstNameIndex),
+        grade: valueAt(row, gradeIndex),
+        phone: valueAt(row, phoneIndex),
+        date: valueAt(row, dateIndex),
+        school: valueAt(row, schoolIndex),
+        className: valueAt(row, classIndex),
+        timeSlot: valueAt(row, timeSlotIndex),
+        sessionId: valueAt(row, sessionIdIndex),
+        visitCount: valueAt(row, visitCountIndex),
+        group: valueAt(row, groupIndex),
+        studentCount: valueAt(row, studentCountIndex),
+        groupScore: valueAt(row, groupScoreIndex),
+      }),
+    )
+    .filter((row) => row.tutorId && row.date);
+}
+
 export function sanitizeAvailabilityImport(raw: Record<string, unknown>): AvailabilityImport {
   const now = new Date().toISOString();
   return {
@@ -847,6 +973,7 @@ export function sanitizeAvailabilityImport(raw: Record<string, unknown>): Availa
           .filter((row) => row.tutorId && row.date)
       : [],
     rawCsv: typeof raw.rawCsv === "string" ? raw.rawCsv : "",
+    hasRawCsv: raw.hasRawCsv === true || (typeof raw.rawCsv === "string" && raw.rawCsv.length > 0),
     createdAt: cleanText(raw.createdAt) || now,
   };
 }
@@ -1332,12 +1459,27 @@ export async function readAvailabilityImports() {
   try {
     const store = taskStore();
     const imports = await store.get(AVAILABILITY_IMPORTS_KEY, { type: "json", consistency: "strong" });
-    return Array.isArray(imports)
-      ? imports
-          .filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object"))
-          .map(sanitizeAvailabilityImport)
-          .sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt))
-      : [];
+    if (!Array.isArray(imports)) return [];
+    const sanitizedImports = imports
+      .filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object"))
+      .map(sanitizeAvailabilityImport);
+    const hydratedImports = await Promise.all(
+      sanitizedImports.map(async (item) => {
+        if (item.rows.length > 0) return { ...item, rawCsv: "", hasRawCsv: item.hasRawCsv || Boolean(item.rawCsv) };
+        const rows = await store.get(availabilityRowsKey(item.id), { type: "json", consistency: "strong" });
+        return {
+          ...item,
+          rows: Array.isArray(rows)
+            ? rows
+                .filter((row): row is Record<string, unknown> => Boolean(row && typeof row === "object"))
+                .map(sanitizeAvailabilityRow)
+                .filter((row) => row.tutorId && row.date)
+            : [],
+          rawCsv: "",
+        };
+      }),
+    );
+    return hydratedImports.sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt));
   } catch (error) {
     if (!canUseMemoryFallback()) throw error;
     return memory.__petitSuiviAvailabilityImports ?? [];
@@ -1348,11 +1490,81 @@ export async function writeAvailabilityImports(imports: AvailabilityImport[]) {
   const sanitizedImports = imports.map((item) => sanitizeAvailabilityImport(item as unknown as Record<string, unknown>));
   try {
     const store = taskStore();
-    await store.setJSON(AVAILABILITY_IMPORTS_KEY, sanitizedImports);
+    await Promise.all(
+      sanitizedImports.map((item) =>
+        Promise.all([
+          item.rawCsv ? store.set(availabilityRawKey(item.id), item.rawCsv) : Promise.resolve(),
+          store.setJSON(availabilityRowsKey(item.id), item.rows),
+        ]),
+      ),
+    );
+    await store.setJSON(
+      AVAILABILITY_IMPORTS_KEY,
+      sanitizedImports.map((item) => ({ ...item, rows: [], rawCsv: "", hasRawCsv: item.hasRawCsv || Boolean(item.rawCsv) })),
+    );
   } catch (error) {
     if (!canUseMemoryFallback()) throw error;
     memory.__petitSuiviAvailabilityImports = sanitizedImports;
   }
+}
+
+function availabilityRawKey(id: string) {
+  return `availability-imports/${id}.csv`;
+}
+
+function availabilityRowsKey(id: string) {
+  return `availability-imports/${id}.rows.json`;
+}
+
+async function readAvailabilityIndex() {
+  const store = taskStore();
+  const imports = await store.get(AVAILABILITY_IMPORTS_KEY, { type: "json", consistency: "strong" });
+  return Array.isArray(imports)
+    ? imports
+        .filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object"))
+        .map(sanitizeAvailabilityImport)
+        .sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt))
+    : [];
+}
+
+export async function createAvailabilityImportFromCsv(input: { fileName: string; rawCsv: string }) {
+  const now = new Date().toISOString();
+  const rows = parseAvailabilityCsv(input.rawCsv);
+  if (!rows.length) throw new Error("Aucune disponibilité valide dans ce CSV");
+  const nextImport = sanitizeAvailabilityImport({
+    id: crypto.randomUUID(),
+    importedAt: now,
+    fileName: input.fileName || "disponibilites.csv",
+    rows,
+    rawCsv: input.rawCsv,
+    hasRawCsv: true,
+    createdAt: now,
+  });
+  const store = taskStore();
+  await store.set(availabilityRawKey(nextImport.id), input.rawCsv);
+  await store.setJSON(availabilityRowsKey(nextImport.id), rows);
+  const existingImports = await readAvailabilityIndex();
+  const nextIndex = [
+    { ...nextImport, rows: [], rawCsv: "", hasRawCsv: true },
+    ...existingImports.filter((item) => item.id !== nextImport.id).map((item) => ({ ...item, rows: [], rawCsv: "" })),
+  ].sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt));
+  await store.setJSON(AVAILABILITY_IMPORTS_KEY, nextIndex);
+  return { ...nextImport, rawCsv: "" };
+}
+
+export async function deleteAvailabilityImportById(id: string) {
+  const store = taskStore();
+  const existingImports = await readAvailabilityIndex();
+  await store.setJSON(AVAILABILITY_IMPORTS_KEY, existingImports.filter((item) => item.id !== id).map((item) => ({ ...item, rows: [], rawCsv: "" })));
+  await Promise.all([store.delete(availabilityRawKey(id)), store.delete(availabilityRowsKey(id))]);
+}
+
+export async function readAvailabilityRawCsv(id: string) {
+  const store = taskStore();
+  const rawCsv = await store.get(availabilityRawKey(id), { type: "text", consistency: "strong" });
+  if (rawCsv) return rawCsv;
+  const legacyImport = (await readAvailabilityIndex()).find((item) => item.id === id);
+  return legacyImport?.rawCsv || "";
 }
 
 export async function readSchoolWatchlist() {

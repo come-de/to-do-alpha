@@ -218,6 +218,7 @@ type AvailabilityImport = {
   fileName: string;
   rows: AvailabilityRow[];
   rawCsv: string;
+  hasRawCsv: boolean;
   createdAt: string;
 };
 
@@ -1023,6 +1024,7 @@ function normalizeAvailabilityImport(raw: Partial<AvailabilityImport>): Availabi
       ? raw.rows.map(normalizeAvailabilityRow).filter((row) => row.tutorId && row.date)
       : [],
     rawCsv: raw.rawCsv || "",
+    hasRawCsv: raw.hasRawCsv === true || Boolean(raw.rawCsv),
     createdAt: raw.createdAt || now,
   };
 }
@@ -1127,59 +1129,6 @@ function normalizedHeader(value: string) {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, "");
-}
-
-function parseAvailabilityCsv(value: string): AvailabilityRow[] {
-  const rows = parseCsvRows(value).filter((row) => row.some(Boolean));
-  if (!rows.length) return [];
-  const firstRow = rows[0].map(normalizedHeader);
-  const hasHeader = firstRow.some((cell) => ["id", "nomtuteur", "prenomtuteur", "date", "heureducreneau", "iddelaseance"].includes(cell));
-  const headers = hasHeader
-    ? firstRow
-    : ["id", "nomtuteur", "prenomtuteur", "grade", "telephone", "date", "etablissement", "classe", "heureducreneau", "iddelaseance", "nombredevisites", "groupe", "nbreleves", "scorepourlegroupe"];
-  const dataRows = hasHeader ? rows.slice(1) : rows;
-  const indexFor = (aliases: string[]) => {
-    for (const alias of aliases) {
-      const index = headers.findIndex((header) => header === alias);
-      if (index >= 0) return index;
-    }
-    return -1;
-  };
-  const valueAt = (row: string[], index: number) => (index >= 0 ? row[index] || "" : "");
-  const idIndex = indexFor(["id", "idtuteur", "tutorid"]);
-  const lastNameIndex = indexFor(["nomtuteur", "nom", "lastname"]);
-  const firstNameIndex = indexFor(["prenomtuteur", "prenom", "firstname"]);
-  const gradeIndex = indexFor(["grade"]);
-  const phoneIndex = indexFor(["telephone", "tel", "phone"]);
-  const dateIndex = indexFor(["date"]);
-  const schoolIndex = indexFor(["etablissement", "etablissements", "school"]);
-  const classIndex = indexFor(["classe", "class"]);
-  const timeSlotIndex = indexFor(["heureducreneau", "heurecreneau", "creneau", "horaire"]);
-  const sessionIdIndex = indexFor(["iddelaseance", "idseance", "sessionid"]);
-  const visitCountIndex = indexFor(["nombredevisites", "visites", "nbvisites"]);
-  const groupIndex = indexFor(["groupe", "group"]);
-  const studentCountIndex = indexFor(["nbreleves", "nbeleves", "nombreeleves"]);
-  const groupScoreIndex = indexFor(["scorepourlegroupe", "scoregroupe"]);
-  return dataRows
-    .map((row) =>
-      normalizeAvailabilityRow({
-        tutorId: valueAt(row, idIndex),
-        lastName: valueAt(row, lastNameIndex),
-        firstName: valueAt(row, firstNameIndex),
-        grade: valueAt(row, gradeIndex),
-        phone: valueAt(row, phoneIndex),
-        date: valueAt(row, dateIndex),
-        school: valueAt(row, schoolIndex),
-        className: valueAt(row, classIndex),
-        timeSlot: valueAt(row, timeSlotIndex),
-        sessionId: valueAt(row, sessionIdIndex),
-        visitCount: valueAt(row, visitCountIndex),
-        group: valueAt(row, groupIndex),
-        studentCount: valueAt(row, studentCountIndex),
-        groupScore: valueAt(row, groupScoreIndex),
-      }),
-    )
-    .filter((row) => row.tutorId && row.date);
 }
 
 function parseTutorTrackingCsv(value: string): TutorTrackingRecord[] {
@@ -2863,53 +2812,6 @@ export default function Home() {
     }
   }
 
-  async function saveAvailabilityImports(nextImports: AvailabilityImport[], message: string) {
-    setSaving(true);
-    setSyncError("");
-    const previousImports = availabilityImports;
-    const normalizedImports = nextImports
-      .map(normalizeAvailabilityImport)
-      .sort((a, b) => sortDateValue(b.importedAt) - sortDateValue(a.importedAt));
-    setAvailabilityImports(normalizedImports);
-    try {
-      const response = await fetch("/api/availability-imports", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imports: normalizedImports }),
-      });
-      const data = (await response.json()) as { imports?: Partial<AvailabilityImport>[]; error?: string; detail?: string };
-      if (!response.ok) throw new Error(data.detail || data.error || "save-availability-imports-failed");
-      const savedImports = Array.isArray(data.imports)
-        ? data.imports
-            .map(normalizeAvailabilityImport)
-            .sort((a, b) => sortDateValue(b.importedAt) - sortDateValue(a.importedAt))
-        : [];
-      setAvailabilityImports(savedImports);
-      const verifyResponse = await fetch("/api/availability-imports", { cache: "no-store" });
-      if (!verifyResponse.ok) throw new Error("verify-availability-imports-failed");
-      const verifyData = (await verifyResponse.json()) as { imports?: Partial<AvailabilityImport>[] };
-      const verifiedImports =
-        Array.isArray(verifyData.imports)
-          ? verifyData.imports
-              .map(normalizeAvailabilityImport)
-              .sort((a, b) => sortDateValue(b.importedAt) - sortDateValue(a.importedAt))
-          : [];
-      setAvailabilityImports(verifiedImports);
-      const expectedIds = new Set(normalizedImports.map((item) => item.id));
-      const verifiedIds = new Set(verifiedImports.map((item) => item.id));
-      const savedOnServer = normalizedImports.every((item) => verifiedIds.has(item.id)) || expectedIds.size === 0;
-      if (!savedOnServer) throw new Error("availability-imports-not-verified");
-      setToast(`${message} · sauvegardé sur Netlify`);
-    } catch (error) {
-      console.error(error);
-      setAvailabilityImports(previousImports);
-      setSyncError("Sauvegarde impossible, rechargez la page avant de continuer");
-      setToast(error instanceof Error ? `Import non sauvegardé : ${error.message}` : "Import de disponibilités non sauvegardé");
-    } finally {
-      setSaving(false);
-    }
-  }
-
   async function saveSchoolWatchlist(nextWatchlist: SchoolWatchItem[], message: string) {
     setSaving(true);
     setSyncError("");
@@ -3673,30 +3575,45 @@ export default function Home() {
 
   async function importAvailabilityFile(file: File | undefined) {
     if (!file) return;
+    setSaving(true);
+    setSyncError("");
     try {
       const text = await file.text();
-      const rows = parseAvailabilityCsv(text);
-      if (!rows.length) {
-        setToast("Aucune disponibilité valide à importer");
-        return;
-      }
-      const now = new Date().toISOString();
-      const nextImport = normalizeAvailabilityImport({
-        id: uid("availability"),
-        importedAt: now,
-        fileName: file.name || "disponibilites.csv",
-        rows,
-        rawCsv: text,
-        createdAt: now,
+      const response = await fetch("/api/availability-imports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileName: file.name || "disponibilites.csv", rawCsv: text }),
       });
+      const data = (await response.json()) as {
+        import?: Partial<AvailabilityImport>;
+        imports?: Partial<AvailabilityImport>[];
+        error?: string;
+        detail?: string;
+      };
+      if (!response.ok) throw new Error(data.detail || data.error || "import-availability-failed");
       const previousNewestId = availabilityImports[0]?.id || "";
-      await saveAvailabilityImports([nextImport, ...availabilityImports], "Import de disponibilités ajouté");
-      setAvailabilityRecentId(nextImport.id);
-      setAvailabilityReferenceId(previousNewestId || nextImport.id);
-      setAvailabilityDate(rows[0]?.date || availabilityDate);
+      const importedItem = data.import ? normalizeAvailabilityImport(data.import) : null;
+      const imports = Array.isArray(data.imports)
+        ? data.imports
+            .map(normalizeAvailabilityImport)
+            .sort((a, b) => sortDateValue(b.importedAt) - sortDateValue(a.importedAt))
+        : importedItem
+          ? [importedItem, ...availabilityImports]
+          : availabilityImports;
+      setAvailabilityImports(imports);
+      if (importedItem) {
+        setAvailabilityRecentId(importedItem.id);
+        setAvailabilityReferenceId(previousNewestId || importedItem.id);
+        setAvailabilityDate(importedItem.rows[0]?.date || availabilityDate);
+      }
       setAvailabilityView("new");
-    } catch {
-      setToast("Fichier CSV illisible");
+      setToast("Import de disponibilités ajouté · sauvegardé sur Netlify");
+    } catch (error) {
+      console.error(error);
+      setSyncError("Sauvegarde impossible, rechargez la page avant de continuer");
+      setToast(error instanceof Error ? `Import non sauvegardé : ${error.message}` : "Fichier CSV illisible");
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -3704,25 +3621,52 @@ export default function Home() {
     const importItem = availabilityImports.find((item) => item.id === importId);
     if (!importItem) return;
     if (!window.confirm(`Supprimer l'import "${importItem.fileName}" du ${formatJournalDate(importItem.importedAt)} ?`)) return;
-    const nextImports = availabilityImports.filter((item) => item.id !== importId);
-    await saveAvailabilityImports(nextImports, "Import de disponibilités supprimé");
-    if (availabilityRecentId === importId) setAvailabilityRecentId(nextImports[0]?.id || "");
-    if (availabilityReferenceId === importId) setAvailabilityReferenceId(nextImports[1]?.id || nextImports[0]?.id || "");
+    setSaving(true);
+    setSyncError("");
+    try {
+      const response = await fetch(`/api/availability-imports?id=${encodeURIComponent(importId)}`, { method: "DELETE" });
+      const data = (await response.json()) as { imports?: Partial<AvailabilityImport>[]; error?: string; detail?: string };
+      if (!response.ok) throw new Error(data.detail || data.error || "delete-availability-import-failed");
+      const nextImports = Array.isArray(data.imports)
+        ? data.imports
+            .map(normalizeAvailabilityImport)
+            .sort((a, b) => sortDateValue(b.importedAt) - sortDateValue(a.importedAt))
+        : availabilityImports.filter((item) => item.id !== importId);
+      setAvailabilityImports(nextImports);
+      if (availabilityRecentId === importId) setAvailabilityRecentId(nextImports[0]?.id || "");
+      if (availabilityReferenceId === importId) setAvailabilityReferenceId(nextImports[1]?.id || nextImports[0]?.id || "");
+      setToast("Import de disponibilités supprimé");
+    } catch (error) {
+      console.error(error);
+      setSyncError("Suppression impossible, rechargez la page avant de continuer");
+      setToast(error instanceof Error ? `Import non supprimé : ${error.message}` : "Import non supprimé");
+    } finally {
+      setSaving(false);
+    }
   }
 
-  function downloadAvailabilityOriginalCsv(importItem: AvailabilityImport) {
-    if (!importItem.rawCsv) {
+  async function downloadAvailabilityOriginalCsv(importItem: AvailabilityImport) {
+    if (!importItem.hasRawCsv && !importItem.rawCsv) {
       setToast("CSV original non disponible pour cet ancien import");
       return;
     }
-    const blob = new Blob([importItem.rawCsv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = importItem.fileName || `disponibilites-${importItem.importedAt.slice(0, 10)}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
-    setToast("CSV original téléchargé");
+    try {
+      const response = importItem.rawCsv
+        ? null
+        : await fetch(`/api/availability-imports?id=${encodeURIComponent(importItem.id)}&raw=1`, { cache: "no-store" });
+      if (response && !response.ok) throw new Error("csv-original-indisponible");
+      const rawCsv = importItem.rawCsv || (response ? await response.text() : "");
+      const blob = new Blob([rawCsv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = importItem.fileName || `disponibilites-${importItem.importedAt.slice(0, 10)}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+      setToast("CSV original téléchargé");
+    } catch {
+      setToast("CSV original indisponible");
+    }
   }
 
   function exportAvailabilityCategoryCsv() {
@@ -4514,14 +4458,14 @@ export default function Home() {
               <div key={item.id}>
                 <span>{importLabel(item)}</span>
                 <small>
-                  {item.rows.length} ligne(s) · {item.rawCsv ? "CSV original disponible" : "CSV original non disponible"}
+                  {item.rows.length} ligne(s) · {item.hasRawCsv || item.rawCsv ? "CSV original disponible" : "CSV original non disponible"}
                 </small>
                 <button
                   type="button"
                   className="text-button"
-                  onClick={() => downloadAvailabilityOriginalCsv(item)}
-                  disabled={!item.rawCsv}
-                  title={item.rawCsv ? "Télécharger le fichier CSV original" : "Ancien import sans CSV original sauvegardé"}
+                  onClick={() => void downloadAvailabilityOriginalCsv(item)}
+                  disabled={!item.hasRawCsv && !item.rawCsv}
+                  title={item.hasRawCsv || item.rawCsv ? "Télécharger le fichier CSV original" : "Ancien import sans CSV original sauvegardé"}
                 >
                   Télécharger CSV
                 </button>
