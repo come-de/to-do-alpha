@@ -4,11 +4,12 @@ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "re
 import EnrollmentComparison from "@/app/components/enrollment-comparison";
 import FilesHub from "@/app/components/files-hub";
 import TutorCoverageComparison from "@/app/components/tutor-coverage-comparison";
+import UnstaffedSessions from "@/app/components/unstaffed-sessions";
 
 type Status = "todo" | "progress" | "done";
 type Priority = "low" | "medium" | "high";
 type Density = "compact" | "comfortable";
-type AppMode = "tasks" | "recurring" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffing" | "watchlist" | "tutorReports" | "tutors" | "availability" | "enrollments" | "coverage" | "files";
+type AppMode = "tasks" | "recurring" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffing" | "watchlist" | "tutorReports" | "tutors" | "availability" | "enrollments" | "coverage" | "unstaffed" | "files";
 type ViewMode = "list" | "matrix";
 type DurationBucket = "short" | "medium" | "long" | "unset";
 type ObjectiveKind = "counter" | "qualitative";
@@ -391,6 +392,7 @@ const appModeSlugs: Record<AppMode, string> = {
   availability: "comparaison-dispos",
   enrollments: "comparaison-inscriptions",
   coverage: "couverture-tuteurs",
+  unstaffed: "seances-non-affectees",
   files: "fichiers",
 };
 
@@ -427,6 +429,10 @@ const appModeAliases: Record<string, AppMode> = {
   couverture: "coverage",
   "couverture-tuteurs": "coverage",
   affectations: "coverage",
+  "seances-non-affectees": "unstaffed",
+  "séances-non-affectées": "unstaffed",
+  "a-staffer": "unstaffed",
+  unstaffed: "unstaffed",
   fichiers: "files",
   files: "files",
   tutorreports: "tutorReports",
@@ -5331,6 +5337,8 @@ export default function Home() {
                       ? () => setAppMode("enrollments")
                     : appMode === "coverage"
                       ? () => setAppMode("coverage")
+                    : appMode === "unstaffed"
+                      ? () => setAppMode("unstaffed")
                     : appMode === "files"
                       ? () => setAppMode("files")
                     : appMode === "tutorReports"
@@ -5366,6 +5374,8 @@ export default function Home() {
                       ? "Comparer inscriptions"
                     : appMode === "coverage"
                       ? "Analyser la couverture"
+                    : appMode === "unstaffed"
+                      ? "Voir les séances"
                     : appMode === "files"
                       ? "Gérer les fichiers"
                     : appMode === "tutorReports"
@@ -5474,6 +5484,9 @@ export default function Home() {
             </button>
             <button className={appMode === "staffing" ? "active" : ""} onClick={() => setAppMode("staffing")}>
               <span className="tab-icon" aria-hidden="true">👥</span> Staffing <span className="tab-count">{staffingDays.length}</span>
+            </button>
+            <button className={appMode === "unstaffed" ? "active" : ""} onClick={() => setAppMode("unstaffed")}>
+              <span className="tab-icon" aria-hidden="true">📋</span> Séances non affectées
             </button>
             <button className={appMode === "tutors" ? "active" : ""} onClick={() => setAppMode("tutors")}>
               <span className="tab-icon" aria-hidden="true">👨‍🏫</span> Tuteurs <span className="tab-count">{tutorTrackingCounts.current}</span>
@@ -6042,7 +6055,8 @@ export default function Home() {
         : appMode === "availability" ? renderAvailabilityComparisonSection()
         : appMode === "enrollments" ? <EnrollmentComparison />
         : appMode === "coverage" ? <TutorCoverageComparison />
-        : appMode === "files" ? <FilesHub onOpen={(kind) => setAppMode(kind === "availability" ? "availability" : kind === "assignments" ? "coverage" : kind === "tutors" ? "tutors" : "enrollments")} />
+        : appMode === "unstaffed" ? <UnstaffedSessions />
+        : appMode === "files" ? <FilesHub onOpen={(kind) => setAppMode(kind === "availability" ? "availability" : kind === "assignments" ? "coverage" : kind === "upcomingSessions" ? "unstaffed" : kind === "tutors" ? "tutors" : "enrollments")} />
         : appMode === "tutorReports" ? renderTutorReportsSection()
         : appMode === "watchlist" ? <section className="task-panel">
           <div className="panel-heading">
