@@ -367,7 +367,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .availability-history h3 { margin: 0; color: var(--blue-title); font-size: 14px; }
 .availability-history p { margin: 3px 0 0; color: var(--muted); font-size: 11px; }
 .availability-history-list { display: grid; gap: 6px; max-height: 150px; overflow: auto; }
-.availability-history-list > div { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: center; border: 1px solid rgba(213,231,239,.72); border-radius: 9px; padding: 6px 8px; background: white; }
+.availability-history-list > div { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; gap: 8px; align-items: center; border: 1px solid rgba(213,231,239,.72); border-radius: 9px; padding: 6px 8px; background: white; }
 .availability-history-list span { min-width: 0; color: var(--blue-title); font-size: 11px; font-weight: 820; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .availability-history-list small { color: var(--muted); font-size: 10px; white-space: nowrap; }
 .availability-tabs { display: flex; align-items: center; gap: 6px; padding: 0 12px 10px; overflow-x: auto; }

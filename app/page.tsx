@@ -217,6 +217,7 @@ type AvailabilityImport = {
   importedAt: string;
   fileName: string;
   rows: AvailabilityRow[];
+  rawCsv: string;
   createdAt: string;
 };
 
@@ -1021,6 +1022,7 @@ function normalizeAvailabilityImport(raw: Partial<AvailabilityImport>): Availabi
     rows: Array.isArray(raw.rows)
       ? raw.rows.map(normalizeAvailabilityRow).filter((row) => row.tutorId && row.date)
       : [],
+    rawCsv: raw.rawCsv || "",
     createdAt: raw.createdAt || now,
   };
 }
@@ -2876,14 +2878,27 @@ export default function Home() {
       });
       if (!response.ok) throw new Error("save-availability-imports-failed");
       const data = (await response.json()) as { imports?: Partial<AvailabilityImport>[] };
-      setAvailabilityImports(
+      const savedImports = Array.isArray(data.imports)
+        ? data.imports
+            .map(normalizeAvailabilityImport)
+            .sort((a, b) => sortDateValue(b.importedAt) - sortDateValue(a.importedAt))
+        : [];
+      setAvailabilityImports(savedImports);
+      const verifyResponse = await fetch("/api/availability-imports", { cache: "no-store" });
+      if (!verifyResponse.ok) throw new Error("verify-availability-imports-failed");
+      const verifyData = (await verifyResponse.json()) as { imports?: Partial<AvailabilityImport>[] };
+      const verifiedImports =
         Array.isArray(data.imports)
-          ? data.imports
+          ? (Array.isArray(verifyData.imports) ? verifyData.imports : data.imports)
               .map(normalizeAvailabilityImport)
               .sort((a, b) => sortDateValue(b.importedAt) - sortDateValue(a.importedAt))
-          : [],
-      );
-      setToast(message);
+          : [];
+      setAvailabilityImports(verifiedImports);
+      const expectedIds = new Set(normalizedImports.map((item) => item.id));
+      const verifiedIds = new Set(verifiedImports.map((item) => item.id));
+      const savedOnServer = normalizedImports.every((item) => verifiedIds.has(item.id)) || expectedIds.size === 0;
+      if (!savedOnServer) throw new Error("availability-imports-not-verified");
+      setToast(`${message} · sauvegardé sur Netlify`);
     } catch {
       setSyncError("Sauvegarde impossible, rechargez la page avant de continuer");
       setToast("Import de disponibilités non sauvegardé");
@@ -3668,6 +3683,7 @@ export default function Home() {
         importedAt: now,
         fileName: file.name || "disponibilites.csv",
         rows,
+        rawCsv: text,
         createdAt: now,
       });
       const previousNewestId = availabilityImports[0]?.id || "";
@@ -3689,6 +3705,21 @@ export default function Home() {
     await saveAvailabilityImports(nextImports, "Import de disponibilités supprimé");
     if (availabilityRecentId === importId) setAvailabilityRecentId(nextImports[0]?.id || "");
     if (availabilityReferenceId === importId) setAvailabilityReferenceId(nextImports[1]?.id || nextImports[0]?.id || "");
+  }
+
+  function downloadAvailabilityOriginalCsv(importItem: AvailabilityImport) {
+    if (!importItem.rawCsv) {
+      setToast("CSV original non disponible pour cet ancien import");
+      return;
+    }
+    const blob = new Blob([importItem.rawCsv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = importItem.fileName || `disponibilites-${importItem.importedAt.slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    setToast("CSV original téléchargé");
   }
 
   function exportAvailabilityCategoryCsv() {
@@ -4479,7 +4510,18 @@ export default function Home() {
             {availabilityImports.map((item) => (
               <div key={item.id}>
                 <span>{importLabel(item)}</span>
-                <small>{item.rows.length} ligne(s)</small>
+                <small>
+                  {item.rows.length} ligne(s) · {item.rawCsv ? "CSV original disponible" : "CSV original non disponible"}
+                </small>
+                <button
+                  type="button"
+                  className="text-button"
+                  onClick={() => downloadAvailabilityOriginalCsv(item)}
+                  disabled={!item.rawCsv}
+                  title={item.rawCsv ? "Télécharger le fichier CSV original" : "Ancien import sans CSV original sauvegardé"}
+                >
+                  Télécharger CSV
+                </button>
                 <button type="button" className="text-button danger" onClick={() => void deleteAvailabilityImport(item.id)}>
                   Supprimer
                 </button>

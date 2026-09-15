@@ -210,6 +210,7 @@ export type AvailabilityImport = {
   importedAt: string;
   fileName: string;
   rows: AvailabilityRow[];
+  rawCsv: string;
   createdAt: string;
 };
 
@@ -841,6 +842,7 @@ export function sanitizeAvailabilityImport(raw: Record<string, unknown>): Availa
           .map(sanitizeAvailabilityRow)
           .filter((row) => row.tutorId && row.date)
       : [],
+    rawCsv: typeof raw.rawCsv === "string" ? raw.rawCsv : "",
     createdAt: cleanText(raw.createdAt) || now,
   };
 }
