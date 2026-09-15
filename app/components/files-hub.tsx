@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-type FileKind = "availability" | "assignments" | "upcomingSessions" | "enrollments" | "tutors";
+type FileKind = "availability" | "assignments" | "interests" | "upcomingSessions" | "enrollments" | "tutors";
 type StoredImport = {
   id: string;
   importedAt: string;
@@ -14,6 +14,7 @@ type StoredImport = {
 const fileConfig: Record<FileKind, { title: string; description: string; endpoint: string; icon: string; canUpload: boolean }> = {
   availability: { title: "Disponibilités des tuteurs", description: "Utilisées dans Comparaison dispos et Couverture tuteurs.", endpoint: "/api/availability-imports", icon: "📆", canUpload: true },
   assignments: { title: "Séances affectées", description: "Utilisées dans Couverture tuteurs.", endpoint: "/api/tutor-assignment-imports", icon: "🧩", canUpload: true },
+  interests: { title: "Intérêts tuteurs et candidats", description: "Croisés avec les séances non affectées.", endpoint: "/api/tutor-interest-imports", icon: "🙋", canUpload: true },
   upcomingSessions: { title: "Séances des semaines à venir", description: "Utilisées pour repérer les séances encore non affectées.", endpoint: "/api/upcoming-session-imports", icon: "📋", canUpload: true },
   enrollments: { title: "Inscriptions parents", description: "Utilisées dans Comparaison inscriptions.", endpoint: "/api/enrollment-imports", icon: "🎒", canUpload: true },
   tutors: { title: "Listes de tuteurs", description: "Imports datés utilisés dans l’onglet Tuteurs.", endpoint: "/api/tutor-tracking", icon: "👨‍🏫", canUpload: false },
@@ -25,7 +26,7 @@ function formatDate(value: string) {
 }
 
 export default function FilesHub({ onOpen }: { onOpen: (kind: FileKind) => void }) {
-  const [files, setFiles] = useState<Record<FileKind, StoredImport[]>>({ availability: [], assignments: [], upcomingSessions: [], enrollments: [], tutors: [] });
+  const [files, setFiles] = useState<Record<FileKind, StoredImport[]>>({ availability: [], assignments: [], interests: [], upcomingSessions: [], enrollments: [], tutors: [] });
   const [draftNames, setDraftNames] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -35,7 +36,7 @@ export default function FilesHub({ onOpen }: { onOpen: (kind: FileKind) => void 
       const kinds = Object.keys(fileConfig) as FileKind[];
       const responses = await Promise.all(kinds.map((kind) => fetch(kind === "tutors" ? fileConfig[kind].endpoint : `${fileConfig[kind].endpoint}?summary=1`, { cache: "no-store" })));
       const payloads = await Promise.all(responses.map((response) => response.json()));
-      const next = { availability: [], assignments: [], upcomingSessions: [], enrollments: [], tutors: [] } as Record<FileKind, StoredImport[]>;
+      const next = { availability: [], assignments: [], interests: [], upcomingSessions: [], enrollments: [], tutors: [] } as Record<FileKind, StoredImport[]>;
       responses.forEach((response, index) => {
         if (!response.ok) throw new Error(payloads[index]?.detail || payloads[index]?.error || "Chargement impossible");
         const kind = kinds[index];

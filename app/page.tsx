@@ -6056,7 +6056,7 @@ export default function Home() {
         : appMode === "enrollments" ? <EnrollmentComparison />
         : appMode === "coverage" ? <TutorCoverageComparison />
         : appMode === "unstaffed" ? <UnstaffedSessions />
-        : appMode === "files" ? <FilesHub onOpen={(kind) => setAppMode(kind === "availability" ? "availability" : kind === "assignments" ? "coverage" : kind === "upcomingSessions" ? "unstaffed" : kind === "tutors" ? "tutors" : "enrollments")} />
+        : appMode === "files" ? <FilesHub onOpen={(kind) => setAppMode(kind === "availability" ? "availability" : kind === "assignments" ? "coverage" : kind === "interests" || kind === "upcomingSessions" ? "unstaffed" : kind === "tutors" ? "tutors" : "enrollments")} />
         : appMode === "tutorReports" ? renderTutorReportsSection()
         : appMode === "watchlist" ? <section className="task-panel">
           <div className="panel-heading">

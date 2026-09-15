@@ -263,6 +263,32 @@ export type UpcomingSessionImport = {
   createdAt: string;
 };
 
+export type TutorInterestRow = {
+  personId: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  sessionId: string;
+  date: string;
+  school: string;
+  className: string;
+  timeSlot: string;
+  group: string;
+  studentCount: string;
+  validated: boolean;
+  declaredAt: string;
+};
+
+export type TutorInterestImport = {
+  id: string;
+  importedAt: string;
+  displayName: string;
+  fileName: string;
+  sourceRowCount: number;
+  rows: TutorInterestRow[];
+  createdAt: string;
+};
+
 export type TutorCoverageNoteStatus = "to-check" | "unavailable" | "confirmed" | "contacted";
 
 export type TutorCoverageNote = {
@@ -394,6 +420,7 @@ export const TUTOR_TRACKING_KEY = "tutor-tracking.json";
 export const AVAILABILITY_IMPORTS_KEY = "availability-imports.json";
 export const TUTOR_ASSIGNMENT_IMPORTS_KEY = "tutor-assignment-imports.json";
 export const UPCOMING_SESSION_IMPORTS_KEY = "upcoming-session-imports.json";
+export const TUTOR_INTEREST_IMPORTS_KEY = "tutor-interest-imports.json";
 export const TUTOR_COVERAGE_NOTES_KEY = "tutor-coverage-notes.json";
 export const ENROLLMENT_IMPORTS_KEY = "enrollment-imports.json";
 export const SCHOOL_WATCHLIST_KEY = "school-watchlist.json";
@@ -415,6 +442,7 @@ const memory = globalThis as typeof globalThis & {
   __petitSuiviAvailabilityImports?: AvailabilityImport[];
   __petitSuiviTutorAssignmentImports?: TutorAssignmentImport[];
   __petitSuiviUpcomingSessionImports?: UpcomingSessionImport[];
+  __petitSuiviTutorInterestImports?: TutorInterestImport[];
   __petitSuiviTutorCoverageNotes?: TutorCoverageNote[];
   __petitSuiviEnrollmentImports?: EnrollmentImport[];
   __petitSuiviSchoolWatchlist?: SchoolWatchItem[];
@@ -1242,6 +1270,88 @@ export function sanitizeUpcomingSessionImport(raw: Record<string, unknown>): Upc
     sourceSessionCount: Math.max(0, Math.round(Number(raw.sourceSessionCount) || 0)),
     rows: Array.isArray(raw.rows)
       ? raw.rows.filter((row): row is Record<string, unknown> => Boolean(row && typeof row === "object")).map(sanitizeUpcomingSessionRow).filter((row) => row.sessionId && row.date && row.school)
+      : [],
+    createdAt: cleanText(raw.createdAt) || now,
+  };
+}
+
+export function sanitizeTutorInterestRow(raw: Record<string, unknown>): TutorInterestRow {
+  return {
+    personId: cleanText(raw.personId),
+    firstName: cleanText(raw.firstName),
+    lastName: cleanText(raw.lastName),
+    phone: cleanText(raw.phone),
+    sessionId: cleanText(raw.sessionId),
+    date: cleanText(raw.date),
+    school: cleanText(raw.school),
+    className: cleanText(raw.className),
+    timeSlot: cleanText(raw.timeSlot),
+    group: cleanText(raw.group),
+    studentCount: cleanText(raw.studentCount),
+    validated: raw.validated === true || ["oui", "yes", "true", "1", "valide", "validé"].includes(cleanText(raw.validated).toLocaleLowerCase("fr")),
+    declaredAt: cleanText(raw.declaredAt),
+  };
+}
+
+export function parseTutorInterestsCsv(value: string) {
+  const csvRows = parseCsvRows(value).filter((row) => row.some(Boolean));
+  if (!csvRows.length) return { rows: [] as TutorInterestRow[], sourceRowCount: 0 };
+  const headers = csvRows[0].map(normalizedHeader);
+  const indexFor = (aliases: string[]) => {
+    for (const alias of aliases) {
+      const index = headers.findIndex((header) => header === alias);
+      if (index >= 0) return index;
+    }
+    return -1;
+  };
+  const valueAt = (row: string[], index: number) => (index >= 0 ? row[index] || "" : "");
+  const personIdIndex = indexFor(["idtuteurcandidat", "idcandidat", "idtuteur", "id"]);
+  const lastNameIndex = indexFor(["nom", "nomtuteur"]);
+  const firstNameIndex = indexFor(["prenom", "prenomtuteur"]);
+  const phoneIndex = indexFor(["telephone", "numerodetelephone"]);
+  const sessionIdIndex = indexFor(["seanceid", "idseance", "iddelaseance"]);
+  const dateIndex = indexFor(["dateseance", "date"]);
+  const schoolIndex = indexFor(["etablissement", "ecole"]);
+  const classIndex = indexFor(["classe"]);
+  const timeSlotIndex = indexFor(["heureducreneau", "horaire", "creneau"]);
+  const groupIndex = indexFor(["groupe"]);
+  const studentCountIndex = indexFor(["nombreeleves", "nbreleves"]);
+  const validatedIndex = indexFor(["valide", "validation"]);
+  const createdAtIndex = indexFor(["datedecreation", "creation"]);
+  if (personIdIndex < 0 || sessionIdIndex < 0 || dateIndex < 0) {
+    throw new Error("Colonnes ID tuteur/candidat, Séance ID ou Date séance introuvables dans le CSV d’intérêts");
+  }
+  const dataRows = csvRows.slice(1);
+  return {
+    sourceRowCount: dataRows.length,
+    rows: dataRows.map((row) => sanitizeTutorInterestRow({
+      personId: valueAt(row, personIdIndex),
+      lastName: valueAt(row, lastNameIndex),
+      firstName: valueAt(row, firstNameIndex),
+      phone: valueAt(row, phoneIndex),
+      sessionId: valueAt(row, sessionIdIndex),
+      date: valueAt(row, dateIndex),
+      school: valueAt(row, schoolIndex),
+      className: valueAt(row, classIndex),
+      timeSlot: valueAt(row, timeSlotIndex),
+      group: valueAt(row, groupIndex),
+      studentCount: valueAt(row, studentCountIndex),
+      validated: valueAt(row, validatedIndex),
+      declaredAt: valueAt(row, createdAtIndex),
+    })).filter((row) => row.personId && row.sessionId && row.date),
+  };
+}
+
+export function sanitizeTutorInterestImport(raw: Record<string, unknown>): TutorInterestImport {
+  const now = new Date().toISOString();
+  return {
+    id: cleanText(raw.id) || crypto.randomUUID(),
+    importedAt: cleanText(raw.importedAt) || now,
+    displayName: cleanText(raw.displayName) || cleanText(raw.fileName) || "Intérêts tuteurs et candidats",
+    fileName: cleanText(raw.fileName) || "interets-tuteurs-candidats.csv",
+    sourceRowCount: Math.max(0, Math.round(Number(raw.sourceRowCount) || 0)),
+    rows: Array.isArray(raw.rows)
+      ? raw.rows.filter((row): row is Record<string, unknown> => Boolean(row && typeof row === "object")).map(sanitizeTutorInterestRow).filter((row) => row.personId && row.sessionId && row.date)
       : [],
     createdAt: cleanText(raw.createdAt) || now,
   };
@@ -2104,6 +2214,81 @@ export async function deleteUpcomingSessionImportById(id: string) {
   const existing = await readUpcomingSessionIndex();
   await store.setJSON(UPCOMING_SESSION_IMPORTS_KEY, existing.filter((item) => item.id !== id).map((item) => ({ ...item, rows: [] })));
   await store.delete(upcomingSessionRowsKey(id));
+}
+
+function tutorInterestRowsKey(id: string) {
+  return `tutor-interest-imports/${id}.rows.json`;
+}
+
+async function readTutorInterestIndex() {
+  const store = taskStore();
+  const imports = await store.get(TUTOR_INTEREST_IMPORTS_KEY, { type: "json", consistency: "strong" });
+  return Array.isArray(imports)
+    ? imports.filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object")).map(sanitizeTutorInterestImport).sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt))
+    : [];
+}
+
+export async function readTutorInterestImportSummaries() {
+  try {
+    return (await readTutorInterestIndex()).map((item) => ({ ...item, rows: [] }));
+  } catch (error) {
+    if (!canUseMemoryFallback()) throw error;
+    return (memory.__petitSuiviTutorInterestImports ?? []).map((item) => ({ ...item, rows: [] }));
+  }
+}
+
+export async function readTutorInterestImports() {
+  try {
+    const store = taskStore();
+    const imports = await readTutorInterestIndex();
+    const hydrated = await Promise.all(imports.map(async (item) => {
+      if (item.rows.length) return item;
+      const rows = await store.get(tutorInterestRowsKey(item.id), { type: "json", consistency: "strong" });
+      return { ...item, rows: Array.isArray(rows) ? rows.filter((row): row is Record<string, unknown> => Boolean(row && typeof row === "object")).map(sanitizeTutorInterestRow).filter((row) => row.personId && row.sessionId && row.date) : [] };
+    }));
+    return hydrated.sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt));
+  } catch (error) {
+    if (!canUseMemoryFallback()) throw error;
+    return memory.__petitSuiviTutorInterestImports ?? [];
+  }
+}
+
+export async function createTutorInterestImportFromCsv(input: { fileName: string; rawCsv: string }) {
+  const now = new Date().toISOString();
+  const parsed = parseTutorInterestsCsv(input.rawCsv);
+  if (!parsed.rows.length) throw new Error("Aucune déclaration d’intérêt valide dans ce CSV");
+  const nextImport = sanitizeTutorInterestImport({
+    id: crypto.randomUUID(), importedAt: now,
+    displayName: input.fileName.replace(/\.[^.]+$/, "") || "Intérêts tuteurs et candidats",
+    fileName: input.fileName || "interets-tuteurs-candidats.csv",
+    sourceRowCount: parsed.sourceRowCount, rows: parsed.rows, createdAt: now,
+  });
+  try {
+    const store = taskStore();
+    await store.setJSON(tutorInterestRowsKey(nextImport.id), nextImport.rows);
+    const existing = await readTutorInterestIndex();
+    await store.setJSON(TUTOR_INTEREST_IMPORTS_KEY, [{ ...nextImport, rows: [] }, ...existing.filter((item) => item.id !== nextImport.id).map((item) => ({ ...item, rows: [] }))]);
+  } catch (error) {
+    if (!canUseMemoryFallback()) throw error;
+    memory.__petitSuiviTutorInterestImports = [nextImport, ...(memory.__petitSuiviTutorInterestImports ?? [])];
+  }
+  return nextImport;
+}
+
+export async function updateTutorInterestImportName(id: string, displayName: string) {
+  const store = taskStore();
+  const existing = await readTutorInterestIndex();
+  if (!existing.some((item) => item.id === id)) throw new Error("Import introuvable");
+  const cleanedName = cleanText(displayName);
+  if (!cleanedName) throw new Error("Le nom de l’import est obligatoire");
+  await store.setJSON(TUTOR_INTEREST_IMPORTS_KEY, existing.map((item) => item.id === id ? { ...item, displayName: cleanedName, rows: [] } : { ...item, rows: [] }));
+}
+
+export async function deleteTutorInterestImportById(id: string) {
+  const store = taskStore();
+  const existing = await readTutorInterestIndex();
+  await store.setJSON(TUTOR_INTEREST_IMPORTS_KEY, existing.filter((item) => item.id !== id).map((item) => ({ ...item, rows: [] })));
+  await store.delete(tutorInterestRowsKey(id));
 }
 
 export async function readTutorCoverageNotes() {
