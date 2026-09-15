@@ -14,7 +14,12 @@ function json(data: unknown, status = 200) {
 }
 
 export async function GET() {
-  return json({ imports: await readAvailabilityImports() });
+  try {
+    return json({ imports: await readAvailabilityImports() });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to load availability imports";
+    return json({ error: "Unable to load availability imports", detail: message }, 500);
+  }
 }
 
 export async function PUT(request: Request) {

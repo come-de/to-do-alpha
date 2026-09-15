@@ -372,6 +372,10 @@ export function taskStore() {
   return getStore({ name: STORE_NAME, consistency: "strong" });
 }
 
+function canUseMemoryFallback() {
+  return process.env.NODE_ENV !== "production" && process.env.NETLIFY !== "true";
+}
+
 export function publicPerson(person: Person): PublicPerson {
   const { email: _email, ...rest } = person;
   return { ...rest, hasEmail: Boolean(_email) };
@@ -1334,7 +1338,8 @@ export async function readAvailabilityImports() {
           .map(sanitizeAvailabilityImport)
           .sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt))
       : [];
-  } catch {
+  } catch (error) {
+    if (!canUseMemoryFallback()) throw error;
     return memory.__petitSuiviAvailabilityImports ?? [];
   }
 }
@@ -1345,7 +1350,7 @@ export async function writeAvailabilityImports(imports: AvailabilityImport[]) {
     const store = taskStore();
     await store.setJSON(AVAILABILITY_IMPORTS_KEY, sanitizedImports);
   } catch (error) {
-    if (process.env.NETLIFY === "true") throw error;
+    if (!canUseMemoryFallback()) throw error;
     memory.__petitSuiviAvailabilityImports = sanitizedImports;
   }
 }

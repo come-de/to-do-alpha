@@ -1954,8 +1954,8 @@ export default function Home() {
   const loadAvailabilityImports = useCallback(async () => {
     try {
       const response = await fetch("/api/availability-imports", { cache: "no-store" });
-      if (!response.ok) throw new Error("load-availability-imports-failed");
-      const data = (await response.json()) as { imports?: Partial<AvailabilityImport>[] };
+      const data = (await response.json()) as { imports?: Partial<AvailabilityImport>[]; error?: string; detail?: string };
+      if (!response.ok) throw new Error(data.detail || data.error || "load-availability-imports-failed");
       const imports = Array.isArray(data.imports)
         ? data.imports
             .map(normalizeAvailabilityImport)
@@ -1973,8 +1973,8 @@ export default function Home() {
             : imports[0].rows[0]?.date || current,
         );
       }
-    } catch {
-      setToast("Imports de disponibilités indisponibles");
+    } catch (error) {
+      setToast(error instanceof Error ? `Historique dispos indisponible : ${error.message}` : "Imports de disponibilités indisponibles");
     }
   }, []);
 
@@ -2866,6 +2866,7 @@ export default function Home() {
   async function saveAvailabilityImports(nextImports: AvailabilityImport[], message: string) {
     setSaving(true);
     setSyncError("");
+    const previousImports = availabilityImports;
     const normalizedImports = nextImports
       .map(normalizeAvailabilityImport)
       .sort((a, b) => sortDateValue(b.importedAt) - sortDateValue(a.importedAt));
@@ -2901,6 +2902,7 @@ export default function Home() {
       setToast(`${message} · sauvegardé sur Netlify`);
     } catch (error) {
       console.error(error);
+      setAvailabilityImports(previousImports);
       setSyncError("Sauvegarde impossible, rechargez la page avant de continuer");
       setToast(error instanceof Error ? `Import non sauvegardé : ${error.message}` : "Import de disponibilités non sauvegardé");
     } finally {
