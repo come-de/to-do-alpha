@@ -26,8 +26,10 @@ export async function PUT(request: Request) {
       .map(sanitizeAvailabilityImport)
       .sort((a, b) => new Date(b.importedAt).getTime() - new Date(a.importedAt).getTime());
     await writeAvailabilityImports(imports);
-    return json({ imports });
-  } catch {
-    return json({ error: "Unable to save availability imports" }, 500);
+    const verifiedImports = await readAvailabilityImports();
+    return json({ imports: verifiedImports });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to save availability imports";
+    return json({ error: "Unable to save availability imports", detail: message }, 500);
   }
 }

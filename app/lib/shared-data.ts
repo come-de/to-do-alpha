@@ -1327,7 +1327,7 @@ export async function writeTutorTracking(tracking: TutorTrackingData) {
 export async function readAvailabilityImports() {
   try {
     const store = taskStore();
-    const imports = await store.get(AVAILABILITY_IMPORTS_KEY, { type: "json" });
+    const imports = await store.get(AVAILABILITY_IMPORTS_KEY, { type: "json", consistency: "strong" });
     return Array.isArray(imports)
       ? imports
           .filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object"))
@@ -1344,7 +1344,8 @@ export async function writeAvailabilityImports(imports: AvailabilityImport[]) {
   try {
     const store = taskStore();
     await store.setJSON(AVAILABILITY_IMPORTS_KEY, sanitizedImports);
-  } catch {
+  } catch (error) {
+    if (process.env.NETLIFY === "true") throw error;
     memory.__petitSuiviAvailabilityImports = sanitizedImports;
   }
 }

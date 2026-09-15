@@ -2876,8 +2876,8 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imports: normalizedImports }),
       });
-      if (!response.ok) throw new Error("save-availability-imports-failed");
-      const data = (await response.json()) as { imports?: Partial<AvailabilityImport>[] };
+      const data = (await response.json()) as { imports?: Partial<AvailabilityImport>[]; error?: string; detail?: string };
+      if (!response.ok) throw new Error(data.detail || data.error || "save-availability-imports-failed");
       const savedImports = Array.isArray(data.imports)
         ? data.imports
             .map(normalizeAvailabilityImport)
@@ -2888,8 +2888,8 @@ export default function Home() {
       if (!verifyResponse.ok) throw new Error("verify-availability-imports-failed");
       const verifyData = (await verifyResponse.json()) as { imports?: Partial<AvailabilityImport>[] };
       const verifiedImports =
-        Array.isArray(data.imports)
-          ? (Array.isArray(verifyData.imports) ? verifyData.imports : data.imports)
+        Array.isArray(verifyData.imports)
+          ? verifyData.imports
               .map(normalizeAvailabilityImport)
               .sort((a, b) => sortDateValue(b.importedAt) - sortDateValue(a.importedAt))
           : [];
@@ -2899,9 +2899,10 @@ export default function Home() {
       const savedOnServer = normalizedImports.every((item) => verifiedIds.has(item.id)) || expectedIds.size === 0;
       if (!savedOnServer) throw new Error("availability-imports-not-verified");
       setToast(`${message} · sauvegardé sur Netlify`);
-    } catch {
+    } catch (error) {
+      console.error(error);
       setSyncError("Sauvegarde impossible, rechargez la page avant de continuer");
-      setToast("Import de disponibilités non sauvegardé");
+      setToast(error instanceof Error ? `Import non sauvegardé : ${error.message}` : "Import de disponibilités non sauvegardé");
     } finally {
       setSaving(false);
     }
