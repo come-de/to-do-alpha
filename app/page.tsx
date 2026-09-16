@@ -1779,6 +1779,8 @@ export default function Home() {
   const [schoolQuery, setSchoolQuery] = useState("");
   const [schoolFilter, setSchoolFilter] = useState<SchoolFilter>("all");
   const [schoolAssignmentFilter, setSchoolAssignmentFilter] = useState<"all" | "unassigned" | Exclude<SchoolPortfolioOwner, "">>("all");
+  const [schoolAssignmentPaste, setSchoolAssignmentPaste] = useState("");
+  const [schoolAssignmentImportReport, setSchoolAssignmentImportReport] = useState<{ matched: number; changed: number; duplicates: number; invalid: number; unmatched: string[] } | null>(null);
   const [selectedSchoolId, setSelectedSchoolId] = useState<string | null>(null);
   const [tutorReportDate, setTutorReportDate] = useState(new Date().toISOString().slice(0, 10));
   const [tutorReportStartDate, setTutorReportStartDate] = useState(`${new Date().getFullYear()}-01-01`);
@@ -2976,6 +2978,57 @@ export default function Home() {
       schools.map((school) => school.id === schoolId ? { ...school, portfolioOwner, updatedAt: new Date().toISOString() } : school),
       portfolioOwner ? `Établissement attribué à ${schoolPortfolioOwnerLabels[portfolioOwner]}` : "Attribution retirée",
     );
+  }
+
+  function importSchoolAssignments(text: string) {
+    const assignments = new Map<string, { name: string; owner: Exclude<SchoolPortfolioOwner, ""> }>();
+    let duplicates = 0;
+    let invalid = 0;
+    text.split(/\r?\n/).forEach((line) => {
+      const trimmed = line.trim();
+      if (!trimmed) return;
+      const match = trimmed.match(/^(.*?)\s+(pierre|julie|kelly)@etudealpha\.fr\s*$/i);
+      if (!match) {
+        invalid += 1;
+        return;
+      }
+      const name = match[1].trim();
+      const owner = match[2].toLocaleLowerCase("fr") as Exclude<SchoolPortfolioOwner, "">;
+      const key = normalizedSchoolLookupName(name);
+      if (!key) {
+        invalid += 1;
+        return;
+      }
+      if (assignments.has(key)) duplicates += 1;
+      assignments.set(key, { name, owner });
+    });
+    if (!assignments.size) {
+      setSchoolAssignmentImportReport({ matched: 0, changed: 0, duplicates, invalid, unmatched: [] });
+      setToast("Aucune attribution reconnue dans le texte");
+      return;
+    }
+    const knownNames = new Set(schools.map((school) => normalizedSchoolLookupName(school.name)));
+    const unmatched = Array.from(assignments.entries()).filter(([key]) => !knownNames.has(key)).map(([, item]) => item.name);
+    let matched = 0;
+    let changed = 0;
+    const now = new Date().toISOString();
+    const nextSchools = schools.map((school) => {
+      const assignment = assignments.get(normalizedSchoolLookupName(school.name));
+      if (!assignment) return school;
+      matched += 1;
+      if (school.portfolioOwner === assignment.owner) return school;
+      changed += 1;
+      return { ...school, portfolioOwner: assignment.owner, updatedAt: now };
+    });
+    setSchoolAssignmentImportReport({ matched, changed, duplicates, invalid, unmatched });
+    void saveSchools(nextSchools, `${changed} attribution${changed > 1 ? "s" : ""} préremplie${changed > 1 ? "s" : ""} · ${matched} établissement${matched > 1 ? "s" : ""} reconnu${matched > 1 ? "s" : ""}`);
+  }
+
+  async function importSchoolAssignmentsFile(file: File | undefined) {
+    if (!file) return;
+    const text = await file.text();
+    setSchoolAssignmentPaste(text);
+    importSchoolAssignments(text);
   }
 
   async function saveStudentHistory(nextHistory: StudentHistoryYear[], message: string) {
@@ -6307,6 +6360,22 @@ export default function Home() {
             <div className="school-assignment-filters">
               {(["all", "unassigned", "kelly", "pierre", "julie"] as const).map((owner) => <button type="button" className={schoolAssignmentFilter === owner ? "active" : ""} onClick={() => setSchoolAssignmentFilter(owner)} key={owner}>{owner === "all" ? "Tous" : owner === "unassigned" ? "Non attribués" : schoolPortfolioOwnerLabels[owner]}</button>)}
             </div>
+            <details className="school-assignment-importer">
+              <summary>Importer ou coller une répartition</summary>
+              <div>
+                <p>Format attendu : <code>Nom de l’établissement [tabulation] pierre@etudealpha.fr</code>. Les établissements non reconnus ne sont pas modifiés.</p>
+                <textarea rows={5} value={schoolAssignmentPaste} onChange={(event) => setSchoolAssignmentPaste(event.target.value)} placeholder={"Lyon - Saint Louis Saint Bruno\tpierre@etudealpha.fr"} />
+                <div className="school-assignment-import-actions">
+                  <label className="button quiet">Choisir un fichier<input type="file" accept=".txt,.csv,text/plain,text/csv" onChange={(event) => { void importSchoolAssignmentsFile(event.target.files?.[0]); event.currentTarget.value = ""; }} /></label>
+                  <button type="button" className="button primary" onClick={() => importSchoolAssignments(schoolAssignmentPaste)} disabled={saving || !schoolAssignmentPaste.trim()}>Préremplir les attributions</button>
+                </div>
+                {schoolAssignmentImportReport ? <div className="school-assignment-import-report">
+                  <strong>{schoolAssignmentImportReport.matched} reconnu{schoolAssignmentImportReport.matched > 1 ? "s" : ""} · {schoolAssignmentImportReport.changed} modifié{schoolAssignmentImportReport.changed > 1 ? "s" : ""}</strong>
+                  <span>{schoolAssignmentImportReport.duplicates} doublon{schoolAssignmentImportReport.duplicates > 1 ? "s" : ""} ignoré{schoolAssignmentImportReport.duplicates > 1 ? "s" : ""} · {schoolAssignmentImportReport.invalid} ligne{schoolAssignmentImportReport.invalid > 1 ? "s" : ""} invalide{schoolAssignmentImportReport.invalid > 1 ? "s" : ""}</span>
+                  {schoolAssignmentImportReport.unmatched.length ? <small>Non retrouvés ({schoolAssignmentImportReport.unmatched.length}) : {schoolAssignmentImportReport.unmatched.slice(0, 8).join(" · ")}{schoolAssignmentImportReport.unmatched.length > 8 ? ` · +${schoolAssignmentImportReport.unmatched.length - 8}` : ""}</small> : null}
+                </div> : null}
+              </div>
+            </details>
             <div className="school-assignment-list">
               {assignmentSchools.map((school) => <div className={!school.portfolioOwner ? "is-unassigned" : ""} key={school.id}>
                 <div><SchoolAdminLink schoolId={school.externalId}>{school.name}</SchoolAdminLink><small>{[school.city, school.externalId ? `ID ${school.externalId}` : ""].filter(Boolean).join(" · ") || "Informations non renseignées"}</small></div>
