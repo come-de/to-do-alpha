@@ -26,7 +26,14 @@ type SessionImport = {
   fileName: string;
   sourceRowCount: number;
   sourceSessionCount: number;
+  schools?: UpcomingSessionSchool[];
   rows: UpcomingSession[];
+};
+
+type UpcomingSessionSchool = {
+  schoolId: string;
+  name: string;
+  categories: string[];
 };
 
 type TutorInterest = {
@@ -160,6 +167,7 @@ export default function UnstaffedSessions() {
   const [shownSingleStudentAlphaDates, setShownSingleStudentAlphaDates] = useState<string[]>([]);
   const [exclusions, setExclusions] = useState<UnstaffedExclusions>({ sessionIds: [], sourceKeys: [], updatedAt: "" });
   const [schoolAssignments, setSchoolAssignments] = useState<SchoolAssignment[]>([]);
+  const [deselectedNewSchoolIds, setDeselectedNewSchoolIds] = useState<string[]>([]);
   const [schoolOwnerFilter, setSchoolOwnerFilter] = useState<SchoolOwnerFilter>("all");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -210,6 +218,12 @@ export default function UnstaffedSessions() {
     byName: new Map(schoolAssignments.map((school) => [normalizedSchoolName(school.name), school.portfolioOwner])),
   }), [schoolAssignments]);
   const ownerForSession = useCallback((row: UpcomingSession): SchoolPortfolioOwner => schoolOwnerIndexes.byId.get(row.schoolId) ?? schoolOwnerIndexes.byName.get(normalizedSchoolName(row.school)) ?? "", [schoolOwnerIndexes]);
+  const newSchoolCandidates = useMemo(() => {
+    const existingIds = new Set(schoolAssignments.map((school) => school.externalId).filter(Boolean));
+    return (activeImport?.schools ?? []).filter((school) => school.schoolId && !existingIds.has(school.schoolId));
+  }, [activeImport, schoolAssignments]);
+  const schoolsWithoutId = useMemo(() => (activeImport?.schools ?? []).filter((school) => !school.schoolId), [activeImport]);
+  const selectedNewSchoolIds = useMemo(() => newSchoolCandidates.map((school) => school.schoolId).filter((schoolId) => !deselectedNewSchoolIds.includes(schoolId)), [deselectedNewSchoolIds, newSchoolCandidates]);
   const filteredRowsBeforeSingleStudentRule = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase("fr");
     return (activeImport?.rows ?? []).filter((row) => {
@@ -283,14 +297,39 @@ export default function UnstaffedSessions() {
     try {
       const rawCsv = await file.text();
       const response = await fetch(`/api/upcoming-session-imports?fileName=${encodeURIComponent(file.name)}`, { method: "POST", headers: { "Content-Type": "text/csv;charset=utf-8" }, body: rawCsv });
-      const data = await response.json() as { import?: SessionImport; error?: string; detail?: string };
+      const data = await response.json() as { import?: SessionImport; schoolDetection?: { newCount: number; existingCount: number; missingIdCount: number }; error?: string; detail?: string };
       if (!response.ok) throw new Error(data.detail || data.error || "Import impossible");
       await load(true);
       if (data.import?.id) setSelectedImportId(data.import.id);
+      setDeselectedNewSchoolIds([]);
       setSelectedDate("all");
-      setMessage(`${data.import?.rows.length ?? 0} séances non affectées sauvegardées. Aucune donnée nominative d’élève n’a été conservée.`);
+      const detection = data.schoolDetection;
+      setMessage(`${data.import?.rows.length ?? 0} séances non affectées sauvegardées${detection ? ` · ${detection.newCount} nouvel${detection.newCount > 1 ? "s" : ""} établissement${detection.newCount > 1 ? "s" : ""} à valider` : ""}. Aucune donnée nominative d’élève n’a été conservée.`);
     } catch (error) {
       setMessage(error instanceof Error ? `Import non sauvegardé : ${error.message}` : "Import non sauvegardé");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function createSelectedSchools() {
+    const selected = newSchoolCandidates.filter((school) => selectedNewSchoolIds.includes(school.schoolId));
+    if (!selected.length || saving) return;
+    setSaving(true);
+    setMessage("Création des établissements sélectionnés…");
+    try {
+      const response = await fetch("/api/schools", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ schools: selected.map((school) => ({ externalId: school.schoolId, name: school.name, categories: school.categories })) }),
+      });
+      const data = await response.json() as { schools?: SchoolAssignment[]; created?: SchoolAssignment[]; skippedIds?: string[]; error?: string; detail?: string };
+      if (!response.ok) throw new Error(data.detail || data.error || "Création impossible");
+      setSchoolAssignments(data.schools ?? schoolAssignments);
+      const createdCount = data.created?.length ?? 0;
+      setMessage(`${createdCount} établissement${createdCount > 1 ? "s" : ""} créé${createdCount > 1 ? "s" : ""} dans le CRM, sans attribution${data.skippedIds?.length ? ` · ${data.skippedIds.length} déjà existant${data.skippedIds.length > 1 ? "s" : ""}` : ""}`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Création impossible");
     } finally {
       setSaving(false);
     }
@@ -402,13 +441,29 @@ export default function UnstaffedSessions() {
 
     <div className="unstaffed-toolbar">
       <label className="import-button">Importer le fichier CSV<input type="file" accept=".csv,text/csv" disabled={saving} onChange={(event) => { void upload(event.target.files?.[0]); event.currentTarget.value = ""; }} /></label>
-      <label><span>Fichier analysé</span><select value={selectedImportId} onChange={(event) => { setSelectedImportId(event.target.value); setSelectedDate("all"); setShownSingleStudentAlphaDates([]); }}><option value="">Aucun fichier</option>{imports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {formatImportDate(item.importedAt)}</option>)}</select></label>
+      <label><span>Fichier analysé</span><select value={selectedImportId} onChange={(event) => { setSelectedImportId(event.target.value); setSelectedDate("all"); setShownSingleStudentAlphaDates([]); setDeselectedNewSchoolIds([]); }}><option value="">Aucun fichier</option>{imports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {formatImportDate(item.importedAt)}</option>)}</select></label>
       <div className="unstaffed-category-filter"><span>Types de séances</span><div>{(Object.keys(categoryLabels) as SessionCategoryKey[]).map((item) => <button type="button" className={selectedCategories.includes(item) ? "active" : ""} onClick={() => toggleCategory(item)} key={item}>{categoryLabels[item]}</button>)}</div></div>
       <div className="unstaffed-owner-filter"><span>Responsable établissement</span><div>{(["unassigned", "kelly", "pierre", "julie", "all"] as const).map((owner) => <button type="button" className={schoolOwnerFilter === owner ? "active" : ""} onClick={() => setSchoolOwnerFilter(owner)} key={owner}>{owner === "all" ? "Tous" : owner === "unassigned" ? "Non attribués" : schoolOwnerLabels[owner]}</button>)}</div></div>
       <label className="unstaffed-search"><span>Recherche</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Établissement, classe, groupe…" /></label>
       <button type="button" className="button quiet" onClick={exportCsv} disabled={!visibleRows.length}>Exporter CSV</button>
     </div>
     {message ? <p className="enrollment-message">{message}</p> : null}
+
+    {activeImport && (newSchoolCandidates.length > 0 || schoolsWithoutId.length > 0) ? <section className="unstaffed-school-review">
+      <div className="unstaffed-school-review-head">
+        <div><p className="eyebrow">Validation CRM</p><h3>Nouveaux établissements détectés</h3><p>Comparaison uniquement par ID avec le CRM. Rien n’est créé sans votre validation.</p></div>
+        {newSchoolCandidates.length ? <div className="unstaffed-school-review-actions">
+          <button type="button" className="button quiet" onClick={() => setDeselectedNewSchoolIds([])}>Tout sélectionner</button>
+          <button type="button" className="button quiet" onClick={() => setDeselectedNewSchoolIds(newSchoolCandidates.map((school) => school.schoolId))}>Aucun</button>
+          <button type="button" className="button primary" disabled={saving || !selectedNewSchoolIds.length} onClick={() => void createSelectedSchools()}>Créer les établissements sélectionnés ({selectedNewSchoolIds.length})</button>
+        </div> : null}
+      </div>
+      {newSchoolCandidates.length ? <div className="unstaffed-school-review-list">{newSchoolCandidates.map((school) => <label key={school.schoolId}>
+        <input type="checkbox" checked={selectedNewSchoolIds.includes(school.schoolId)} onChange={(event) => setDeselectedNewSchoolIds((current) => event.target.checked ? current.filter((id) => id !== school.schoolId) : Array.from(new Set([...current, school.schoolId])))} />
+        <span><strong>{school.name}</strong><small>ID {school.schoolId} · {school.categories.join(" · ") || "Catégorie non précisée"}</small></span>
+      </label>)}</div> : <p className="unstaffed-school-review-empty">Tous les établissements avec un ID sont déjà présents dans le CRM.</p>}
+      {schoolsWithoutId.length ? <details className="unstaffed-school-anomalies"><summary>{schoolsWithoutId.length} établissement{schoolsWithoutId.length > 1 ? "s" : ""} sans ID — création impossible</summary><ul>{schoolsWithoutId.map((school, index) => <li key={`${school.name}-${index}`}>{school.name}</li>)}</ul></details> : null}
+    </section> : null}
 
     <div className="candidate-source-bar">
       <div className="candidate-source-title"><strong>Sources des personnes mobilisables</strong><span>L’ID séance relie les intérêts et les disponibilités à chaque séance.</span>{latestTutorSnapshot ? <em>Statuts déterminés avec la liste des tuteurs du {formatDate(latestTutorSnapshot.date)}</em> : <em>Aucune liste de tuteurs : statuts inconnus</em>}</div>

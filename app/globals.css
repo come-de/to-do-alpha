@@ -596,10 +596,13 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .school-assignment-import-report strong { color: var(--green-dark); font-size: 10px; }
 .school-assignment-import-report span, .school-assignment-import-report small { color: var(--muted); font-size: 8.5px; line-height: 1.3; }
 .school-assignment-list { max-height: 310px; padding: 0 10px 10px; display: grid; gap: 5px; overflow: auto; }
-.school-assignment-list > div { padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; display: grid; grid-template-columns: minmax(0,1fr) 140px; gap: 8px; align-items: center; background: white; }
+.school-assignment-list > div { padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; display: grid; grid-template-columns: minmax(0,1fr) minmax(190px,230px); gap: 8px; align-items: center; background: white; }
 .school-assignment-list > div.is-unassigned { border-left: 4px solid #f59e0b; background: #fffbeb; }
 .school-assignment-list small { display: block; margin-top: 2px; color: var(--muted); font-size: 8.5px; }
 .school-assignment-list select { width: 100%; min-height: 29px; border: 1px solid var(--line); border-radius: 7px; padding: 4px 7px; color: var(--blue-title); background: white; font-size: 9.5px; font-weight: 750; }
+.school-assignment-row-actions { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 5px; }
+.school-assignment-row-actions button { border: 1px solid var(--line); border-radius: 7px; padding: 4px 7px; color: var(--blue-dark); background: white; font-size: 9px; font-weight: 800; cursor: pointer; }
+.school-assignment-row-actions button:hover { border-color: rgba(14,165,233,.5); background: #eefaff; }
 .person-admin-link { display: inline-flex; align-items: baseline; gap: 4px; color: inherit; font-weight: inherit; text-decoration: none; }
 .person-admin-link:hover { color: var(--blue-main); text-decoration: underline; text-underline-offset: 3px; }
 .person-admin-link > span { flex: 0 0 auto; font-size: .72em; opacity: .72; }
@@ -1165,6 +1168,22 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
 .unstaffed-toolbar > label:not(.import-button) { min-width: 0; display: grid; gap: 3px; color: var(--muted); font-size: 8.5px; font-weight: 850; text-transform: uppercase; letter-spacing: .05em; }
 .unstaffed-toolbar select, .unstaffed-toolbar input { width: 100%; min-width: 0; height: 32px; border: 1px solid var(--line); border-radius: 8px; padding: 0 8px; color: var(--blue-title); background: white; font-size: 10px; text-transform: none; text-overflow: ellipsis; }
 .unstaffed-toolbar .import-button, .unstaffed-toolbar .button { min-height: 32px; white-space: nowrap; }
+.unstaffed-school-review { margin: 0 12px 8px; padding: 10px; border: 1px solid rgba(245,158,11,.35); border-radius: 11px; background: linear-gradient(105deg, #fffbeb, rgba(255,255,255,.96)); }
+.unstaffed-school-review-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.unstaffed-school-review-head h3 { margin: 1px 0 2px; color: var(--blue-title); font-size: 14px; }
+.unstaffed-school-review-head p:not(.eyebrow) { margin: 0; color: var(--muted); font-size: 9px; }
+.unstaffed-school-review-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 5px; }
+.unstaffed-school-review-actions .button { min-height: 29px; padding: 5px 8px; font-size: 9px; }
+.unstaffed-school-review-list { max-height: 210px; margin-top: 8px; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 5px; overflow: auto; }
+.unstaffed-school-review-list label { min-width: 0; padding: 6px 8px; border: 1px solid rgba(245,158,11,.24); border-radius: 8px; background: rgba(255,255,255,.88); display: grid; grid-template-columns: auto minmax(0,1fr); gap: 7px; align-items: center; cursor: pointer; }
+.unstaffed-school-review-list input { width: 14px; height: 14px; accent-color: var(--green); }
+.unstaffed-school-review-list strong, .unstaffed-school-review-list small { display: block; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.unstaffed-school-review-list strong { color: var(--blue-title); font-size: 10px; }
+.unstaffed-school-review-list small { margin-top: 2px; color: var(--muted); font-size: 8px; }
+.unstaffed-school-review-empty { margin: 8px 0 0; color: var(--green-dark); font-size: 9px; font-weight: 750; }
+.unstaffed-school-anomalies { margin-top: 7px; border-top: 1px solid rgba(245,158,11,.22); padding-top: 6px; color: #92400e; font-size: 9px; }
+.unstaffed-school-anomalies summary { cursor: pointer; font-weight: 800; }
+.unstaffed-school-anomalies ul { margin: 5px 0 0 18px; padding: 0; }
 .unstaffed-category-filter, .unstaffed-owner-filter { min-width: 0; display: grid; gap: 3px; }
 .unstaffed-owner-filter { grid-column: 2 / 5; }
 .unstaffed-category-filter > span, .unstaffed-owner-filter > span { color: var(--muted); font-size: 8.5px; font-weight: 850; text-transform: uppercase; letter-spacing: .05em; }
@@ -1277,6 +1296,10 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
 @media (max-width: 640px) {
   .unstaffed-toolbar { margin: 0 8px 7px; grid-template-columns: 1fr; }
   .unstaffed-toolbar .import-button, .unstaffed-search, .unstaffed-owner-filter { grid-column: auto; }
+  .unstaffed-school-review { margin: 0 8px 7px; padding: 8px; }
+  .unstaffed-school-review-head { flex-direction: column; }
+  .unstaffed-school-review-actions { justify-content: flex-start; }
+  .unstaffed-school-review-list { grid-template-columns: 1fr; }
   .unstaffed-summary { margin: 0 8px 7px; }
   .candidate-source-bar { margin: 0 8px 7px; grid-template-columns: 1fr; }
   .candidate-source-title { grid-column: auto; }

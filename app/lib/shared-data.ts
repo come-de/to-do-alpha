@@ -261,6 +261,12 @@ export type UpcomingSessionRow = {
   room: string;
 };
 
+export type UpcomingSessionSchool = {
+  schoolId: string;
+  name: string;
+  categories: string[];
+};
+
 export type UpcomingSessionImport = {
   id: string;
   importedAt: string;
@@ -268,6 +274,7 @@ export type UpcomingSessionImport = {
   fileName: string;
   sourceRowCount: number;
   sourceSessionCount: number;
+  schools: UpcomingSessionSchool[];
   rows: UpcomingSessionRow[];
   createdAt: string;
 };
@@ -1256,9 +1263,17 @@ export function sanitizeUpcomingSessionRow(raw: Record<string, unknown>): Upcomi
   };
 }
 
+export function sanitizeUpcomingSessionSchool(raw: Record<string, unknown>): UpcomingSessionSchool {
+  return {
+    schoolId: cleanText(raw.schoolId),
+    name: cleanText(raw.name),
+    categories: Array.isArray(raw.categories) ? Array.from(new Set(raw.categories.map(cleanText).filter(Boolean))) : [],
+  };
+}
+
 export function parseUpcomingSessionsCsv(value: string) {
   const csvRows = parseCsvRows(value).filter((row) => row.some(Boolean));
-  if (!csvRows.length) return { rows: [] as UpcomingSessionRow[], sourceRowCount: 0, sourceSessionCount: 0 };
+  if (!csvRows.length) return { rows: [] as UpcomingSessionRow[], schools: [] as UpcomingSessionSchool[], sourceRowCount: 0, sourceSessionCount: 0 };
   const headers = csvRows[0].map(normalizedHeader);
   const indexFor = (aliases: string[]) => {
     for (const alias of aliases) {
@@ -1287,16 +1302,27 @@ export function parseUpcomingSessionsCsv(value: string) {
   }
 
   type SessionAccumulator = UpcomingSessionRow & { tutorIds: Set<string>; studentIds: Set<string>; classSet: Set<string>; declaredStudentCount: number };
+  type SchoolAccumulator = UpcomingSessionSchool & { categorySet: Set<string> };
   const sessions = new Map<string, SessionAccumulator>();
+  const schools = new Map<string, SchoolAccumulator>();
   const dataRows = csvRows.slice(1);
   dataRows.forEach((row) => {
+    const schoolId = valueAt(row, schoolIdIndex).trim();
+    const schoolName = valueAt(row, schoolIndex).trim();
+    const category = valueAt(row, categoryIndex).trim();
+    if (schoolName) {
+      const schoolKey = schoolId || `missing:${normalizeSchoolName(schoolName)}`;
+      const school = schools.get(schoolKey) ?? { schoolId, name: schoolName, categories: [], categorySet: new Set<string>() };
+      if (category) school.categorySet.add(category);
+      schools.set(schoolKey, school);
+    }
     const sessionId = valueAt(row, sessionIdIndex).trim();
     if (!sessionId) return;
     const existing = sessions.get(sessionId) ?? {
       sessionId,
-      schoolId: valueAt(row, schoolIdIndex),
-      school: valueAt(row, schoolIndex),
-      category: valueAt(row, categoryIndex),
+      schoolId,
+      school: schoolName,
+      category,
       date: valueAt(row, dateIndex),
       startTime: valueAt(row, startIndex),
       endTime: valueAt(row, endIndex),
@@ -1328,7 +1354,10 @@ export function parseUpcomingSessionsCsv(value: string) {
       studentCount: session.studentIds.size || session.declaredStudentCount,
     }))
     .sort((a, b) => `${a.date}-${a.startTime}-${a.school}`.localeCompare(`${b.date}-${b.startTime}-${b.school}`, "fr"));
-  return { rows, sourceRowCount: dataRows.length, sourceSessionCount: sessions.size };
+  const schoolCatalog = Array.from(schools.values())
+    .map((school) => sanitizeUpcomingSessionSchool({ ...school, categories: Array.from(school.categorySet).sort((a, b) => a.localeCompare(b, "fr")) }))
+    .sort((a, b) => a.name.localeCompare(b.name, "fr"));
+  return { rows, schools: schoolCatalog, sourceRowCount: dataRows.length, sourceSessionCount: sessions.size };
 }
 
 export function sanitizeUpcomingSessionImport(raw: Record<string, unknown>): UpcomingSessionImport {
@@ -1340,6 +1369,9 @@ export function sanitizeUpcomingSessionImport(raw: Record<string, unknown>): Upc
     fileName: cleanText(raw.fileName) || "semaines-a-venir.csv",
     sourceRowCount: Math.max(0, Math.round(Number(raw.sourceRowCount) || 0)),
     sourceSessionCount: Math.max(0, Math.round(Number(raw.sourceSessionCount) || 0)),
+    schools: Array.isArray(raw.schools)
+      ? raw.schools.filter((school): school is Record<string, unknown> => Boolean(school && typeof school === "object")).map(sanitizeUpcomingSessionSchool).filter((school) => school.name)
+      : [],
     rows: Array.isArray(raw.rows)
       ? raw.rows.filter((row): row is Record<string, unknown> => Boolean(row && typeof row === "object")).map(sanitizeUpcomingSessionRow).filter((row) => row.sessionId && row.date && row.school)
       : [],
@@ -2315,7 +2347,7 @@ export async function readUpcomingSessionImports() {
 export async function createUpcomingSessionImportFromCsv(input: { fileName: string; rawCsv: string }) {
   const now = new Date().toISOString();
   const parsed = parseUpcomingSessionsCsv(input.rawCsv);
-  if (!parsed.rows.length) throw new Error("Aucune séance non affectée trouvée dans ce CSV");
+  if (!parsed.rows.length && !parsed.schools.length) throw new Error("Aucune séance ni aucun établissement valide trouvé dans ce CSV");
   const nextImport = sanitizeUpcomingSessionImport({
     id: crypto.randomUUID(),
     importedAt: now,
@@ -2323,6 +2355,7 @@ export async function createUpcomingSessionImportFromCsv(input: { fileName: stri
     fileName: input.fileName || "semaines-a-venir.csv",
     sourceRowCount: parsed.sourceRowCount,
     sourceSessionCount: parsed.sourceSessionCount,
+    schools: parsed.schools,
     rows: parsed.rows,
     createdAt: now,
   });

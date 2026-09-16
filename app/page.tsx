@@ -2987,19 +2987,22 @@ export default function Home() {
   }
 
   function importSchoolAssignments(text: string) {
-    const assignments = new Map<string, { name: string; owner: Exclude<SchoolPortfolioOwner, ""> }>();
+    const assignments = new Map<string, { name: string; owner: SchoolPortfolioOwner }>();
     let duplicates = 0;
     let invalid = 0;
     text.split(/\r?\n/).forEach((line) => {
       const trimmed = line.trim();
       if (!trimmed) return;
-      const match = trimmed.match(/^(.*?)\s+(pierre|julie|kelly)@etudealpha\.fr\s*$/i);
+      const match = trimmed.match(/^(.*?)\s+((?:pierre|julie|kelly)@etudealpha\.fr|non[- ]attribu[eé])\s*$/i);
       if (!match) {
         invalid += 1;
         return;
       }
       const name = match[1].trim();
-      const owner = match[2].toLocaleLowerCase("fr") as Exclude<SchoolPortfolioOwner, "">;
+      const assignmentValue = match[2].toLocaleLowerCase("fr");
+      const owner = assignmentValue.startsWith("non-") || assignmentValue.startsWith("non ")
+        ? ""
+        : assignmentValue.split("@", 1)[0] as Exclude<SchoolPortfolioOwner, "">;
       const key = normalizedSchoolLookupName(name);
       if (!key) {
         invalid += 1;
@@ -4122,10 +4125,18 @@ export default function Home() {
   async function saveSchool(event: FormEvent) {
     event.preventDefault();
     if (!schoolDraft.name.trim() || saving) return;
+    const requestedExternalId = schoolDraft.externalId.trim();
+    const schoolUsingId = requestedExternalId
+      ? schools.find((school) => school.externalId === requestedExternalId && school.id !== editingSchoolId)
+      : null;
+    if (schoolUsingId) {
+      setToast(`L’ID établissement ${requestedExternalId} est déjà utilisé par ${schoolUsingId.name}`);
+      return;
+    }
     const now = new Date().toISOString();
     const cleanDraft = {
       ...schoolDraft,
-      externalId: schoolDraft.externalId.trim(),
+      externalId: requestedExternalId,
       name: schoolDraft.name.trim(),
       category: schoolDraft.category.trim(),
       zone: schoolDraft.zone.trim(),
@@ -6412,9 +6423,12 @@ export default function Home() {
             <div className="school-assignment-list">
               {assignmentSchools.map((school) => <div className={!school.portfolioOwner ? "is-unassigned" : ""} key={school.id}>
                 <div><SchoolAdminLink schoolId={school.externalId}>{school.name}</SchoolAdminLink><small>{[school.city, school.externalId ? `ID ${school.externalId}` : ""].filter(Boolean).join(" · ") || "Informations non renseignées"}</small></div>
-                <select value={school.portfolioOwner} onChange={(event) => assignSchoolPortfolioOwner(school.id, event.target.value as SchoolPortfolioOwner)} disabled={saving} aria-label={`Responsable de ${school.name}`}>
-                  <option value="">Non attribué</option><option value="kelly">Kelly</option><option value="pierre">Pierre</option><option value="julie">Julie</option>
-                </select>
+                <div className="school-assignment-row-actions">
+                  <select value={school.portfolioOwner} onChange={(event) => assignSchoolPortfolioOwner(school.id, event.target.value as SchoolPortfolioOwner)} disabled={saving} aria-label={`Responsable de ${school.name}`}>
+                    <option value="">Non attribué</option><option value="kelly">Kelly</option><option value="pierre">Pierre</option><option value="julie">Julie</option>
+                  </select>
+                  <button type="button" onClick={() => openEditSchool(school)}>Modifier</button>
+                </div>
               </div>)}
               {!assignmentSchools.length ? <p>Aucun établissement ne correspond à ce filtre.</p> : null}
             </div>
@@ -6496,6 +6510,7 @@ export default function Home() {
                 </div>
                 <div className="school-meta">
                   <span className={`school-type-pill school-type-${selectedSchool.schoolType}`}>{schoolTypeLabels[selectedSchool.schoolType]}</span>
+                  {selectedSchool.externalId && <span>ID {selectedSchool.externalId}</span>}
                   {selectedSchool.category && <span>{selectedSchool.category}</span>}
                   {selectedSchool.city && <span>{selectedSchool.city}</span>}
                   {selectedSchool.registeredCount !== null && <span>{selectedSchool.registeredCount} inscrit{selectedSchool.registeredCount > 1 ? "s" : ""}</span>}
@@ -6807,6 +6822,7 @@ export default function Home() {
             </div>
             <form onSubmit={saveSchool} className="task-form">
               <label className="field full"><span>Nom de l&apos;établissement *</span><input autoFocus required value={schoolDraft.name} onChange={(event) => setSchoolDraft({ ...schoolDraft, name: event.target.value })} placeholder="Ex. Collège Saint-Exupéry" /></label>
+              <label className="field"><span>ID établissement</span><input value={schoolDraft.externalId} onChange={(event) => setSchoolDraft({ ...schoolDraft, externalId: event.target.value })} placeholder="Ex. 123" /></label>
               <label className="field"><span>Type d&apos;établissement</span><select value={schoolDraft.schoolType} onChange={(event) => setSchoolDraft({ ...schoolDraft, schoolType: event.target.value as SchoolType })}><option value="alpha">Étude Alpha</option><option value="mise-a-dispo">Mise à disposition</option><option value="mixed">Mixte / autre</option></select></label>
               <label className="field"><span>Responsable</span><select value={schoolDraft.portfolioOwner} onChange={(event) => setSchoolDraft({ ...schoolDraft, portfolioOwner: event.target.value as SchoolPortfolioOwner })}><option value="">Non attribué</option><option value="kelly">Kelly</option><option value="pierre">Pierre</option><option value="julie">Julie</option></select></label>
               <label className="field"><span>Catégorie</span><input value={schoolDraft.category} onChange={(event) => setSchoolDraft({ ...schoolDraft, category: event.target.value })} placeholder="Ex. Étude Alpha" /></label>
