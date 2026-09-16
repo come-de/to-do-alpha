@@ -191,6 +191,12 @@ export type TutorTrackingData = {
   comments: TutorTrackingComment[];
 };
 
+export type UnstaffedExclusions = {
+  sessionIds: string[];
+  sourceKeys: string[];
+  updatedAt: string;
+};
+
 export type AvailabilityRow = {
   tutorId: string;
   lastName: string;
@@ -425,6 +431,7 @@ export const TUTOR_ASSIGNMENT_IMPORTS_KEY = "tutor-assignment-imports.json";
 export const UPCOMING_SESSION_IMPORTS_KEY = "upcoming-session-imports.json";
 export const TUTOR_INTEREST_IMPORTS_KEY = "tutor-interest-imports.json";
 export const TUTOR_COVERAGE_NOTES_KEY = "tutor-coverage-notes.json";
+export const UNSTAFFED_EXCLUSIONS_KEY = "unstaffed-exclusions.json";
 export const ENROLLMENT_IMPORTS_KEY = "enrollment-imports.json";
 export const SCHOOL_WATCHLIST_KEY = "school-watchlist.json";
 export const SCHOOLS_KEY = "schools.json";
@@ -447,6 +454,7 @@ const memory = globalThis as typeof globalThis & {
   __petitSuiviUpcomingSessionImports?: UpcomingSessionImport[];
   __petitSuiviTutorInterestImports?: TutorInterestImport[];
   __petitSuiviTutorCoverageNotes?: TutorCoverageNote[];
+  __petitSuiviUnstaffedExclusions?: UnstaffedExclusions;
   __petitSuiviEnrollmentImports?: EnrollmentImport[];
   __petitSuiviSchoolWatchlist?: SchoolWatchItem[];
   __petitSuiviSchools?: School[];
@@ -981,6 +989,14 @@ export function sanitizeTutorTrackingData(raw: Record<string, unknown>): TutorTr
           .map(sanitizeTutorTrackingComment)
           .filter((comment) => comment.tutorKey)
       : [],
+  };
+}
+
+export function sanitizeUnstaffedExclusions(raw: Record<string, unknown>): UnstaffedExclusions {
+  return {
+    sessionIds: Array.isArray(raw.sessionIds) ? Array.from(new Set(raw.sessionIds.map(cleanText).filter(Boolean))) : [],
+    sourceKeys: Array.isArray(raw.sourceKeys) ? Array.from(new Set(raw.sourceKeys.map(cleanText).filter(Boolean))) : [],
+    updatedAt: cleanText(raw.updatedAt) || new Date().toISOString(),
   };
 }
 
@@ -2006,6 +2022,29 @@ export async function updateTutorTrackingSnapshotName(id: string, displayName: s
   } as unknown as Record<string, unknown>);
   await writeTutorTracking(nextTracking);
   return nextTracking;
+}
+
+export async function readUnstaffedExclusions() {
+  try {
+    const store = taskStore();
+    const exclusions = await store.get(UNSTAFFED_EXCLUSIONS_KEY, { type: "json", consistency: "strong" });
+    return exclusions && typeof exclusions === "object"
+      ? sanitizeUnstaffedExclusions(exclusions as Record<string, unknown>)
+      : { sessionIds: [], sourceKeys: [], updatedAt: "" };
+  } catch {
+    return memory.__petitSuiviUnstaffedExclusions ?? { sessionIds: [], sourceKeys: [], updatedAt: "" };
+  }
+}
+
+export async function writeUnstaffedExclusions(exclusions: UnstaffedExclusions) {
+  const sanitized = sanitizeUnstaffedExclusions(exclusions as unknown as Record<string, unknown>);
+  try {
+    const store = taskStore();
+    await store.setJSON(UNSTAFFED_EXCLUSIONS_KEY, sanitized);
+  } catch {
+    memory.__petitSuiviUnstaffedExclusions = sanitized;
+  }
+  return sanitized;
 }
 
 export async function readAvailabilityImports() {

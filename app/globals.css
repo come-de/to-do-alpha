@@ -1215,6 +1215,11 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
 .person-status.unknown { color: var(--muted); background: #eef2f5; border: 1px solid rgba(95,117,137,.18); }
 .candidate-sources { display: flex; flex-wrap: wrap; gap: 3px; }
 .candidate-sources span { border-radius: 999px; padding: 2px 5px; font-size: 7.5px; font-weight: 800; }
+.candidate-sources span:has(button) { display: inline-flex; align-items: center; gap: 4px; }
+.candidate-sources button, .unstaffed-hide-button { width: 17px; height: 17px; border: 0; border-radius: 50%; padding: 0; display: inline-grid; place-items: center; color: currentColor; background: rgba(255,255,255,.72); font-size: 12px; font-weight: 900; line-height: 1; cursor: pointer; }
+.candidate-sources button:hover, .unstaffed-hide-button:hover { color: white; background: var(--red); }
+.unstaffed-hide-button { color: var(--muted); background: var(--soft); }
+.candidate-sources button:disabled, .unstaffed-hide-button:disabled { cursor: wait; opacity: .5; }
 .candidate-sources .interest { color: #6d28d9; background: #f3e8ff; }
 .candidate-sources .availability { color: var(--green-dark); background: var(--green-pale); }
 .candidate-sources .validated { color: var(--blue-dark); background: #eefaff; }

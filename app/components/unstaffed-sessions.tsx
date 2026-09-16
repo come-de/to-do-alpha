@@ -80,6 +80,7 @@ type SessionCandidate = {
 
 type EnrichedSession = UpcomingSession & { candidates: SessionCandidate[] };
 type SessionCategoryKey = "alpha" | "surveillance" | "service";
+type UnstaffedExclusions = { sessionIds: string[]; sourceKeys: string[]; updatedAt: string };
 
 const categoryLabels: Record<SessionCategoryKey, string> = {
   alpha: "Étude Alpha",
@@ -92,6 +93,10 @@ function sessionCategoryKey(value: string): SessionCategoryKey {
   if (normalized.includes("alpha")) return "alpha";
   if (normalized.includes("surveillance")) return "surveillance";
   return "service";
+}
+
+function sourceExclusionKey(sessionId: string, personId: string, source: "interest" | "availability") {
+  return `${sessionId}:${personId.trim()}:${source}`;
 }
 
 type TutorTrackingSnapshot = {
@@ -144,14 +149,15 @@ export default function UnstaffedSessions() {
   const [query, setQuery] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<SessionCategoryKey[]>(["alpha", "surveillance", "service"]);
   const [shownSingleStudentAlphaDates, setShownSingleStudentAlphaDates] = useState<string[]>([]);
+  const [exclusions, setExclusions] = useState<UnstaffedExclusions>({ sessionIds: [], sourceKeys: [], updatedAt: "" });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
   const load = useCallback(async (silent = false) => {
     try {
-      const endpoints = ["/api/upcoming-session-imports", "/api/tutor-interest-imports", "/api/availability-imports", "/api/tutor-assignment-imports", "/api/tutor-tracking"];
+      const endpoints = ["/api/upcoming-session-imports", "/api/tutor-interest-imports", "/api/availability-imports", "/api/tutor-assignment-imports", "/api/tutor-tracking", "/api/unstaffed-exclusions"];
       const responses = await Promise.all(endpoints.map((endpoint) => fetch(endpoint, { cache: "no-store" })));
-      const payloads = await Promise.all(responses.map((response) => response.json())) as Array<{ imports?: unknown[]; tracking?: { snapshots?: TutorTrackingSnapshot[] }; error?: string; detail?: string }>;
+      const payloads = await Promise.all(responses.map((response) => response.json())) as Array<{ imports?: unknown[]; tracking?: { snapshots?: TutorTrackingSnapshot[] }; exclusions?: UnstaffedExclusions; error?: string; detail?: string }>;
       const failedIndex = responses.findIndex((response) => !response.ok);
       if (failedIndex >= 0) throw new Error(payloads[failedIndex].detail || payloads[failedIndex].error || "Chargement impossible");
       const next = (payloads[0].imports ?? []) as SessionImport[];
@@ -159,11 +165,13 @@ export default function UnstaffedSessions() {
       const nextAvailability = (payloads[2].imports ?? []) as Array<SourceImport<Availability>>;
       const nextAssignments = (payloads[3].imports ?? []) as Array<SourceImport<Assignment>>;
       const nextTutorSnapshots = payloads[4].tracking?.snapshots ?? [];
+      const nextExclusions = payloads[5].exclusions ?? { sessionIds: [], sourceKeys: [], updatedAt: "" };
       setImports(next);
       setInterestImports(nextInterests);
       setAvailabilityImports(nextAvailability);
       setAssignmentImports(nextAssignments);
       setLatestTutorSnapshot(nextTutorSnapshots[0] ?? null);
+      setExclusions(nextExclusions);
       setSelectedImportId((current) => next.some((item) => item.id === current) ? current : next[0]?.id || "");
       setInterestImportId((current) => nextInterests.some((item) => item.id === current) ? current : nextInterests[0]?.id || "");
       setAvailabilityImportId((current) => nextAvailability.some((item) => item.id === current) ? current : nextAvailability[0]?.id || "");
@@ -188,12 +196,13 @@ export default function UnstaffedSessions() {
   const filteredRowsBeforeSingleStudentRule = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase("fr");
     return (activeImport?.rows ?? []).filter((row) => {
+      if (exclusions.sessionIds.includes(row.sessionId)) return false;
       if (selectedDate !== "all" && row.date !== selectedDate) return false;
       if (!selectedCategories.includes(sessionCategoryKey(row.category))) return false;
       if (!needle) return true;
       return [row.school, row.schoolId, row.category, row.group, row.room, row.sessionId, ...row.classes].join(" ").toLocaleLowerCase("fr").includes(needle);
     });
-  }, [activeImport, query, selectedCategories, selectedDate]);
+  }, [activeImport, exclusions.sessionIds, query, selectedCategories, selectedDate]);
   const visibleRows = useMemo(() => filteredRowsBeforeSingleStudentRule.filter((row) => {
     const isSingleStudentAlpha = sessionCategoryKey(row.category) === "alpha" && row.studentCount === 1;
     return !isSingleStudentAlpha || shownSingleStudentAlphaDates.includes(row.date);
@@ -216,6 +225,7 @@ export default function UnstaffedSessions() {
   const enrichedRows = useMemo(() => visibleRows.map((session): EnrichedSession => {
     const candidates = new Map<string, SessionCandidate>();
     const addCandidate = (personId: string, firstName: string, lastName: string, phone: string, source: "interest" | "availability", validatedInterest = false) => {
+      if (exclusions.sourceKeys.includes(sourceExclusionKey(session.sessionId, personId, source))) return;
       const existing = candidates.get(personId);
       const assignments = sourceIndexes.assignmentsByTutorDate.get(`${personId}:${session.date}`) ?? [];
       candidates.set(personId, {
@@ -233,7 +243,7 @@ export default function UnstaffedSessions() {
     (sourceIndexes.interestsBySession.get(session.sessionId) ?? []).forEach((row) => addCandidate(row.personId, row.firstName, row.lastName, row.phone, "interest", row.validated));
     (sourceIndexes.availabilityBySession.get(session.sessionId) ?? []).forEach((row) => addCandidate(row.tutorId, row.firstName, row.lastName, row.phone, "availability"));
     return { ...session, candidates: Array.from(candidates.values()).sort((a, b) => Number(a.hasConflict) - Number(b.hasConflict) || `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`, "fr")) };
-  }), [latestTutorSnapshot, sourceIndexes, visibleRows]);
+  }), [exclusions.sourceKeys, latestTutorSnapshot, sourceIndexes, visibleRows]);
   const groupedRows = useMemo(() => {
     const groups = new Map<string, EnrichedSession[]>();
     filteredRowsBeforeSingleStudentRule.forEach((row) => {
@@ -286,6 +296,45 @@ export default function UnstaffedSessions() {
     }
   }
 
+  async function saveExclusions(next: UnstaffedExclusions, successMessage: string) {
+    const previous = exclusions;
+    const prepared = { ...next, updatedAt: new Date().toISOString() };
+    setExclusions(prepared);
+    setSaving(true);
+    try {
+      const response = await fetch("/api/unstaffed-exclusions", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ exclusions: prepared }),
+      });
+      const data = await response.json() as { exclusions?: UnstaffedExclusions; error?: string; detail?: string };
+      if (!response.ok) throw new Error(data.detail || data.error || "Sauvegarde impossible");
+      setExclusions(data.exclusions ?? prepared);
+      setMessage(successMessage);
+    } catch (error) {
+      setExclusions(previous);
+      setMessage(error instanceof Error ? error.message : "Exclusion non sauvegardée");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function hideSession(sessionId: string) {
+    if (!sessionId || exclusions.sessionIds.includes(sessionId)) return;
+    void saveExclusions({ ...exclusions, sessionIds: [...exclusions.sessionIds, sessionId] }, `Séance #${sessionId} masquée, y compris dans les prochains imports`);
+  }
+
+  function hideCandidateSource(sessionId: string, personId: string, source: "interest" | "availability") {
+    const key = sourceExclusionKey(sessionId, personId, source);
+    if (exclusions.sourceKeys.includes(key)) return;
+    void saveExclusions({ ...exclusions, sourceKeys: [...exclusions.sourceKeys, key] }, `${source === "interest" ? "Intérêt" : "Disponibilité"} masqué${source === "interest" ? "" : "e"} durablement`);
+  }
+
+  function restoreAllExclusions() {
+    if (!window.confirm("Réafficher toutes les séances, disponibilités et tous les intérêts masqués ?")) return;
+    void saveExclusions({ sessionIds: [], sourceKeys: [], updatedAt: "" }, "Tous les éléments masqués sont de nouveau visibles");
+  }
+
   function toggleCategory(category: SessionCategoryKey) {
     setSelectedCategories((current) => current.includes(category) ? current.filter((item) => item !== category) : [...current, category]);
   }
@@ -296,7 +345,7 @@ export default function UnstaffedSessions() {
 
   function visibleCountForDate(date: string) {
     return (activeImport?.rows ?? []).filter((row) => {
-      if (row.date !== date || !selectedCategories.includes(sessionCategoryKey(row.category))) return false;
+      if (row.date !== date || exclusions.sessionIds.includes(row.sessionId) || !selectedCategories.includes(sessionCategoryKey(row.category))) return false;
       const hiddenSingleStudentAlpha = sessionCategoryKey(row.category) === "alpha" && row.studentCount === 1 && !shownSingleStudentAlphaDates.includes(date);
       return !hiddenSingleStudentAlpha;
     }).length;
@@ -324,7 +373,10 @@ export default function UnstaffedSessions() {
   return <section className="task-panel unstaffed-panel">
     <div className="panel-heading">
       <div><p className="eyebrow">Pilotage des deux semaines</p><h2>Séances non affectées</h2><p>Une ligne par séance, sans nom d’élève. Les classes sont regroupées automatiquement.</p></div>
-      <button type="button" className="ghost-button" onClick={() => void load()} disabled={saving}>↻ Actualiser</button>
+      <div className="filters">
+        {exclusions.sessionIds.length + exclusions.sourceKeys.length > 0 ? <button type="button" className="button quiet" onClick={restoreAllExclusions} disabled={saving}>Réafficher les éléments masqués ({exclusions.sessionIds.length + exclusions.sourceKeys.length})</button> : null}
+        <button type="button" className="ghost-button" onClick={() => void load()} disabled={saving}>↻ Actualiser</button>
+      </div>
     </div>
 
     <div className="unstaffed-toolbar">
@@ -361,9 +413,9 @@ export default function UnstaffedSessions() {
       <div className="unstaffed-days">
         {groupedRows.length ? groupedRows.map(([date, rows]) => <article className="unstaffed-day" key={date}>
           <header><div><span>{formatDate(date, true)}</span><small>{new Set(rows.map((row) => row.school)).size} établissements</small></div><div className="unstaffed-day-actions"><strong>{rows.length} séance{rows.length > 1 ? "s" : ""}</strong>{(() => { const hiddenCount = filteredRowsBeforeSingleStudentRule.filter((row) => row.date === date && sessionCategoryKey(row.category) === "alpha" && row.studentCount === 1).length; return hiddenCount ? <button type="button" onClick={() => toggleSingleStudentAlphaForDate(date)}>{shownSingleStudentAlphaDates.includes(date) ? "Masquer" : "Afficher"} {hiddenCount} groupe{hiddenCount > 1 ? "s" : ""} Alpha à 1 élève</button> : null; })()}</div></header>
-          <div className="unstaffed-table-wrap"><table><thead><tr><th>Horaire</th><th>Établissement</th><th>Type</th><th>Groupe</th><th>Classes</th><th>Élèves</th><th>Salle</th></tr></thead><tbody>
+          <div className="unstaffed-table-wrap"><table><thead><tr><th>Horaire</th><th>Établissement</th><th>Type</th><th>Groupe</th><th>Classes</th><th>Élèves</th><th>Salle</th><th aria-label="Actions"></th></tr></thead><tbody>
             {rows.map((row) => <Fragment key={row.sessionId}>
-              <tr className={row.candidates.length ? "has-candidates" : ""}><td><strong>{row.startTime || "—"}–{row.endTime || "—"}</strong><small>#{row.sessionId}</small></td><td><SchoolAdminLink schoolId={row.schoolId}>{row.school}</SchoolAdminLink></td><td><span className="session-category">{row.category || "—"}</span></td><td>{row.group || "—"}</td><td><div className="class-tags">{row.classes.length ? row.classes.map((item) => <span key={item}>{item}</span>) : <em>Non précisée</em>}</div></td><td>{row.studentCount || "—"}</td><td>{row.room || "—"}</td></tr>
+              <tr className={row.candidates.length ? "has-candidates" : ""}><td><strong>{row.startTime || "—"}–{row.endTime || "—"}</strong><small>#{row.sessionId}</small></td><td><SchoolAdminLink schoolId={row.schoolId}>{row.school}</SchoolAdminLink></td><td><span className="session-category">{row.category || "—"}</span></td><td>{row.group || "—"}</td><td><div className="class-tags">{row.classes.length ? row.classes.map((item) => <span key={item}>{item}</span>) : <em>Non précisée</em>}</div></td><td>{row.studentCount || "—"}</td><td>{row.room || "—"}</td><td><button type="button" className="unstaffed-hide-button" onClick={() => hideSession(row.sessionId)} disabled={saving} title="Masquer durablement cette séance" aria-label={`Masquer la séance ${row.sessionId}`}>×</button></td></tr>
               {(() => {
                 const candidates = row.candidates.filter((candidate) => candidate.personStatus === "candidate");
                 const freeTutors = row.candidates.filter((candidate) => candidate.personStatus === "tutor" && !candidate.hasConflict);
@@ -371,7 +423,7 @@ export default function UnstaffedSessions() {
                 const unknownPeople = row.candidates.filter((candidate) => candidate.personStatus === "unknown");
                 const freeTutorNames = freeTutors.map((candidate) => `${candidate.firstName} ${candidate.lastName}`.trim() || `ID ${candidate.personId}`);
                 const visibleFreeTutorNames = freeTutorNames.slice(0, 2).join(", ");
-                return <tr className={`session-candidates-row ${row.candidates.length ? "has-results" : ""} ${freeTutors.length ? "has-free-tutor" : ""}`}><td colSpan={7}>
+                return <tr className={`session-candidates-row ${row.candidates.length ? "has-results" : ""} ${freeTutors.length ? "has-free-tutor" : ""}`}><td colSpan={8}>
                 {row.candidates.length ? <details>
                   <summary>
                     <div className="candidate-summary-content">
@@ -388,14 +440,14 @@ export default function UnstaffedSessions() {
                   </summary>
                   <div className="session-candidate-list">{row.candidates.map((candidate) => <article className={candidate.hasConflict ? "has-conflict" : ""} key={candidate.personId}>
                     <div className="candidate-name"><div><strong><PersonAdminLink personId={candidate.personId} status={candidate.personStatus}>{`${candidate.firstName} ${candidate.lastName}`.trim() || `Personne ${candidate.personId}`}</PersonAdminLink></strong><span className={`person-status ${candidate.personStatus}`}>{candidate.personStatus === "tutor" ? "Tuteur" : candidate.personStatus === "candidate" ? "Candidat" : "Statut inconnu"}</span></div><small>ID {candidate.personId}{candidate.phone ? ` · ${candidate.phone}` : ""}</small></div>
-                    <div className="candidate-sources">{candidate.sources.map((source) => <span className={source} key={source}>{source === "interest" ? "Intérêt déclaré" : "Disponible"}</span>)}{candidate.validatedInterest ? <span className="validated">Intérêt validé</span> : null}</div>
+                    <div className="candidate-sources">{candidate.sources.map((source) => <span className={source} key={source}>{source === "interest" ? "Intérêt déclaré" : "Disponible"}<button type="button" onClick={() => hideCandidateSource(row.sessionId, candidate.personId, source)} disabled={saving} title={`Masquer ${source === "interest" ? "cet intérêt" : "cette disponibilité"}`}>×</button></span>)}{candidate.validatedInterest ? <span className="validated">Intérêt validé</span> : null}</div>
                     <div className="candidate-assignments">{candidate.assignments.length ? <><strong>{candidate.hasConflict ? "Chevauchement à vérifier" : "Autre séance ce jour"}</strong>{candidate.assignments.map((assignment, index) => <span key={`${assignment.timeSlot}-${assignment.school}-${index}`}>{assignment.timeSlot} · {assignment.school}</span>)}</> : <span className="candidate-free">Aucune autre séance affectée ce jour</span>}</div>
                   </article>)}</div>
                 </details> : <span className="no-candidates"><strong>↳ Pour la séance #{row.sessionId}</strong> · aucune personne trouvée dans les sources sélectionnées</span>}
               </td></tr>;
               })()}
             </Fragment>)}
-            {!rows.length ? <tr><td colSpan={7} className="single-alpha-hidden-note">Les groupes Étude Alpha à un élève sont masqués pour cette date. Utilisez le bouton ci-dessus pour les afficher.</td></tr> : null}
+            {!rows.length ? <tr><td colSpan={8} className="single-alpha-hidden-note">Les groupes Étude Alpha à un élève sont masqués pour cette date. Utilisez le bouton ci-dessus pour les afficher.</td></tr> : null}
           </tbody></table></div>
         </article>) : <div className="empty-state"><span>✓</span><h3>Aucune séance à afficher</h3><p>Modifiez les filtres ou choisissez un autre fichier.</p></div>}
       </div>
