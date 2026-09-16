@@ -1,6 +1,8 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import SchoolAdminLink from "@/app/components/school-admin-link";
+import PersonAdminLink from "@/app/components/person-admin-link";
 
 type UpcomingSession = {
   sessionId: string;
@@ -361,7 +363,7 @@ export default function UnstaffedSessions() {
           <header><div><span>{formatDate(date, true)}</span><small>{new Set(rows.map((row) => row.school)).size} établissements</small></div><div className="unstaffed-day-actions"><strong>{rows.length} séance{rows.length > 1 ? "s" : ""}</strong>{(() => { const hiddenCount = filteredRowsBeforeSingleStudentRule.filter((row) => row.date === date && sessionCategoryKey(row.category) === "alpha" && row.studentCount === 1).length; return hiddenCount ? <button type="button" onClick={() => toggleSingleStudentAlphaForDate(date)}>{shownSingleStudentAlphaDates.includes(date) ? "Masquer" : "Afficher"} {hiddenCount} groupe{hiddenCount > 1 ? "s" : ""} Alpha à 1 élève</button> : null; })()}</div></header>
           <div className="unstaffed-table-wrap"><table><thead><tr><th>Horaire</th><th>Établissement</th><th>Type</th><th>Groupe</th><th>Classes</th><th>Élèves</th><th>Salle</th></tr></thead><tbody>
             {rows.map((row) => <Fragment key={row.sessionId}>
-              <tr className={row.candidates.length ? "has-candidates" : ""}><td><strong>{row.startTime || "—"}–{row.endTime || "—"}</strong><small>#{row.sessionId}</small></td><td>{row.school}</td><td><span className="session-category">{row.category || "—"}</span></td><td>{row.group || "—"}</td><td><div className="class-tags">{row.classes.length ? row.classes.map((item) => <span key={item}>{item}</span>) : <em>Non précisée</em>}</div></td><td>{row.studentCount || "—"}</td><td>{row.room || "—"}</td></tr>
+              <tr className={row.candidates.length ? "has-candidates" : ""}><td><strong>{row.startTime || "—"}–{row.endTime || "—"}</strong><small>#{row.sessionId}</small></td><td><SchoolAdminLink schoolId={row.schoolId}>{row.school}</SchoolAdminLink></td><td><span className="session-category">{row.category || "—"}</span></td><td>{row.group || "—"}</td><td><div className="class-tags">{row.classes.length ? row.classes.map((item) => <span key={item}>{item}</span>) : <em>Non précisée</em>}</div></td><td>{row.studentCount || "—"}</td><td>{row.room || "—"}</td></tr>
               {(() => {
                 const candidates = row.candidates.filter((candidate) => candidate.personStatus === "candidate");
                 const freeTutors = row.candidates.filter((candidate) => candidate.personStatus === "tutor" && !candidate.hasConflict);
@@ -385,7 +387,7 @@ export default function UnstaffedSessions() {
                     <small>Voir les coordonnées, sources et autres séances</small>
                   </summary>
                   <div className="session-candidate-list">{row.candidates.map((candidate) => <article className={candidate.hasConflict ? "has-conflict" : ""} key={candidate.personId}>
-                    <div className="candidate-name"><div><strong>{`${candidate.firstName} ${candidate.lastName}`.trim() || `Personne ${candidate.personId}`}</strong><span className={`person-status ${candidate.personStatus}`}>{candidate.personStatus === "tutor" ? "Tuteur" : candidate.personStatus === "candidate" ? "Candidat" : "Statut inconnu"}</span></div><small>ID {candidate.personId}{candidate.phone ? ` · ${candidate.phone}` : ""}</small></div>
+                    <div className="candidate-name"><div><strong><PersonAdminLink personId={candidate.personId} status={candidate.personStatus}>{`${candidate.firstName} ${candidate.lastName}`.trim() || `Personne ${candidate.personId}`}</PersonAdminLink></strong><span className={`person-status ${candidate.personStatus}`}>{candidate.personStatus === "tutor" ? "Tuteur" : candidate.personStatus === "candidate" ? "Candidat" : "Statut inconnu"}</span></div><small>ID {candidate.personId}{candidate.phone ? ` · ${candidate.phone}` : ""}</small></div>
                     <div className="candidate-sources">{candidate.sources.map((source) => <span className={source} key={source}>{source === "interest" ? "Intérêt déclaré" : "Disponible"}</span>)}{candidate.validatedInterest ? <span className="validated">Intérêt validé</span> : null}</div>
                     <div className="candidate-assignments">{candidate.assignments.length ? <><strong>{candidate.hasConflict ? "Chevauchement à vérifier" : "Autre séance ce jour"}</strong>{candidate.assignments.map((assignment, index) => <span key={`${assignment.timeSlot}-${assignment.school}-${index}`}>{assignment.timeSlot} · {assignment.school}</span>)}</> : <span className="candidate-free">Aucune autre séance affectée ce jour</span>}</div>
                   </article>)}</div>

@@ -567,6 +567,14 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .crm-post-head button:hover { color: var(--blue-main); text-decoration: underline; text-underline-offset: 3px; }
 .crm-post-head > div { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 5px; }
 .crm-post-head > div > span:not(.school-type-pill) { border: 1px solid var(--line); border-radius: 999px; padding: 3px 7px; color: var(--muted); background: rgba(255,255,255,.75); font-size: 10px; font-weight: 790; white-space: nowrap; }
+.crm-post-head .crm-school-links { justify-content: flex-start; }
+.crm-post-head .crm-school-links > button { color: var(--muted); font-size: 10px; font-weight: 750; }
+.school-admin-link { display: inline-flex; align-items: baseline; gap: 4px; color: var(--blue-dark); font-weight: 850; text-decoration: none; }
+.school-admin-link:hover { color: var(--blue-main); text-decoration: underline; text-underline-offset: 3px; }
+.school-admin-link > span { flex: 0 0 auto; font-size: .72em; opacity: .72; }
+.person-admin-link { display: inline-flex; align-items: baseline; gap: 4px; color: inherit; font-weight: inherit; text-decoration: none; }
+.person-admin-link:hover { color: var(--blue-main); text-decoration: underline; text-underline-offset: 3px; }
+.person-admin-link > span { flex: 0 0 auto; font-size: .72em; opacity: .72; }
 .crm-post-card h3 { margin: 5px 0 0; color: var(--blue-title); font-size: 15px; line-height: 1.22; }
 .crm-post-card p { margin: 4px 0 0; color: var(--ink); font-size: 12px; line-height: 1.38; white-space: pre-wrap; }
 .crm-post-meta { margin-top: 6px; }

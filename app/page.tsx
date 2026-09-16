@@ -6,6 +6,8 @@ import FilesHub from "@/app/components/files-hub";
 import TutorCoverageComparison from "@/app/components/tutor-coverage-comparison";
 import UnstaffedSessions from "@/app/components/unstaffed-sessions";
 import TutorAvailabilityFeed from "@/app/components/tutor-availability-feed";
+import SchoolAdminLink from "@/app/components/school-admin-link";
+import PersonAdminLink from "@/app/components/person-admin-link";
 
 type Status = "todo" | "progress" | "done";
 type Priority = "low" | "medium" | "high";
@@ -4623,7 +4625,14 @@ export default function Home() {
               <article key={tutor.tutorId} className="availability-card">
                 <div className="availability-card-header">
                   <div>
-                    <h3>{availabilityTutorName(tutor)}</h3>
+                    <h3>
+                      <PersonAdminLink
+                        personId={tutor.tutorId}
+                        status={!latestTutorTrackingSnapshot ? "unknown" : latestTutorTrackingSnapshot.records.some((record) => record.tutorId === tutor.tutorId) ? "tutor" : "candidate"}
+                      >
+                        {availabilityTutorName(tutor)}
+                      </PersonAdminLink>
+                    </h3>
                     <p>ID {tutor.tutorId} · {tutor.phone || "téléphone non renseigné"}{tutor.grade ? ` · ${tutor.grade}` : ""}</p>
                   </div>
                   <span>{tutor.rows.length} créneau{tutor.rows.length > 1 ? "x" : ""}</span>
@@ -4771,7 +4780,7 @@ export default function Home() {
           {filteredTutorTracking.length ? filteredTutorTracking.map((tutor) => (
             <article className={`tutor-tracking-card ${tutor.isCurrent ? "is-current" : "is-exited"}`} key={tutor.key}>
               <div>
-                <strong>{tutorTrackingDisplayName(tutor)}</strong>
+                <strong><PersonAdminLink personId={tutor.tutorId} status="tutor">{tutorTrackingDisplayName(tutor)}</PersonAdminLink></strong>
                 <small>{tutor.wantedCity || "Ville souhaitée non renseignée"}</small>
                 <div className="tutor-tracking-meta">
                   {tutor.tutorId && <span>ID {tutor.tutorId}</span>}
@@ -6150,7 +6159,11 @@ export default function Home() {
                 <div className="school-detail-head">
                   <div>
                     <p className="eyebrow">Suivi établissement</p>
-                    <h3>{schoolById.get(selectedSchoolWatchItem.schoolId)?.name || "Établissement introuvable"}</h3>
+                    <h3>
+                      <SchoolAdminLink schoolId={schoolById.get(selectedSchoolWatchItem.schoolId)?.externalId}>
+                        {schoolById.get(selectedSchoolWatchItem.schoolId)?.name || "Établissement introuvable"}
+                      </SchoolAdminLink>
+                    </h3>
                   </div>
                   <button className="close-button" onClick={() => setSelectedSchoolWatchId(null)} aria-label="Fermer le suivi">×</button>
                 </div>
@@ -6231,7 +6244,10 @@ export default function Home() {
                   </div>
                   <div className="crm-post-body">
                     <div className="crm-post-head">
-                      <button onClick={() => setSelectedSchoolId(school.id)}>{school.name}</button>
+                      <div className="crm-school-links">
+                        <SchoolAdminLink schoolId={school.externalId}>{school.name}</SchoolAdminLink>
+                        <button onClick={() => setSelectedSchoolId(school.id)}>Fiche CRM</button>
+                      </div>
                       <div>
                         <span className={`school-type-pill school-type-${school.schoolType}`}>{schoolTypeLabels[school.schoolType]}</span>
                         <span>{schoolEventKindLabels[event.kind]}</span>
@@ -6289,7 +6305,7 @@ export default function Home() {
                 <div className="school-detail-head">
                   <div>
                     <p className="eyebrow">Fiche établissement</p>
-                    <h3>{selectedSchool.name}</h3>
+                    <h3><SchoolAdminLink schoolId={selectedSchool.externalId}>{selectedSchool.name}</SchoolAdminLink></h3>
                   </div>
                   <button className="close-button" onClick={() => setSelectedSchoolId(null)} aria-label="Fermer la fiche établissement">×</button>
                 </div>

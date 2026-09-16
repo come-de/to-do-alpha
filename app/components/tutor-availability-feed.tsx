@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import PersonAdminLink from "@/app/components/person-admin-link";
 
 type AvailabilityRow = {
   tutorId: string;
@@ -98,6 +99,16 @@ function tutorName(slot: Pick<FreeSlot, "firstName" | "lastName" | "personId">) 
   return `${slot.firstName} ${slot.lastName}`.trim() || `Personne ${slot.personId}`;
 }
 
+function freeSlotKey(timeSlot: string, school: string) {
+  const normalize = (value: string) => value
+    .trim()
+    .toLocaleLowerCase("fr")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ");
+  return `${normalize(timeSlot)}|${normalize(school)}`;
+}
+
 function dedupeAssignments(rows: AssignmentRow[]) {
   return rows.filter((row, index) => rows.findIndex((item) => item.timeSlot === row.timeSlot && item.school === row.school) === index);
 }
@@ -179,12 +190,12 @@ export default function TutorAvailabilityFeed() {
       } : { ...input, status, sources: [source], validatedInterest });
     };
     (availabilityImport?.rows ?? []).filter((row) => row.date === activeDate && row.tutorId.trim()).forEach((row) => addSlot({
-      key: row.sessionId || `${row.timeSlot}|${row.school}|${row.group}`,
+      key: freeSlotKey(row.timeSlot, row.school),
       personId: row.tutorId.trim(), firstName: row.firstName, lastName: row.lastName, phone: row.phone,
       timeSlot: row.timeSlot, school: row.school, className: row.className, group: row.group,
     }, "availability"));
     (interestImport?.rows ?? []).filter((row) => row.date === activeDate && row.personId.trim()).forEach((row) => addSlot({
-      key: row.sessionId || `${row.timeSlot}|${row.school}|${row.group}`,
+      key: freeSlotKey(row.timeSlot, row.school),
       personId: row.personId.trim(), firstName: row.firstName, lastName: row.lastName, phone: row.phone,
       timeSlot: row.timeSlot, school: row.school, className: row.className, group: row.group,
     }, "interest", row.validated));
@@ -238,8 +249,8 @@ export default function TutorAvailabilityFeed() {
     <div className="tutor-feed-list">
       {visibleSlots.length ? visibleSlots.map((slot) => <article className={`tutor-feed-card slot-card status-${slot.status} ${slot.otherAssignments.length ? "has-other-assignment" : "no-other-assignment"}`} key={`${slot.personId}-${slot.key}`}>
         <div className="tutor-feed-time"><strong>{slot.timeSlot.match(/\b\d{1,2}:\d{2}\b/)?.[0] || "—"}</strong><span>créneau libre</span></div>
-        <div className="tutor-feed-person"><div><h3>{tutorName(slot)}</h3><span className={`person-status ${slot.status}`}>{slot.status === "tutor" ? "Tuteur" : slot.status === "candidate" ? "Candidat" : "Statut inconnu"}</span></div><p>ID {slot.personId}{slot.phone ? ` · ${slot.phone}` : ""}</p></div>
-        <div className="tutor-feed-opportunities"><div><strong>{slot.timeSlot || "Horaire non précisé"}</strong><span>{slot.school || "Établissement non précisé"}{slot.className ? ` · ${slot.className}` : ""}{slot.group ? ` · ${slot.group}` : ""}</span><em>{slot.sources.map((source) => source === "availability" ? "Disponibilité" : "Intérêt").join(" + ")}{slot.validatedInterest ? " · validé" : ""}</em></div></div>
+        <div className="tutor-feed-person"><div><h3><PersonAdminLink personId={slot.personId} status={slot.status}>{tutorName(slot)}</PersonAdminLink></h3><span className={`person-status ${slot.status}`}>{slot.status === "tutor" ? "Tuteur" : slot.status === "candidate" ? "Candidat" : "Statut inconnu"}</span></div><p>ID {slot.personId}{slot.phone ? ` · ${slot.phone}` : ""}</p></div>
+        <div className="tutor-feed-opportunities"><div><strong>{slot.timeSlot || "Horaire non précisé"}</strong><span>{slot.school || "Établissement non précisé"}{slot.className ? ` · ${slot.className}` : ""}</span><em>{slot.sources.map((source) => source === "availability" ? "Disponibilité" : "Intérêt").join(" + ")}{slot.validatedInterest ? " · validé" : ""}</em></div></div>
         <div className="tutor-feed-assignments">{slot.otherAssignments.length ? <><strong>Autres séances ce jour</strong>{slot.otherAssignments.map((assignment, index) => <span key={`${assignment.timeSlot}-${assignment.school}-${index}`}>{assignment.timeSlot} · {assignment.school}</span>)}</> : <><strong>Aucune autre séance</strong><span>Disponible sur ce créneau</span></>}</div>
       </article>) : <div className="empty-state"><span>📆</span><h3>Aucun créneau réellement libre</h3><p>Les créneaux qui chevauchent une séance affectée sont automatiquement masqués.</p></div>}
     </div>
