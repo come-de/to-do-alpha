@@ -295,6 +295,7 @@ type SchoolWatchItem = {
 
 type SchoolEventKind = "event" | "comment" | "action";
 type SchoolType = "alpha" | "mise-a-dispo" | "mixed";
+type SchoolPortfolioOwner = "" | "kelly" | "pierre" | "julie";
 type SchoolFilter = "all" | SchoolType | "with-posts" | "without-posts";
 
 type SchoolEvent = {
@@ -316,6 +317,7 @@ type School = {
   name: string;
   category: string;
   schoolType: SchoolType;
+  portfolioOwner: SchoolPortfolioOwner;
   zone: string;
   coordinator: string;
   registeredCount: number | null;
@@ -608,6 +610,7 @@ const emptySchoolDraft: SchoolDraft = {
   name: "",
   category: "",
   schoolType: "alpha",
+  portfolioOwner: "",
   zone: "",
   coordinator: "",
   registeredCount: null,
@@ -643,6 +646,13 @@ const schoolTypeLabels: Record<SchoolType, string> = {
   alpha: "Étude Alpha",
   "mise-a-dispo": "Mise à disposition",
   mixed: "Mixte / autre",
+};
+
+const schoolPortfolioOwnerLabels: Record<SchoolPortfolioOwner, string> = {
+  "": "Non attribué",
+  kelly: "Kelly",
+  pierre: "Pierre",
+  julie: "Julie",
 };
 
 const communicationAudienceLabels: Record<CommunicationAudience, string> = {
@@ -1411,6 +1421,7 @@ function normalizeSchool(raw: Partial<School>): School {
           : category.toLocaleLowerCase("fr").includes("alpha")
             ? "alpha"
             : "mixed",
+    portfolioOwner: raw.portfolioOwner === "kelly" || raw.portfolioOwner === "pierre" || raw.portfolioOwner === "julie" ? raw.portfolioOwner : "",
     zone: raw.zone || "",
     coordinator: raw.coordinator || "",
     registeredCount: normalizePositiveNumber(raw.registeredCount, true),
@@ -1434,6 +1445,15 @@ function normalizeSchool(raw: Partial<School>): School {
     createdAt: raw.createdAt || now,
     updatedAt: raw.updatedAt || raw.createdAt || now,
   };
+}
+
+function normalizedSchoolLookupName(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("fr")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
 }
 
 function campaignDates(year: number) {
@@ -1758,6 +1778,7 @@ export default function Home() {
   const [schoolWatchComment, setSchoolWatchComment] = useState("");
   const [schoolQuery, setSchoolQuery] = useState("");
   const [schoolFilter, setSchoolFilter] = useState<SchoolFilter>("all");
+  const [schoolAssignmentFilter, setSchoolAssignmentFilter] = useState<"all" | "unassigned" | Exclude<SchoolPortfolioOwner, "">>("all");
   const [selectedSchoolId, setSelectedSchoolId] = useState<string | null>(null);
   const [tutorReportDate, setTutorReportDate] = useState(new Date().toISOString().slice(0, 10));
   const [tutorReportStartDate, setTutorReportStartDate] = useState(`${new Date().getFullYear()}-01-01`);
@@ -1777,6 +1798,7 @@ export default function Home() {
   const [availabilityReferenceId, setAvailabilityReferenceId] = useState("");
   const [availabilityRecentId, setAvailabilityRecentId] = useState("");
   const [availabilityView, setAvailabilityView] = useState<AvailabilityComparisonView>("new");
+  const [availabilitySchoolOwnerFilter, setAvailabilitySchoolOwnerFilter] = useState<"all" | "unassigned" | Exclude<SchoolPortfolioOwner, "">>("all");
   const [availabilityNameDrafts, setAvailabilityNameDrafts] = useState<Record<string, string>>({});
   const importRef = useRef<HTMLInputElement>(null);
 
@@ -2516,12 +2538,25 @@ export default function Home() {
       sameTutors: sortTutors(sameTutors),
     };
   }, [availabilityDate, selectedAvailabilityRecent, selectedAvailabilityReference]);
-  const displayedAvailabilityTutors =
-    availabilityView === "new"
+  const availabilitySchoolOwnerByName = useMemo(
+    () => new Map(schools.map((school) => [normalizedSchoolLookupName(school.name), school.portfolioOwner || ""])),
+    [schools],
+  );
+  const displayedAvailabilityTutors = useMemo(() => {
+    const source = availabilityView === "new"
       ? availabilityComparison.newTutors
       : availabilityView === "lost"
         ? availabilityComparison.lostTutors
         : availabilityComparison.sameTutors;
+    if (availabilitySchoolOwnerFilter === "all") return source;
+    return source.flatMap((tutor) => {
+      const rows = tutor.rows.filter((row) => {
+        const owner = availabilitySchoolOwnerByName.get(normalizedSchoolLookupName(row.school)) || "";
+        return availabilitySchoolOwnerFilter === "unassigned" ? !owner : owner === availabilitySchoolOwnerFilter;
+      });
+      return rows.length ? [{ ...tutor, rows }] : [];
+    });
+  }, [availabilityComparison, availabilitySchoolOwnerByName, availabilitySchoolOwnerFilter, availabilityView]);
   const filteredSchools = useMemo(() => {
     const normalized = schoolQuery.trim().toLocaleLowerCase("fr");
     return schools
@@ -2540,6 +2575,18 @@ export default function Home() {
       })
       .sort((a, b) => a.name.localeCompare(b.name, "fr"));
   }, [schools, schoolQuery, schoolFilter]);
+  const assignmentSchools = useMemo(() => {
+    const normalized = schoolQuery.trim().toLocaleLowerCase("fr");
+    return schools
+      .filter((school) => {
+        const matchesOwner = schoolAssignmentFilter === "all"
+          || (schoolAssignmentFilter === "unassigned" && !school.portfolioOwner)
+          || school.portfolioOwner === schoolAssignmentFilter;
+        if (!matchesOwner) return false;
+        return !normalized || `${school.name} ${school.city} ${school.externalId}`.toLocaleLowerCase("fr").includes(normalized);
+      })
+      .sort((a, b) => Number(Boolean(a.portfolioOwner)) - Number(Boolean(b.portfolioOwner)) || a.name.localeCompare(b.name, "fr"));
+  }, [schoolAssignmentFilter, schoolQuery, schools]);
   const crmFeedItems = useMemo(
     () =>
       filteredSchools
@@ -2922,6 +2969,13 @@ export default function Home() {
     } finally {
       setSaving(false);
     }
+  }
+
+  function assignSchoolPortfolioOwner(schoolId: string, portfolioOwner: SchoolPortfolioOwner) {
+    void saveSchools(
+      schools.map((school) => school.id === schoolId ? { ...school, portfolioOwner, updatedAt: new Date().toISOString() } : school),
+      portfolioOwner ? `Établissement attribué à ${schoolPortfolioOwnerLabels[portfolioOwner]}` : "Attribution retirée",
+    );
   }
 
   async function saveStudentHistory(nextHistory: StudentHistoryYear[], message: string) {
@@ -3961,6 +4015,7 @@ export default function Home() {
       name: school.name,
       category: school.category,
       schoolType: school.schoolType,
+      portfolioOwner: school.portfolioOwner,
       zone: school.zone,
       coordinator: school.coordinator,
       registeredCount: school.registeredCount,
@@ -4540,6 +4595,16 @@ export default function Home() {
                   {importLabel(item)}
                 </option>
               ))}
+            </select>
+          </label>
+          <label>
+            Responsable établissements
+            <select value={availabilitySchoolOwnerFilter} onChange={(event) => setAvailabilitySchoolOwnerFilter(event.target.value as "all" | "unassigned" | Exclude<SchoolPortfolioOwner, "">)}>
+              <option value="unassigned">Non attribués</option>
+              <option value="kelly">Kelly</option>
+              <option value="pierre">Pierre</option>
+              <option value="julie">Julie</option>
+              <option value="all">Tous</option>
             </select>
           </label>
           <button type="button" className="primary-button" onClick={() => setAvailabilityView("new")}>
@@ -6234,6 +6299,24 @@ export default function Home() {
               <button key={value} className={schoolFilter === value ? "active" : ""} onClick={() => setSchoolFilter(value)}>{label}</button>
             ))}
           </div>
+          <details className="school-assignment-directory" open>
+            <summary>
+              <div><strong>Répartition des établissements</strong><span>{schools.filter((school) => !school.portfolioOwner).length} non attribué{schools.filter((school) => !school.portfolioOwner).length > 1 ? "s" : ""} · {schools.length} au total</span></div>
+              <small>Attribuer à Kelly, Pierre ou Julie</small>
+            </summary>
+            <div className="school-assignment-filters">
+              {(["all", "unassigned", "kelly", "pierre", "julie"] as const).map((owner) => <button type="button" className={schoolAssignmentFilter === owner ? "active" : ""} onClick={() => setSchoolAssignmentFilter(owner)} key={owner}>{owner === "all" ? "Tous" : owner === "unassigned" ? "Non attribués" : schoolPortfolioOwnerLabels[owner]}</button>)}
+            </div>
+            <div className="school-assignment-list">
+              {assignmentSchools.map((school) => <div className={!school.portfolioOwner ? "is-unassigned" : ""} key={school.id}>
+                <div><SchoolAdminLink schoolId={school.externalId}>{school.name}</SchoolAdminLink><small>{[school.city, school.externalId ? `ID ${school.externalId}` : ""].filter(Boolean).join(" · ") || "Informations non renseignées"}</small></div>
+                <select value={school.portfolioOwner} onChange={(event) => assignSchoolPortfolioOwner(school.id, event.target.value as SchoolPortfolioOwner)} disabled={saving} aria-label={`Responsable de ${school.name}`}>
+                  <option value="">Non attribué</option><option value="kelly">Kelly</option><option value="pierre">Pierre</option><option value="julie">Julie</option>
+                </select>
+              </div>)}
+              {!assignmentSchools.length ? <p>Aucun établissement ne correspond à ce filtre.</p> : null}
+            </div>
+          </details>
           <div className="school-crm-layout">
             <div className="school-feed">
               {crmFeedItems.length ? crmFeedItems.map(({ school, event }) => (
@@ -6623,6 +6706,7 @@ export default function Home() {
             <form onSubmit={saveSchool} className="task-form">
               <label className="field full"><span>Nom de l&apos;établissement *</span><input autoFocus required value={schoolDraft.name} onChange={(event) => setSchoolDraft({ ...schoolDraft, name: event.target.value })} placeholder="Ex. Collège Saint-Exupéry" /></label>
               <label className="field"><span>Type d&apos;établissement</span><select value={schoolDraft.schoolType} onChange={(event) => setSchoolDraft({ ...schoolDraft, schoolType: event.target.value as SchoolType })}><option value="alpha">Étude Alpha</option><option value="mise-a-dispo">Mise à disposition</option><option value="mixed">Mixte / autre</option></select></label>
+              <label className="field"><span>Responsable</span><select value={schoolDraft.portfolioOwner} onChange={(event) => setSchoolDraft({ ...schoolDraft, portfolioOwner: event.target.value as SchoolPortfolioOwner })}><option value="">Non attribué</option><option value="kelly">Kelly</option><option value="pierre">Pierre</option><option value="julie">Julie</option></select></label>
               <label className="field"><span>Catégorie</span><input value={schoolDraft.category} onChange={(event) => setSchoolDraft({ ...schoolDraft, category: event.target.value })} placeholder="Ex. Étude Alpha" /></label>
               <label className="field"><span>Ville</span><input value={schoolDraft.city} onChange={(event) => setSchoolDraft({ ...schoolDraft, city: event.target.value })} placeholder="Ex. Paris" /></label>
               <label className="field"><span>Coordinateur</span><input value={schoolDraft.coordinator} onChange={(event) => setSchoolDraft({ ...schoolDraft, coordinator: event.target.value, contact: event.target.value })} placeholder="Ex. Sophie Martin" /></label>

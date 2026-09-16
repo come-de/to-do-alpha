@@ -49,6 +49,11 @@ type TutorSnapshot = {
   date: string;
   records: Array<{ tutorId: string }>;
 };
+type SchoolPortfolioOwner = "" | "kelly" | "pierre" | "julie";
+type SchoolAssignment = { name: string; portfolioOwner: SchoolPortfolioOwner };
+type SchoolOwnerFilter = "all" | "unassigned" | Exclude<SchoolPortfolioOwner, "">;
+
+const schoolOwnerLabels: Record<SchoolPortfolioOwner, string> = { "": "Non attribué", kelly: "Kelly", pierre: "Pierre", julie: "Julie" };
 
 type FreeSlot = {
   key: string;
@@ -113,11 +118,16 @@ function dedupeAssignments(rows: AssignmentRow[]) {
   return rows.filter((row, index) => rows.findIndex((item) => item.timeSlot === row.timeSlot && item.school === row.school) === index);
 }
 
+function normalizedSchoolName(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr").replace(/[^a-z0-9]+/g, " ").trim();
+}
+
 export default function TutorAvailabilityFeed() {
   const [availabilityImports, setAvailabilityImports] = useState<Array<SourceImport<AvailabilityRow>>>([]);
   const [interestImports, setInterestImports] = useState<Array<SourceImport<InterestRow>>>([]);
   const [assignmentImports, setAssignmentImports] = useState<Array<SourceImport<AssignmentRow>>>([]);
   const [latestTutorSnapshot, setLatestTutorSnapshot] = useState<TutorSnapshot | null>(null);
+  const [schoolAssignments, setSchoolAssignments] = useState<SchoolAssignment[]>([]);
   const [availabilityImportId, setAvailabilityImportId] = useState("");
   const [interestImportId, setInterestImportId] = useState("");
   const [assignmentImportId, setAssignmentImportId] = useState("");
@@ -125,15 +135,16 @@ export default function TutorAvailabilityFeed() {
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "tutor" | "candidate">("all");
   const [scheduleFilter, setScheduleFilter] = useState<"all" | "free" | "assigned">("all");
+  const [schoolOwnerFilter, setSchoolOwnerFilter] = useState<SchoolOwnerFilter>("all");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const endpoints = ["/api/availability-imports", "/api/tutor-interest-imports", "/api/tutor-assignment-imports", "/api/tutor-tracking"];
+      const endpoints = ["/api/availability-imports", "/api/tutor-interest-imports", "/api/tutor-assignment-imports", "/api/tutor-tracking", "/api/schools"];
       const responses = await Promise.all(endpoints.map((endpoint) => fetch(endpoint, { cache: "no-store" })));
-      const payloads = await Promise.all(responses.map((response) => response.json())) as Array<{ imports?: unknown[]; tracking?: { snapshots?: TutorSnapshot[] }; error?: string; detail?: string }>;
+      const payloads = await Promise.all(responses.map((response) => response.json())) as Array<{ imports?: unknown[]; tracking?: { snapshots?: TutorSnapshot[] }; schools?: SchoolAssignment[]; error?: string; detail?: string }>;
       const failedIndex = responses.findIndex((response) => !response.ok);
       if (failedIndex >= 0) throw new Error(payloads[failedIndex].detail || payloads[failedIndex].error || "Chargement impossible");
       const availability = (payloads[0].imports ?? []) as Array<SourceImport<AvailabilityRow>>;
@@ -143,6 +154,7 @@ export default function TutorAvailabilityFeed() {
       setInterestImports(interests);
       setAssignmentImports(assignments);
       setLatestTutorSnapshot(payloads[3].tracking?.snapshots?.[0] ?? null);
+      setSchoolAssignments(payloads[4].schools ?? []);
       setAvailabilityImportId((current) => availability.some((item) => item.id === current) ? current : availability[0]?.id || "");
       setInterestImportId((current) => interests.some((item) => item.id === current) ? current : interests[0]?.id || "");
       setAssignmentImportId((current) => assignments.some((item) => item.id === current) ? current : assignments[0]?.id || "");
@@ -166,6 +178,8 @@ export default function TutorAvailabilityFeed() {
   const dates = useMemo(() => Array.from(new Set([...(availabilityImport?.rows ?? []).map((row) => row.date), ...(interestImport?.rows ?? []).map((row) => row.date)].filter(Boolean))).sort(), [availabilityImport, interestImport]);
   const today = new Date().toISOString().slice(0, 10);
   const activeDate = dates.includes(selectedDate) ? selectedDate : dates.includes(today) ? today : dates[0] || "";
+  const ownerBySchoolName = useMemo(() => new Map(schoolAssignments.map((school) => [normalizedSchoolName(school.name), school.portfolioOwner])), [schoolAssignments]);
+  const ownerForSlot = useCallback((slot: Pick<FreeSlot, "school">): SchoolPortfolioOwner => ownerBySchoolName.get(normalizedSchoolName(slot.school)) ?? "", [ownerBySchoolName]);
 
   const dayResult = useMemo(() => {
     if (!activeDate) return { slots: [] as FreeSlot[], hiddenOverlapCount: 0 };
@@ -218,10 +232,12 @@ export default function TutorAvailabilityFeed() {
       if (statusFilter !== "all" && slot.status !== statusFilter) return false;
       if (scheduleFilter === "free" && slot.otherAssignments.length) return false;
       if (scheduleFilter === "assigned" && !slot.otherAssignments.length) return false;
+      const owner = ownerForSlot(slot);
+      if (schoolOwnerFilter === "unassigned" ? Boolean(owner) : schoolOwnerFilter !== "all" && owner !== schoolOwnerFilter) return false;
       if (!needle) return true;
       return [slot.personId, slot.firstName, slot.lastName, slot.phone, slot.school, slot.className, slot.group, slot.timeSlot, ...slot.otherAssignments.flatMap((row) => [row.school, row.timeSlot])].join(" ").toLocaleLowerCase("fr").includes(needle);
     }).sort((a, b) => firstTime(a.timeSlot) - firstTime(b.timeSlot) || tutorName(a).localeCompare(tutorName(b), "fr"));
-  }, [dayResult.slots, query, scheduleFilter, statusFilter]);
+  }, [dayResult.slots, ownerForSlot, query, scheduleFilter, schoolOwnerFilter, statusFilter]);
 
   const peopleCount = new Set(visibleSlots.map((slot) => slot.personId)).size;
   const tutorCount = new Set(visibleSlots.filter((slot) => slot.status === "tutor").map((slot) => slot.personId)).size;
@@ -239,6 +255,7 @@ export default function TutorAvailabilityFeed() {
       <small>{latestTutorSnapshot ? `Statuts issus de la liste des tuteurs du ${formatDate(latestTutorSnapshot.date)}` : "Aucune liste de tuteurs disponible"}</small>
     </div>
     <div className="tutor-feed-date-tabs">{dates.map((date) => <button className={activeDate === date ? "active" : ""} onClick={() => setSelectedDate(date)} key={date}>{formatDate(date)}</button>)}</div>
+    <div className="tutor-feed-owner-tabs"><span>Établissements :</span>{(["unassigned", "kelly", "pierre", "julie", "all"] as const).map((owner) => <button type="button" className={schoolOwnerFilter === owner ? "active" : ""} onClick={() => setSchoolOwnerFilter(owner)} key={owner}>{owner === "all" ? "Tous" : owner === "unassigned" ? "Non attribués" : schoolOwnerLabels[owner]}</button>)}</div>
     <div className="tutor-feed-controls">
       <div><strong>{activeDate ? formatDate(activeDate, true) : "Aucune date"}</strong><span>{dayResult.hiddenOverlapCount} créneau{dayResult.hiddenOverlapCount > 1 ? "x" : ""} occupé{dayResult.hiddenOverlapCount > 1 ? "s" : ""} masqué{dayResult.hiddenOverlapCount > 1 ? "s" : ""}</span></div>
       <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher un tuteur, un établissement…" aria-label="Rechercher dans le fil" />
@@ -250,7 +267,7 @@ export default function TutorAvailabilityFeed() {
       {visibleSlots.length ? visibleSlots.map((slot) => <article className={`tutor-feed-card slot-card status-${slot.status} ${slot.otherAssignments.length ? "has-other-assignment" : "no-other-assignment"}`} key={`${slot.personId}-${slot.key}`}>
         <div className="tutor-feed-time"><strong>{slot.timeSlot.match(/\b\d{1,2}:\d{2}\b/)?.[0] || "—"}</strong><span>créneau libre</span></div>
         <div className="tutor-feed-person"><div><h3><PersonAdminLink personId={slot.personId} status={slot.status}>{tutorName(slot)}</PersonAdminLink></h3><span className={`person-status ${slot.status}`}>{slot.status === "tutor" ? "Tuteur" : slot.status === "candidate" ? "Candidat" : "Statut inconnu"}</span></div><p>ID {slot.personId}{slot.phone ? ` · ${slot.phone}` : ""}</p></div>
-        <div className="tutor-feed-opportunities"><div><strong>{slot.timeSlot || "Horaire non précisé"}</strong><span>{slot.school || "Établissement non précisé"}{slot.className ? ` · ${slot.className}` : ""}</span><em>{slot.sources.map((source) => source === "availability" ? "Disponibilité" : "Intérêt").join(" + ")}{slot.validatedInterest ? " · validé" : ""}</em></div></div>
+        <div className="tutor-feed-opportunities"><div><strong>{slot.timeSlot || "Horaire non précisé"}</strong><span>{slot.school || "Établissement non précisé"}{slot.className ? ` · ${slot.className}` : ""} · {schoolOwnerLabels[ownerForSlot(slot)]}</span><em>{slot.sources.map((source) => source === "availability" ? "Disponibilité" : "Intérêt").join(" + ")}{slot.validatedInterest ? " · validé" : ""}</em></div></div>
         <div className="tutor-feed-assignments">{slot.otherAssignments.length ? <><strong>Autres séances ce jour</strong>{slot.otherAssignments.map((assignment, index) => <span key={`${assignment.timeSlot}-${assignment.school}-${index}`}>{assignment.timeSlot} · {assignment.school}</span>)}</> : <><strong>Aucune autre séance</strong><span>Disponible sur ce créneau</span></>}</div>
       </article>) : <div className="empty-state"><span>📆</span><h3>Aucun créneau réellement libre</h3><p>Les créneaux qui chevauchent une séance affectée sont automatiquement masqués.</p></div>}
     </div>

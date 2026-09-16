@@ -352,6 +352,7 @@ export type SchoolWatchItem = {
 
 export type SchoolEventKind = "event" | "comment" | "action";
 export type SchoolType = "alpha" | "mise-a-dispo" | "mixed";
+export type SchoolPortfolioOwner = "" | "kelly" | "pierre" | "julie";
 
 export type SchoolEvent = {
   id: string;
@@ -372,6 +373,7 @@ export type School = {
   name: string;
   category: string;
   schoolType: SchoolType;
+  portfolioOwner: SchoolPortfolioOwner;
   zone: string;
   coordinator: string;
   registeredCount: number | null;
@@ -1565,6 +1567,7 @@ function schoolFromImport(item: (typeof importedSchools)[number]): School {
     name: item.name,
     category: item.category,
     schoolType: item.schoolType,
+    portfolioOwner: "",
     zone: item.zone,
     coordinator: item.coordinator,
     registeredCount: item.registeredCount,
@@ -1604,6 +1607,7 @@ function mergeImportedSchools(schools: School[]) {
       externalId: school.externalId || imported.externalId,
       category: school.category || imported.category,
       schoolType: !school.category && school.schoolType === "mixed" ? imported.schoolType : school.schoolType,
+      portfolioOwner: school.portfolioOwner,
       zone: school.zone || imported.zone,
       coordinator: school.coordinator || imported.coordinator,
       registeredCount: school.registeredCount ?? imported.registeredCount,
@@ -1650,6 +1654,7 @@ export function sanitizeSchool(raw: Record<string, unknown>): School {
         : category.toLocaleLowerCase("fr").includes("alpha")
           ? "alpha"
           : "mixed",
+    portfolioOwner: raw.portfolioOwner === "kelly" || raw.portfolioOwner === "pierre" || raw.portfolioOwner === "julie" ? raw.portfolioOwner : "",
     zone: cleanText(raw.zone),
     coordinator: cleanText(raw.coordinator),
     registeredCount: cleanPositiveNumber(raw.registeredCount, true),

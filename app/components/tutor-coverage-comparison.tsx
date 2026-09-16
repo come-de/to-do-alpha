@@ -14,6 +14,25 @@ type TutorCoverage = {
   assignments: TutorAssignmentRow[];
 };
 type NoteDraft = { status: TutorCoverageNoteStatus; note: string };
+type SchoolPortfolioOwner = "" | "kelly" | "pierre" | "julie";
+type SchoolOwnerFilter = "all" | "unassigned" | Exclude<SchoolPortfolioOwner, "">;
+type SchoolAssignment = { name: string; portfolioOwner: SchoolPortfolioOwner };
+
+const schoolOwnerLabels: Record<SchoolPortfolioOwner, string> = {
+  "": "Non attribué",
+  kelly: "Kelly",
+  pierre: "Pierre",
+  julie: "Julie",
+};
+
+function normalizedSchoolName(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("fr")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
 
 function timestamp(value: string) {
   const parsed = new Date(value).getTime();
@@ -74,6 +93,8 @@ export default function TutorCoverageComparison() {
   const [view, setView] = useState<CoverageView>("unassigned");
   const [query, setQuery] = useState("");
   const [school, setSchool] = useState("all");
+  const [schoolAssignments, setSchoolAssignments] = useState<SchoolAssignment[]>([]);
+  const [schoolOwnerFilter, setSchoolOwnerFilter] = useState<SchoolOwnerFilter>("all");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [notes, setNotes] = useState<TutorCoverageNote[]>([]);
@@ -81,22 +102,26 @@ export default function TutorCoverageComparison() {
 
   const load = useCallback(async (silent = false) => {
     try {
-      const [availabilityResponse, assignmentResponse, notesResponse] = await Promise.all([
+      const [availabilityResponse, assignmentResponse, notesResponse, schoolsResponse] = await Promise.all([
         fetch("/api/availability-imports", { cache: "no-store" }),
         fetch("/api/tutor-assignment-imports", { cache: "no-store" }),
         fetch("/api/tutor-coverage-notes", { cache: "no-store" }),
+        fetch("/api/schools", { cache: "no-store" }),
       ]);
       const availabilityData = await availabilityResponse.json() as { imports?: AvailabilityImport[]; error?: string; detail?: string };
       const assignmentData = await assignmentResponse.json() as { imports?: TutorAssignmentImport[]; error?: string; detail?: string };
       const notesData = await notesResponse.json() as { notes?: TutorCoverageNote[]; error?: string; detail?: string };
+      const schoolsData = await schoolsResponse.json() as { schools?: SchoolAssignment[]; error?: string; detail?: string };
       if (!availabilityResponse.ok) throw new Error(availabilityData.detail || availabilityData.error || "Disponibilités indisponibles");
       if (!assignmentResponse.ok) throw new Error(assignmentData.detail || assignmentData.error || "Séances affectées indisponibles");
       if (!notesResponse.ok) throw new Error(notesData.detail || notesData.error || "Annotations indisponibles");
+      if (!schoolsResponse.ok) throw new Error(schoolsData.detail || schoolsData.error || "Attributions des établissements indisponibles");
       const nextAvailability = (availabilityData.imports ?? []).sort((a, b) => timestamp(b.importedAt) - timestamp(a.importedAt));
       const nextAssignments = (assignmentData.imports ?? []).sort((a, b) => timestamp(b.importedAt) - timestamp(a.importedAt));
       setAvailabilityImports(nextAvailability);
       setAssignmentImports(nextAssignments);
       setNotes(notesData.notes ?? []);
+      setSchoolAssignments(schoolsData.schools ?? []);
       setNoteDrafts((current) => ({
         ...Object.fromEntries((notesData.notes ?? []).map((item) => [`${item.date}:${item.tutorId}`, { status: item.status, note: item.note }])),
         ...current,
@@ -172,14 +197,32 @@ export default function TutorCoverageComparison() {
     return Array.from(labels).sort((a, b) => a.localeCompare(b, "fr"));
   }, [comparison]);
 
+  const ownerBySchoolName = useMemo(
+    () => new Map<string, SchoolPortfolioOwner>(schoolAssignments.map((item) => [normalizedSchoolName(item.name), item.portfolioOwner || ""])),
+    [schoolAssignments],
+  );
+
+  const ownerForSchool = useCallback(
+    (schoolName: string): SchoolPortfolioOwner => ownerBySchoolName.get(normalizedSchoolName(schoolName)) || "",
+    [ownerBySchoolName],
+  );
+
   const displayed = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase("fr");
-    return (view === "unassigned" ? comparison.unassigned : comparison.extra).filter((tutor) => {
-      const matchesSchool = school === "all" || tutor.availability.some((row) => row.school === school);
+    return (view === "unassigned" ? comparison.unassigned : comparison.extra).flatMap((tutor) => {
+      const availability = tutor.availability.filter((row) => {
+        const owner = ownerForSchool(row.school);
+        return schoolOwnerFilter === "all"
+          || (schoolOwnerFilter === "unassigned" && !owner)
+          || owner === schoolOwnerFilter;
+      });
+      if (!availability.length) return [];
+      const narrowedTutor = { ...tutor, availability };
+      const matchesSchool = school === "all" || availability.some((row) => row.school === school);
       const haystack = [tutor.tutorId, tutor.firstName, tutor.lastName, tutor.grade, ...tutor.availability.flatMap((row) => [row.school, row.timeSlot]), ...tutor.assignments.flatMap((row) => [row.school, row.timeSlot])].join(" ").toLocaleLowerCase("fr");
-      return matchesSchool && (!normalizedQuery || haystack.includes(normalizedQuery));
+      return matchesSchool && (!normalizedQuery || haystack.includes(normalizedQuery)) ? [narrowedTutor] : [];
     });
-  }, [comparison, query, school, view]);
+  }, [comparison, ownerForSchool, query, school, schoolOwnerFilter, view]);
 
   async function upload(file: File | undefined, kind: "availability" | "assignments") {
     if (!file) return;
@@ -267,6 +310,7 @@ export default function TutorCoverageComparison() {
         <label>Disponibilités<select value={availabilityId} onChange={(event) => { setAvailabilityId(event.target.value); setSelectedDate(""); }}><option value="">Sélectionner</option>{availabilityImports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {importDate(item.importedAt)}</option>)}</select></label>
         <label>Séances affectées<select value={assignmentId} onChange={(event) => { setAssignmentId(event.target.value); setSelectedDate(""); }}><option value="">Sélectionner</option>{assignmentImports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {importDate(item.importedAt)}</option>)}</select></label>
         <label>Date à analyser<select value={activeDate} onChange={(event) => setSelectedDate(event.target.value)}><option value="">Aucune date commune</option>{commonDates.map((date) => <option key={date} value={date}>{fullDate(date)}</option>)}</select></label>
+        <label>Responsable<select value={schoolOwnerFilter} onChange={(event) => setSchoolOwnerFilter(event.target.value as SchoolOwnerFilter)}><option value="unassigned">Non attribués</option><option value="kelly">Kelly</option><option value="pierre">Pierre</option><option value="julie">Julie</option><option value="all">Tous</option></select></label>
         <label>Établissement<select value={school} onChange={(event) => setSchool(event.target.value)}><option value="all">Tous</option>{schoolOptions.map((name) => <option key={name}>{name}</option>)}</select></label>
         <label>Recherche<input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tuteur, ID, établissement…" /></label>
       </div>
@@ -295,7 +339,7 @@ export default function TutorCoverageComparison() {
             return <article className={`coverage-card ${view} ${savedNote?.status === "unavailable" ? "is-unavailable" : ""}`} key={tutor.tutorId}>
               <div className="coverage-person"><h3>{`${tutor.firstName} ${tutor.lastName}`.trim() || tutor.tutorId}</h3><p>ID {tutor.tutorId}{tutor.phone ? ` · ${tutor.phone}` : ""}{tutor.grade ? ` · ${tutor.grade}` : ""}</p></div>
               {tutor.assignments.length ? <div className="coverage-slots assigned"><strong>Séance(s) affectée(s)</strong>{tutor.assignments.map((row, index) => <span key={`${row.timeSlot}-${row.school}-${index}`}>{row.timeSlot} · {row.school}{row.absent ? " · absent" : ""}</span>)}</div> : <div className="coverage-slots assigned empty"><strong>Aucune séance affectée</strong></div>}
-              <div className="coverage-slots available"><strong>{view === "extra" ? "Disponibilité(s) sans chevauchement" : "Disponibilité(s) déclarée(s)"}</strong>{tutor.availability.slice(0, 8).map((row, index) => <span key={`${row.sessionId}-${index}`}>{row.timeSlot} · {row.school}</span>)}{tutor.availability.length > 8 ? <small>+ {tutor.availability.length - 8} autre(s)</small> : null}</div>
+              <div className="coverage-slots available"><strong>{view === "extra" ? "Disponibilité(s) sans chevauchement" : "Disponibilité(s) déclarée(s)"}</strong>{tutor.availability.slice(0, 8).map((row, index) => <span key={`${row.sessionId}-${index}`}>{row.timeSlot} · {row.school} · {schoolOwnerLabels[ownerForSchool(row.school)]}</span>)}{tutor.availability.length > 8 ? <small>+ {tutor.availability.length - 8} autre(s)</small> : null}</div>
               <div className="coverage-note-editor">
                 <select value={noteDraft.status} onChange={(event) => setNoteDrafts((current) => ({ ...current, [noteKey]: { ...noteDraft, status: event.target.value as TutorCoverageNoteStatus } }))} aria-label={`Statut de ${tutor.firstName} ${tutor.lastName}`}>
                   <option value="to-check">À vérifier</option><option value="unavailable">N’est plus disponible</option><option value="confirmed">Disponibilité confirmée</option><option value="contacted">Contacté</option>
