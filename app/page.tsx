@@ -2595,6 +2595,11 @@ export default function Home() {
       })
       .sort((a, b) => Number(Boolean(a.portfolioOwner)) - Number(Boolean(b.portfolioOwner)) || a.name.localeCompare(b.name, "fr"));
   }, [schoolAssignmentFilter, schoolQuery, schools]);
+  const schoolCountsByOwner = useMemo(() => {
+    const counts: Record<SchoolPortfolioOwner, number> = { "": 0, kelly: 0, pierre: 0, julie: 0 };
+    schools.forEach((school) => { counts[school.portfolioOwner] += 1; });
+    return counts;
+  }, [schools]);
   const crmFeedItems = useMemo(
     () =>
       filteredSchools
@@ -6400,6 +6405,10 @@ export default function Home() {
               <div><strong>Répartition des établissements</strong><span>{schools.filter((school) => !school.portfolioOwner).length} non attribué{schools.filter((school) => !school.portfolioOwner).length > 1 ? "s" : ""} · {schools.length} au total</span></div>
               <small>Attribuer à Kelly, Pierre ou Julie</small>
             </summary>
+            <div className="owner-count-strip school-owner-counts">
+              <span className="owner-count-title">Établissements par responsable</span>
+              {(["kelly", "pierre", "julie", ""] as SchoolPortfolioOwner[]).map((owner) => <div className={!owner ? "unassigned" : ""} key={owner || "unassigned"}><small>{schoolPortfolioOwnerLabels[owner]}</small><strong>{schoolCountsByOwner[owner]}</strong></div>)}
+            </div>
             <div className="school-assignment-filters">
               {(["all", "unassigned", "kelly", "pierre", "julie"] as const).map((owner) => <button type="button" className={schoolAssignmentFilter === owner ? "active" : ""} onClick={() => setSchoolAssignmentFilter(owner)} key={owner}>{owner === "all" ? "Tous" : owner === "unassigned" ? "Non attribués" : schoolPortfolioOwnerLabels[owner]}</button>)}
               <button type="button" className="school-assignment-export" onClick={exportSchoolAssignments} disabled={!schools.length}>↓ Exporter la répartition CSV</button>

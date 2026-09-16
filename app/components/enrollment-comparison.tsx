@@ -4,6 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { EnrollmentImport, EnrollmentRow } from "@/app/lib/shared-data";
 
 type ComparisonView = "new" | "lost" | "same";
+type SchoolPortfolioOwner = "" | "kelly" | "pierre" | "julie";
+type SchoolAssignment = { name: string; portfolioOwner: SchoolPortfolioOwner };
+
+const schoolOwnerLabels: Record<SchoolPortfolioOwner, string> = { "": "Non attribués", kelly: "Kelly", pierre: "Pierre", julie: "Julie" };
 
 function sortTimestamp(value: string) {
   const timestamp = new Date(value).getTime();
@@ -56,6 +60,7 @@ function csvCell(value: unknown) {
 
 export default function EnrollmentComparison() {
   const [imports, setImports] = useState<EnrollmentImport[]>([]);
+  const [schoolAssignments, setSchoolAssignments] = useState<SchoolAssignment[]>([]);
   const [referenceId, setReferenceId] = useState("");
   const [recentId, setRecentId] = useState("");
   const [schoolFilter, setSchoolFilter] = useState("all");
@@ -67,13 +72,19 @@ export default function EnrollmentComparison() {
 
   const loadImports = useCallback(async (silent = false) => {
     try {
-      const response = await fetch("/api/enrollment-imports", { cache: "no-store" });
+      const [response, schoolsResponse] = await Promise.all([
+        fetch("/api/enrollment-imports", { cache: "no-store" }),
+        fetch("/api/schools", { cache: "no-store" }),
+      ]);
       const data = (await response.json()) as { imports?: Partial<EnrollmentImport>[]; error?: string; detail?: string };
+      const schoolsData = (await schoolsResponse.json()) as { schools?: SchoolAssignment[]; error?: string };
       if (!response.ok) throw new Error(data.detail || data.error || "Chargement impossible");
+      if (!schoolsResponse.ok) throw new Error(schoolsData.error || "Répartition des établissements indisponible");
       const nextImports = Array.isArray(data.imports)
         ? data.imports.map(normalizeImport).sort((a, b) => sortTimestamp(b.importedAt) - sortTimestamp(a.importedAt))
         : [];
       setImports(nextImports);
+      setSchoolAssignments(schoolsData.schools ?? []);
       setNameDrafts(Object.fromEntries(nextImports.map((item) => [item.id, item.displayName])));
       setRecentId((current) => (nextImports.some((item) => item.id === current) ? current : nextImports[0]?.id || ""));
       setReferenceId((current) =>
@@ -146,6 +157,15 @@ export default function EnrollmentComparison() {
       .filter((item) => item.before || item.after)
       .sort((a, b) => Math.abs(b.added + b.lost) - Math.abs(a.added + a.lost) || a.label.localeCompare(b.label, "fr"));
   }, [recentImport, referenceImport, schools]);
+
+  const studentsByOwner = useMemo(() => {
+    const counts: Record<SchoolPortfolioOwner, number> = { "": 0, kelly: 0, pierre: 0, julie: 0 };
+    const ownersBySchool = new Map(schoolAssignments.map((school) => [normalizeSchool(school.name), school.portfolioOwner]));
+    studentMap(recentImport?.rows ?? []).forEach((student) => {
+      counts[ownersBySchool.get(normalizeSchool(student.school)) ?? ""] += 1;
+    });
+    return counts;
+  }, [recentImport, schoolAssignments]);
 
   const displayedStudents = useMemo(() => {
     const rows = view === "new" ? comparison.newStudents : view === "lost" ? comparison.lostStudents : comparison.sameStudents;
@@ -306,6 +326,11 @@ export default function EnrollmentComparison() {
         <div className="positive"><span>Nouvelles inscriptions</span><strong>+{comparison.newStudents.length}</strong></div>
         <div className="negative"><span>Inscriptions perdues</span><strong>-{comparison.lostStudents.length}</strong></div>
         <div><span>Évolution nette</span><strong>{comparison.recentCount - comparison.referenceCount > 0 ? "+" : ""}{comparison.recentCount - comparison.referenceCount}</strong></div>
+      </div>
+
+      <div className="owner-count-strip enrollment-owner-counts">
+        <span className="owner-count-title">Élèves inscrits par RH · fichier récent</span>
+        {(["kelly", "pierre", "julie", ""] as SchoolPortfolioOwner[]).map((owner) => <div className={!owner ? "unassigned" : ""} key={owner || "unassigned"}><small>{schoolOwnerLabels[owner]}</small><strong>{studentsByOwner[owner]}</strong></div>)}
       </div>
 
       <div className="enrollment-school-summary">

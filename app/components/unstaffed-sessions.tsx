@@ -27,6 +27,7 @@ type SessionImport = {
   sourceRowCount: number;
   sourceSessionCount: number;
   schools?: UpcomingSessionSchool[];
+  schoolStaffing?: UpcomingSessionSchoolStaffing[];
   rows: UpcomingSession[];
 };
 
@@ -34,6 +35,13 @@ type UpcomingSessionSchool = {
   schoolId: string;
   name: string;
   categories: string[];
+};
+
+type UpcomingSessionSchoolStaffing = {
+  schoolId: string;
+  name: string;
+  staffedSessions: number;
+  unstaffedSessions: number;
 };
 
 type TutorInterest = {
@@ -217,7 +225,15 @@ export default function UnstaffedSessions() {
     byId: new Map(schoolAssignments.filter((school) => school.externalId).map((school) => [school.externalId, school.portfolioOwner])),
     byName: new Map(schoolAssignments.map((school) => [normalizedSchoolName(school.name), school.portfolioOwner])),
   }), [schoolAssignments]);
-  const ownerForSession = useCallback((row: UpcomingSession): SchoolPortfolioOwner => schoolOwnerIndexes.byId.get(row.schoolId) ?? schoolOwnerIndexes.byName.get(normalizedSchoolName(row.school)) ?? "", [schoolOwnerIndexes]);
+  const ownerForSchool = useCallback((schoolId: string, schoolName: string): SchoolPortfolioOwner => schoolOwnerIndexes.byId.get(schoolId) ?? schoolOwnerIndexes.byName.get(normalizedSchoolName(schoolName)) ?? "", [schoolOwnerIndexes]);
+  const ownerForSession = useCallback((row: UpcomingSession): SchoolPortfolioOwner => ownerForSchool(row.schoolId, row.school), [ownerForSchool]);
+  const staffedSessionsByOwner = useMemo(() => {
+    const counts: Record<SchoolPortfolioOwner, number> = { "": 0, kelly: 0, pierre: 0, julie: 0 };
+    (activeImport?.schoolStaffing ?? []).forEach((school) => {
+      counts[ownerForSchool(school.schoolId, school.name)] += school.staffedSessions;
+    });
+    return counts;
+  }, [activeImport, ownerForSchool]);
   const newSchoolCandidates = useMemo(() => {
     const existingIds = new Set(schoolAssignments.map((school) => school.externalId).filter(Boolean));
     return (activeImport?.schools ?? []).filter((school) => school.schoolId && !existingIds.has(school.schoolId));
@@ -482,6 +498,11 @@ export default function UnstaffedSessions() {
         <div className="candidate-kpi"><span>Avec personne mobilisable</span><strong>{sessionsWithCandidates}</strong></div>
         <div><span>Personnes distinctes</span><strong>{uniqueCandidateCount}</strong></div>
         <small>Source : {activeImport.sourceRowCount} lignes · {activeImport.sourceSessionCount} séances distinctes</small>
+      </div>
+      <div className="owner-count-strip unstaffed-owner-counts">
+        <span className="owner-count-title">Séances staffées par responsable</span>
+        {(["kelly", "pierre", "julie", ""] as SchoolPortfolioOwner[]).map((owner) => <div className={!owner ? "unassigned" : ""} key={owner || "unassigned"}><small>{schoolOwnerLabels[owner]}</small><strong>{staffedSessionsByOwner[owner]}</strong></div>)}
+        {!activeImport.schoolStaffing?.length ? <em>Disponible pour les nouveaux imports « Semaines à venir »</em> : null}
       </div>
       <div className="unstaffed-date-tabs" role="group" aria-label="Filtrer par jour">
         <button className={selectedDate === "all" ? "active" : ""} onClick={() => setSelectedDate("all")}>Tous <b>{dates.reduce((sum, date) => sum + visibleCountForDate(date), 0)}</b></button>

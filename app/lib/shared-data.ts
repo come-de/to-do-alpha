@@ -267,6 +267,13 @@ export type UpcomingSessionSchool = {
   categories: string[];
 };
 
+export type UpcomingSessionSchoolStaffing = {
+  schoolId: string;
+  name: string;
+  staffedSessions: number;
+  unstaffedSessions: number;
+};
+
 export type UpcomingSessionImport = {
   id: string;
   importedAt: string;
@@ -275,6 +282,7 @@ export type UpcomingSessionImport = {
   sourceRowCount: number;
   sourceSessionCount: number;
   schools: UpcomingSessionSchool[];
+  schoolStaffing: UpcomingSessionSchoolStaffing[];
   rows: UpcomingSessionRow[];
   createdAt: string;
 };
@@ -1271,9 +1279,18 @@ export function sanitizeUpcomingSessionSchool(raw: Record<string, unknown>): Upc
   };
 }
 
+export function sanitizeUpcomingSessionSchoolStaffing(raw: Record<string, unknown>): UpcomingSessionSchoolStaffing {
+  return {
+    schoolId: cleanText(raw.schoolId),
+    name: cleanText(raw.name),
+    staffedSessions: Math.max(0, Math.round(Number(raw.staffedSessions) || 0)),
+    unstaffedSessions: Math.max(0, Math.round(Number(raw.unstaffedSessions) || 0)),
+  };
+}
+
 export function parseUpcomingSessionsCsv(value: string) {
   const csvRows = parseCsvRows(value).filter((row) => row.some(Boolean));
-  if (!csvRows.length) return { rows: [] as UpcomingSessionRow[], schools: [] as UpcomingSessionSchool[], sourceRowCount: 0, sourceSessionCount: 0 };
+  if (!csvRows.length) return { rows: [] as UpcomingSessionRow[], schools: [] as UpcomingSessionSchool[], schoolStaffing: [] as UpcomingSessionSchoolStaffing[], sourceRowCount: 0, sourceSessionCount: 0 };
   const headers = csvRows[0].map(normalizedHeader);
   const indexFor = (aliases: string[]) => {
     for (const alias of aliases) {
@@ -1357,7 +1374,17 @@ export function parseUpcomingSessionsCsv(value: string) {
   const schoolCatalog = Array.from(schools.values())
     .map((school) => sanitizeUpcomingSessionSchool({ ...school, categories: Array.from(school.categorySet).sort((a, b) => a.localeCompare(b, "fr")) }))
     .sort((a, b) => a.name.localeCompare(b.name, "fr"));
-  return { rows, schools: schoolCatalog, sourceRowCount: dataRows.length, sourceSessionCount: sessions.size };
+  const staffingBySchool = new Map<string, UpcomingSessionSchoolStaffing>();
+  sessions.forEach((session) => {
+    if (!session.school) return;
+    const schoolKey = session.schoolId || `missing:${normalizeSchoolName(session.school)}`;
+    const staffing = staffingBySchool.get(schoolKey) ?? { schoolId: session.schoolId, name: session.school, staffedSessions: 0, unstaffedSessions: 0 };
+    if (session.tutorIds.size > 0) staffing.staffedSessions += 1;
+    else staffing.unstaffedSessions += 1;
+    staffingBySchool.set(schoolKey, staffing);
+  });
+  const schoolStaffing = Array.from(staffingBySchool.values()).sort((a, b) => a.name.localeCompare(b.name, "fr"));
+  return { rows, schools: schoolCatalog, schoolStaffing, sourceRowCount: dataRows.length, sourceSessionCount: sessions.size };
 }
 
 export function sanitizeUpcomingSessionImport(raw: Record<string, unknown>): UpcomingSessionImport {
@@ -1371,6 +1398,9 @@ export function sanitizeUpcomingSessionImport(raw: Record<string, unknown>): Upc
     sourceSessionCount: Math.max(0, Math.round(Number(raw.sourceSessionCount) || 0)),
     schools: Array.isArray(raw.schools)
       ? raw.schools.filter((school): school is Record<string, unknown> => Boolean(school && typeof school === "object")).map(sanitizeUpcomingSessionSchool).filter((school) => school.name)
+      : [],
+    schoolStaffing: Array.isArray(raw.schoolStaffing)
+      ? raw.schoolStaffing.filter((school): school is Record<string, unknown> => Boolean(school && typeof school === "object")).map(sanitizeUpcomingSessionSchoolStaffing).filter((school) => school.name)
       : [],
     rows: Array.isArray(raw.rows)
       ? raw.rows.filter((row): row is Record<string, unknown> => Boolean(row && typeof row === "object")).map(sanitizeUpcomingSessionRow).filter((row) => row.sessionId && row.date && row.school)
@@ -2356,6 +2386,7 @@ export async function createUpcomingSessionImportFromCsv(input: { fileName: stri
     sourceRowCount: parsed.sourceRowCount,
     sourceSessionCount: parsed.sourceSessionCount,
     schools: parsed.schools,
+    schoolStaffing: parsed.schoolStaffing,
     rows: parsed.rows,
     createdAt: now,
   });

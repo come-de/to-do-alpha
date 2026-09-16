@@ -389,6 +389,14 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .enrollment-summary .positive strong, .enrollment-school-table .positive { color: #047857; }
 .enrollment-summary .negative { border-color: rgba(190,24,93,.22); background: var(--red-pale); }
 .enrollment-summary .negative strong, .enrollment-school-table .negative { color: var(--red); }
+.owner-count-strip { margin: 0 12px 8px; padding: 6px 8px; border: 1px solid rgba(14,165,233,.2); border-radius: 9px; background: linear-gradient(100deg, rgba(224,247,255,.58), rgba(236,253,245,.62)); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.owner-count-strip .owner-count-title { margin-right: auto; color: var(--blue-title); font-size: 9.5px; font-weight: 850; }
+.owner-count-strip > div { min-width: 72px; padding: 4px 7px; border: 1px solid rgba(16,185,129,.22); border-radius: 8px; background: rgba(255,255,255,.88); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.owner-count-strip > div.unassigned { border-color: rgba(245,158,11,.3); background: #fffbeb; }
+.owner-count-strip small { color: var(--muted); font-size: 8px; font-weight: 760; }
+.owner-count-strip strong { color: var(--blue-title); font-size: 14px; }
+.owner-count-strip em { color: var(--muted); font-size: 8px; font-style: normal; }
+.school-assignment-directory .school-owner-counts { margin: 0 10px 8px; }
 .enrollment-school-summary { margin: 0 12px 10px; border: 1px solid var(--line); border-radius: 11px; background: rgba(244,251,252,.64); overflow: hidden; }
 .enrollment-section-title { min-height: 43px; padding: 7px 9px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .enrollment-section-title h3 { margin: 0; color: var(--blue-title); font-size: 13px; }
@@ -1301,6 +1309,9 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .unstaffed-school-review-actions { justify-content: flex-start; }
   .unstaffed-school-review-list { grid-template-columns: 1fr; }
   .unstaffed-summary { margin: 0 8px 7px; }
+  .owner-count-strip { margin: 0 8px 7px; }
+  .owner-count-strip .owner-count-title { width: 100%; margin-right: 0; }
+  .owner-count-strip > div { flex: 1 1 calc(50% - 4px); }
   .candidate-source-bar { margin: 0 8px 7px; grid-template-columns: 1fr; }
   .candidate-source-title { grid-column: auto; }
   .unstaffed-category-filter { grid-column: auto; }
