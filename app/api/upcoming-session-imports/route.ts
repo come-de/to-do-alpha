@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   createUpcomingSessionImportFromCsv,
   deleteUpcomingSessionImportById,
+  readSchools,
   readUpcomingSessionImports,
   readUpcomingSessionImportSummaries,
   updateUpcomingSessionImportName,
@@ -33,7 +34,14 @@ export async function POST(request: Request) {
       fileName: url.searchParams.get("fileName") || "semaines-a-venir.csv",
       rawCsv,
     });
-    return json({ import: createdImport }, 201);
+    const schools = await readSchools();
+    const existingIds = new Set(schools.map((school) => school.externalId).filter(Boolean));
+    const schoolDetection = {
+      newCount: createdImport.schools.filter((school) => school.schoolId && !existingIds.has(school.schoolId)).length,
+      existingCount: createdImport.schools.filter((school) => school.schoolId && existingIds.has(school.schoolId)).length,
+      missingIdCount: createdImport.schools.filter((school) => !school.schoolId).length,
+    };
+    return json({ import: createdImport, schoolDetection }, 201);
   } catch (error) {
     const detail = error instanceof Error ? error.message : "Impossible d’importer les séances à venir";
     return json({ error: "Impossible d’importer les séances à venir", detail }, 500);

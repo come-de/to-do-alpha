@@ -26,7 +26,22 @@ type SessionImport = {
   fileName: string;
   sourceRowCount: number;
   sourceSessionCount: number;
+  schools?: UpcomingSessionSchool[];
+  schoolStaffing?: UpcomingSessionSchoolStaffing[];
   rows: UpcomingSession[];
+};
+
+type UpcomingSessionSchool = {
+  schoolId: string;
+  name: string;
+  categories: string[];
+};
+
+type UpcomingSessionSchoolStaffing = {
+  schoolId: string;
+  name: string;
+  staffedSessions: number;
+  unstaffedSessions: number;
 };
 
 type TutorInterest = {
@@ -81,6 +96,11 @@ type SessionCandidate = {
 type EnrichedSession = UpcomingSession & { candidates: SessionCandidate[] };
 type SessionCategoryKey = "alpha" | "surveillance" | "service";
 type UnstaffedExclusions = { sessionIds: string[]; sourceKeys: string[]; updatedAt: string };
+type SchoolPortfolioOwner = "" | "kelly" | "pierre" | "julie";
+type SchoolAssignment = { externalId: string; name: string; portfolioOwner: SchoolPortfolioOwner };
+type SchoolOwnerFilter = "all" | "unassigned" | Exclude<SchoolPortfolioOwner, "">;
+
+const schoolOwnerLabels: Record<SchoolPortfolioOwner, string> = { "": "Non attribué", kelly: "Kelly", pierre: "Pierre", julie: "Julie" };
 
 const categoryLabels: Record<SessionCategoryKey, string> = {
   alpha: "Étude Alpha",
@@ -97,6 +117,10 @@ function sessionCategoryKey(value: string): SessionCategoryKey {
 
 function sourceExclusionKey(sessionId: string, personId: string, source: "interest" | "availability") {
   return `${sessionId}:${personId.trim()}:${source}`;
+}
+
+function normalizedSchoolName(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr").replace(/[^a-z0-9]+/g, " ").trim();
 }
 
 type TutorTrackingSnapshot = {
@@ -150,14 +174,17 @@ export default function UnstaffedSessions() {
   const [selectedCategories, setSelectedCategories] = useState<SessionCategoryKey[]>(["alpha", "surveillance", "service"]);
   const [shownSingleStudentAlphaDates, setShownSingleStudentAlphaDates] = useState<string[]>([]);
   const [exclusions, setExclusions] = useState<UnstaffedExclusions>({ sessionIds: [], sourceKeys: [], updatedAt: "" });
+  const [schoolAssignments, setSchoolAssignments] = useState<SchoolAssignment[]>([]);
+  const [deselectedNewSchoolIds, setDeselectedNewSchoolIds] = useState<string[]>([]);
+  const [schoolOwnerFilter, setSchoolOwnerFilter] = useState<SchoolOwnerFilter>("all");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
   const load = useCallback(async (silent = false) => {
     try {
-      const endpoints = ["/api/upcoming-session-imports", "/api/tutor-interest-imports", "/api/availability-imports", "/api/tutor-assignment-imports", "/api/tutor-tracking", "/api/unstaffed-exclusions"];
+      const endpoints = ["/api/upcoming-session-imports", "/api/tutor-interest-imports", "/api/availability-imports", "/api/tutor-assignment-imports", "/api/tutor-tracking", "/api/unstaffed-exclusions", "/api/schools"];
       const responses = await Promise.all(endpoints.map((endpoint) => fetch(endpoint, { cache: "no-store" })));
-      const payloads = await Promise.all(responses.map((response) => response.json())) as Array<{ imports?: unknown[]; tracking?: { snapshots?: TutorTrackingSnapshot[] }; exclusions?: UnstaffedExclusions; error?: string; detail?: string }>;
+      const payloads = await Promise.all(responses.map((response) => response.json())) as Array<{ imports?: unknown[]; tracking?: { snapshots?: TutorTrackingSnapshot[] }; exclusions?: UnstaffedExclusions; schools?: SchoolAssignment[]; error?: string; detail?: string }>;
       const failedIndex = responses.findIndex((response) => !response.ok);
       if (failedIndex >= 0) throw new Error(payloads[failedIndex].detail || payloads[failedIndex].error || "Chargement impossible");
       const next = (payloads[0].imports ?? []) as SessionImport[];
@@ -172,6 +199,7 @@ export default function UnstaffedSessions() {
       setAssignmentImports(nextAssignments);
       setLatestTutorSnapshot(nextTutorSnapshots[0] ?? null);
       setExclusions(nextExclusions);
+      setSchoolAssignments(payloads[6].schools ?? []);
       setSelectedImportId((current) => next.some((item) => item.id === current) ? current : next[0]?.id || "");
       setInterestImportId((current) => nextInterests.some((item) => item.id === current) ? current : nextInterests[0]?.id || "");
       setAvailabilityImportId((current) => nextAvailability.some((item) => item.id === current) ? current : nextAvailability[0]?.id || "");
@@ -193,16 +221,37 @@ export default function UnstaffedSessions() {
   const activeAvailabilityImport = availabilityImports.find((item) => item.id === availabilityImportId) ?? null;
   const activeAssignmentImport = assignmentImports.find((item) => item.id === assignmentImportId) ?? null;
   const dates = useMemo(() => Array.from(new Set((activeImport?.rows ?? []).map((row) => row.date))).sort(), [activeImport]);
+  const schoolOwnerIndexes = useMemo(() => ({
+    byId: new Map(schoolAssignments.filter((school) => school.externalId).map((school) => [school.externalId, school.portfolioOwner])),
+    byName: new Map(schoolAssignments.map((school) => [normalizedSchoolName(school.name), school.portfolioOwner])),
+  }), [schoolAssignments]);
+  const ownerForSchool = useCallback((schoolId: string, schoolName: string): SchoolPortfolioOwner => schoolOwnerIndexes.byId.get(schoolId) ?? schoolOwnerIndexes.byName.get(normalizedSchoolName(schoolName)) ?? "", [schoolOwnerIndexes]);
+  const ownerForSession = useCallback((row: UpcomingSession): SchoolPortfolioOwner => ownerForSchool(row.schoolId, row.school), [ownerForSchool]);
+  const staffedSessionsByOwner = useMemo(() => {
+    const counts: Record<SchoolPortfolioOwner, number> = { "": 0, kelly: 0, pierre: 0, julie: 0 };
+    (activeImport?.schoolStaffing ?? []).forEach((school) => {
+      counts[ownerForSchool(school.schoolId, school.name)] += school.staffedSessions;
+    });
+    return counts;
+  }, [activeImport, ownerForSchool]);
+  const newSchoolCandidates = useMemo(() => {
+    const existingIds = new Set(schoolAssignments.map((school) => school.externalId).filter(Boolean));
+    return (activeImport?.schools ?? []).filter((school) => school.schoolId && !existingIds.has(school.schoolId));
+  }, [activeImport, schoolAssignments]);
+  const schoolsWithoutId = useMemo(() => (activeImport?.schools ?? []).filter((school) => !school.schoolId), [activeImport]);
+  const selectedNewSchoolIds = useMemo(() => newSchoolCandidates.map((school) => school.schoolId).filter((schoolId) => !deselectedNewSchoolIds.includes(schoolId)), [deselectedNewSchoolIds, newSchoolCandidates]);
   const filteredRowsBeforeSingleStudentRule = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase("fr");
     return (activeImport?.rows ?? []).filter((row) => {
       if (exclusions.sessionIds.includes(row.sessionId)) return false;
+      const owner = ownerForSession(row);
+      if (schoolOwnerFilter === "unassigned" ? Boolean(owner) : schoolOwnerFilter !== "all" && owner !== schoolOwnerFilter) return false;
       if (selectedDate !== "all" && row.date !== selectedDate) return false;
       if (!selectedCategories.includes(sessionCategoryKey(row.category))) return false;
       if (!needle) return true;
       return [row.school, row.schoolId, row.category, row.group, row.room, row.sessionId, ...row.classes].join(" ").toLocaleLowerCase("fr").includes(needle);
     });
-  }, [activeImport, exclusions.sessionIds, query, selectedCategories, selectedDate]);
+  }, [activeImport, exclusions.sessionIds, ownerForSession, query, schoolOwnerFilter, selectedCategories, selectedDate]);
   const visibleRows = useMemo(() => filteredRowsBeforeSingleStudentRule.filter((row) => {
     const isSingleStudentAlpha = sessionCategoryKey(row.category) === "alpha" && row.studentCount === 1;
     return !isSingleStudentAlpha || shownSingleStudentAlphaDates.includes(row.date);
@@ -264,14 +313,39 @@ export default function UnstaffedSessions() {
     try {
       const rawCsv = await file.text();
       const response = await fetch(`/api/upcoming-session-imports?fileName=${encodeURIComponent(file.name)}`, { method: "POST", headers: { "Content-Type": "text/csv;charset=utf-8" }, body: rawCsv });
-      const data = await response.json() as { import?: SessionImport; error?: string; detail?: string };
+      const data = await response.json() as { import?: SessionImport; schoolDetection?: { newCount: number; existingCount: number; missingIdCount: number }; error?: string; detail?: string };
       if (!response.ok) throw new Error(data.detail || data.error || "Import impossible");
       await load(true);
       if (data.import?.id) setSelectedImportId(data.import.id);
+      setDeselectedNewSchoolIds([]);
       setSelectedDate("all");
-      setMessage(`${data.import?.rows.length ?? 0} séances non affectées sauvegardées. Aucune donnée nominative d’élève n’a été conservée.`);
+      const detection = data.schoolDetection;
+      setMessage(`${data.import?.rows.length ?? 0} séances non affectées sauvegardées${detection ? ` · ${detection.newCount} nouvel${detection.newCount > 1 ? "s" : ""} établissement${detection.newCount > 1 ? "s" : ""} à valider` : ""}. Aucune donnée nominative d’élève n’a été conservée.`);
     } catch (error) {
       setMessage(error instanceof Error ? `Import non sauvegardé : ${error.message}` : "Import non sauvegardé");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function createSelectedSchools() {
+    const selected = newSchoolCandidates.filter((school) => selectedNewSchoolIds.includes(school.schoolId));
+    if (!selected.length || saving) return;
+    setSaving(true);
+    setMessage("Création des établissements sélectionnés…");
+    try {
+      const response = await fetch("/api/schools", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ schools: selected.map((school) => ({ externalId: school.schoolId, name: school.name, categories: school.categories })) }),
+      });
+      const data = await response.json() as { schools?: SchoolAssignment[]; created?: SchoolAssignment[]; skippedIds?: string[]; error?: string; detail?: string };
+      if (!response.ok) throw new Error(data.detail || data.error || "Création impossible");
+      setSchoolAssignments(data.schools ?? schoolAssignments);
+      const createdCount = data.created?.length ?? 0;
+      setMessage(`${createdCount} établissement${createdCount > 1 ? "s" : ""} créé${createdCount > 1 ? "s" : ""} dans le CRM, sans attribution${data.skippedIds?.length ? ` · ${data.skippedIds.length} déjà existant${data.skippedIds.length > 1 ? "s" : ""}` : ""}`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Création impossible");
     } finally {
       setSaving(false);
     }
@@ -345,7 +419,9 @@ export default function UnstaffedSessions() {
 
   function visibleCountForDate(date: string) {
     return (activeImport?.rows ?? []).filter((row) => {
+      const owner = ownerForSession(row);
       if (row.date !== date || exclusions.sessionIds.includes(row.sessionId) || !selectedCategories.includes(sessionCategoryKey(row.category))) return false;
+      if (schoolOwnerFilter === "unassigned" ? Boolean(owner) : schoolOwnerFilter !== "all" && owner !== schoolOwnerFilter) return false;
       const hiddenSingleStudentAlpha = sessionCategoryKey(row.category) === "alpha" && row.studentCount === 1 && !shownSingleStudentAlphaDates.includes(date);
       return !hiddenSingleStudentAlpha;
     }).length;
@@ -381,12 +457,29 @@ export default function UnstaffedSessions() {
 
     <div className="unstaffed-toolbar">
       <label className="import-button">Importer le fichier CSV<input type="file" accept=".csv,text/csv" disabled={saving} onChange={(event) => { void upload(event.target.files?.[0]); event.currentTarget.value = ""; }} /></label>
-      <label><span>Fichier analysé</span><select value={selectedImportId} onChange={(event) => { setSelectedImportId(event.target.value); setSelectedDate("all"); setShownSingleStudentAlphaDates([]); }}><option value="">Aucun fichier</option>{imports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {formatImportDate(item.importedAt)}</option>)}</select></label>
+      <label><span>Fichier analysé</span><select value={selectedImportId} onChange={(event) => { setSelectedImportId(event.target.value); setSelectedDate("all"); setShownSingleStudentAlphaDates([]); setDeselectedNewSchoolIds([]); }}><option value="">Aucun fichier</option>{imports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {formatImportDate(item.importedAt)}</option>)}</select></label>
       <div className="unstaffed-category-filter"><span>Types de séances</span><div>{(Object.keys(categoryLabels) as SessionCategoryKey[]).map((item) => <button type="button" className={selectedCategories.includes(item) ? "active" : ""} onClick={() => toggleCategory(item)} key={item}>{categoryLabels[item]}</button>)}</div></div>
+      <div className="unstaffed-owner-filter"><span>Responsable établissement</span><div>{(["unassigned", "kelly", "pierre", "julie", "all"] as const).map((owner) => <button type="button" className={schoolOwnerFilter === owner ? "active" : ""} onClick={() => setSchoolOwnerFilter(owner)} key={owner}>{owner === "all" ? "Tous" : owner === "unassigned" ? "Non attribués" : schoolOwnerLabels[owner]}</button>)}</div></div>
       <label className="unstaffed-search"><span>Recherche</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Établissement, classe, groupe…" /></label>
       <button type="button" className="button quiet" onClick={exportCsv} disabled={!visibleRows.length}>Exporter CSV</button>
     </div>
     {message ? <p className="enrollment-message">{message}</p> : null}
+
+    {activeImport && (newSchoolCandidates.length > 0 || schoolsWithoutId.length > 0) ? <section className="unstaffed-school-review">
+      <div className="unstaffed-school-review-head">
+        <div><p className="eyebrow">Validation CRM</p><h3>Nouveaux établissements détectés</h3><p>Comparaison uniquement par ID avec le CRM. Rien n’est créé sans votre validation.</p></div>
+        {newSchoolCandidates.length ? <div className="unstaffed-school-review-actions">
+          <button type="button" className="button quiet" onClick={() => setDeselectedNewSchoolIds([])}>Tout sélectionner</button>
+          <button type="button" className="button quiet" onClick={() => setDeselectedNewSchoolIds(newSchoolCandidates.map((school) => school.schoolId))}>Aucun</button>
+          <button type="button" className="button primary" disabled={saving || !selectedNewSchoolIds.length} onClick={() => void createSelectedSchools()}>Créer les établissements sélectionnés ({selectedNewSchoolIds.length})</button>
+        </div> : null}
+      </div>
+      {newSchoolCandidates.length ? <div className="unstaffed-school-review-list">{newSchoolCandidates.map((school) => <label key={school.schoolId}>
+        <input type="checkbox" checked={selectedNewSchoolIds.includes(school.schoolId)} onChange={(event) => setDeselectedNewSchoolIds((current) => event.target.checked ? current.filter((id) => id !== school.schoolId) : Array.from(new Set([...current, school.schoolId])))} />
+        <span><strong>{school.name}</strong><small>ID {school.schoolId} · {school.categories.join(" · ") || "Catégorie non précisée"}</small></span>
+      </label>)}</div> : <p className="unstaffed-school-review-empty">Tous les établissements avec un ID sont déjà présents dans le CRM.</p>}
+      {schoolsWithoutId.length ? <details className="unstaffed-school-anomalies"><summary>{schoolsWithoutId.length} établissement{schoolsWithoutId.length > 1 ? "s" : ""} sans ID — création impossible</summary><ul>{schoolsWithoutId.map((school, index) => <li key={`${school.name}-${index}`}>{school.name}</li>)}</ul></details> : null}
+    </section> : null}
 
     <div className="candidate-source-bar">
       <div className="candidate-source-title"><strong>Sources des personnes mobilisables</strong><span>L’ID séance relie les intérêts et les disponibilités à chaque séance.</span>{latestTutorSnapshot ? <em>Statuts déterminés avec la liste des tuteurs du {formatDate(latestTutorSnapshot.date)}</em> : <em>Aucune liste de tuteurs : statuts inconnus</em>}</div>
@@ -406,6 +499,11 @@ export default function UnstaffedSessions() {
         <div><span>Personnes distinctes</span><strong>{uniqueCandidateCount}</strong></div>
         <small>Source : {activeImport.sourceRowCount} lignes · {activeImport.sourceSessionCount} séances distinctes</small>
       </div>
+      <div className="owner-count-strip unstaffed-owner-counts">
+        <span className="owner-count-title">Séances staffées par responsable</span>
+        {(["kelly", "pierre", "julie", ""] as SchoolPortfolioOwner[]).map((owner) => <div className={!owner ? "unassigned" : ""} key={owner || "unassigned"}><small>{schoolOwnerLabels[owner]}</small><strong>{staffedSessionsByOwner[owner]}</strong></div>)}
+        {!activeImport.schoolStaffing?.length ? <em>Disponible pour les nouveaux imports « Semaines à venir »</em> : null}
+      </div>
       <div className="unstaffed-date-tabs" role="group" aria-label="Filtrer par jour">
         <button className={selectedDate === "all" ? "active" : ""} onClick={() => setSelectedDate("all")}>Tous <b>{dates.reduce((sum, date) => sum + visibleCountForDate(date), 0)}</b></button>
         {dates.map((date) => <button key={date} className={selectedDate === date ? "active" : ""} onClick={() => setSelectedDate(date)}>{formatDate(date)} <b>{visibleCountForDate(date)}</b></button>)}
@@ -415,7 +513,7 @@ export default function UnstaffedSessions() {
           <header><div><span>{formatDate(date, true)}</span><small>{new Set(rows.map((row) => row.school)).size} établissements</small></div><div className="unstaffed-day-actions"><strong>{rows.length} séance{rows.length > 1 ? "s" : ""}</strong>{(() => { const hiddenCount = filteredRowsBeforeSingleStudentRule.filter((row) => row.date === date && sessionCategoryKey(row.category) === "alpha" && row.studentCount === 1).length; return hiddenCount ? <button type="button" onClick={() => toggleSingleStudentAlphaForDate(date)}>{shownSingleStudentAlphaDates.includes(date) ? "Masquer" : "Afficher"} {hiddenCount} groupe{hiddenCount > 1 ? "s" : ""} Alpha à 1 élève</button> : null; })()}</div></header>
           <div className="unstaffed-table-wrap"><table><thead><tr><th>Horaire</th><th>Établissement</th><th>Type</th><th>Groupe</th><th>Classes</th><th>Élèves</th><th>Salle</th><th aria-label="Actions"></th></tr></thead><tbody>
             {rows.map((row) => <Fragment key={row.sessionId}>
-              <tr className={row.candidates.length ? "has-candidates" : ""}><td><strong>{row.startTime || "—"}–{row.endTime || "—"}</strong><small>#{row.sessionId}</small></td><td><SchoolAdminLink schoolId={row.schoolId}>{row.school}</SchoolAdminLink></td><td><span className="session-category">{row.category || "—"}</span></td><td>{row.group || "—"}</td><td><div className="class-tags">{row.classes.length ? row.classes.map((item) => <span key={item}>{item}</span>) : <em>Non précisée</em>}</div></td><td>{row.studentCount || "—"}</td><td>{row.room || "—"}</td><td><button type="button" className="unstaffed-hide-button" onClick={() => hideSession(row.sessionId)} disabled={saving} title="Masquer durablement cette séance" aria-label={`Masquer la séance ${row.sessionId}`}>×</button></td></tr>
+              <tr className={row.candidates.length ? "has-candidates" : ""}><td><strong>{row.startTime || "—"}–{row.endTime || "—"}</strong><small>#{row.sessionId}</small></td><td><SchoolAdminLink schoolId={row.schoolId}>{row.school}</SchoolAdminLink><small className={`school-owner-label ${ownerForSession(row) ? "assigned" : "unassigned"}`}>{schoolOwnerLabels[ownerForSession(row)]}</small></td><td><span className="session-category">{row.category || "—"}</span></td><td>{row.group || "—"}</td><td><div className="class-tags">{row.classes.length ? row.classes.map((item) => <span key={item}>{item}</span>) : <em>Non précisée</em>}</div></td><td>{row.studentCount || "—"}</td><td>{row.room || "—"}</td><td><button type="button" className="unstaffed-hide-button" onClick={() => hideSession(row.sessionId)} disabled={saving} title="Masquer durablement cette séance" aria-label={`Masquer la séance ${row.sessionId}`}>×</button></td></tr>
               {(() => {
                 const candidates = row.candidates.filter((candidate) => candidate.personStatus === "candidate");
                 const freeTutors = row.candidates.filter((candidate) => candidate.personStatus === "tutor" && !candidate.hasConflict);
