@@ -654,6 +654,12 @@ const schoolPortfolioOwnerLabels: Record<SchoolPortfolioOwner, string> = {
   pierre: "Pierre",
   julie: "Julie",
 };
+const schoolPortfolioOwnerEmails: Record<SchoolPortfolioOwner, string> = {
+  "": "",
+  kelly: "kelly@etudealpha.fr",
+  pierre: "pierre@etudealpha.fr",
+  julie: "julie@etudealpha.fr",
+};
 
 const communicationAudienceLabels: Record<CommunicationAudience, string> = {
   tuteurs: "Tuteurs",
@@ -3029,6 +3035,32 @@ export default function Home() {
     const text = await file.text();
     setSchoolAssignmentPaste(text);
     importSchoolAssignments(text);
+  }
+
+  function exportSchoolAssignments() {
+    const header = ["ID établissement", "Établissement", "Ville", "Département", "Type", "Catégorie", "Responsable", "Email responsable", "Statut attribution"];
+    const rows = [...schools]
+      .sort((a, b) => Number(Boolean(a.portfolioOwner)) - Number(Boolean(b.portfolioOwner)) || a.name.localeCompare(b.name, "fr"))
+      .map((school) => [
+        school.externalId,
+        school.name,
+        school.city,
+        school.department,
+        schoolTypeLabels[school.schoolType],
+        school.category,
+        schoolPortfolioOwnerLabels[school.portfolioOwner],
+        schoolPortfolioOwnerEmails[school.portfolioOwner],
+        school.portfolioOwner ? "Attribué" : "Non attribué",
+      ]);
+    const csv = `\uFEFF${[header, ...rows].map((row) => row.map(csvCell).join(";")).join("\r\n")}`;
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `repartition-etablissements-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    setToast(`${schools.length} établissements exportés`);
   }
 
   async function saveStudentHistory(nextHistory: StudentHistoryYear[], message: string) {
@@ -6359,6 +6391,7 @@ export default function Home() {
             </summary>
             <div className="school-assignment-filters">
               {(["all", "unassigned", "kelly", "pierre", "julie"] as const).map((owner) => <button type="button" className={schoolAssignmentFilter === owner ? "active" : ""} onClick={() => setSchoolAssignmentFilter(owner)} key={owner}>{owner === "all" ? "Tous" : owner === "unassigned" ? "Non attribués" : schoolPortfolioOwnerLabels[owner]}</button>)}
+              <button type="button" className="school-assignment-export" onClick={exportSchoolAssignments} disabled={!schools.length}>↓ Exporter la répartition CSV</button>
             </div>
             <details className="school-assignment-importer">
               <summary>Importer ou coller une répartition</summary>

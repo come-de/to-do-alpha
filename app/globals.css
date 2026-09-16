@@ -581,6 +581,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .school-assignment-filters { padding: 0 10px 8px; display: flex; flex-wrap: wrap; gap: 5px; }
 .school-assignment-filters button { border: 1px solid var(--line); border-radius: 999px; padding: 4px 8px; color: var(--muted); background: white; font-size: 9px; font-weight: 800; cursor: pointer; }
 .school-assignment-filters button.active { border-color: rgba(14,165,233,.4); color: var(--blue-dark); background: #eaf8ff; }
+.school-assignment-filters .school-assignment-export { margin-left: auto; border-color: rgba(16,185,129,.32); color: var(--green-dark); background: var(--green-pale); }
+.school-assignment-filters .school-assignment-export:hover { border-color: rgba(16,185,129,.55); background: white; }
 .school-assignment-importer { margin: 0 10px 8px; border: 1px dashed rgba(14,165,233,.32); border-radius: 9px; background: rgba(255,255,255,.72); }
 .school-assignment-importer > summary { padding: 7px 9px; color: var(--blue-dark); font-size: 10px; font-weight: 850; cursor: pointer; }
 .school-assignment-importer > div { padding: 0 9px 9px; display: grid; gap: 7px; }
