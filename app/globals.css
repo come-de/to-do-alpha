@@ -449,6 +449,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .files-category-heading p { margin: 3px 0 0; color: var(--muted); font-size: 9.5px; line-height: 1.3; }
 .files-category-actions { padding: 7px 9px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 7px; }
 .files-category-actions .import-button { min-height: 29px; padding: 5px 9px; font-size: 9px; }
+.files-category-actions.with-date { align-items: end; flex-wrap: wrap; }
+.files-import-date { flex: 1 1 120px; display: grid; gap: 3px; color: var(--muted); font-size: 8.5px; font-weight: 850; text-transform: uppercase; letter-spacing: .05em; }
+.files-import-date input { width: 100%; min-height: 29px; border: 1px solid var(--line); border-radius: 7px; padding: 3px 6px; color: var(--blue-title); background: white; font-size: 10px; font-weight: 750; }
 .files-list { max-height: 330px; padding: 7px; overflow: auto; display: grid; gap: 6px; }
 .files-list > div { padding: 6px; border: 1px solid var(--line); border-radius: 8px; background: white; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 6px; align-items: center; }
 .files-list input { width: 100%; min-width: 0; height: 27px; border: 1px solid var(--line); border-radius: 7px; padding: 0 7px; color: var(--blue-title); background: var(--soft); font-size: 10px; font-weight: 750; }

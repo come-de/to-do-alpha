@@ -172,6 +172,9 @@ export type TutorTrackingRecord = {
 export type TutorTrackingSnapshot = {
   id: string;
   date: string;
+  displayName: string;
+  fileName: string;
+  sourceRowCount: number;
   records: TutorTrackingRecord[];
   createdAt: string;
   updatedAt: string;
@@ -894,6 +897,9 @@ export function sanitizeTutorTrackingSnapshot(raw: Record<string, unknown>): Tut
   return {
     id: cleanText(raw.id) || `tutor-tracking-${date}`,
     date,
+    displayName: cleanText(raw.displayName) || cleanText(raw.fileName) || `Liste tuteurs du ${date}`,
+    fileName: cleanText(raw.fileName) || "liste-tuteurs.csv",
+    sourceRowCount: Math.max(0, Math.round(Number(raw.sourceRowCount) || (Array.isArray(raw.records) ? raw.records.length : 0))),
     records: Array.isArray(raw.records)
       ? raw.records
           .filter((record): record is Record<string, unknown> => Boolean(record && typeof record === "object"))
@@ -902,6 +908,54 @@ export function sanitizeTutorTrackingSnapshot(raw: Record<string, unknown>): Tut
       : [],
     createdAt: cleanText(raw.createdAt) || now,
     updatedAt: cleanText(raw.updatedAt) || cleanText(raw.createdAt) || now,
+  };
+}
+
+export function parseTutorTrackingCsv(value: string) {
+  const csvRows = parseCsvRows(value).filter((row) => row.some(Boolean));
+  if (!csvRows.length) return { records: [] as TutorTrackingRecord[], sourceRowCount: 0 };
+  const firstRow = csvRows[0].map(normalizedHeader);
+  const hasHeader = firstRow.some((cell) => [
+    "id", "idtuteur", "nom", "nomtuteur", "nomdusage", "prenom", "prenomtuteur",
+    "telephone", "numerodetelephone", "email", "villesouhaitee", "villesouhaitees",
+  ].includes(cell));
+  const headers = hasHeader
+    ? firstRow
+    : ["id", "nom", "prenom", "telephone", "etablissement", "email", "villesouhaitee"];
+  const dataRows = hasHeader ? csvRows.slice(1) : csvRows;
+  const indexFor = (aliases: string[]) => {
+    for (const alias of aliases) {
+      const index = headers.findIndex((header) => header === alias);
+      if (index >= 0) return index;
+    }
+    return -1;
+  };
+  const valueAt = (row: string[], index: number) => (index >= 0 ? row[index] || "" : "");
+  const idIndex = indexFor(["id", "idtuteur", "tutorid", "identifiant"]);
+  const lastNameIndex = indexFor(["nomtuteur", "nomdusage", "nom", "lastname", "name"]);
+  const firstNameIndex = indexFor(["prenom", "prenomtuteur", "firstname"]);
+  const phoneIndex = indexFor(["telephone", "numerodetelephone", "tel", "phone", "mobile"]);
+  const emailIndex = indexFor(["email", "mail", "courriel"]);
+  const schoolIndex = indexFor(["etablissement", "etablissements", "school", "ecole"]);
+  const wantedCityIndex = indexFor(["villesouhaitees", "villesouhaitee", "villesouhaites", "villesouhaite", "ville"]);
+  const byKey = new Map<string, TutorTrackingRecord>();
+  dataRows.forEach((row) => {
+    const record = sanitizeTutorTrackingRecord({
+      tutorId: valueAt(row, idIndex),
+      lastName: valueAt(row, lastNameIndex),
+      firstName: valueAt(row, firstNameIndex),
+      phone: valueAt(row, phoneIndex),
+      email: valueAt(row, emailIndex),
+      school: valueAt(row, schoolIndex),
+      wantedCity: valueAt(row, wantedCityIndex),
+    });
+    if (record.key && (record.tutorId || record.lastName || record.firstName || record.phone || record.email)) {
+      byKey.set(record.key, record);
+    }
+  });
+  return {
+    records: Array.from(byKey.values()).sort((a, b) => `${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`, "fr")),
+    sourceRowCount: dataRows.length,
   };
 }
 
@@ -1912,6 +1966,46 @@ export async function writeTutorTracking(tracking: TutorTrackingData) {
   } catch {
     memory.__petitSuiviTutorTracking = sanitizedTracking;
   }
+}
+
+export async function createTutorTrackingSnapshotFromCsv(input: { date: string; fileName: string; rawCsv: string }) {
+  const date = cleanText(input.date);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("La date liée à l’import est invalide");
+  const { records, sourceRowCount } = parseTutorTrackingCsv(input.rawCsv);
+  if (!records.length) throw new Error("Aucun tuteur valide trouvé dans ce CSV");
+  const now = new Date().toISOString();
+  const tracking = await readTutorTracking();
+  const existing = tracking.snapshots.find((snapshot) => snapshot.date === date);
+  const fileName = cleanText(input.fileName) || "liste-tuteurs.csv";
+  const snapshot = sanitizeTutorTrackingSnapshot({
+    id: existing?.id || `tutor-tracking-${date}`,
+    date,
+    displayName: existing?.displayName || fileName.replace(/\.[^.]+$/, "") || `Liste tuteurs du ${date}`,
+    fileName,
+    sourceRowCount,
+    records,
+    createdAt: existing?.createdAt || now,
+    updatedAt: now,
+  });
+  const nextTracking = sanitizeTutorTrackingData({
+    ...tracking,
+    snapshots: [snapshot, ...tracking.snapshots.filter((item) => item.date !== date)],
+  } as unknown as Record<string, unknown>);
+  await writeTutorTracking(nextTracking);
+  return { snapshot, tracking: nextTracking, replaced: Boolean(existing) };
+}
+
+export async function updateTutorTrackingSnapshotName(id: string, displayName: string) {
+  const cleanedName = cleanText(displayName);
+  if (!cleanedName) throw new Error("Le nom de l’import est obligatoire");
+  const tracking = await readTutorTracking();
+  if (!tracking.snapshots.some((snapshot) => snapshot.id === id)) throw new Error("Import introuvable");
+  const nextTracking = sanitizeTutorTrackingData({
+    ...tracking,
+    snapshots: tracking.snapshots.map((snapshot) => snapshot.id === id ? { ...snapshot, displayName: cleanedName } : snapshot),
+  } as unknown as Record<string, unknown>);
+  await writeTutorTracking(nextTracking);
+  return nextTracking;
 }
 
 export async function readAvailabilityImports() {

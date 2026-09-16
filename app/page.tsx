@@ -184,6 +184,9 @@ type TutorTrackingRecord = {
 type TutorTrackingSnapshot = {
   id: string;
   date: string;
+  displayName: string;
+  fileName: string;
+  sourceRowCount: number;
   records: TutorTrackingRecord[];
   createdAt: string;
   updatedAt: string;
@@ -992,6 +995,9 @@ function normalizeTutorTrackingSnapshot(raw: Partial<TutorTrackingSnapshot>): Tu
   return {
     id: raw.id || `tutor-tracking-${date}`,
     date,
+    displayName: raw.displayName || raw.fileName || `Liste tuteurs du ${date}`,
+    fileName: raw.fileName || "liste-tuteurs.csv",
+    sourceRowCount: Math.max(0, Math.round(Number(raw.sourceRowCount) || (Array.isArray(raw.records) ? raw.records.length : 0))),
     records: Array.isArray(raw.records)
       ? raw.records
           .map(normalizeTutorTrackingRecord)
@@ -3530,35 +3536,40 @@ export default function Home() {
     setToast("Export CSV téléchargé");
   }
 
-  async function importTutorTrackingCsv() {
+  async function importTutorTrackingCsv(csvValue = tutorTrackingCsv, fileName = "liste-tuteurs.csv") {
     if (!tutorTrackingDate || saving) return;
-    const records = parseTutorTrackingCsv(tutorTrackingCsv);
+    const records = parseTutorTrackingCsv(csvValue);
     if (!records.length) {
       setToast("Aucun tuteur valide à importer");
       return;
     }
-    const now = new Date().toISOString();
     const existing = tutorTracking.snapshots.find((snapshot) => snapshot.date === tutorTrackingDate);
-    const nextSnapshot = normalizeTutorTrackingSnapshot({
-      id: existing?.id || `tutor-tracking-${tutorTrackingDate}`,
-      date: tutorTrackingDate,
-      records,
-      createdAt: existing?.createdAt || now,
-      updatedAt: now,
-    });
-    await saveTutorTracking(
-      {
-        ...tutorTracking,
-        snapshots: [nextSnapshot, ...tutorTracking.snapshots.filter((snapshot) => snapshot.date !== tutorTrackingDate)],
-      },
-      existing ? "Liste tuteurs remplacée" : "Liste tuteurs importée",
-    );
-    setTutorTrackingCompareEndDate(tutorTrackingDate);
-    const previousDate = tutorTracking.snapshots
-      .filter((snapshot) => sortDateValue(snapshot.date) < sortDateValue(tutorTrackingDate))
-      .sort((a, b) => sortDateValue(b.date) - sortDateValue(a.date))[0]?.date;
-    if (previousDate) setTutorTrackingCompareStartDate(previousDate);
-    setTutorTrackingCsv("");
+    if (existing && !window.confirm(`Un import existe déjà pour le ${formatFullDate(tutorTrackingDate)}. Le remplacer ?`)) return;
+    setSaving(true);
+    setSyncError("");
+    try {
+      const response = await fetch("/api/tutor-tracking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: tutorTrackingDate, fileName, rawCsv: csvValue }),
+      });
+      const data = (await response.json()) as { tracking?: Partial<TutorTrackingData>; error?: string; detail?: string };
+      if (!response.ok) throw new Error(data.detail || data.error || "Import tuteurs impossible");
+      const nextTracking = normalizeTutorTrackingData(data.tracking || {});
+      setTutorTracking(nextTracking);
+      setTutorTrackingCompareEndDate(tutorTrackingDate);
+      const previousDate = nextTracking.snapshots
+        .filter((snapshot) => sortDateValue(snapshot.date) < sortDateValue(tutorTrackingDate))
+        .sort((a, b) => sortDateValue(b.date) - sortDateValue(a.date))[0]?.date;
+      if (previousDate) setTutorTrackingCompareStartDate(previousDate);
+      setTutorTrackingCsv("");
+      setToast(existing ? "Liste tuteurs remplacée et sauvegardée" : "Liste tuteurs sauvegardée dans Fichiers");
+    } catch (error) {
+      setSyncError("L’import des tuteurs n’a pas été sauvegardé");
+      setToast(error instanceof Error ? error.message : "Import tuteurs impossible");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function importTutorTrackingFile(file: File | undefined) {
@@ -3566,7 +3577,7 @@ export default function Home() {
     try {
       const text = await file.text();
       setTutorTrackingCsv(text);
-      setToast("CSV chargé, cliquez sur Importer pour sauvegarder");
+      await importTutorTrackingCsv(text, file.name);
     } catch {
       setToast("Fichier CSV illisible");
     }
@@ -4715,12 +4726,12 @@ export default function Home() {
         <div className="tutor-tracking-import">
           <div>
             <strong>Importer un CSV de tuteurs</strong>
-            <span>Colonnes reconnues : id, nom, prénom, téléphone, email, ville souhaitée. Sans en-tête : ID, Nom, Prénom, Téléphone, Établissement, Email, Ville souhaitée.</span>
+            <span>Choisissez d’abord la date liée à l’import. Le fichier est sauvegardé immédiatement et devient visible dans l’onglet Fichiers.</span>
           </div>
           <div className="tutor-tracking-file-row">
             <input type="file" accept=".csv,text/csv,.txt" onChange={(event) => { void importTutorTrackingFile(event.target.files?.[0]); event.currentTarget.value = ""; }} />
             <button className="button primary" onClick={() => { void importTutorTrackingCsv(); }} disabled={saving || !tutorTrackingDate || !tutorTrackingCsv.trim()}>
-              Importer / remplacer cette date
+              Sauvegarder le contenu collé
             </button>
             {activeSnapshot && (
               <button className="button quiet danger-text" onClick={() => { void deleteTutorTrackingSnapshot(activeSnapshot.date); }} disabled={saving}>
@@ -4731,7 +4742,7 @@ export default function Home() {
           <textarea
             value={tutorTrackingCsv}
             onChange={(event) => setTutorTrackingCsv(event.target.value)}
-            placeholder="Vous pouvez aussi coller ici le contenu CSV..."
+            placeholder="Ou collez ici le contenu CSV, puis cliquez sur « Sauvegarder le contenu collé »…"
             aria-label="CSV des tuteurs"
           />
         </div>
