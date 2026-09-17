@@ -101,6 +101,18 @@ type SchoolPortfolioOwner = "" | "kelly" | "pierre" | "julie";
 type SchoolAssignment = { externalId: string; name: string; portfolioOwner: SchoolPortfolioOwner };
 type SchoolOwnerFilter = "all" | "unassigned" | Exclude<SchoolPortfolioOwner, "">;
 
+function initialDateFilter() {
+  if (typeof window === "undefined") return "all";
+  const value = new URL(window.location.href).searchParams.get("date-seances") || "";
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : "all";
+}
+
+function initialOwnerFilter(): SchoolOwnerFilter {
+  if (typeof window === "undefined") return "all";
+  const value = new URL(window.location.href).searchParams.get("responsable");
+  return value === "unassigned" || value === "kelly" || value === "pierre" || value === "julie" ? value : "all";
+}
+
 const schoolOwnerLabels: Record<SchoolPortfolioOwner, string> = { "": "Non attribué", kelly: "Kelly", pierre: "Pierre", julie: "Julie" };
 
 const categoryLabels: Record<SessionCategoryKey, string> = {
@@ -170,14 +182,14 @@ export default function UnstaffedSessions() {
   const [interestImportId, setInterestImportId] = useState("");
   const [availabilityImportId, setAvailabilityImportId] = useState("");
   const [assignmentImportId, setAssignmentImportId] = useState("");
-  const [selectedDate, setSelectedDate] = useState("all");
+  const [selectedDate, setSelectedDate] = useState(initialDateFilter);
   const [query, setQuery] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<SessionCategoryKey[]>(["alpha", "surveillance", "service"]);
   const [shownSingleStudentAlphaDates, setShownSingleStudentAlphaDates] = useState<string[]>([]);
   const [exclusions, setExclusions] = useState<UnstaffedExclusions>({ sessionIds: [], sourceKeys: [], updatedAt: "" });
   const [schoolAssignments, setSchoolAssignments] = useState<SchoolAssignment[]>([]);
   const [deselectedNewSchoolIds, setDeselectedNewSchoolIds] = useState<string[]>([]);
-  const [schoolOwnerFilter, setSchoolOwnerFilter] = useState<SchoolOwnerFilter>("all");
+  const [schoolOwnerFilter, setSchoolOwnerFilter] = useState<SchoolOwnerFilter>(initialOwnerFilter);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -216,6 +228,15 @@ export default function UnstaffedSessions() {
     const refresh = window.setInterval(() => void load(true), 30_000);
     return () => { window.clearTimeout(timer); window.clearInterval(refresh); };
   }, [load]);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (selectedDate === "all") url.searchParams.delete("date-seances");
+    else url.searchParams.set("date-seances", selectedDate);
+    if (schoolOwnerFilter === "all") url.searchParams.delete("responsable");
+    else url.searchParams.set("responsable", schoolOwnerFilter);
+    window.history.replaceState(null, "", `${url.pathname}?${url.searchParams.toString()}${url.hash}`);
+  }, [schoolOwnerFilter, selectedDate]);
 
   const activeImport = imports.find((item) => item.id === selectedImportId) ?? null;
   const activeInterestImport = interestImports.find((item) => item.id === interestImportId) ?? null;

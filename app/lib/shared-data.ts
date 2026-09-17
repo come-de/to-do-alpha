@@ -2376,6 +2376,28 @@ export async function readUpcomingSessionImports() {
   }
 }
 
+export async function readLatestUpcomingSessionImport() {
+  try {
+    const store = taskStore();
+    const [latest] = await readUpcomingSessionIndex();
+    if (!latest) return null;
+    if (latest.rows.length) return latest;
+    const rows = await store.get(upcomingSessionRowsKey(latest.id), { type: "json", consistency: "strong" });
+    return {
+      ...latest,
+      rows: Array.isArray(rows)
+        ? rows
+            .filter((row): row is Record<string, unknown> => Boolean(row && typeof row === "object"))
+            .map(sanitizeUpcomingSessionRow)
+            .filter((row) => row.sessionId && row.date && row.school)
+        : [],
+    };
+  } catch (error) {
+    if (!canUseMemoryFallback()) throw error;
+    return (memory.__petitSuiviUpcomingSessionImports ?? [])[0] ?? null;
+  }
+}
+
 export async function createUpcomingSessionImportFromCsv(input: { fileName: string; rawCsv: string }) {
   const now = new Date().toISOString();
   const parsed = parseUpcomingSessionsCsv(input.rawCsv);

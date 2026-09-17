@@ -8,11 +8,12 @@ import UnstaffedSessions from "@/app/components/unstaffed-sessions";
 import TutorAvailabilityFeed from "@/app/components/tutor-availability-feed";
 import SchoolAdminLink from "@/app/components/school-admin-link";
 import PersonAdminLink from "@/app/components/person-admin-link";
+import HomeDashboard, { type HomeDestination } from "@/app/components/home-dashboard";
 
 type Status = "todo" | "progress" | "done";
 type Priority = "low" | "medium" | "high";
 type Density = "compact" | "comfortable";
-type AppMode = "tasks" | "recurring" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffing" | "watchlist" | "tutorReports" | "tutors" | "availability" | "availabilityFeed" | "enrollments" | "coverage" | "unstaffed" | "files";
+type AppMode = "dashboard" | "tasks" | "recurring" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffing" | "watchlist" | "tutorReports" | "tutors" | "availability" | "availabilityFeed" | "enrollments" | "coverage" | "unstaffed" | "files";
 type ViewMode = "list" | "matrix";
 type DurationBucket = "short" | "medium" | "long" | "unset";
 type ObjectiveKind = "counter" | "qualitative";
@@ -385,6 +386,7 @@ const AUTHOR_KEY = "petit-suivi-auteur-v2";
 const DENSITY_KEY = "petit-suivi-densite-v2";
 
 const appModeSlugs: Record<AppMode, string> = {
+  dashboard: "accueil",
   tasks: "taches",
   recurring: "recurrences",
   links: "liens",
@@ -406,6 +408,9 @@ const appModeSlugs: Record<AppMode, string> = {
 };
 
 const appModeAliases: Record<string, AppMode> = {
+  accueil: "dashboard",
+  home: "dashboard",
+  dashboard: "dashboard",
   taches: "tasks",
   tâches: "tasks",
   tasks: "tasks",
@@ -1722,7 +1727,7 @@ export default function Home() {
   const [priorityFilter, setPriorityFilter] = useState<"all" | Priority>("all");
   const [ownerFilter, setOwnerFilter] = useState("all");
   const [appMode, setAppModeState] = useState<AppMode>(() =>
-    typeof window === "undefined" ? "tasks" : appModeFromUrl(new URL(window.location.href)) || "tasks",
+    typeof window === "undefined" ? "dashboard" : appModeFromUrl(new URL(window.location.href)) || "dashboard",
   );
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [density, setDensity] = useState<Density>(() =>
@@ -1812,6 +1817,15 @@ export default function Home() {
 
   const setAppMode = useCallback((mode: AppMode) => {
     setAppModeState(mode);
+  }, []);
+
+  const openFilteredUnstaffed = useCallback((date: string, owner: "kelly" | "pierre" | "julie" | "unassigned" | "all") => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("onglet", appModeSlugs.unstaffed);
+    url.searchParams.set("date-seances", date);
+    url.searchParams.set("responsable", owner);
+    window.history.replaceState(null, "", `${url.pathname}?${url.searchParams.toString()}${url.hash}`);
+    setAppModeState("unstaffed");
   }, []);
 
   const loadTasks = useCallback(async (silent = false) => {
@@ -2051,7 +2065,7 @@ export default function Home() {
   useEffect(() => {
     const syncModeFromUrl = () => {
       const mode = appModeFromUrl(new URL(window.location.href));
-      setAppModeState(mode || "tasks");
+      setAppModeState(mode || "dashboard");
     };
     window.addEventListener("popstate", syncModeFromUrl);
     window.addEventListener("hashchange", syncModeFromUrl);
@@ -2070,46 +2084,26 @@ export default function Home() {
   }, [appMode]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      void loadTasks();
-      void loadPeople();
-      void loadRecurringTasks();
-      void loadObjectives();
-      void loadLinks();
-      void loadJournalPosts();
-      void loadCommunications();
-      void loadStaffingDays();
-      void loadTutorReports();
-      void loadTutorReportComments();
-      void loadTutorTracking();
-      void loadAvailabilityImports();
-      void loadSchoolWatchlist();
-      void loadSchools();
-      void loadStudentHistory();
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadCommunications, loadStaffingDays, loadTutorReports, loadTutorReportComments, loadTutorTracking, loadAvailabilityImports, loadSchoolWatchlist, loadSchools, loadStudentHistory]);
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      void loadTasks(true);
-      void loadPeople();
-      void loadRecurringTasks();
-      void loadObjectives();
-      void loadLinks();
-      void loadJournalPosts();
-      void loadCommunications();
-      void loadStaffingDays();
-      void loadTutorReports();
-      void loadTutorReportComments();
-      void loadTutorTracking();
-      void loadAvailabilityImports();
-      void loadSchoolWatchlist();
-      void loadSchools();
-      void loadStudentHistory();
-    }, 30000);
-    return () => window.clearInterval(timer);
-  }, [loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadCommunications, loadStaffingDays, loadTutorReports, loadTutorReportComments, loadTutorTracking, loadAvailabilityImports, loadSchoolWatchlist, loadSchools, loadStudentHistory]);
+    const refreshCurrentPage = () => {
+      if (appMode === "dashboard") void loadObjectives();
+      else if (appMode === "tasks") { void loadTasks(true); void loadPeople(); }
+      else if (appMode === "recurring") { void loadRecurringTasks(); void loadPeople(); }
+      else if (appMode === "links") void loadLinks();
+      else if (appMode === "journal") { void loadJournalPosts(); void loadPeople(); }
+      else if (appMode === "communications") void loadCommunications();
+      else if (appMode === "staffing") void loadStaffingDays();
+      else if (appMode === "tutorReports") { void loadTutorReports(); void loadTutorReportComments(); }
+      else if (appMode === "tutors") void loadTutorTracking();
+      else if (appMode === "availability") { void loadAvailabilityImports(); void loadSchools(); }
+      else if (appMode === "watchlist") { void loadSchoolWatchlist(); void loadSchools(); }
+      else if (appMode === "schools") void loadSchools();
+      else if (appMode === "objectives") { void loadObjectives(); void loadPeople(); }
+      else if (appMode === "history") void loadStudentHistory();
+    };
+    const initial = window.setTimeout(refreshCurrentPage, 0);
+    const refresh = window.setInterval(refreshCurrentPage, 30_000);
+    return () => { window.clearTimeout(initial); window.clearInterval(refresh); };
+  }, [appMode, loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadCommunications, loadStaffingDays, loadTutorReports, loadTutorReportComments, loadTutorTracking, loadAvailabilityImports, loadSchoolWatchlist, loadSchools, loadStudentHistory]);
 
   useEffect(() => {
     if (authorName.trim()) localStorage.setItem(AUTHOR_KEY, authorName.trim());
@@ -2213,7 +2207,6 @@ export default function Home() {
     .filter((objective) => objective.kind === "qualitative")
     .slice()
     .sort((a, b) => dateValue(a.endDate || a.startDate) - dateValue(b.endDate || b.startDate));
-  const latestJournalPost = journalPosts[0] ?? null;
   const journalTags = useMemo(
     () => Array.from(new Set(journalPosts.flatMap((post) => post.tags))).sort((a, b) => a.localeCompare(b, "fr")),
     [journalPosts],
@@ -2639,36 +2632,6 @@ export default function Home() {
   const selectedSchoolWatchItem = selectedSchoolWatchId
     ? schoolWatchlist.find((item) => item.id === selectedSchoolWatchId) ?? null
     : null;
-  const dashboardFocus = useMemo(() => {
-    const progressTasks = tasks
-      .filter((task) => task.status === "progress")
-      .sort((a, b) => priorityRank[a.priority] - priorityRank[b.priority] || dateValue(a.endDate || a.startDate) - dateValue(b.endDate || b.startDate));
-    const highPriorityTasks = tasks
-      .filter((task) => task.status !== "done" && task.priority === "high" && !isLate(task))
-      .sort((a, b) => dateValue(a.endDate || a.startDate) - dateValue(b.endDate || b.startDate));
-    const watchItems = schoolWatchlist
-      .filter((item) => item.status === "active")
-      .sort((a, b) => sortDateValue(b.updatedAt || b.createdAt) - sortDateValue(a.updatedAt || a.createdAt));
-    const latestCrmItem =
-      schools
-        .flatMap((school) => school.events.map((event): CrmFeedItem => ({ school, event })))
-        .sort((a, b) => sortDateValue(b.event.date || b.event.createdAt) - sortDateValue(a.event.date || a.event.createdAt))[0] ?? null;
-    const staffingIssue = staffingDays
-      .map((day) => {
-        const totals = staffingDayTotals(day);
-        return { day, ...totals };
-      })
-      .filter((item) => item.unstaffed > 0)
-      .sort((a, b) => sortDateValue(b.day.date) - sortDateValue(a.day.date))[0];
-
-    return {
-      progressTasks,
-      highPriorityTasks,
-      watchItems,
-      latestCrmItem,
-      staffingIssue,
-    };
-  }, [tasks, schoolWatchlist, schools, staffingDays]);
   const activeHistory = studentHistory.find((year) => year.year === activeHistoryYear) ?? null;
   const chartYears = studentHistory.filter((year) => selectedHistoryYears.includes(year.year));
   const chartDays = campaignDates(2000).map(campaignDayKey);
@@ -5496,7 +5459,7 @@ export default function Home() {
           <div className="brand-mark" aria-hidden="true">α</div>
           <div>
             <span>Alpha Education</span>
-            <small>Todo des équipes</small>
+            <small>Pilotage des équipes</small>
           </div>
         </div>
         <div className="header-actions">
@@ -5589,11 +5552,10 @@ export default function Home() {
       </header>
 
       <section className="content">
-        {appMode === "tasks" && <section className="alpha-hero" aria-label="Objectif Alpha Education">
-          <div className="alpha-quote">
+        {appMode === "dashboard" && <section className="home-objectives" aria-label="Objectifs Alpha Education">
+          <div className="home-welcome">
             <div className="mission-badge">Alpha Education · rentrée 2026</div>
-            <p className="eyebrow">Todo des équipes</p>
-            <blockquote>C&apos;est la rentrée : organisons-nous pour donner toutes leurs chances aux élèves.</blockquote>
+            <strong>Piloter, organiser, avancer.</strong>
           </div>
           <div className="objective-stack">
             {renderCounterObjective(studentObjective, "Objectif élèves")}
@@ -5601,93 +5563,39 @@ export default function Home() {
           </div>
         </section>}
 
-        {appMode === "tasks" && (
-          <section className="daily-cockpit" aria-label="À traiter maintenant">
-            <div className="cockpit-heading">
-              <div>
-                <p className="eyebrow">À traiter maintenant</p>
-                <h2>Cockpit du jour</h2>
-              </div>
-              <div className="quick-actions" aria-label="Actions rapides">
-                <button className="quick-action-button" onClick={openNewTask}>＋ Tâche</button>
-                <button className="quick-action-button" onClick={() => { setAppMode("schools"); openSchoolEvent(); }}>＋ Post CRM</button>
-                <button className="quick-action-button" onClick={() => { setAppMode("watchlist"); openNewSchoolWatchItem(); }}>＋ Suivi</button>
-                <button className="quick-action-button" onClick={() => { setAppMode("communications"); openNewCommunication(); }}>＋ Communication</button>
-              </div>
-            </div>
-            <div className="cockpit-grid">
-              <button className={`cockpit-card ${dashboardFocus.progressTasks.length ? "is-important" : ""}`} onClick={() => { setStatusFilter("progress"); setPriorityFilter("all"); setOwnerFilter("all"); }}>
-                <span className="cockpit-icon" aria-hidden="true">◒</span>
-                <strong>{dashboardFocus.progressTasks.length}</strong>
-                <small>Tâches en cours</small>
-                <em>{dashboardFocus.progressTasks[0]?.title || "Aucune tâche en cours"}</em>
-              </button>
-              <button className={`cockpit-card ${dashboardFocus.highPriorityTasks.length ? "is-important" : ""}`} onClick={() => { setStatusFilter("all"); setPriorityFilter("high"); setOwnerFilter("all"); }}>
-                <span className="cockpit-icon" aria-hidden="true">🔥</span>
-                <strong>{dashboardFocus.highPriorityTasks.length}</strong>
-                <small>Priorités hautes</small>
-                <em>{dashboardFocus.highPriorityTasks[0]?.title || "Rien d’urgent"}</em>
-              </button>
-              <button className={`cockpit-card ${dashboardFocus.watchItems.length ? "is-watch" : ""}`} onClick={() => { setAppMode("watchlist"); setSchoolWatchFilter("active"); }}>
-                <span className="cockpit-icon" aria-hidden="true">👀</span>
-                <strong>{dashboardFocus.watchItems.length}</strong>
-                <small>Établissements à suivre</small>
-                <em>
-                  {dashboardFocus.watchItems[0]
-                    ? schoolById.get(dashboardFocus.watchItems[0].schoolId)?.name || "Établissement introuvable"
-                    : "Liste calme"}
-                </em>
-              </button>
-              <button className={`cockpit-card ${dashboardFocus.staffingIssue ? "is-staffing" : ""}`} onClick={() => setAppMode("staffing")}>
-                <span className="cockpit-icon" aria-hidden="true">👥</span>
-                <strong>{dashboardFocus.staffingIssue?.unstaffed ?? 0}</strong>
-                <small>Séances non staffées</small>
-                <em>{dashboardFocus.staffingIssue ? `${formatDate(dashboardFocus.staffingIssue.day.date)} · ${dashboardFocus.staffingIssue.staffed} staffées` : "Derniers jours OK"}</em>
-              </button>
-              <button className={`cockpit-card ${latestJournalPost ? "is-journal" : ""}`} onClick={() => setAppMode("journal")}>
-                <span className="cockpit-icon" aria-hidden="true">✍️</span>
-                <strong>{latestJournalPost ? "1" : "0"}</strong>
-                <small>Journal Alpha</small>
-                <em>{latestJournalPost?.title || "Écrire le premier post"}</em>
-              </button>
-              <button className={`cockpit-card ${dashboardFocus.latestCrmItem ? "is-crm" : ""}`} onClick={() => setAppMode("schools")}>
-                <span className="cockpit-icon" aria-hidden="true">🏫</span>
-                <strong>{dashboardFocus.latestCrmItem ? "1" : "0"}</strong>
-                <small>Dernier post CRM</small>
-                <em>{dashboardFocus.latestCrmItem ? `${dashboardFocus.latestCrmItem.school.name} · ${dashboardFocus.latestCrmItem.event.title || "Post"}` : "Aucun post CRM"}</em>
-              </button>
-            </div>
-          </section>
-        )}
+        {appMode === "dashboard" && <HomeDashboard onNavigate={(mode: HomeDestination) => setAppMode(mode)} onOpenUnstaffed={openFilteredUnstaffed} />}
 
         <div className="tabs-shell">
           <div className="main-tabs" role="group" aria-label="Choisir le type de suivi">
+            <button className={appMode === "dashboard" ? "active" : ""} onClick={() => setAppMode("dashboard")}>
+              <span className="tab-icon" aria-hidden="true">🏠</span> Accueil
+            </button>
             <button className={appMode === "tasks" ? "active" : ""} onClick={() => setAppMode("tasks")}>
               <span className="tab-icon" aria-hidden="true">✅</span> Tâches
             </button>
             <button className={appMode === "links" ? "active" : ""} onClick={() => setAppMode("links")}>
-              <span className="tab-icon" aria-hidden="true">🔗</span> Liens <span className="tab-count">{links.length}</span>
+              <span className="tab-icon" aria-hidden="true">🔗</span> Liens
             </button>
             <button className={appMode === "watchlist" ? "active" : ""} onClick={() => setAppMode("watchlist")}>
-              <span className="tab-icon" aria-hidden="true">👀</span> À suivre <span className="tab-count">{schoolWatchlist.filter((item) => item.status === "active").length}</span>
+              <span className="tab-icon" aria-hidden="true">👀</span> À suivre
             </button>
             <button className={appMode === "schools" ? "active" : ""} onClick={() => setAppMode("schools")}>
-              <span className="tab-icon" aria-hidden="true">🏫</span> Établissements <span className="tab-count">{schools.length}</span>
+              <span className="tab-icon" aria-hidden="true">🏫</span> Établissements
             </button>
             <button className={appMode === "communications" ? "active" : ""} onClick={() => setAppMode("communications")}>
-              <span className="tab-icon" aria-hidden="true">📣</span> Communications <span className="tab-count">{communications.length}</span>
+              <span className="tab-icon" aria-hidden="true">📣</span> Communications
             </button>
             <button className={appMode === "staffing" ? "active" : ""} onClick={() => setAppMode("staffing")}>
-              <span className="tab-icon" aria-hidden="true">👥</span> Staffing <span className="tab-count">{staffingDays.length}</span>
+              <span className="tab-icon" aria-hidden="true">👥</span> Staffing
             </button>
             <button className={appMode === "unstaffed" ? "active" : ""} onClick={() => setAppMode("unstaffed")}>
               <span className="tab-icon" aria-hidden="true">📋</span> Séances non affectées
             </button>
             <button className={appMode === "tutors" ? "active" : ""} onClick={() => setAppMode("tutors")}>
-              <span className="tab-icon" aria-hidden="true">👨‍🏫</span> Tuteurs <span className="tab-count">{tutorTrackingCounts.current}</span>
+              <span className="tab-icon" aria-hidden="true">👨‍🏫</span> Tuteurs
             </button>
             <button className={appMode === "availability" ? "active" : ""} onClick={() => setAppMode("availability")}>
-              <span className="tab-icon" aria-hidden="true">📆</span> Comparaison dispos <span className="tab-count">{availabilityImports.length}</span>
+              <span className="tab-icon" aria-hidden="true">📆</span> Comparaison dispos
             </button>
             <button className={appMode === "availabilityFeed" ? "active" : ""} onClick={() => setAppMode("availabilityFeed")}>
               <span className="tab-icon" aria-hidden="true">🕒</span> Fil des disponibilités
@@ -5702,16 +5610,16 @@ export default function Home() {
               <span className="tab-icon" aria-hidden="true">🗂️</span> Fichiers
             </button>
             <button className={appMode === "tutorReports" ? "active" : ""} onClick={() => setAppMode("tutorReports")}>
-              <span className="tab-icon" aria-hidden="true">🧾</span> Bilans tuteurs <span className="tab-count">{tutorReports.length}</span>
+              <span className="tab-icon" aria-hidden="true">🧾</span> Bilans tuteurs
             </button>
             <button className={appMode === "objectives" ? "active" : ""} onClick={() => setAppMode("objectives")}>
-              <span className="tab-icon" aria-hidden="true">🎯</span> Objectifs <span className="tab-count">{qualitativeObjectives.length}</span>
+              <span className="tab-icon" aria-hidden="true">🎯</span> Objectifs
             </button>
             <button className={appMode === "history" ? "active" : ""} onClick={() => setAppMode("history")}>
-              <span className="tab-icon" aria-hidden="true">📈</span> Historique <span className="tab-count">{studentHistory.length}</span>
+              <span className="tab-icon" aria-hidden="true">📈</span> Historique
             </button>
             <button className={appMode === "journal" ? "active" : ""} onClick={() => setAppMode("journal")}>
-              <span className="tab-icon" aria-hidden="true">✍️</span> Journal <span className="tab-count">{journalPosts.length}</span>
+              <span className="tab-icon" aria-hidden="true">✍️</span> Journal
             </button>
           </div>
           <button className="copy-tab-link" onClick={copyCurrentTabLink} type="button">
@@ -5737,7 +5645,7 @@ export default function Home() {
           </button>
         </div>}
 
-        {appMode === "tasks" ? <section className="task-panel">
+        {appMode === "dashboard" ? null : appMode === "tasks" ? <section className="task-panel">
           <div className="panel-heading">
             <div>
               <h2>Liste partagee</h2>
