@@ -40,6 +40,7 @@ type UpcomingSessionSchool = {
 type UpcomingSessionSchoolStaffing = {
   schoolId: string;
   name: string;
+  date: string;
   staffedSessions: number;
   unstaffedSessions: number;
 };
@@ -230,10 +231,11 @@ export default function UnstaffedSessions() {
   const staffedSessionsByOwner = useMemo(() => {
     const counts: Record<SchoolPortfolioOwner, number> = { "": 0, kelly: 0, pierre: 0, julie: 0 };
     (activeImport?.schoolStaffing ?? []).forEach((school) => {
+      if (selectedDate !== "all" && school.date !== selectedDate) return;
       counts[ownerForSchool(school.schoolId, school.name)] += school.staffedSessions;
     });
     return counts;
-  }, [activeImport, ownerForSchool]);
+  }, [activeImport, ownerForSchool, selectedDate]);
   const newSchoolCandidates = useMemo(() => {
     const existingIds = new Set(schoolAssignments.map((school) => school.externalId).filter(Boolean));
     return (activeImport?.schools ?? []).filter((school) => school.schoolId && !existingIds.has(school.schoolId));
@@ -499,14 +501,14 @@ export default function UnstaffedSessions() {
         <div><span>Personnes distinctes</span><strong>{uniqueCandidateCount}</strong></div>
         <small>Source : {activeImport.sourceRowCount} lignes · {activeImport.sourceSessionCount} séances distinctes</small>
       </div>
-      <div className="owner-count-strip unstaffed-owner-counts">
-        <span className="owner-count-title">Séances staffées par responsable</span>
-        {(["kelly", "pierre", "julie", ""] as SchoolPortfolioOwner[]).map((owner) => <div className={!owner ? "unassigned" : ""} key={owner || "unassigned"}><small>{schoolOwnerLabels[owner]}</small><strong>{staffedSessionsByOwner[owner]}</strong></div>)}
-        {!activeImport.schoolStaffing?.length ? <em>Disponible pour les nouveaux imports « Semaines à venir »</em> : null}
-      </div>
       <div className="unstaffed-date-tabs" role="group" aria-label="Filtrer par jour">
         <button className={selectedDate === "all" ? "active" : ""} onClick={() => setSelectedDate("all")}>Tous <b>{dates.reduce((sum, date) => sum + visibleCountForDate(date), 0)}</b></button>
         {dates.map((date) => <button key={date} className={selectedDate === date ? "active" : ""} onClick={() => setSelectedDate(date)}>{formatDate(date)} <b>{visibleCountForDate(date)}</b></button>)}
+      </div>
+      <div className="owner-count-strip unstaffed-owner-counts">
+        <span className="owner-count-title">Séances staffées par responsable · {selectedDate === "all" ? "toutes les dates" : formatDate(selectedDate, true)}</span>
+        {(["kelly", "pierre", "julie", ""] as SchoolPortfolioOwner[]).map((owner) => <div className={!owner ? "unassigned" : ""} key={owner || "unassigned"}><small>{schoolOwnerLabels[owner]}</small><strong>{staffedSessionsByOwner[owner]}</strong></div>)}
+        {!activeImport.schoolStaffing?.length ? <em>Disponible pour les nouveaux imports « Semaines à venir »</em> : null}
       </div>
       <div className="unstaffed-days">
         {groupedRows.length ? groupedRows.map(([date, rows]) => <article className="unstaffed-day" key={date}>

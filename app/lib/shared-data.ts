@@ -270,6 +270,7 @@ export type UpcomingSessionSchool = {
 export type UpcomingSessionSchoolStaffing = {
   schoolId: string;
   name: string;
+  date: string;
   staffedSessions: number;
   unstaffedSessions: number;
 };
@@ -1283,6 +1284,7 @@ export function sanitizeUpcomingSessionSchoolStaffing(raw: Record<string, unknow
   return {
     schoolId: cleanText(raw.schoolId),
     name: cleanText(raw.name),
+    date: cleanText(raw.date),
     staffedSessions: Math.max(0, Math.round(Number(raw.staffedSessions) || 0)),
     unstaffedSessions: Math.max(0, Math.round(Number(raw.unstaffedSessions) || 0)),
   };
@@ -1377,8 +1379,8 @@ export function parseUpcomingSessionsCsv(value: string) {
   const staffingBySchool = new Map<string, UpcomingSessionSchoolStaffing>();
   sessions.forEach((session) => {
     if (!session.school) return;
-    const schoolKey = session.schoolId || `missing:${normalizeSchoolName(session.school)}`;
-    const staffing = staffingBySchool.get(schoolKey) ?? { schoolId: session.schoolId, name: session.school, staffedSessions: 0, unstaffedSessions: 0 };
+    const schoolKey = `${session.schoolId || `missing:${normalizeSchoolName(session.school)}`}:${session.date}`;
+    const staffing = staffingBySchool.get(schoolKey) ?? { schoolId: session.schoolId, name: session.school, date: session.date, staffedSessions: 0, unstaffedSessions: 0 };
     if (session.tutorIds.size > 0) staffing.staffedSessions += 1;
     else staffing.unstaffedSessions += 1;
     staffingBySchool.set(schoolKey, staffing);
