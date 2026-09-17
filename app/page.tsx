@@ -9,11 +9,12 @@ import TutorAvailabilityFeed from "@/app/components/tutor-availability-feed";
 import SchoolAdminLink from "@/app/components/school-admin-link";
 import PersonAdminLink from "@/app/components/person-admin-link";
 import HomeDashboard, { type HomeDestination } from "@/app/components/home-dashboard";
+import StaffingAudit from "@/app/components/staffing-audit";
 
 type Status = "todo" | "progress" | "done";
 type Priority = "low" | "medium" | "high";
 type Density = "compact" | "comfortable";
-type AppMode = "dashboard" | "tasks" | "recurring" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffing" | "watchlist" | "tutorReports" | "tutors" | "availability" | "availabilityFeed" | "enrollments" | "coverage" | "unstaffed" | "files";
+type AppMode = "dashboard" | "tasks" | "recurring" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffing" | "staffingAudit" | "watchlist" | "tutorReports" | "tutors" | "availability" | "availabilityFeed" | "enrollments" | "coverage" | "unstaffed" | "files";
 type ViewMode = "list" | "matrix";
 type DurationBucket = "short" | "medium" | "long" | "unset";
 type ObjectiveKind = "counter" | "qualitative";
@@ -396,6 +397,7 @@ const appModeSlugs: Record<AppMode, string> = {
   schools: "etablissements",
   communications: "communications",
   staffing: "staffing",
+  staffingAudit: "bilan-staffing",
   watchlist: "a-suivre",
   tutorReports: "bilans-tuteurs",
   tutors: "tuteurs",
@@ -426,6 +428,8 @@ const appModeAliases: Record<string, AppMode> = {
   schools: "schools",
   communications: "communications",
   staffing: "staffing",
+  "bilan-staffing": "staffingAudit",
+  "historique-staffing": "staffingAudit",
   "bilans-tuteurs": "tutorReports",
   bilans: "tutorReports",
   tuteurs: "tutors",
@@ -5483,6 +5487,8 @@ export default function Home() {
                       ? openNewCommunication
                     : appMode === "staffing"
                       ? () => { void loadStaffingDays(); }
+                    : appMode === "staffingAudit"
+                      ? () => setAppMode("staffingAudit")
                     : appMode === "tutors"
                       ? () => { void loadTutorTracking(); }
                     : appMode === "availability"
@@ -5522,6 +5528,8 @@ export default function Home() {
                       ? "Nouvelle communication"
                     : appMode === "staffing"
                       ? "Ligne du jour"
+                    : appMode === "staffingAudit"
+                      ? "Voir les bilans"
                     : appMode === "tutors"
                       ? "Actualiser tuteurs"
                     : appMode === "availability"
@@ -5587,6 +5595,9 @@ export default function Home() {
             </button>
             <button className={appMode === "staffing" ? "active" : ""} onClick={() => setAppMode("staffing")}>
               <span className="tab-icon" aria-hidden="true">👥</span> Staffing
+            </button>
+            <button className={appMode === "staffingAudit" ? "active" : ""} onClick={() => setAppMode("staffingAudit")}>
+              <span className="tab-icon" aria-hidden="true">📊</span> Bilan staffing
             </button>
             <button className={appMode === "unstaffed" ? "active" : ""} onClick={() => setAppMode("unstaffed")}>
               <span className="tab-icon" aria-hidden="true">📋</span> Séances non affectées
@@ -6163,7 +6174,8 @@ export default function Home() {
         : appMode === "enrollments" ? <EnrollmentComparison />
         : appMode === "coverage" ? <TutorCoverageComparison />
         : appMode === "unstaffed" ? <UnstaffedSessions />
-        : appMode === "files" ? <FilesHub onOpen={(kind) => setAppMode(kind === "availability" ? "availability" : kind === "assignments" ? "coverage" : kind === "interests" || kind === "upcomingSessions" || kind === "actualSessions" ? "unstaffed" : kind === "tutors" ? "tutors" : "enrollments")} />
+        : appMode === "staffingAudit" ? <StaffingAudit />
+        : appMode === "files" ? <FilesHub onOpen={(kind) => setAppMode(kind === "availability" ? "availability" : kind === "assignments" ? "coverage" : kind === "interests" || kind === "upcomingSessions" ? "unstaffed" : kind === "tutors" ? "tutors" : "enrollments")} />
         : appMode === "tutorReports" ? renderTutorReportsSection()
         : appMode === "watchlist" ? <section className="task-panel">
           <div className="panel-heading">

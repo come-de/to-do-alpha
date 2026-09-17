@@ -390,6 +390,29 @@ export type SchoolEventKind = "event" | "comment" | "action";
 export type SchoolType = "alpha" | "mise-a-dispo" | "mixed";
 export type SchoolPortfolioOwner = "" | "kelly" | "pierre" | "julie";
 
+export type StaffingAuditClassification = "staffed" | "unstaffed" | "ambiguous";
+export type StaffingAuditResolution = "" | "staffed" | "unstaffed";
+
+export type StaffingAuditSession = {
+  sessionId: string;
+  date: string;
+  school: string;
+  portfolioOwner: SchoolPortfolioOwner;
+  detectedStatus: StaffingAuditClassification;
+  resolution: StaffingAuditResolution;
+  treated: boolean;
+  tutorNames: string[];
+};
+
+export type StaffingAuditDay = {
+  date: string;
+  sourceFileName: string;
+  sourceRowCount: number;
+  sessions: StaffingAuditSession[];
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type SchoolEvent = {
   id: string;
   kind: SchoolEventKind;
@@ -468,6 +491,7 @@ export const AVAILABILITY_IMPORTS_KEY = "availability-imports.json";
 export const TUTOR_ASSIGNMENT_IMPORTS_KEY = "tutor-assignment-imports.json";
 export const UPCOMING_SESSION_IMPORTS_KEY = "upcoming-session-imports.json";
 export const ACTUAL_SESSION_IMPORTS_KEY = "actual-session-imports.json";
+export const STAFFING_AUDITS_KEY = "staffing-audits.json";
 export const TUTOR_INTEREST_IMPORTS_KEY = "tutor-interest-imports.json";
 export const TUTOR_COVERAGE_NOTES_KEY = "tutor-coverage-notes.json";
 export const UNSTAFFED_EXCLUSIONS_KEY = "unstaffed-exclusions.json";
@@ -492,6 +516,7 @@ const memory = globalThis as typeof globalThis & {
   __petitSuiviTutorAssignmentImports?: TutorAssignmentImport[];
   __petitSuiviUpcomingSessionImports?: UpcomingSessionImport[];
   __petitSuiviActualSessionImports?: ActualSessionImport[];
+  __petitSuiviStaffingAudits?: StaffingAuditDay[];
   __petitSuiviTutorInterestImports?: TutorInterestImport[];
   __petitSuiviTutorCoverageNotes?: TutorCoverageNote[];
   __petitSuiviUnstaffedExclusions?: UnstaffedExclusions;
@@ -1496,6 +1521,111 @@ export function sanitizeActualSessionImport(raw: Record<string, unknown>): Actua
     rows,
     createdAt: cleanText(raw.createdAt) || now,
   };
+}
+
+function isStaffingAuditOwner(value: unknown): value is SchoolPortfolioOwner {
+  return value === "" || value === "kelly" || value === "pierre" || value === "julie";
+}
+
+function isStaffingAuditClassification(value: unknown): value is StaffingAuditClassification {
+  return value === "staffed" || value === "unstaffed" || value === "ambiguous";
+}
+
+function isStaffingAuditResolution(value: unknown): value is StaffingAuditResolution {
+  return value === "" || value === "staffed" || value === "unstaffed";
+}
+
+export function sanitizeStaffingAuditSession(raw: Record<string, unknown>): StaffingAuditSession {
+  return {
+    sessionId: cleanText(raw.sessionId),
+    date: cleanText(raw.date),
+    school: cleanText(raw.school),
+    portfolioOwner: isStaffingAuditOwner(raw.portfolioOwner) ? raw.portfolioOwner : "",
+    detectedStatus: isStaffingAuditClassification(raw.detectedStatus) ? raw.detectedStatus : "ambiguous",
+    resolution: isStaffingAuditResolution(raw.resolution) ? raw.resolution : "",
+    treated: raw.treated === true,
+    tutorNames: Array.isArray(raw.tutorNames) ? Array.from(new Set(raw.tutorNames.map(cleanText).filter(Boolean))) : [],
+  };
+}
+
+export function sanitizeStaffingAuditDay(raw: Record<string, unknown>): StaffingAuditDay {
+  const now = new Date().toISOString();
+  return {
+    date: cleanText(raw.date),
+    sourceFileName: cleanText(raw.sourceFileName) || "rapports.csv",
+    sourceRowCount: Math.max(0, Math.round(Number(raw.sourceRowCount) || 0)),
+    sessions: Array.isArray(raw.sessions)
+      ? raw.sessions.filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object")).map(sanitizeStaffingAuditSession).filter((item) => item.sessionId && item.date)
+      : [],
+    createdAt: cleanText(raw.createdAt) || now,
+    updatedAt: cleanText(raw.updatedAt) || now,
+  };
+}
+
+export function parseStaffingAuditCsv(value: string, fileName: string, schools: School[]) {
+  const csvRows = parseCsvRows(value).filter((row) => row.some(Boolean));
+  if (!csvRows.length) return [] as StaffingAuditDay[];
+  const headers = csvRows[0].map(normalizedHeader);
+  const indexFor = (aliases: string[]) => {
+    for (const alias of aliases) {
+      const index = headers.findIndex((header) => header === alias);
+      if (index >= 0) return index;
+    }
+    return -1;
+  };
+  const dateIndex = indexFor(["date", "datedelaprestation"]);
+  const sessionIdIndex = indexFor(["semainereelle", "idseance", "iddelaseance"]);
+  const schoolIndex = indexFor(["etablissement", "ecole"]);
+  const tutorFirstNameIndex = indexFor(["prenomtuteur", "prenomdututeur"]);
+  const tutorLastNameIndex = indexFor(["nomtuteur", "nomdututeur"]);
+  const tutorPhoneIndex = indexFor(["numerotuteur", "numerodututeur", "telephone", "numerodetelephone"]);
+  if (dateIndex < 0 || sessionIdIndex < 0 || schoolIndex < 0) throw new Error("Colonnes Date, Semaine réelle ou Établissement introuvables dans le CSV");
+  const ownerBySchool = new Map(schools.map((school) => [normalizeSchoolName(school.name), school.portfolioOwner]));
+  type Accumulator = { sessionId: string; date: string; school: string; hasTutor: boolean; hasBlankTutor: boolean; tutorNames: Set<string> };
+  const sessions = new Map<string, Accumulator>();
+  const rows = csvRows.slice(1);
+  rows.forEach((row) => {
+    const date = cleanText(row[dateIndex]);
+    const sessionId = cleanText(row[sessionIdIndex]);
+    if (!date || !sessionId) return;
+    const key = `${date}:${sessionId}`;
+    const school = cleanText(row[schoolIndex]);
+    const firstName = tutorFirstNameIndex >= 0 ? cleanText(row[tutorFirstNameIndex]) : "";
+    const lastName = tutorLastNameIndex >= 0 ? cleanText(row[tutorLastNameIndex]) : "";
+    const phone = tutorPhoneIndex >= 0 ? cleanText(row[tutorPhoneIndex]) : "";
+    const hasTutor = Boolean(firstName || lastName || phone);
+    const item = sessions.get(key) ?? { sessionId, date, school, hasTutor: false, hasBlankTutor: false, tutorNames: new Set<string>() };
+    item.hasTutor ||= hasTutor;
+    item.hasBlankTutor ||= !hasTutor;
+    const tutorName = `${firstName} ${lastName}`.trim();
+    if (tutorName) item.tutorNames.add(tutorName);
+    if (!item.school && school) item.school = school;
+    sessions.set(key, item);
+  });
+  const now = new Date().toISOString();
+  const byDate = new Map<string, StaffingAuditSession[]>();
+  sessions.forEach((item) => {
+    const detectedStatus: StaffingAuditClassification = item.hasTutor && item.hasBlankTutor ? "ambiguous" : item.hasTutor ? "staffed" : "unstaffed";
+    const session = sanitizeStaffingAuditSession({
+      sessionId: item.sessionId,
+      date: item.date,
+      school: item.school,
+      portfolioOwner: ownerBySchool.get(normalizeSchoolName(item.school)) ?? "",
+      detectedStatus,
+      resolution: "",
+      treated: false,
+      tutorNames: Array.from(item.tutorNames),
+    });
+    byDate.set(item.date, [...(byDate.get(item.date) ?? []), session]);
+  });
+  return Array.from(byDate.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([date, daySessions]) => sanitizeStaffingAuditDay({
+    date,
+    sourceFileName: fileName,
+    sourceRowCount: rows.filter((row) => cleanText(row[dateIndex]) === date).length,
+    sessions: daySessions.sort((a, b) => a.school.localeCompare(b.school, "fr") || a.sessionId.localeCompare(b.sessionId)),
+    createdAt: now,
+    updatedAt: now,
+  }));
 }
 
 export function sanitizeTutorInterestRow(raw: Record<string, unknown>): TutorInterestRow {
@@ -2583,6 +2713,52 @@ export async function deleteActualSessionImportById(id: string) {
   const existing = await readActualSessionImports();
   const store = taskStore();
   await store.setJSON(ACTUAL_SESSION_IMPORTS_KEY, existing.filter((item) => item.id !== id));
+}
+
+export async function readStaffingAudits() {
+  try {
+    const store = taskStore();
+    const data = await store.get(STAFFING_AUDITS_KEY, { type: "json", consistency: "strong" });
+    return Array.isArray(data)
+      ? data.filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object")).map(sanitizeStaffingAuditDay).filter((item) => item.date).sort((a, b) => b.date.localeCompare(a.date))
+      : [];
+  } catch (error) {
+    if (!canUseMemoryFallback()) throw error;
+    return memory.__petitSuiviStaffingAudits ?? [];
+  }
+}
+
+export async function saveStaffingAudit(day: StaffingAuditDay, overwrite: boolean) {
+  const prepared = sanitizeStaffingAuditDay(day as unknown as Record<string, unknown>);
+  if (!prepared.date || !prepared.sessions.length) throw new Error("Journée de staffing invalide");
+  const existing = await readStaffingAudits();
+  const previous = existing.find((item) => item.date === prepared.date);
+  if (previous && !overwrite) return { conflict: true, days: existing };
+  const now = new Date().toISOString();
+  const saved = { ...prepared, createdAt: previous?.createdAt || now, updatedAt: now };
+  const next = [saved, ...existing.filter((item) => item.date !== saved.date)].sort((a, b) => b.date.localeCompare(a.date));
+  try {
+    const store = taskStore();
+    await store.setJSON(STAFFING_AUDITS_KEY, next);
+  } catch (error) {
+    if (!canUseMemoryFallback()) throw error;
+    memory.__petitSuiviStaffingAudits = next;
+  }
+  return { conflict: false, day: saved, days: next };
+}
+
+export async function updateStaffingAuditSession(input: { date: string; sessionId: string; portfolioOwner?: unknown; resolution?: unknown; treated?: unknown }) {
+  const existing = await readStaffingAudits();
+  const day = existing.find((item) => item.date === input.date);
+  if (!day) throw new Error("Bilan introuvable");
+  if (!day.sessions.some((item) => item.sessionId === input.sessionId)) throw new Error("Séance introuvable");
+  const sessions = day.sessions.map((session) => session.sessionId === input.sessionId ? {
+    ...session,
+    portfolioOwner: input.portfolioOwner === undefined ? session.portfolioOwner : isStaffingAuditOwner(input.portfolioOwner) ? input.portfolioOwner : session.portfolioOwner,
+    resolution: input.resolution === undefined ? session.resolution : isStaffingAuditResolution(input.resolution) ? input.resolution : session.resolution,
+    treated: input.treated === undefined ? session.treated : input.treated === true,
+  } : session);
+  return saveStaffingAudit({ ...day, sessions, updatedAt: new Date().toISOString() }, true);
 }
 
 function tutorInterestRowsKey(id: string) {
