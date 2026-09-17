@@ -1048,7 +1048,7 @@ export function sanitizeTutorTrackingData(raw: Record<string, unknown>): TutorTr
       ? raw.snapshots
           .filter((snapshot): snapshot is Record<string, unknown> => Boolean(snapshot && typeof snapshot === "object"))
           .map(sanitizeTutorTrackingSnapshot)
-          .sort((a, b) => dateValueForSort(b.date) - dateValueForSort(a.date))
+          .sort((a, b) => dateValueForSort(b.date) - dateValueForSort(a.date) || dateValueForSort(b.createdAt) - dateValueForSort(a.createdAt))
       : [],
     comments: Array.isArray(raw.comments)
       ? raw.comments
@@ -2305,24 +2305,23 @@ export async function createTutorTrackingSnapshotFromCsv(input: { date: string; 
   if (!records.length) throw new Error("Aucun tuteur valide trouvé dans ce CSV");
   const now = new Date().toISOString();
   const tracking = await readTutorTracking();
-  const existing = tracking.snapshots.find((snapshot) => snapshot.date === date);
   const fileName = cleanText(input.fileName) || "liste-tuteurs.csv";
   const snapshot = sanitizeTutorTrackingSnapshot({
-    id: existing?.id || `tutor-tracking-${date}`,
+    id: crypto.randomUUID(),
     date,
-    displayName: existing?.displayName || fileName.replace(/\.[^.]+$/, "") || `Liste tuteurs du ${date}`,
+    displayName: fileName.replace(/\.[^.]+$/, "") || `Liste tuteurs du ${date}`,
     fileName,
     sourceRowCount,
     records,
-    createdAt: existing?.createdAt || now,
+    createdAt: now,
     updatedAt: now,
   });
   const nextTracking = sanitizeTutorTrackingData({
     ...tracking,
-    snapshots: [snapshot, ...tracking.snapshots.filter((item) => item.date !== date)],
+    snapshots: [snapshot, ...tracking.snapshots],
   } as unknown as Record<string, unknown>);
   await writeTutorTracking(nextTracking);
-  return { snapshot, tracking: nextTracking, replaced: Boolean(existing) };
+  return { snapshot, tracking: nextTracking };
 }
 
 export async function updateTutorTrackingSnapshotName(id: string, displayName: string) {

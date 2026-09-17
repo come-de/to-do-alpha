@@ -1046,7 +1046,7 @@ function normalizeTutorTrackingComment(raw: Partial<TutorTrackingComment>): Tuto
 function normalizeTutorTrackingData(raw: Partial<TutorTrackingData>): TutorTrackingData {
   return {
     snapshots: Array.isArray(raw.snapshots)
-      ? raw.snapshots.map(normalizeTutorTrackingSnapshot).sort((a, b) => sortDateValue(b.date) - sortDateValue(a.date))
+      ? raw.snapshots.map(normalizeTutorTrackingSnapshot).sort((a, b) => sortDateValue(b.date) - sortDateValue(a.date) || sortDateValue(b.createdAt) - sortDateValue(a.createdAt))
       : [],
     comments: Array.isArray(raw.comments)
       ? raw.comments.map(normalizeTutorTrackingComment).filter((comment) => comment.tutorKey)
@@ -1523,22 +1523,6 @@ function sortDateValue(date: string) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function dateRange(start: string, end: string) {
-  if (!start || !end) return [];
-  const startValue = sortDateValue(start);
-  const endValue = sortDateValue(end);
-  if (!startValue || !endValue) return [];
-  const dates: string[] = [];
-  const cursor = new Date(`${start}T12:00:00`);
-  const last = new Date(`${end}T12:00:00`);
-  if (cursor.getTime() > last.getTime()) return [];
-  while (cursor.getTime() <= last.getTime()) {
-    dates.push(cursor.toISOString().slice(0, 10));
-    cursor.setDate(cursor.getDate() + 1);
-  }
-  return dates;
-}
-
 function todayValue() {
   const today = new Date();
   today.setHours(12, 0, 0, 0);
@@ -1571,6 +1555,14 @@ function formatFullDate(date: string) {
     month: "long",
     year: "numeric",
   }).format(new Date(`${date}T12:00:00`));
+}
+
+function tutorTrackingImportLabel(snapshot: TutorTrackingSnapshot) {
+  const importedAt = new Date(snapshot.createdAt);
+  const timeLabel = Number.isNaN(importedAt.getTime())
+    ? ""
+    : new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" }).format(importedAt);
+  return `${snapshot.displayName || snapshot.fileName || "Import tuteurs"} · ${formatFullDate(snapshot.date)}${timeLabel ? ` à ${timeLabel}` : ""}`;
 }
 
 function naturalDateLabel(task: Task) {
@@ -1806,8 +1798,9 @@ export default function Home() {
   const [selectedTutorReportKey, setSelectedTutorReportKey] = useState<string | null>(null);
   const [visibleTutorReportCount, setVisibleTutorReportCount] = useState(10);
   const [tutorTrackingDate, setTutorTrackingDate] = useState(new Date().toISOString().slice(0, 10));
-  const [tutorTrackingCompareStartDate, setTutorTrackingCompareStartDate] = useState("");
-  const [tutorTrackingCompareEndDate, setTutorTrackingCompareEndDate] = useState("");
+  const [selectedTutorTrackingSnapshotId, setSelectedTutorTrackingSnapshotId] = useState("");
+  const [tutorTrackingCompareStartId, setTutorTrackingCompareStartId] = useState("");
+  const [tutorTrackingCompareEndId, setTutorTrackingCompareEndId] = useState("");
   const [tutorTrackingCsv, setTutorTrackingCsv] = useState("");
   const [tutorTrackingQuery, setTutorTrackingQuery] = useState("");
   const [tutorTrackingView, setTutorTrackingView] = useState<"new" | "exited" | "current">("new");
@@ -1980,14 +1973,9 @@ export default function Home() {
       const tracking = normalizeTutorTrackingData(data.tracking || {});
       setTutorTracking(tracking);
       if (tracking.snapshots.length) {
-        setTutorTrackingDate((current) =>
-          tracking.snapshots.some((snapshot) => snapshot.date === current) ? current : tracking.snapshots[0].date,
-        );
-        const sortedDates = tracking.snapshots.map((snapshot) => snapshot.date).sort((a, b) => sortDateValue(a) - sortDateValue(b));
-        setTutorTrackingCompareEndDate((current) => (sortedDates.includes(current) ? current : sortedDates.at(-1) || ""));
-        setTutorTrackingCompareStartDate((current) =>
-          sortedDates.includes(current) ? current : sortedDates.length > 1 ? sortedDates.at(-2) || sortedDates[0] : sortedDates[0],
-        );
+        setSelectedTutorTrackingSnapshotId((current) => tracking.snapshots.some((snapshot) => snapshot.id === current) ? current : tracking.snapshots[0].id);
+        setTutorTrackingCompareEndId((current) => tracking.snapshots.some((snapshot) => snapshot.id === current) ? current : tracking.snapshots[0].id);
+        setTutorTrackingCompareStartId((current) => tracking.snapshots.some((snapshot) => snapshot.id === current) ? current : tracking.snapshots[1]?.id || tracking.snapshots[0].id);
       }
     } catch {
       setToast("Suivi tuteurs indisponible");
@@ -2382,7 +2370,7 @@ export default function Home() {
     const currentKeys = new Set(latestTutorTrackingSnapshot?.records.map((record) => record.key) ?? []);
     tutorTracking.snapshots
       .slice()
-      .sort((a, b) => sortDateValue(a.date) - sortDateValue(b.date))
+      .sort((a, b) => sortDateValue(a.date) - sortDateValue(b.date) || sortDateValue(a.createdAt) - sortDateValue(b.createdAt))
       .forEach((snapshot) => {
         snapshot.records.forEach((record) => {
           const existing = byTutor.get(record.key);
@@ -2408,36 +2396,19 @@ export default function Home() {
       });
     return Array.from(byTutor.values()).sort((a, b) => tutorTrackingDisplayName(a).localeCompare(tutorTrackingDisplayName(b), "fr"));
   }, [latestTutorTrackingSnapshot, tutorTracking.snapshots]);
-  const tutorTrackingSnapshotByDate = useMemo(
-    () => new Map(tutorTracking.snapshots.map((snapshot) => [snapshot.date, snapshot])),
+  const tutorTrackingSnapshotById = useMemo(
+    () => new Map(tutorTracking.snapshots.map((snapshot) => [snapshot.id, snapshot])),
     [tutorTracking.snapshots],
   );
-  const tutorTrackingImportedDates = useMemo(
-    () =>
-      tutorTracking.snapshots
-      .map((snapshot) => snapshot.date)
-        .sort((a, b) => sortDateValue(a) - sortDateValue(b)),
-    [tutorTracking.snapshots],
-  );
-  const tutorTrackingDateOptions = useMemo(() => {
-    if (!tutorTrackingImportedDates.length) return [];
-    const importedDates = new Set(tutorTrackingImportedDates);
-    return dateRange(tutorTrackingImportedDates[0], tutorTrackingImportedDates.at(-1) || tutorTrackingImportedDates[0]).map((date) => ({
-      date,
-      hasImport: importedDates.has(date),
-    }));
-  }, [tutorTrackingImportedDates]);
-  const effectiveTutorTrackingCompareEndDate = tutorTrackingImportedDates.includes(tutorTrackingCompareEndDate)
-    ? tutorTrackingCompareEndDate
-    : tutorTrackingImportedDates.at(-1) || "";
-  const effectiveTutorTrackingCompareStartDate = tutorTrackingImportedDates.includes(tutorTrackingCompareStartDate)
-    ? tutorTrackingCompareStartDate
-    : tutorTrackingImportedDates.filter((date) => sortDateValue(date) < sortDateValue(effectiveTutorTrackingCompareEndDate)).at(-1) ||
-      tutorTrackingImportedDates[0] ||
-      "";
+  const effectiveTutorTrackingCompareEndId = tutorTrackingSnapshotById.has(tutorTrackingCompareEndId)
+    ? tutorTrackingCompareEndId
+    : tutorTracking.snapshots[0]?.id || "";
+  const effectiveTutorTrackingCompareStartId = tutorTrackingSnapshotById.has(tutorTrackingCompareStartId)
+    ? tutorTrackingCompareStartId
+    : tutorTracking.snapshots[1]?.id || tutorTracking.snapshots[0]?.id || "";
   const tutorTrackingComparison = useMemo(() => {
-    const startSnapshot = tutorTrackingSnapshotByDate.get(effectiveTutorTrackingCompareStartDate) ?? null;
-    const endSnapshot = tutorTrackingSnapshotByDate.get(effectiveTutorTrackingCompareEndDate) ?? latestTutorTrackingSnapshot ?? null;
+    const startSnapshot = tutorTrackingSnapshotById.get(effectiveTutorTrackingCompareStartId) ?? null;
+    const endSnapshot = tutorTrackingSnapshotById.get(effectiveTutorTrackingCompareEndId) ?? latestTutorTrackingSnapshot ?? null;
     const knownByKey = new Map(tutorTrackingSummary.map((tutor) => [tutor.key, tutor]));
     const startByKey = new Map(startSnapshot?.records.map((record) => [record.key, record]) ?? []);
     const endByKey = new Map(endSnapshot?.records.map((record) => [record.key, record]) ?? []);
@@ -2463,7 +2434,7 @@ export default function Home() {
       .filter((record) => !endByKey.has(record.key))
       .map((record) => toSummary(record, false));
     return { startSnapshot, endSnapshot, current, added, exited };
-  }, [effectiveTutorTrackingCompareEndDate, effectiveTutorTrackingCompareStartDate, latestTutorTrackingSnapshot, tutorTrackingSnapshotByDate, tutorTrackingSummary]);
+  }, [effectiveTutorTrackingCompareEndId, effectiveTutorTrackingCompareStartId, latestTutorTrackingSnapshot, tutorTrackingSnapshotById, tutorTrackingSummary]);
   const comparedCurrentTutors = tutorTrackingComparison.current;
   const comparedAddedTutors = tutorTrackingComparison.added;
   const comparedExitedTutors = tutorTrackingComparison.exited;
@@ -3659,8 +3630,6 @@ export default function Home() {
       setToast("Aucun tuteur valide à importer");
       return;
     }
-    const existing = tutorTracking.snapshots.find((snapshot) => snapshot.date === tutorTrackingDate);
-    if (existing && !window.confirm(`Un import existe déjà pour le ${formatFullDate(tutorTrackingDate)}. Le remplacer ?`)) return;
     setSaving(true);
     setSyncError("");
     try {
@@ -3669,17 +3638,26 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ date: tutorTrackingDate, fileName, rawCsv: csvValue }),
       });
-      const data = (await response.json()) as { tracking?: Partial<TutorTrackingData>; error?: string; detail?: string };
+      const data = (await response.json()) as {
+        snapshot?: Partial<TutorTrackingSnapshot>;
+        tracking?: Partial<TutorTrackingData>;
+        error?: string;
+        detail?: string;
+      };
       if (!response.ok) throw new Error(data.detail || data.error || "Import tuteurs impossible");
       const nextTracking = normalizeTutorTrackingData(data.tracking || {});
+      const importedSnapshot = data.snapshot
+        ? normalizeTutorTrackingSnapshot(data.snapshot)
+        : nextTracking.snapshots[0];
       setTutorTracking(nextTracking);
-      setTutorTrackingCompareEndDate(tutorTrackingDate);
-      const previousDate = nextTracking.snapshots
-        .filter((snapshot) => sortDateValue(snapshot.date) < sortDateValue(tutorTrackingDate))
-        .sort((a, b) => sortDateValue(b.date) - sortDateValue(a.date))[0]?.date;
-      if (previousDate) setTutorTrackingCompareStartDate(previousDate);
+      if (importedSnapshot) {
+        setSelectedTutorTrackingSnapshotId(importedSnapshot.id);
+        setTutorTrackingCompareEndId(importedSnapshot.id);
+        const previousSnapshot = nextTracking.snapshots.find((snapshot) => snapshot.id !== importedSnapshot.id);
+        setTutorTrackingCompareStartId(previousSnapshot?.id || importedSnapshot.id);
+      }
       setTutorTrackingCsv("");
-      setToast(existing ? "Liste tuteurs remplacée et sauvegardée" : "Liste tuteurs sauvegardée dans Fichiers");
+      setToast("Nouvel import tuteurs sauvegardé dans Fichiers");
     } catch (error) {
       setSyncError("L’import des tuteurs n’a pas été sauvegardé");
       setToast(error instanceof Error ? error.message : "Import tuteurs impossible");
@@ -3737,11 +3715,19 @@ export default function Home() {
     setToast("Export CSV tuteurs téléchargé");
   }
 
-  async function deleteTutorTrackingSnapshot(date: string) {
-    if (!window.confirm(`Supprimer l'import tuteurs du ${formatFullDate(date)} ?`)) return;
-    const nextSnapshots = tutorTracking.snapshots.filter((snapshot) => snapshot.date !== date);
+  async function deleteTutorTrackingSnapshot(snapshotId: string) {
+    const snapshot = tutorTracking.snapshots.find((item) => item.id === snapshotId);
+    if (!snapshot || !window.confirm(`Supprimer « ${tutorTrackingImportLabel(snapshot)} » ?`)) return;
+    const nextSnapshots = tutorTracking.snapshots.filter((item) => item.id !== snapshotId);
     await saveTutorTracking({ ...tutorTracking, snapshots: nextSnapshots }, "Import tuteurs supprimé");
-    setTutorTrackingDate(nextSnapshots[0]?.date || new Date().toISOString().slice(0, 10));
+    const nextSelectedId = nextSnapshots[0]?.id || "";
+    setSelectedTutorTrackingSnapshotId(nextSelectedId);
+    if (tutorTrackingCompareStartId === snapshotId) {
+      setTutorTrackingCompareStartId(nextSnapshots[1]?.id || nextSelectedId);
+    }
+    if (tutorTrackingCompareEndId === snapshotId) {
+      setTutorTrackingCompareEndId(nextSelectedId);
+    }
   }
 
   async function updateTutorTrackingComment(tutorKey: string, commentValue: string) {
@@ -4790,10 +4776,10 @@ export default function Home() {
   }
 
   function renderTutorTrackingSection() {
-    const latestLabel = latestTutorTrackingSnapshot ? formatFullDate(latestTutorTrackingSnapshot.date) : "aucun import";
-    const activeSnapshot = tutorTracking.snapshots.find((snapshot) => snapshot.date === tutorTrackingDate) ?? null;
-    const comparisonStartLabel = tutorTrackingComparison.startSnapshot ? formatFullDate(tutorTrackingComparison.startSnapshot.date) : "date de départ manquante";
-    const comparisonEndLabel = tutorTrackingComparison.endSnapshot ? formatFullDate(tutorTrackingComparison.endSnapshot.date) : "date d’arrivée manquante";
+    const latestLabel = latestTutorTrackingSnapshot ? tutorTrackingImportLabel(latestTutorTrackingSnapshot) : "aucun import";
+    const activeSnapshot = tutorTrackingSnapshotById.get(selectedTutorTrackingSnapshotId) ?? tutorTracking.snapshots[0] ?? null;
+    const comparisonStartLabel = tutorTrackingComparison.startSnapshot ? tutorTrackingImportLabel(tutorTrackingComparison.startSnapshot) : "import de départ manquant";
+    const comparisonEndLabel = tutorTrackingComparison.endSnapshot ? tutorTrackingImportLabel(tutorTrackingComparison.endSnapshot) : "import d’arrivée manquant";
     const viewLabel =
       tutorTrackingView === "new"
         ? "Nouveaux tuteurs"
@@ -4828,23 +4814,23 @@ export default function Home() {
 
         <div className="tutor-tracking-controls">
           <label>
-            <span>Comparer depuis</span>
-            <select value={effectiveTutorTrackingCompareStartDate} onChange={(event) => setTutorTrackingCompareStartDate(event.target.value)} disabled={!tutorTrackingDateOptions.length}>
-              {!tutorTrackingDateOptions.length && <option value="">Aucun import</option>}
-              {tutorTrackingDateOptions.map((option) => (
-                <option key={option.date} value={option.date} disabled={!option.hasImport}>
-                  {formatFullDate(option.date)}{option.hasImport ? "" : " — pas d’import"}
+            <span>Comparer l’import</span>
+            <select value={effectiveTutorTrackingCompareStartId} onChange={(event) => setTutorTrackingCompareStartId(event.target.value)} disabled={!tutorTracking.snapshots.length}>
+              {!tutorTracking.snapshots.length && <option value="">Aucun import</option>}
+              {tutorTracking.snapshots.map((snapshot) => (
+                <option key={snapshot.id} value={snapshot.id}>
+                  {tutorTrackingImportLabel(snapshot)}
                 </option>
               ))}
             </select>
           </label>
           <label>
-            <span>Comparer avec</span>
-            <select value={effectiveTutorTrackingCompareEndDate} onChange={(event) => setTutorTrackingCompareEndDate(event.target.value)} disabled={!tutorTrackingDateOptions.length}>
-              {!tutorTrackingDateOptions.length && <option value="">Aucun import</option>}
-              {tutorTrackingDateOptions.map((option) => (
-                <option key={option.date} value={option.date} disabled={!option.hasImport}>
-                  {formatFullDate(option.date)}{option.hasImport ? "" : " — pas d’import"}
+            <span>Avec l’import</span>
+            <select value={effectiveTutorTrackingCompareEndId} onChange={(event) => setTutorTrackingCompareEndId(event.target.value)} disabled={!tutorTracking.snapshots.length}>
+              {!tutorTracking.snapshots.length && <option value="">Aucun import</option>}
+              {tutorTracking.snapshots.map((snapshot) => (
+                <option key={snapshot.id} value={snapshot.id}>
+                  {tutorTrackingImportLabel(snapshot)}
                 </option>
               ))}
             </select>
@@ -4856,9 +4842,9 @@ export default function Home() {
           {tutorTracking.snapshots.length > 0 && (
             <label>
               <span>Imports enregistrés</span>
-              <select value={tutorTrackingDate} onChange={(event) => setTutorTrackingDate(event.target.value)}>
+              <select value={activeSnapshot?.id || ""} onChange={(event) => setSelectedTutorTrackingSnapshotId(event.target.value)}>
                 {tutorTracking.snapshots.map((snapshot) => (
-                  <option key={snapshot.date} value={snapshot.date}>{formatFullDate(snapshot.date)}</option>
+                  <option key={snapshot.id} value={snapshot.id}>{tutorTrackingImportLabel(snapshot)}</option>
                 ))}
               </select>
             </label>
@@ -4876,8 +4862,8 @@ export default function Home() {
               Sauvegarder le contenu collé
             </button>
             {activeSnapshot && (
-              <button className="button quiet danger-text" onClick={() => { void deleteTutorTrackingSnapshot(activeSnapshot.date); }} disabled={saving}>
-                Supprimer cette date
+              <button className="button quiet danger-text" onClick={() => { void deleteTutorTrackingSnapshot(activeSnapshot.id); }} disabled={saving}>
+                Supprimer cet import
               </button>
             )}
           </div>

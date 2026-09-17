@@ -60,7 +60,6 @@ export default function FilesHub({ onOpen }: { onOpen: (kind: FileKind) => void 
   async function upload(kind: FileKind, file: File | undefined) {
     if (!file) return;
     if (kind === "tutors" && !tutorImportDate) return setMessage("Choisissez la date liée à la liste de tuteurs");
-    if (kind === "tutors" && files.tutors.some((item) => item.date === tutorImportDate) && !window.confirm("Une liste de tuteurs existe déjà pour cette date. La remplacer ?")) return;
     setSaving(true);
     setMessage("Import en cours…");
     try {

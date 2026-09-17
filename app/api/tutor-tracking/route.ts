@@ -47,7 +47,7 @@ export async function POST(request: Request) {
       fileName: typeof body.fileName === "string" ? body.fileName : "liste-tuteurs.csv",
       rawCsv: body.rawCsv,
     });
-    return json(result, result.replaced ? 200 : 201);
+    return json(result, 201);
   } catch (error) {
     const detail = error instanceof Error ? error.message : "Import tuteurs impossible";
     return json({ error: "Import tuteurs impossible", detail }, 500);
