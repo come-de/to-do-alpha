@@ -84,6 +84,9 @@ type SourceImport<Row> = {
   rows: Row[];
 };
 
+type ActualSession = { sessionId: string; date: string; school: string };
+type ActualSessionImport = SourceImport<ActualSession> & { sourceRowCount: number; dates: string[] };
+
 type SessionCandidate = {
   personId: string;
   firstName: string;
@@ -179,11 +182,13 @@ export default function UnstaffedSessions() {
   const [interestImports, setInterestImports] = useState<Array<SourceImport<TutorInterest>>>([]);
   const [availabilityImports, setAvailabilityImports] = useState<Array<SourceImport<Availability>>>([]);
   const [assignmentImports, setAssignmentImports] = useState<Array<SourceImport<Assignment>>>([]);
+  const [actualSessionImports, setActualSessionImports] = useState<ActualSessionImport[]>([]);
   const [latestTutorSnapshot, setLatestTutorSnapshot] = useState<TutorTrackingSnapshot | null>(null);
   const [selectedImportId, setSelectedImportId] = useState("");
   const [interestImportId, setInterestImportId] = useState("");
   const [availabilityImportId, setAvailabilityImportId] = useState("");
   const [assignmentImportId, setAssignmentImportId] = useState("");
+  const [actualSessionImportId, setActualSessionImportId] = useState("");
   const [selectedDate, setSelectedDate] = useState(initialDateFilter);
   const [query, setQuery] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<SessionCategoryKey[]>(["alpha", "surveillance", "service"]);
@@ -197,7 +202,7 @@ export default function UnstaffedSessions() {
 
   const load = useCallback(async (silent = false) => {
     try {
-      const endpoints = ["/api/upcoming-session-imports", "/api/tutor-interest-imports", "/api/availability-imports", "/api/tutor-assignment-imports", "/api/tutor-tracking", "/api/unstaffed-exclusions", "/api/schools"];
+      const endpoints = ["/api/upcoming-session-imports", "/api/tutor-interest-imports", "/api/availability-imports", "/api/tutor-assignment-imports", "/api/tutor-tracking", "/api/unstaffed-exclusions", "/api/actual-session-imports", "/api/schools"];
       const responses = await Promise.all(endpoints.map((endpoint) => fetch(endpoint, { cache: "no-store" })));
       const payloads = await Promise.all(responses.map((response) => response.json())) as Array<{ imports?: unknown[]; tracking?: { snapshots?: TutorTrackingSnapshot[] }; exclusions?: UnstaffedExclusions; schools?: SchoolAssignment[]; error?: string; detail?: string }>;
       const failedIndex = responses.findIndex((response) => !response.ok);
@@ -206,19 +211,22 @@ export default function UnstaffedSessions() {
       const nextInterests = (payloads[1].imports ?? []) as Array<SourceImport<TutorInterest>>;
       const nextAvailability = (payloads[2].imports ?? []) as Array<SourceImport<Availability>>;
       const nextAssignments = (payloads[3].imports ?? []) as Array<SourceImport<Assignment>>;
+      const nextActualSessions = (payloads[6].imports ?? []) as ActualSessionImport[];
       const nextTutorSnapshots = payloads[4].tracking?.snapshots ?? [];
       const nextExclusions = payloads[5].exclusions ?? { sessionIds: [], sourceKeys: [], updatedAt: "" };
       setImports(next);
       setInterestImports(nextInterests);
       setAvailabilityImports(nextAvailability);
       setAssignmentImports(nextAssignments);
+      setActualSessionImports(nextActualSessions);
       setLatestTutorSnapshot(nextTutorSnapshots[0] ?? null);
       setExclusions(nextExclusions);
-      setSchoolAssignments(payloads[6].schools ?? []);
+      setSchoolAssignments(payloads[7].schools ?? []);
       setSelectedImportId((current) => next.some((item) => item.id === current) ? current : next[0]?.id || "");
       setInterestImportId((current) => nextInterests.some((item) => item.id === current) ? current : nextInterests[0]?.id || "");
       setAvailabilityImportId((current) => nextAvailability.some((item) => item.id === current) ? current : nextAvailability[0]?.id || "");
       setAssignmentImportId((current) => nextAssignments.some((item) => item.id === current) ? current : nextAssignments[0]?.id || "");
+      setActualSessionImportId((current) => nextActualSessions.some((item) => item.id === current) ? current : nextActualSessions[0]?.id || "");
       if (!silent) setMessage("Données actualisées");
     } catch (error) {
       if (!silent) setMessage(error instanceof Error ? error.message : "Chargement impossible");
@@ -244,6 +252,7 @@ export default function UnstaffedSessions() {
   const activeInterestImport = interestImports.find((item) => item.id === interestImportId) ?? null;
   const activeAvailabilityImport = availabilityImports.find((item) => item.id === availabilityImportId) ?? null;
   const activeAssignmentImport = assignmentImports.find((item) => item.id === assignmentImportId) ?? null;
+  const activeActualSessionImport = actualSessionImports.find((item) => item.id === actualSessionImportId) ?? null;
   const dates = useMemo(() => Array.from(new Set((activeImport?.rows ?? []).map((row) => row.date))).sort(), [activeImport]);
   const schoolOwnerIndexes = useMemo(() => ({
     byId: new Map(schoolAssignments.filter((school) => school.externalId).map((school) => [school.externalId, school.portfolioOwner])),
@@ -270,6 +279,25 @@ export default function UnstaffedSessions() {
     }
     return counts;
   }, [activeAssignmentImport, activeImport, ownerForSchool, selectedDate]);
+  const actualWeekSummary = useMemo(() => {
+    if (!activeActualSessionImport || !activeImport) return [];
+    const actualIds = new Set(activeActualSessionImport.rows.map((row) => `${row.date}:${row.sessionId}`));
+    const actualCounts = new Map<string, number>();
+    activeActualSessionImport.rows.forEach((row) => actualCounts.set(row.date, (actualCounts.get(row.date) ?? 0) + 1));
+    const datesInActual = Array.from(new Set(activeActualSessionImport.rows.map((row) => row.date))).sort();
+    return datesInActual.map((date) => {
+      const counts: Record<SchoolPortfolioOwner, number> = { "": 0, kelly: 0, pierre: 0, julie: 0 };
+      const rows = activeImport.rows.filter((row) =>
+        row.date === date
+        && !exclusions.sessionIds.includes(row.sessionId)
+        && selectedCategories.includes(sessionCategoryKey(row.category))
+        && !(sessionCategoryKey(row.category) === "alpha" && row.studentCount === 1)
+        && !actualIds.has(`${row.date}:${row.sessionId}`),
+      );
+      rows.forEach((row) => { counts[ownerForSession(row)] += 1; });
+      return { date, counts, total: rows.length, actualSessionCount: actualCounts.get(date) ?? 0 };
+    });
+  }, [activeActualSessionImport, activeImport, exclusions.sessionIds, ownerForSession, selectedCategories]);
   const newSchoolCandidates = useMemo(() => {
     const existingIds = new Set(schoolAssignments.map((school) => school.externalId).filter(Boolean));
     return (activeImport?.schools ?? []).filter((school) => school.schoolId && !existingIds.has(school.schoolId));
@@ -406,6 +434,25 @@ export default function UnstaffedSessions() {
     }
   }
 
+  async function uploadActualSessions(file: File | undefined) {
+    if (!file) return;
+    setSaving(true);
+    setMessage("Lecture des IDs de la colonne Semaine réelle…");
+    try {
+      const rawCsv = await file.text();
+      const response = await fetch(`/api/actual-session-imports?fileName=${encodeURIComponent(file.name)}`, { method: "POST", headers: { "Content-Type": "text/csv;charset=utf-8" }, body: rawCsv });
+      const data = await response.json() as { import?: ActualSessionImport; error?: string; detail?: string };
+      if (!response.ok) throw new Error(data.detail || data.error || "Import impossible");
+      await load(true);
+      if (data.import?.id) setActualSessionImportId(data.import.id);
+      setMessage(`${data.import?.rows.length ?? 0} ID de séances réelles sauvegardés et dédupliqués`);
+    } catch (error) {
+      setMessage(error instanceof Error ? `Import non sauvegardé : ${error.message}` : "Import non sauvegardé");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function saveExclusions(next: UnstaffedExclusions, successMessage: string) {
     const previous = exclusions;
     const prepared = { ...next, updatedAt: new Date().toISOString() };
@@ -524,6 +571,17 @@ export default function UnstaffedSessions() {
       <label><span>Disponibilités</span><select value={availabilityImportId} onChange={(event) => setAvailabilityImportId(event.target.value)}><option value="">Aucun</option>{availabilityImports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {formatImportDate(item.importedAt)}</option>)}</select></label>
       <label><span>Séances déjà affectées</span><select value={assignmentImportId} onChange={(event) => setAssignmentImportId(event.target.value)}><option value="">Aucun</option>{assignmentImports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {formatImportDate(item.importedAt)}</option>)}</select></label>
     </div>
+
+    <section className="actual-week-panel">
+      <div className="actual-week-heading">
+        <div><strong>Contrôle avec « Semaine réelle »</strong><span>Les IDs répétés sont dédupliqués. Une séance présumée non staffée disparaît du bilan si son ID est retrouvé dans la colonne Semaine réelle.</span></div>
+        <label className="import-button">Importer Semaine réelle<input type="file" accept=".csv,text/csv" disabled={saving} onChange={(event) => { void uploadActualSessions(event.target.files?.[0]); event.currentTarget.value = ""; }} /></label>
+        <label><span>Fichier analysé</span><select value={actualSessionImportId} onChange={(event) => setActualSessionImportId(event.target.value)}><option value="">Aucun</option>{actualSessionImports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {formatImportDate(item.importedAt)}</option>)}</select></label>
+      </div>
+      {activeActualSessionImport ? <div className="actual-week-table-wrap"><table><thead><tr><th>Date</th><th>IDs réels</th><th>Kelly</th><th>Pierre</th><th>Julie</th><th>Non attribués</th><th>Sans tuteur</th></tr></thead><tbody>
+        {actualWeekSummary.map((row) => <tr key={row.date} onClick={() => setSelectedDate(row.date)}><td><strong>{formatDate(row.date, true)}</strong></td><td>{row.actualSessionCount}</td><td>{row.counts.kelly}</td><td>{row.counts.pierre}</td><td>{row.counts.julie}</td><td>{row.counts[""]}</td><td><strong>{row.total}</strong></td></tr>)}
+      </tbody></table>{actualWeekSummary.length ? null : <p>Aucune date exploitable dans ce fichier.</p>}</div> : <p className="actual-week-empty">Importez un export contenant les colonnes Date, Établissement et Semaine réelle pour confirmer le nombre de séances sans tuteur par RH.</p>}
+    </section>
 
     {activeImport ? <>
       <div className="unstaffed-summary">

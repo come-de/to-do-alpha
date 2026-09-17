@@ -1320,6 +1320,21 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
 .candidate-source-bar > label:not(.import-button) { min-width: 0; display: grid; gap: 3px; color: var(--muted); font-size: 8px; font-weight: 850; text-transform: uppercase; letter-spacing: .04em; }
 .candidate-source-bar select { width: 100%; min-width: 0; height: 30px; border: 1px solid var(--line); border-radius: 7px; padding: 0 7px; color: var(--blue-title); background: white; font-size: 9px; text-transform: none; text-overflow: ellipsis; }
 .candidate-source-bar .import-button { min-height: 30px; padding: 5px 8px; white-space: nowrap; }
+.actual-week-panel { margin: 0 12px 8px; overflow: hidden; border: 1px solid rgba(124,58,237,.23); border-radius: 10px; background: white; }
+.actual-week-heading { padding: 8px; display: grid; grid-template-columns: minmax(260px,1fr) auto minmax(210px,.65fr); gap: 8px; align-items: end; background: linear-gradient(100deg,#f5f3ff,#eefaff); }
+.actual-week-heading > div strong { display: block; color: var(--blue-title); font-size: 11px; }
+.actual-week-heading > div span { display: block; margin-top: 2px; color: var(--muted); font-size: 8.8px; line-height: 1.35; }
+.actual-week-heading > label:not(.import-button) { min-width: 0; display: grid; gap: 3px; color: var(--muted); font-size: 8px; font-weight: 850; text-transform: uppercase; }
+.actual-week-heading select { width: 100%; min-width: 0; height: 30px; padding: 0 7px; border: 1px solid var(--line); border-radius: 7px; background: white; color: var(--blue-title); font-size: 9px; text-transform: none; text-overflow: ellipsis; }
+.actual-week-table-wrap { overflow-x: auto; }
+.actual-week-table-wrap table { width: 100%; border-collapse: collapse; min-width: 680px; }
+.actual-week-table-wrap th { padding: 6px 8px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); color: var(--muted); background: var(--soft); font-size: 8px; text-align: center; text-transform: uppercase; }
+.actual-week-table-wrap th:first-child, .actual-week-table-wrap td:first-child { text-align: left; }
+.actual-week-table-wrap td { padding: 7px 8px; border-bottom: 1px solid var(--line); color: var(--text); font-size: 9.5px; text-align: center; }
+.actual-week-table-wrap tbody tr { cursor: pointer; }
+.actual-week-table-wrap tbody tr:hover { background: var(--green-pale); }
+.actual-week-table-wrap td:last-child strong { color: var(--red); font-size: 13px; }
+.actual-week-table-wrap > p, .actual-week-empty { margin: 0; padding: 10px; color: var(--muted); font-size: 9px; }
 .unstaffed-date-tabs { padding: 0 12px 8px; display: flex; gap: 5px; overflow-x: auto; }
 .unstaffed-date-tabs button { flex: 0 0 auto; border: 1px solid var(--line); border-radius: 999px; padding: 5px 8px; color: var(--muted); background: white; font-size: 9.5px; font-weight: 780; cursor: pointer; }
 .unstaffed-date-tabs button b { margin-left: 3px; color: var(--blue-main); }
@@ -1400,6 +1415,8 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .unstaffed-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .unstaffed-summary > small { grid-column: 1 / -1; max-width: none; padding: 2px 0; }
   .candidate-source-bar { grid-template-columns: 1fr 1fr; }
+  .actual-week-heading { grid-template-columns: 1fr auto; }
+  .actual-week-heading > label:not(.import-button) { grid-column: 1 / -1; }
   .candidate-source-title { grid-column: 1 / -1; }
   .session-candidate-list article { grid-template-columns: 1fr 1fr; }
   .candidate-assignments { grid-column: 1 / -1; }
@@ -1428,6 +1445,9 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .owner-count-strip .owner-count-title { width: 100%; margin-right: 0; }
   .owner-count-strip > div { flex: 1 1 calc(50% - 4px); }
   .candidate-source-bar { margin: 0 8px 7px; grid-template-columns: 1fr; }
+  .actual-week-panel { margin: 0 8px 7px; }
+  .actual-week-heading { grid-template-columns: 1fr; }
+  .actual-week-heading > label:not(.import-button) { grid-column: auto; }
   .candidate-source-title { grid-column: auto; }
   .unstaffed-category-filter { grid-column: auto; }
   .unstaffed-category-filter > div { flex-direction: column; }

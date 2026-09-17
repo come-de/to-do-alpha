@@ -291,6 +291,23 @@ export type UpcomingSessionImport = {
   createdAt: string;
 };
 
+export type ActualSessionRow = {
+  sessionId: string;
+  date: string;
+  school: string;
+};
+
+export type ActualSessionImport = {
+  id: string;
+  importedAt: string;
+  displayName: string;
+  fileName: string;
+  sourceRowCount: number;
+  dates: string[];
+  rows: ActualSessionRow[];
+  createdAt: string;
+};
+
 export type TutorInterestRow = {
   personId: string;
   firstName: string;
@@ -450,6 +467,7 @@ export const TUTOR_TRACKING_KEY = "tutor-tracking.json";
 export const AVAILABILITY_IMPORTS_KEY = "availability-imports.json";
 export const TUTOR_ASSIGNMENT_IMPORTS_KEY = "tutor-assignment-imports.json";
 export const UPCOMING_SESSION_IMPORTS_KEY = "upcoming-session-imports.json";
+export const ACTUAL_SESSION_IMPORTS_KEY = "actual-session-imports.json";
 export const TUTOR_INTEREST_IMPORTS_KEY = "tutor-interest-imports.json";
 export const TUTOR_COVERAGE_NOTES_KEY = "tutor-coverage-notes.json";
 export const UNSTAFFED_EXCLUSIONS_KEY = "unstaffed-exclusions.json";
@@ -473,6 +491,7 @@ const memory = globalThis as typeof globalThis & {
   __petitSuiviAvailabilityImports?: AvailabilityImport[];
   __petitSuiviTutorAssignmentImports?: TutorAssignmentImport[];
   __petitSuiviUpcomingSessionImports?: UpcomingSessionImport[];
+  __petitSuiviActualSessionImports?: ActualSessionImport[];
   __petitSuiviTutorInterestImports?: TutorInterestImport[];
   __petitSuiviTutorCoverageNotes?: TutorCoverageNote[];
   __petitSuiviUnstaffedExclusions?: UnstaffedExclusions;
@@ -1419,6 +1438,62 @@ export function sanitizeUpcomingSessionImport(raw: Record<string, unknown>): Upc
     rows: Array.isArray(raw.rows)
       ? raw.rows.filter((row): row is Record<string, unknown> => Boolean(row && typeof row === "object")).map(sanitizeUpcomingSessionRow).filter((row) => row.sessionId && row.date && row.school)
       : [],
+    createdAt: cleanText(raw.createdAt) || now,
+  };
+}
+
+export function sanitizeActualSessionRow(raw: Record<string, unknown>): ActualSessionRow {
+  return {
+    sessionId: cleanText(raw.sessionId),
+    date: cleanText(raw.date),
+    school: cleanText(raw.school),
+  };
+}
+
+export function parseActualSessionsCsv(value: string) {
+  const csvRows = parseCsvRows(value).filter((row) => row.some(Boolean));
+  if (!csvRows.length) return { rows: [] as ActualSessionRow[], sourceRowCount: 0 };
+  const headers = csvRows[0].map(normalizedHeader);
+  const indexFor = (aliases: string[]) => {
+    for (const alias of aliases) {
+      const index = headers.findIndex((header) => header === alias);
+      if (index >= 0) return index;
+    }
+    return -1;
+  };
+  const dateIndex = indexFor(["date", "datedelaprestation"]);
+  const sessionIdIndex = indexFor(["semainereelle", "idseance", "iddelaseance"]);
+  const schoolIndex = indexFor(["etablissement", "ecole"]);
+  if (dateIndex < 0 || sessionIdIndex < 0 || schoolIndex < 0) {
+    throw new Error("Colonnes Date, Semaine réelle ou Établissement introuvables dans le CSV");
+  }
+  const unique = new Map<string, ActualSessionRow>();
+  const dataRows = csvRows.slice(1);
+  dataRows.forEach((row) => {
+    const parsed = sanitizeActualSessionRow({
+      date: row[dateIndex] || "",
+      sessionId: row[sessionIdIndex] || "",
+      school: row[schoolIndex] || "",
+    });
+    if (!parsed.date || !parsed.sessionId) return;
+    unique.set(`${parsed.date}:${parsed.sessionId}`, parsed);
+  });
+  return { rows: Array.from(unique.values()).sort((a, b) => `${a.date}-${a.school}-${a.sessionId}`.localeCompare(`${b.date}-${b.school}-${b.sessionId}`, "fr")), sourceRowCount: dataRows.length };
+}
+
+export function sanitizeActualSessionImport(raw: Record<string, unknown>): ActualSessionImport {
+  const now = new Date().toISOString();
+  const rows = Array.isArray(raw.rows)
+    ? raw.rows.filter((row): row is Record<string, unknown> => Boolean(row && typeof row === "object")).map(sanitizeActualSessionRow).filter((row) => row.sessionId && row.date)
+    : [];
+  return {
+    id: cleanText(raw.id) || crypto.randomUUID(),
+    importedAt: cleanText(raw.importedAt) || now,
+    displayName: cleanText(raw.displayName) || cleanText(raw.fileName) || "Semaine réelle",
+    fileName: cleanText(raw.fileName) || "semaine-reelle.csv",
+    sourceRowCount: Math.max(0, Math.round(Number(raw.sourceRowCount) || 0)),
+    dates: Array.from(new Set(rows.map((row) => row.date))).sort(),
+    rows,
     createdAt: cleanText(raw.createdAt) || now,
   };
 }
@@ -2452,6 +2527,62 @@ export async function deleteUpcomingSessionImportById(id: string) {
   const existing = await readUpcomingSessionIndex();
   await store.setJSON(UPCOMING_SESSION_IMPORTS_KEY, existing.filter((item) => item.id !== id).map((item) => ({ ...item, rows: [] })));
   await store.delete(upcomingSessionRowsKey(id));
+}
+
+export async function readActualSessionImports() {
+  try {
+    const store = taskStore();
+    const imports = await store.get(ACTUAL_SESSION_IMPORTS_KEY, { type: "json", consistency: "strong" });
+    return Array.isArray(imports)
+      ? imports.filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object")).map(sanitizeActualSessionImport).sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt))
+      : [];
+  } catch (error) {
+    if (!canUseMemoryFallback()) throw error;
+    return memory.__petitSuiviActualSessionImports ?? [];
+  }
+}
+
+export async function readActualSessionImportSummaries() {
+  return (await readActualSessionImports()).map((item) => ({ ...item, rows: [] }));
+}
+
+export async function createActualSessionImportFromCsv(input: { fileName: string; rawCsv: string }) {
+  const now = new Date().toISOString();
+  const parsed = parseActualSessionsCsv(input.rawCsv);
+  if (!parsed.rows.length) throw new Error("Aucun ID valide trouvé dans la colonne Semaine réelle");
+  const nextImport = sanitizeActualSessionImport({
+    id: crypto.randomUUID(),
+    importedAt: now,
+    displayName: input.fileName.replace(/\.[^.]+$/, "") || "Semaine réelle",
+    fileName: input.fileName || "semaine-reelle.csv",
+    sourceRowCount: parsed.sourceRowCount,
+    rows: parsed.rows,
+    createdAt: now,
+  });
+  try {
+    const store = taskStore();
+    const existing = await readActualSessionImports();
+    await store.setJSON(ACTUAL_SESSION_IMPORTS_KEY, [nextImport, ...existing.filter((item) => item.id !== nextImport.id)]);
+  } catch (error) {
+    if (!canUseMemoryFallback()) throw error;
+    memory.__petitSuiviActualSessionImports = [nextImport, ...(memory.__petitSuiviActualSessionImports ?? [])];
+  }
+  return nextImport;
+}
+
+export async function updateActualSessionImportName(id: string, displayName: string) {
+  const existing = await readActualSessionImports();
+  if (!existing.some((item) => item.id === id)) throw new Error("Import introuvable");
+  const cleanedName = cleanText(displayName);
+  if (!cleanedName) throw new Error("Le nom de l’import est obligatoire");
+  const store = taskStore();
+  await store.setJSON(ACTUAL_SESSION_IMPORTS_KEY, existing.map((item) => item.id === id ? { ...item, displayName: cleanedName } : item));
+}
+
+export async function deleteActualSessionImportById(id: string) {
+  const existing = await readActualSessionImports();
+  const store = taskStore();
+  await store.setJSON(ACTUAL_SESSION_IMPORTS_KEY, existing.filter((item) => item.id !== id));
 }
 
 function tutorInterestRowsKey(id: string) {
