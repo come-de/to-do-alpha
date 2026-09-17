@@ -230,9 +230,12 @@ export type TutorAssignmentRow = {
   firstName: string;
   lastName: string;
   grade: string;
+  phone: string;
   school: string;
+  category: string;
   date: string;
   timeSlot: string;
+  level: string;
   absent: boolean;
 };
 
@@ -1187,9 +1190,12 @@ export function sanitizeTutorAssignmentRow(raw: Record<string, unknown>): TutorA
     firstName: cleanText(raw.firstName),
     lastName: cleanText(raw.lastName),
     grade: cleanText(raw.grade),
+    phone: cleanText(raw.phone),
     school: cleanText(raw.school),
+    category: cleanText(raw.category),
     date: cleanText(raw.date),
     timeSlot: cleanText(raw.timeSlot),
+    level: cleanText(raw.level),
     absent: raw.absent === true || ["oui", "yes", "true", "1"].includes(cleanText(raw.absent).toLocaleLowerCase("fr")),
   };
 }
@@ -1210,9 +1216,12 @@ export function parseTutorAssignmentCsv(value: string) {
   const lastNameIndex = indexFor(["nomdututeur", "nomtuteur", "nom"]);
   const firstNameIndex = indexFor(["prenomdututeur", "prenomtuteur", "prenom"]);
   const gradeIndex = indexFor(["gradedututeur", "grade"]);
+  const phoneIndex = indexFor(["numerodetelephone", "telephone", "telephoneportable"]);
   const schoolIndex = indexFor(["etablissement", "ecole"]);
+  const categoryIndex = indexFor(["categorie"]);
   const dateIndex = indexFor(["datedelaprestation", "date"]);
   const timeSlotIndex = indexFor(["horairesducreneau", "heureducreneau", "creneau"]);
+  const levelIndex = indexFor(["niveau", "classe"]);
   const absentIndex = indexFor(["absent", "absence"]);
   if (tutorIdIndex < 0 || dateIndex < 0 || timeSlotIndex < 0) {
     throw new Error("Colonnes tuteur, date ou horaires introuvables dans le CSV des séances affectées");
@@ -1227,9 +1236,12 @@ export function parseTutorAssignmentCsv(value: string) {
           lastName: valueAt(row, lastNameIndex),
           firstName: valueAt(row, firstNameIndex),
           grade: valueAt(row, gradeIndex),
+          phone: valueAt(row, phoneIndex),
           school: valueAt(row, schoolIndex),
+          category: valueAt(row, categoryIndex),
           date: valueAt(row, dateIndex),
           timeSlot: valueAt(row, timeSlotIndex),
+          level: valueAt(row, levelIndex),
           absent: valueAt(row, absentIndex),
         }),
       )

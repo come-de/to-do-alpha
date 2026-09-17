@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { AvailabilityImport, AvailabilityRow, TutorAssignmentImport, TutorAssignmentRow, TutorCoverageNote, TutorCoverageNoteStatus } from "@/app/lib/shared-data";
 
 type CoverageView = "unassigned" | "extra";
+type ToolView = "coverage" | "staffing-comparison";
 type TutorCoverage = {
   tutorId: string;
   firstName: string;
@@ -17,6 +18,13 @@ type NoteDraft = { status: TutorCoverageNoteStatus; note: string };
 type SchoolPortfolioOwner = "" | "kelly" | "pierre" | "julie";
 type SchoolOwnerFilter = "all" | "unassigned" | Exclude<SchoolPortfolioOwner, "">;
 type SchoolAssignment = { name: string; portfolioOwner: SchoolPortfolioOwner };
+type StaffingSession = {
+  key: string;
+  school: string;
+  timeSlot: string;
+  category: string;
+  tutors: Map<string, TutorAssignmentRow>;
+};
 
 const schoolOwnerLabels: Record<SchoolPortfolioOwner, string> = {
   "": "Non attribué",
@@ -79,16 +87,44 @@ function uniqueAssignments(rows: TutorAssignmentRow[]) {
   });
 }
 
+function normalizedAssignmentPart(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr").replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function staffingSessionKey(row: TutorAssignmentRow) {
+  return [row.date, normalizedAssignmentPart(row.school), normalizedAssignmentPart(row.timeSlot), normalizedAssignmentPart(row.category)].join("|");
+}
+
+function staffingSessions(rows: TutorAssignmentRow[], date: string) {
+  const sessions = new Map<string, StaffingSession>();
+  rows.filter((row) => row.date === date && !row.absent).forEach((row) => {
+    const key = staffingSessionKey(row);
+    const session = sessions.get(key) ?? { key, school: row.school, timeSlot: row.timeSlot, category: row.category, tutors: new Map<string, TutorAssignmentRow>() };
+    if (!session.tutors.has(row.tutorId)) session.tutors.set(row.tutorId, row);
+    sessions.set(key, session);
+  });
+  return sessions;
+}
+
+function tutorLabel(row: TutorAssignmentRow | undefined, tutorId: string) {
+  if (!row) return `ID ${tutorId}`;
+  return `${row.firstName} ${row.lastName}`.trim() || `ID ${tutorId}`;
+}
+
 function csvCell(value: unknown) {
   const text = String(value ?? "");
   return /[;"\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
 export default function TutorCoverageComparison() {
+  const [toolView, setToolView] = useState<ToolView>("coverage");
   const [availabilityImports, setAvailabilityImports] = useState<AvailabilityImport[]>([]);
   const [assignmentImports, setAssignmentImports] = useState<TutorAssignmentImport[]>([]);
   const [availabilityId, setAvailabilityId] = useState("");
   const [assignmentId, setAssignmentId] = useState("");
+  const [compareReferenceId, setCompareReferenceId] = useState("");
+  const [compareRecentId, setCompareRecentId] = useState("");
+  const [comparisonDate, setComparisonDate] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
   const [view, setView] = useState<CoverageView>("unassigned");
   const [query, setQuery] = useState("");
@@ -128,6 +164,8 @@ export default function TutorCoverageComparison() {
       }));
       setAvailabilityId((current) => nextAvailability.some((item) => item.id === current) ? current : nextAvailability[0]?.id || "");
       setAssignmentId((current) => nextAssignments.some((item) => item.id === current) ? current : nextAssignments[0]?.id || "");
+      setCompareRecentId((current) => nextAssignments.some((item) => item.id === current) ? current : nextAssignments[0]?.id || "");
+      setCompareReferenceId((current) => nextAssignments.some((item) => item.id === current) ? current : nextAssignments[1]?.id || nextAssignments[0]?.id || "");
       if (!silent) setMessage("Fichiers actualisés");
     } catch (error) {
       if (!silent) setMessage(error instanceof Error ? error.message : "Chargement impossible");
@@ -142,6 +180,8 @@ export default function TutorCoverageComparison() {
 
   const availabilityImport = availabilityImports.find((item) => item.id === availabilityId) ?? null;
   const assignmentImport = assignmentImports.find((item) => item.id === assignmentId) ?? null;
+  const compareReferenceImport = assignmentImports.find((item) => item.id === compareReferenceId) ?? null;
+  const compareRecentImport = assignmentImports.find((item) => item.id === compareRecentId) ?? null;
   const commonDates = useMemo(() => {
     const availabilityDates = new Set((availabilityImport?.rows ?? []).map((row) => row.date));
     return Array.from(new Set((assignmentImport?.rows ?? []).map((row) => row.date).filter((date) => availabilityDates.has(date)))).sort();
@@ -149,6 +189,53 @@ export default function TutorCoverageComparison() {
   const activeDate = commonDates.includes(selectedDate)
     ? selectedDate
     : commonDates.find((date) => date >= new Date().toISOString().slice(0, 10)) || commonDates.at(-1) || "";
+
+  const comparisonDates = useMemo(() => Array.from(new Set([
+    ...(compareReferenceImport?.rows ?? []).map((row) => row.date),
+    ...(compareRecentImport?.rows ?? []).map((row) => row.date),
+  ])).filter(Boolean).sort(), [compareRecentImport, compareReferenceImport]);
+  const activeComparisonDate = comparisonDates.includes(comparisonDate)
+    ? comparisonDate
+    : comparisonDates.find((date) => date >= new Date().toISOString().slice(0, 10)) || comparisonDates.at(-1) || "";
+
+  const staffingComparison = useMemo(() => {
+    const referenceSessions = staffingSessions(compareReferenceImport?.rows ?? [], activeComparisonDate);
+    const recentSessions = staffingSessions(compareRecentImport?.rows ?? [], activeComparisonDate);
+    const added: Array<{ session: StaffingSession; tutor: TutorAssignmentRow }> = [];
+    const removed: Array<{ session: StaffingSession; tutor: TutorAssignmentRow }> = [];
+    const changed: Array<{ session: StaffingSession; before: TutorAssignmentRow[]; after: TutorAssignmentRow[] }> = [];
+    const allKeys = new Set([...referenceSessions.keys(), ...recentSessions.keys()]);
+    allKeys.forEach((key) => {
+      const reference = referenceSessions.get(key);
+      const recent = recentSessions.get(key);
+      const referenceTutors = reference?.tutors ?? new Map<string, TutorAssignmentRow>();
+      const recentTutors = recent?.tutors ?? new Map<string, TutorAssignmentRow>();
+      const addedIds = Array.from(recentTutors.keys()).filter((id) => !referenceTutors.has(id));
+      const removedIds = Array.from(referenceTutors.keys()).filter((id) => !recentTutors.has(id));
+      const session = recent ?? reference;
+      if (!session) return;
+      if (reference && recent && addedIds.length && removedIds.length) {
+        changed.push({
+          session,
+          before: removedIds.map((id) => referenceTutors.get(id)!),
+          after: addedIds.map((id) => recentTutors.get(id)!),
+        });
+      } else {
+        addedIds.forEach((id) => added.push({ session, tutor: recentTutors.get(id)! }));
+        removedIds.forEach((id) => removed.push({ session, tutor: referenceTutors.get(id)! }));
+      }
+    });
+    const bySession = <T extends { session: StaffingSession }>(left: T, right: T) => `${left.session.timeSlot} ${left.session.school}`.localeCompare(`${right.session.timeSlot} ${right.session.school}`, "fr");
+    return {
+      referenceSessionCount: referenceSessions.size,
+      recentSessionCount: recentSessions.size,
+      referenceTutorCount: new Set(Array.from(referenceSessions.values()).flatMap((session) => Array.from(session.tutors.keys()))).size,
+      recentTutorCount: new Set(Array.from(recentSessions.values()).flatMap((session) => Array.from(session.tutors.keys()))).size,
+      added: added.sort(bySession),
+      removed: removed.sort(bySession),
+      changed: changed.sort(bySession),
+    };
+  }, [activeComparisonDate, compareRecentImport, compareReferenceImport]);
 
   const comparison = useMemo(() => {
     const availabilityByTutor = new Map<string, AvailabilityRow[]>();
@@ -296,8 +383,13 @@ export default function TutorCoverageComparison() {
   return (
     <section className="task-panel coverage-panel">
       <div className="panel-heading">
-        <div><p className="eyebrow">Croisement staffing</p><h2>Disponibilités et séances affectées</h2><p>Repérez les tuteurs mobilisables sans séance et les horaires encore libres.</p></div>
+        <div><p className="eyebrow">Croisement staffing</p><h2>{toolView === "coverage" ? "Disponibilités et séances affectées" : "Comparer deux staffings"}</h2><p>{toolView === "coverage" ? "Repérez les tuteurs mobilisables sans séance et les horaires encore libres." : "Comparez deux exports Prix des tuteurs pour une date précise."}</p></div>
         <button type="button" className="ghost-button" onClick={() => void load()} disabled={saving}>↻ Actualiser</button>
+      </div>
+
+      <div className="coverage-tool-tabs" role="tablist" aria-label="Outils de couverture">
+        <button type="button" className={toolView === "coverage" ? "active" : ""} onClick={() => setToolView("coverage")}>Disponibilités ↔ staffing</button>
+        <button type="button" className={toolView === "staffing-comparison" ? "active" : ""} onClick={() => setToolView("staffing-comparison")}>Comparer deux staffings</button>
       </div>
 
       <div className="coverage-upload-grid">
@@ -305,6 +397,32 @@ export default function TutorCoverageComparison() {
         <div><div><strong>Séances affectées</strong><span>Export Prix des tuteurs.</span></div><label className="import-button">Importer<input type="file" accept=".csv,text/csv" disabled={saving} onChange={(event) => { void upload(event.target.files?.[0], "assignments"); event.currentTarget.value = ""; }} /></label></div>
       </div>
       {message ? <p className="enrollment-message">{message}</p> : null}
+
+      {toolView === "staffing-comparison" ? <>
+        <div className="staffing-comparison-controls">
+          <label>Fichier 1 · référence<select value={compareReferenceId} onChange={(event) => { setCompareReferenceId(event.target.value); setComparisonDate(""); }}><option value="">Sélectionner</option>{assignmentImports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {importDate(item.importedAt)}</option>)}</select></label>
+          <span aria-hidden="true">→</span>
+          <label>Fichier 2 · plus récent<select value={compareRecentId} onChange={(event) => { setCompareRecentId(event.target.value); setComparisonDate(""); }}><option value="">Sélectionner</option>{assignmentImports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {importDate(item.importedAt)}</option>)}</select></label>
+          <label>Date à comparer<select value={activeComparisonDate} onChange={(event) => setComparisonDate(event.target.value)}><option value="">Aucune date disponible</option>{comparisonDates.map((date) => <option value={date} key={date}>{fullDate(date)}</option>)}</select></label>
+        </div>
+        <p className="staffing-comparison-note">Une séance est reconnue par sa date, son établissement, son horaire et sa catégorie. Les doublons de groupes sont regroupés.</p>
+        <div className="staffing-comparison-summary">
+          <div><span>Séances fichier 1</span><strong>{staffingComparison.referenceSessionCount}</strong></div>
+          <div><span>Séances fichier 2</span><strong>{staffingComparison.recentSessionCount}</strong></div>
+          <div><span>Tuteurs fichier 1</span><strong>{staffingComparison.referenceTutorCount}</strong></div>
+          <div><span>Tuteurs fichier 2</span><strong>{staffingComparison.recentTutorCount}</strong></div>
+          <div className="added"><span>Tuteurs en plus</span><strong>+{staffingComparison.added.length}</strong></div>
+          <div className="removed"><span>Tuteurs en moins</span><strong>−{staffingComparison.removed.length}</strong></div>
+          <div className="changed"><span>Séances modifiées</span><strong>{staffingComparison.changed.length}</strong></div>
+        </div>
+        {!compareReferenceImport || !compareRecentImport ? <div className="empty-state compact">Choisissez deux exports Prix des tuteurs.</div>
+          : !activeComparisonDate ? <div className="empty-state compact">Aucune date n’est disponible dans ces fichiers.</div>
+          : <div className="staffing-comparison-results">
+            <section><h3>Changements de tuteur <span>{staffingComparison.changed.length}</span></h3>{staffingComparison.changed.length ? staffingComparison.changed.map((item) => <article key={item.session.key}><div className="staffing-session"><strong>{item.session.timeSlot}</strong><span>{item.session.school}</span><small>{item.session.category || "Catégorie non précisée"}</small></div><div className="staffing-change before"><em>Avant</em>{item.before.map((tutor) => <span key={tutor.tutorId}>{tutorLabel(tutor, tutor.tutorId)} <small>#{tutor.tutorId}{tutor.phone ? ` · ${tutor.phone}` : ""}</small></span>)}</div><div className="staffing-change after"><em>Après</em>{item.after.map((tutor) => <span key={tutor.tutorId}>{tutorLabel(tutor, tutor.tutorId)} <small>#{tutor.tutorId}{tutor.phone ? ` · ${tutor.phone}` : ""}</small></span>)}</div></article>) : <p>Aucun remplacement détecté.</p>}</section>
+            <section><h3>Tuteurs ajoutés <span>{staffingComparison.added.length}</span></h3>{staffingComparison.added.length ? staffingComparison.added.map((item) => <article key={`${item.session.key}-${item.tutor.tutorId}`}><div className="staffing-session"><strong>{item.session.timeSlot}</strong><span>{item.session.school}</span><small>{item.session.category || "Catégorie non précisée"}</small></div><div className="staffing-change after"><span>{tutorLabel(item.tutor, item.tutor.tutorId)} <small>#{item.tutor.tutorId}{item.tutor.phone ? ` · ${item.tutor.phone}` : ""}</small></span></div></article>) : <p>Aucun tuteur ajouté.</p>}</section>
+            <section><h3>Tuteurs retirés <span>{staffingComparison.removed.length}</span></h3>{staffingComparison.removed.length ? staffingComparison.removed.map((item) => <article key={`${item.session.key}-${item.tutor.tutorId}`}><div className="staffing-session"><strong>{item.session.timeSlot}</strong><span>{item.session.school}</span><small>{item.session.category || "Catégorie non précisée"}</small></div><div className="staffing-change before"><span>{tutorLabel(item.tutor, item.tutor.tutorId)} <small>#{item.tutor.tutorId}{item.tutor.phone ? ` · ${item.tutor.phone}` : ""}</small></span></div></article>) : <p>Aucun tuteur retiré.</p>}</section>
+          </div>}
+      </> : <>
 
       <div className="coverage-controls">
         <label>Disponibilités<select value={availabilityId} onChange={(event) => { setAvailabilityId(event.target.value); setSelectedDate(""); }}><option value="">Sélectionner</option>{availabilityImports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {importDate(item.importedAt)}</option>)}</select></label>
@@ -350,6 +468,7 @@ export default function TutorCoverageComparison() {
             </article>;
           }) : <div className="empty-state compact">Aucun tuteur ne correspond aux critères.</div>}
       </div>
+      </>}
     </section>
   );
 }

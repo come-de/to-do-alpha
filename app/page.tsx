@@ -5455,13 +5455,13 @@ export default function Home() {
   return (
     <main className={`app-shell density-${density}`}>
       <header className="topbar">
-        <div className="brand">
+        <button type="button" className="brand" onClick={() => setAppMode("dashboard")} aria-label="Retourner à l’accueil">
           <div className="brand-mark" aria-hidden="true">α</div>
           <div>
             <span>Alpha Education</span>
             <small>Pilotage des équipes</small>
           </div>
-        </div>
+        </button>
         <div className="header-actions">
           <div className={`storage-note ${syncError ? "error" : ""}`}>
             <span aria-hidden="true">●</span>

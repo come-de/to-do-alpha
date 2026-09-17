@@ -21,7 +21,7 @@ const menuItems: Array<{ mode: HomeDestination; icon: string; title: string; des
   { mode: "tutorReports", icon: "🧾", title: "Bilans tuteurs", description: "Suivre les bilans non réalisés et les commentaires." },
   { mode: "communications", icon: "📣", title: "Communications", description: "Journal des communications envoyées aux différents publics.", countKey: "communications" },
   { mode: "availability", icon: "📆", title: "Comparaison dispos", description: "Comparer deux exports de disponibilités tuteurs.", countKey: "availability" },
-  { mode: "coverage", icon: "🧩", title: "Couverture tuteurs", description: "Croiser disponibilités et séances déjà affectées." },
+  { mode: "coverage", icon: "🧩", title: "Couverture tuteurs", description: "Croiser les disponibilités et comparer deux staffings." },
   { mode: "schools", icon: "🏫", title: "Établissements", description: "Consulter le CRM et la répartition des établissements.", countKey: "schools" },
   { mode: "files", icon: "🗂️", title: "Fichiers", description: "Retrouver et gérer les imports partagés." },
   { mode: "availabilityFeed", icon: "🕒", title: "Fil des disponibilités", description: "Voir les créneaux libres dans l’ordre chronologique." },
