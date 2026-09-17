@@ -125,6 +125,7 @@ export default function TutorCoverageComparison() {
   const [compareReferenceId, setCompareReferenceId] = useState("");
   const [compareRecentId, setCompareRecentId] = useState("");
   const [comparisonDate, setComparisonDate] = useState("");
+  const [comparisonOwnerFilter, setComparisonOwnerFilter] = useState<SchoolOwnerFilter>("all");
   const [selectedDate, setSelectedDate] = useState("");
   const [view, setView] = useState<CoverageView>("unassigned");
   const [query, setQuery] = useState("");
@@ -294,6 +295,26 @@ export default function TutorCoverageComparison() {
     [ownerBySchoolName],
   );
 
+  const staffingComparisonByOwner = useMemo(() => {
+    const owners: SchoolPortfolioOwner[] = ["kelly", "pierre", "julie", ""];
+    const matchesFilter = (schoolName: string) => {
+      const owner = ownerForSchool(schoolName);
+      return comparisonOwnerFilter === "all" || (comparisonOwnerFilter === "unassigned" ? !owner : owner === comparisonOwnerFilter);
+    };
+    const summary = owners.map((owner) => ({
+      owner,
+      added: staffingComparison.added.filter((item) => ownerForSchool(item.session.school) === owner).length,
+      removed: staffingComparison.removed.filter((item) => ownerForSchool(item.session.school) === owner).length,
+      changed: staffingComparison.changed.filter((item) => ownerForSchool(item.session.school) === owner).length,
+    }));
+    return {
+      summary,
+      added: staffingComparison.added.filter((item) => matchesFilter(item.session.school)),
+      removed: staffingComparison.removed.filter((item) => matchesFilter(item.session.school)),
+      changed: staffingComparison.changed.filter((item) => matchesFilter(item.session.school)),
+    };
+  }, [comparisonOwnerFilter, ownerForSchool, staffingComparison]);
+
   const displayed = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase("fr");
     return (view === "unassigned" ? comparison.unassigned : comparison.extra).flatMap((tutor) => {
@@ -404,6 +425,7 @@ export default function TutorCoverageComparison() {
           <span aria-hidden="true">→</span>
           <label>Fichier 2 · plus récent<select value={compareRecentId} onChange={(event) => { setCompareRecentId(event.target.value); setComparisonDate(""); }}><option value="">Sélectionner</option>{assignmentImports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {importDate(item.importedAt)}</option>)}</select></label>
           <label>Date à comparer<select value={activeComparisonDate} onChange={(event) => setComparisonDate(event.target.value)}><option value="">Aucune date disponible</option>{comparisonDates.map((date) => <option value={date} key={date}>{fullDate(date)}</option>)}</select></label>
+          <label>Responsable RH<select value={comparisonOwnerFilter} onChange={(event) => setComparisonOwnerFilter(event.target.value as SchoolOwnerFilter)}><option value="all">Tous</option><option value="kelly">Kelly</option><option value="pierre">Pierre</option><option value="julie">Julie</option><option value="unassigned">Non attribués</option></select></label>
         </div>
         <p className="staffing-comparison-note">Une séance est reconnue par sa date, son établissement, son horaire et sa catégorie. Les doublons de groupes sont regroupés.</p>
         <div className="staffing-comparison-summary">
@@ -415,12 +437,18 @@ export default function TutorCoverageComparison() {
           <div className="removed"><span>Tuteurs en moins</span><strong>−{staffingComparison.removed.length}</strong></div>
           <div className="changed"><span>Séances modifiées</span><strong>{staffingComparison.changed.length}</strong></div>
         </div>
+        <div className="staffing-rh-summary" aria-label={`Évolution du staffing par responsable pour ${activeComparisonDate || "la date sélectionnée"}`}>
+          <div className="staffing-rh-summary-title"><strong>Évolution par responsable RH</strong><span>{activeComparisonDate ? fullDate(activeComparisonDate) : "Choisissez une date"}</span></div>
+          <div className="staffing-rh-summary-head"><span>Responsable</span><span>En plus</span><span>En moins</span><span>Changements</span></div>
+          {staffingComparisonByOwner.summary.map((row) => <button type="button" className={(comparisonOwnerFilter === "unassigned" ? !row.owner : comparisonOwnerFilter === row.owner) ? "active" : ""} onClick={() => setComparisonOwnerFilter(row.owner || "unassigned")} key={row.owner || "unassigned"}><strong>{schoolOwnerLabels[row.owner]}</strong><span className="positive">+{row.added}</span><span className="negative">−{row.removed}</span><span className="changed">{row.changed}</span></button>)}
+          {comparisonOwnerFilter !== "all" ? <button type="button" className="staffing-rh-show-all" onClick={() => setComparisonOwnerFilter("all")}>Afficher tous les responsables</button> : null}
+        </div>
         {!compareReferenceImport || !compareRecentImport ? <div className="empty-state compact">Choisissez deux exports Prix des tuteurs.</div>
           : !activeComparisonDate ? <div className="empty-state compact">Aucune date n’est disponible dans ces fichiers.</div>
           : <div className="staffing-comparison-results">
-            <section><h3>Changements de tuteur <span>{staffingComparison.changed.length}</span></h3>{staffingComparison.changed.length ? staffingComparison.changed.map((item) => <article key={item.session.key}><div className="staffing-session"><strong>{item.session.timeSlot}</strong><span>{item.session.school}</span><small>{item.session.category || "Catégorie non précisée"}</small></div><div className="staffing-change before"><em>Avant</em>{item.before.map((tutor) => <span key={tutor.tutorId}>{tutorLabel(tutor, tutor.tutorId)} <small>#{tutor.tutorId}{tutor.phone ? ` · ${tutor.phone}` : ""}</small></span>)}</div><div className="staffing-change after"><em>Après</em>{item.after.map((tutor) => <span key={tutor.tutorId}>{tutorLabel(tutor, tutor.tutorId)} <small>#{tutor.tutorId}{tutor.phone ? ` · ${tutor.phone}` : ""}</small></span>)}</div></article>) : <p>Aucun remplacement détecté.</p>}</section>
-            <section><h3>Tuteurs ajoutés <span>{staffingComparison.added.length}</span></h3>{staffingComparison.added.length ? staffingComparison.added.map((item) => <article key={`${item.session.key}-${item.tutor.tutorId}`}><div className="staffing-session"><strong>{item.session.timeSlot}</strong><span>{item.session.school}</span><small>{item.session.category || "Catégorie non précisée"}</small></div><div className="staffing-change after"><span>{tutorLabel(item.tutor, item.tutor.tutorId)} <small>#{item.tutor.tutorId}{item.tutor.phone ? ` · ${item.tutor.phone}` : ""}</small></span></div></article>) : <p>Aucun tuteur ajouté.</p>}</section>
-            <section><h3>Tuteurs retirés <span>{staffingComparison.removed.length}</span></h3>{staffingComparison.removed.length ? staffingComparison.removed.map((item) => <article key={`${item.session.key}-${item.tutor.tutorId}`}><div className="staffing-session"><strong>{item.session.timeSlot}</strong><span>{item.session.school}</span><small>{item.session.category || "Catégorie non précisée"}</small></div><div className="staffing-change before"><span>{tutorLabel(item.tutor, item.tutor.tutorId)} <small>#{item.tutor.tutorId}{item.tutor.phone ? ` · ${item.tutor.phone}` : ""}</small></span></div></article>) : <p>Aucun tuteur retiré.</p>}</section>
+            <section><h3>Changements de tuteur <span>{staffingComparisonByOwner.changed.length}</span></h3>{staffingComparisonByOwner.changed.length ? staffingComparisonByOwner.changed.map((item) => <article key={item.session.key}><div className="staffing-session"><strong>{item.session.timeSlot}</strong><span>{item.session.school}</span><small>{item.session.category || "Catégorie non précisée"} · RH : {schoolOwnerLabels[ownerForSchool(item.session.school)]}</small></div><div className="staffing-change before"><em>Avant</em>{item.before.map((tutor) => <span key={tutor.tutorId}>{tutorLabel(tutor, tutor.tutorId)} <small>#{tutor.tutorId}{tutor.phone ? ` · ${tutor.phone}` : ""}</small></span>)}</div><div className="staffing-change after"><em>Après</em>{item.after.map((tutor) => <span key={tutor.tutorId}>{tutorLabel(tutor, tutor.tutorId)} <small>#{tutor.tutorId}{tutor.phone ? ` · ${tutor.phone}` : ""}</small></span>)}</div></article>) : <p>Aucun remplacement détecté pour ce responsable.</p>}</section>
+            <section><h3>Tuteurs ajoutés <span>{staffingComparisonByOwner.added.length}</span></h3>{staffingComparisonByOwner.added.length ? staffingComparisonByOwner.added.map((item) => <article key={`${item.session.key}-${item.tutor.tutorId}`}><div className="staffing-session"><strong>{item.session.timeSlot}</strong><span>{item.session.school}</span><small>{item.session.category || "Catégorie non précisée"} · RH : {schoolOwnerLabels[ownerForSchool(item.session.school)]}</small></div><div className="staffing-change after"><span>{tutorLabel(item.tutor, item.tutor.tutorId)} <small>#{item.tutor.tutorId}{item.tutor.phone ? ` · ${item.tutor.phone}` : ""}</small></span></div></article>) : <p>Aucun tuteur ajouté pour ce responsable.</p>}</section>
+            <section><h3>Tuteurs retirés <span>{staffingComparisonByOwner.removed.length}</span></h3>{staffingComparisonByOwner.removed.length ? staffingComparisonByOwner.removed.map((item) => <article key={`${item.session.key}-${item.tutor.tutorId}`}><div className="staffing-session"><strong>{item.session.timeSlot}</strong><span>{item.session.school}</span><small>{item.session.category || "Catégorie non précisée"} · RH : {schoolOwnerLabels[ownerForSchool(item.session.school)]}</small></div><div className="staffing-change before"><span>{tutorLabel(item.tutor, item.tutor.tutorId)} <small>#{item.tutor.tutorId}{item.tutor.phone ? ` · ${item.tutor.phone}` : ""}</small></span></div></article>) : <p>Aucun tuteur retiré pour ce responsable.</p>}</section>
           </div>}
       </> : <>
 

@@ -491,7 +491,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .coverage-note-editor { grid-column: 1 / -1; display: grid; grid-template-columns: 190px minmax(220px, 1fr) auto; gap: 6px; padding-top: 6px; border-top: 1px solid var(--line); }
 .coverage-note-editor select, .coverage-note-editor input { width: 100%; min-width: 0; height: 29px; border: 1px solid var(--line); border-radius: 7px; padding: 0 7px; background: white; color: var(--blue-title); font-size: 9.5px; }
 .coverage-note-editor .text-button { white-space: nowrap; }
-.staffing-comparison-controls { margin: 0 12px 6px; display: grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr) minmax(190px,.65fr); align-items: end; gap: 7px; }
+.staffing-comparison-controls { margin: 0 12px 6px; display: grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr) minmax(170px,.58fr) minmax(135px,.42fr); align-items: end; gap: 7px; }
 .staffing-comparison-controls > span { align-self: center; color: var(--green-dark); font-size: 20px; font-weight: 900; }
 .staffing-comparison-controls label { min-width: 0; display: grid; gap: 3px; color: var(--muted); font-size: 8.5px; font-weight: 850; text-transform: uppercase; letter-spacing: .045em; }
 .staffing-comparison-controls select { width: 100%; min-width: 0; height: 34px; padding: 0 8px; border: 1px solid var(--line); border-radius: 8px; background: white; color: var(--blue-title); font-size: 10px; text-transform: none; text-overflow: ellipsis; }
@@ -506,6 +506,21 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .staffing-comparison-summary .removed strong { color: var(--red); }
 .staffing-comparison-summary .changed { border-color: rgba(124,58,237,.22); background: #f5f3ff; }
 .staffing-comparison-summary .changed strong { color: #6d28d9; }
+.staffing-rh-summary { margin: 0 12px 10px; overflow: hidden; border: 1px solid rgba(124,58,237,.2); border-radius: 10px; background: white; }
+.staffing-rh-summary-title { padding: 7px 9px; display: flex; align-items: center; justify-content: space-between; gap: 8px; background: linear-gradient(100deg,#f5f3ff,#eefaff); }
+.staffing-rh-summary-title strong { color: var(--blue-title); font-size: 10px; }
+.staffing-rh-summary-title span { color: var(--muted); font-size: 8.5px; }
+.staffing-rh-summary-head, .staffing-rh-summary > button:not(.staffing-rh-show-all) { width: 100%; padding: 5px 9px; display: grid; grid-template-columns: minmax(130px,1fr) repeat(3,minmax(75px,.45fr)); align-items: center; gap: 5px; border: 0; border-top: 1px solid var(--line); background: white; text-align: center; }
+.staffing-rh-summary-head { color: var(--muted); font-size: 7.8px; font-weight: 850; text-transform: uppercase; letter-spacing: .035em; }
+.staffing-rh-summary-head span:first-child, .staffing-rh-summary > button strong { text-align: left; }
+.staffing-rh-summary > button:not(.staffing-rh-show-all) { min-height: 31px; color: var(--blue-title); cursor: pointer; }
+.staffing-rh-summary > button:not(.staffing-rh-show-all):hover, .staffing-rh-summary > button.active { background: var(--soft); }
+.staffing-rh-summary > button strong { font-size: 9.5px; }
+.staffing-rh-summary > button span { font-size: 10px; font-weight: 850; }
+.staffing-rh-summary .positive { color: var(--green-dark); }
+.staffing-rh-summary .negative { color: var(--red); }
+.staffing-rh-summary .changed { color: #6d28d9; }
+.staffing-rh-show-all { margin: 5px 9px 7px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 7px; background: white; color: var(--blue-main); font-size: 8.5px; font-weight: 800; cursor: pointer; }
 .staffing-comparison-results { padding: 0 12px 12px; display: grid; gap: 10px; }
 .staffing-comparison-results > section { overflow: hidden; border: 1px solid var(--line); border-radius: 11px; background: white; }
 .staffing-comparison-results h3 { margin: 0; padding: 8px 10px; border-bottom: 1px solid var(--line); background: var(--soft); color: var(--blue-title); font-size: 11px; display: flex; align-items: center; justify-content: space-between; }
@@ -1194,6 +1209,8 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .staffing-comparison-note { margin: 0 8px 7px; }
   .staffing-comparison-summary { margin: 0 8px 8px; grid-template-columns: repeat(2,minmax(0,1fr)); }
   .staffing-comparison-summary > div:last-child { grid-column: 1 / -1; }
+  .staffing-rh-summary { margin: 0 8px 8px; }
+  .staffing-rh-summary-head, .staffing-rh-summary > button:not(.staffing-rh-show-all) { grid-template-columns: minmax(95px,1fr) repeat(3,minmax(55px,.55fr)); padding-left: 7px; padding-right: 7px; }
   .staffing-comparison-results { padding: 0 8px 8px; }
   .staffing-comparison-results article { grid-template-columns: 1fr; }
   .staffing-session small { grid-column: 1 / -1; }
