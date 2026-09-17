@@ -7,6 +7,7 @@ type CoverageView = "unassigned" | "extra";
 type ToolView = "coverage" | "staffing-comparison";
 type PersonStatus = "tutor" | "candidate" | "unknown";
 type PersonStatusFilter = "all" | PersonStatus;
+type OpportunitySourceFilter = "both" | "availability" | "interest";
 type CoverageOpportunity = {
   personId: string;
   firstName: string;
@@ -154,6 +155,7 @@ export default function TutorCoverageComparison() {
   const [schoolAssignments, setSchoolAssignments] = useState<SchoolAssignment[]>([]);
   const [schoolOwnerFilter, setSchoolOwnerFilter] = useState<SchoolOwnerFilter>("all");
   const [personStatusFilter, setPersonStatusFilter] = useState<PersonStatusFilter>("all");
+  const [opportunitySourceFilter, setOpportunitySourceFilter] = useState<OpportunitySourceFilter>("both");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [notes, setNotes] = useState<TutorCoverageNote[]>([]);
@@ -380,23 +382,46 @@ export default function TutorCoverageComparison() {
     };
   }, [comparisonOwnerFilter, ownerForSchool, staffingComparison]);
 
-  const displayed = useMemo(() => {
+  const filteredCoverage = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase("fr");
-    return (view === "unassigned" ? comparison.unassigned : comparison.extra).flatMap((tutor) => {
+    const filterPeople = (people: TutorCoverage[]) => people.flatMap((tutor) => {
       if (personStatusFilter !== "all" && tutor.personStatus !== personStatusFilter) return [];
-      const opportunities = tutor.opportunities.filter((row) => {
+      const opportunities = tutor.opportunities.flatMap((row): CoverageOpportunity[] => {
+        if (opportunitySourceFilter !== "both" && !row.sources.includes(opportunitySourceFilter)) return [];
         const owner = ownerForSchool(row.school);
-        return schoolOwnerFilter === "all"
+        const matchesOwner = schoolOwnerFilter === "all"
           || (schoolOwnerFilter === "unassigned" && !owner)
           || owner === schoolOwnerFilter;
+        if (!matchesOwner) return [];
+        return [{
+          ...row,
+          sources: opportunitySourceFilter === "both" ? row.sources : [opportunitySourceFilter],
+          validatedInterest: opportunitySourceFilter === "availability" ? false : row.validatedInterest,
+        }];
       });
       if (!opportunities.length) return [];
       const narrowedTutor = { ...tutor, opportunities };
       const matchesSchool = school === "all" || opportunities.some((row) => row.school === school);
-      const haystack = [tutor.tutorId, tutor.firstName, tutor.lastName, tutor.grade, tutor.personStatus, ...tutor.opportunities.flatMap((row) => [row.school, row.timeSlot, row.className, row.group, ...row.sources]), ...tutor.assignments.flatMap((row) => [row.school, row.timeSlot])].join(" ").toLocaleLowerCase("fr");
+      const haystack = [tutor.tutorId, tutor.firstName, tutor.lastName, tutor.grade, tutor.personStatus, ...opportunities.flatMap((row) => [row.school, row.timeSlot, row.className, row.group, ...row.sources]), ...tutor.assignments.flatMap((row) => [row.school, row.timeSlot])].join(" ").toLocaleLowerCase("fr");
       return matchesSchool && (!normalizedQuery || haystack.includes(normalizedQuery)) ? [narrowedTutor] : [];
     });
-  }, [comparison, ownerForSchool, personStatusFilter, query, school, schoolOwnerFilter, view]);
+    return { unassigned: filterPeople(comparison.unassigned), extra: filterPeople(comparison.extra) };
+  }, [comparison, opportunitySourceFilter, ownerForSchool, personStatusFilter, query, school, schoolOwnerFilter]);
+
+  const displayed = view === "unassigned" ? filteredCoverage.unassigned : filteredCoverage.extra;
+  const filteredSummary = useMemo(() => {
+    const people = [...filteredCoverage.unassigned, ...filteredCoverage.extra];
+    const opportunities = people.flatMap((person) => person.opportunities);
+    return {
+      mobilizablePersonCount: people.length,
+      tutorCount: people.filter((person) => person.personStatus === "tutor").length,
+      candidateCount: people.filter((person) => person.personStatus === "candidate").length,
+      unknownCount: people.filter((person) => person.personStatus === "unknown").length,
+      availabilityCount: opportunities.filter((row) => row.sources.includes("availability")).length,
+      interestCount: opportunities.filter((row) => row.sources.includes("interest")).length,
+      assignedSessionCount: people.reduce((sum, person) => sum + person.assignments.length, 0),
+    };
+  }, [filteredCoverage]);
 
   async function upload(file: File | undefined, kind: "availability" | "assignments" | "interests") {
     if (!file) return;
@@ -529,6 +554,7 @@ export default function TutorCoverageComparison() {
         <label>Intérêts<select value={interestId} onChange={(event) => { setInterestId(event.target.value); setSelectedDate(""); }}><option value="">Aucun</option>{interestImports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {importDate(item.importedAt)}</option>)}</select></label>
         <label>Séances affectées<select value={assignmentId} onChange={(event) => { setAssignmentId(event.target.value); setSelectedDate(""); }}><option value="">Sélectionner</option>{assignmentImports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {importDate(item.importedAt)}</option>)}</select></label>
         <label>Date à analyser<select value={activeDate} onChange={(event) => setSelectedDate(event.target.value)}><option value="">Aucune date disponible</option>{analysisDates.map((date) => <option key={date} value={date}>{fullDate(date)}</option>)}</select></label>
+        <label>Sources<select value={opportunitySourceFilter} onChange={(event) => setOpportunitySourceFilter(event.target.value as OpportunitySourceFilter)}><option value="both">Disponibilités + intérêts</option><option value="availability">Disponibilités uniquement</option><option value="interest">Intérêts uniquement</option></select></label>
         <label>Responsable<select value={schoolOwnerFilter} onChange={(event) => setSchoolOwnerFilter(event.target.value as SchoolOwnerFilter)}><option value="unassigned">Non attribués</option><option value="kelly">Kelly</option><option value="pierre">Pierre</option><option value="julie">Julie</option><option value="all">Tous</option></select></label>
         <label>Établissement<select value={school} onChange={(event) => setSchool(event.target.value)}><option value="all">Tous</option>{schoolOptions.map((name) => <option key={name}>{name}</option>)}</select></label>
         <label>Recherche<input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tuteur, ID, établissement…" /></label>
@@ -536,20 +562,20 @@ export default function TutorCoverageComparison() {
       <p className="staffing-comparison-note">Les créneaux qui chevauchent une séance affectée sont masqués. {latestTutorSnapshot ? `Statuts déterminés avec la liste des tuteurs du ${fullDate(latestTutorSnapshot.date)}.` : "Aucune liste de tuteurs disponible : les statuts restent inconnus."}</p>
 
       <div className="coverage-summary">
-        <div><span>Personnes mobilisables</span><strong>{comparison.mobilizablePersonCount}</strong></div>
-        <div><span>Tuteurs</span><strong>{comparison.tutorCount}</strong></div>
-        <div><span>Candidats</span><strong>{comparison.candidateCount}</strong></div>
-        {comparison.unknownCount ? <div><span>Statuts inconnus</span><strong>{comparison.unknownCount}</strong></div> : null}
-        <div><span>Créneaux de disponibilité</span><strong>{comparison.availabilityCount}</strong></div>
-        <div><span>Créneaux d’intérêt</span><strong>{comparison.interestCount}</strong></div>
-        <div><span>Séances affectées</span><strong>{comparison.assignedSessionCount}</strong></div>
-        <div className="highlight"><span>Sans séance</span><strong>{comparison.unassigned.length}</strong></div>
-        <div className="secondary"><span>Autres horaires libres</span><strong>{comparison.extra.length}</strong></div>
+        <div><span>Personnes mobilisables</span><strong>{filteredSummary.mobilizablePersonCount}</strong></div>
+        <div><span>Tuteurs</span><strong>{filteredSummary.tutorCount}</strong></div>
+        <div><span>Candidats</span><strong>{filteredSummary.candidateCount}</strong></div>
+        {filteredSummary.unknownCount ? <div><span>Statuts inconnus</span><strong>{filteredSummary.unknownCount}</strong></div> : null}
+        <div><span>Créneaux de disponibilité</span><strong>{filteredSummary.availabilityCount}</strong></div>
+        <div><span>Créneaux d’intérêt</span><strong>{filteredSummary.interestCount}</strong></div>
+        <div><span>Séances affectées</span><strong>{filteredSummary.assignedSessionCount}</strong></div>
+        <div className="highlight"><span>Sans séance</span><strong>{filteredCoverage.unassigned.length}</strong></div>
+        <div className="secondary"><span>Autres horaires libres</span><strong>{filteredCoverage.extra.length}</strong></div>
       </div>
 
       <div className="availability-tabs">
-        <button type="button" className={view === "unassigned" ? "active" : ""} onClick={() => setView("unassigned")}>Sans séance ({comparison.unassigned.length})</button>
-        <button type="button" className={view === "extra" ? "active" : ""} onClick={() => setView("extra")}>Autres horaires ({comparison.extra.length})</button>
+        <button type="button" className={view === "unassigned" ? "active" : ""} onClick={() => setView("unassigned")}>Sans séance ({filteredCoverage.unassigned.length})</button>
+        <button type="button" className={view === "extra" ? "active" : ""} onClick={() => setView("extra")}>Autres horaires ({filteredCoverage.extra.length})</button>
         <span className="coverage-status-filters" role="group" aria-label="Filtrer par statut"><button type="button" className={personStatusFilter === "all" ? "active" : ""} onClick={() => setPersonStatusFilter("all")}>Tous</button><button type="button" className={personStatusFilter === "tutor" ? "active" : ""} onClick={() => setPersonStatusFilter("tutor")}>Tuteurs</button><button type="button" className={personStatusFilter === "candidate" ? "active" : ""} onClick={() => setPersonStatusFilter("candidate")}>Candidats</button><button type="button" className={personStatusFilter === "unknown" ? "active" : ""} onClick={() => setPersonStatusFilter("unknown")}>Inconnus</button></span>
         <button type="button" className="ghost-button" onClick={exportResults} disabled={!displayed.length}>Export CSV</button>
       </div>
