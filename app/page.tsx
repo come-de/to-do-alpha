@@ -2514,6 +2514,18 @@ export default function Home() {
       sameTutors: sortTutors(sameTutors),
     };
   }, [availabilityDate, selectedAvailabilityRecent, selectedAvailabilityReference]);
+  const recentAvailabilityDailyCounts = useMemo(() => {
+    const tutorsByDate = new Map<string, Set<string>>();
+    selectedAvailabilityRecent?.rows.forEach((row) => {
+      if (!row.date || !row.tutorId) return;
+      const tutorIds = tutorsByDate.get(row.date) ?? new Set<string>();
+      tutorIds.add(row.tutorId);
+      tutorsByDate.set(row.date, tutorIds);
+    });
+    return Array.from(tutorsByDate.entries())
+      .map(([date, tutorIds]) => ({ date, count: tutorIds.size }))
+      .sort((a, b) => sortDateValue(a.date) - sortDateValue(b.date));
+  }, [selectedAvailabilityRecent]);
   const availabilitySchoolOwnerByName = useMemo(
     () => new Map(schools.map((school) => [normalizedSchoolLookupName(school.name), school.portfolioOwner || ""])),
     [schools],
@@ -4574,13 +4586,6 @@ export default function Home() {
 
   function renderAvailabilityComparisonSection() {
     const importLabel = (item: AvailabilityImport) => `${item.displayName} · ${formatJournalDate(item.importedAt)}`;
-    const summaryCards = [
-      { label: "Tuteurs référence", value: availabilityComparison.referenceCount },
-      { label: "Tuteurs récent", value: availabilityComparison.recentCount },
-      { label: "Créneaux récent", value: availabilityComparison.recentRowsCount },
-      { label: "Nouvelles", value: availabilityComparison.newTutors.length },
-      { label: "Perdues", value: availabilityComparison.lostTutors.length },
-    ];
     return (
       <section className="task-panel availability-panel">
         <div className="panel-heading">
@@ -4666,13 +4671,28 @@ export default function Home() {
           </button>
         </div>
 
-        <div className="availability-summary" aria-label="Résumé comparaison disponibilités">
-          {summaryCards.map((card) => (
-            <div key={card.label} className={card.label === "Nouvelles" ? "highlight" : ""}>
-              <span>{card.label}</span>
-              <strong>{card.value}</strong>
-            </div>
-          ))}
+        <div className="availability-daily-summary" aria-label="Tuteurs disponibles par jour dans le fichier récent">
+          <div className="availability-daily-summary-heading">
+            <strong>Tuteurs disponibles par jour</strong>
+            <span>{selectedAvailabilityRecent?.displayName || "Aucun fichier récent sélectionné"}</span>
+          </div>
+          <div className="availability-daily-counts">
+            {recentAvailabilityDailyCounts.length ? recentAvailabilityDailyCounts.map((item) => (
+              <button
+                type="button"
+                key={item.date}
+                className={availabilityDate === item.date ? "active" : ""}
+                onClick={() => setAvailabilityDate(item.date)}
+                title={`Analyser les disponibilités du ${formatFullDate(item.date)}`}
+              >
+                <span>{formatDate(item.date)}</span>
+                <strong>{item.count}</strong>
+                <small>tuteur{item.count > 1 ? "s" : ""}</small>
+              </button>
+            )) : (
+              <span className="availability-daily-empty">Aucune date disponible dans ce fichier.</span>
+            )}
+          </div>
         </div>
 
         <div className="availability-history">

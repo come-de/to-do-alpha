@@ -403,6 +403,17 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .availability-summary div.highlight { border-color: rgba(16,185,129,.34); background: var(--green-pale); }
 .availability-summary span { display: block; color: var(--muted); font-size: 9.5px; font-weight: 900; text-transform: uppercase; letter-spacing: .06em; }
 .availability-summary strong { display: block; margin-top: 3px; color: var(--blue-title); font-size: 22px; line-height: .95; }
+.availability-daily-summary { margin: 0 12px 10px; padding: 7px 9px; border: 1px solid rgba(16,185,129,.24); border-radius: 11px; background: linear-gradient(90deg, rgba(236,253,245,.72), rgba(224,247,255,.44)); display: flex; align-items: center; gap: 10px; min-width: 0; }
+.availability-daily-summary-heading { flex: 0 0 auto; display: grid; gap: 1px; min-width: 150px; }
+.availability-daily-summary-heading strong { color: var(--blue-title); font-size: 11px; }
+.availability-daily-summary-heading span { max-width: 210px; color: var(--muted); font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.availability-daily-counts { min-width: 0; display: flex; align-items: center; gap: 5px; overflow-x: auto; padding: 1px 0 2px; }
+.availability-daily-counts button { flex: 0 0 auto; min-width: 72px; padding: 5px 7px; border: 1px solid rgba(14,165,233,.18); border-radius: 8px; background: rgba(255,255,255,.86); color: var(--blue-title); display: grid; grid-template-columns: auto auto; column-gap: 5px; align-items: baseline; text-align: left; cursor: pointer; }
+.availability-daily-counts button:hover, .availability-daily-counts button.active { border-color: rgba(16,185,129,.55); background: white; box-shadow: 0 2px 8px rgba(15,58,74,.07); }
+.availability-daily-counts button span { grid-column: 1 / -1; color: var(--muted); font-size: 9px; font-weight: 850; text-transform: uppercase; }
+.availability-daily-counts button strong { color: var(--blue-title); font-size: 16px; line-height: 1; }
+.availability-daily-counts button small { color: var(--muted); font-size: 8px; }
+.availability-daily-empty { color: var(--muted); font-size: 10px; }
 .availability-history { margin: 0 12px 10px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.76); display: grid; grid-template-columns: minmax(170px, .35fr) minmax(0, 1fr); gap: 10px; }
 .availability-history h3 { margin: 0; color: var(--blue-title); font-size: 14px; }
 .availability-history p { margin: 3px 0 0; color: var(--muted); font-size: 11px; }
@@ -469,13 +480,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .coverage-controls { margin: 0 12px 8px; display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); gap: 6px; }
 .coverage-controls label { min-width: 0; display: grid; gap: 3px; color: var(--muted); font-size: 8.5px; font-weight: 850; text-transform: uppercase; letter-spacing: .045em; }
 .coverage-controls select, .coverage-controls input { width: 100%; min-width: 0; height: 31px; border: 1px solid var(--line); border-radius: 8px; padding: 0 8px; background: white; color: var(--blue-title); font-size: 10px; text-transform: none; text-overflow: ellipsis; }
-.coverage-summary { margin: 0 12px 8px; display: grid; grid-template-columns: repeat(auto-fit, minmax(125px, 1fr)); gap: 6px; }
-.coverage-summary > div { min-height: 45px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 9px; background: var(--soft); display: flex; align-items: center; justify-content: space-between; gap: 7px; }
-.coverage-summary span { color: var(--muted); font-size: 8.8px; font-weight: 760; }
-.coverage-summary strong { color: var(--blue-title); font-size: 18px; }
-.coverage-summary .highlight { border-color: rgba(16,185,129,.32); background: var(--green-pale); }
-.coverage-summary .highlight strong { color: var(--green-dark); }
-.coverage-summary .secondary { border-color: rgba(14,165,233,.28); background: #eefaff; }
 .coverage-results { padding: 0 12px 12px; display: grid; gap: 7px; }
 .coverage-card { display: grid; grid-template-columns: minmax(170px, .55fr) minmax(260px, 1fr) minmax(280px, 1.1fr); gap: 8px; padding: 8px; border: 1px solid var(--line); border-left: 4px solid var(--green); border-radius: 10px; background: white; }
 .coverage-card.extra { border-left-color: var(--blue-main); }
@@ -490,7 +494,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .coverage-slots span, .coverage-slots small { min-width: 0; color: var(--muted); font-size: 9.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .coverage-opportunity { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 5px; }
 .coverage-opportunity em { border-radius: 999px; padding: 2px 5px; color: var(--green-dark); background: rgba(255,255,255,.78); font-size: 7.5px; font-style: normal; font-weight: 850; white-space: nowrap; }
-.coverage-status-filters { display: inline-flex; align-items: center; gap: 4px; padding-left: 5px; border-left: 1px solid var(--line); }
+.coverage-status-filters, .coverage-source-filters { display: inline-flex; align-items: center; gap: 4px; padding-left: 5px; border-left: 1px solid var(--line); }
 .coverage-person h3 .person-status { margin-left: 4px; vertical-align: middle; }
 .coverage-note-editor { grid-column: 1 / -1; display: grid; grid-template-columns: 190px minmax(220px, 1fr) auto; gap: 6px; padding-top: 6px; border-top: 1px solid var(--line); }
 .coverage-note-editor select, .coverage-note-editor input { width: 100%; min-width: 0; height: 29px; border: 1px solid var(--line); border-radius: 7px; padding: 0 7px; background: white; color: var(--blue-title); font-size: 9.5px; }
@@ -1226,6 +1230,9 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .availability-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 0 8px 8px; gap: 6px; }
   .availability-summary div { padding: 7px 8px; }
   .availability-summary strong { font-size: 18px; }
+  .availability-daily-summary { margin: 0 8px 8px; padding: 7px 8px; display: grid; gap: 6px; }
+  .availability-daily-summary-heading { min-width: 0; }
+  .availability-daily-summary-heading span { max-width: 100%; }
   .availability-history { margin: 0 8px 8px; padding: 8px; grid-template-columns: 1fr; gap: 7px; }
   .availability-history-list > div { grid-template-columns: minmax(0, 1fr) auto; }
   .availability-import-name, .availability-history-list small { grid-column: 1 / -1; }
@@ -1239,8 +1246,6 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .enrollment-student-card > strong { grid-column: 1 / -1; }
   .coverage-upload-grid, .coverage-controls { grid-template-columns: 1fr; margin: 0 8px 8px; }
   .coverage-controls label:last-child { grid-column: auto; }
-  .coverage-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0 8px 8px; }
-  .coverage-summary > div:last-child { grid-column: 1 / -1; }
   .coverage-card { grid-template-columns: 1fr; }
   .coverage-card .coverage-slots.available { grid-column: auto; }
   .coverage-note-editor { grid-template-columns: 1fr; }

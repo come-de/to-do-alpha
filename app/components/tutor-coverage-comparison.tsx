@@ -409,19 +409,6 @@ export default function TutorCoverageComparison() {
   }, [comparison, opportunitySourceFilter, ownerForSchool, personStatusFilter, query, school, schoolOwnerFilter]);
 
   const displayed = view === "unassigned" ? filteredCoverage.unassigned : filteredCoverage.extra;
-  const filteredSummary = useMemo(() => {
-    const people = [...filteredCoverage.unassigned, ...filteredCoverage.extra];
-    const opportunities = people.flatMap((person) => person.opportunities);
-    return {
-      mobilizablePersonCount: people.length,
-      tutorCount: people.filter((person) => person.personStatus === "tutor").length,
-      candidateCount: people.filter((person) => person.personStatus === "candidate").length,
-      unknownCount: people.filter((person) => person.personStatus === "unknown").length,
-      availabilityCount: opportunities.filter((row) => row.sources.includes("availability")).length,
-      interestCount: opportunities.filter((row) => row.sources.includes("interest")).length,
-      assignedSessionCount: people.reduce((sum, person) => sum + person.assignments.length, 0),
-    };
-  }, [filteredCoverage]);
 
   async function upload(file: File | undefined, kind: "availability" | "assignments" | "interests") {
     if (!file) return;
@@ -554,29 +541,17 @@ export default function TutorCoverageComparison() {
         <label>Intérêts<select value={interestId} onChange={(event) => { setInterestId(event.target.value); setSelectedDate(""); }}><option value="">Aucun</option>{interestImports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {importDate(item.importedAt)}</option>)}</select></label>
         <label>Séances affectées<select value={assignmentId} onChange={(event) => { setAssignmentId(event.target.value); setSelectedDate(""); }}><option value="">Sélectionner</option>{assignmentImports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {importDate(item.importedAt)}</option>)}</select></label>
         <label>Date à analyser<select value={activeDate} onChange={(event) => setSelectedDate(event.target.value)}><option value="">Aucune date disponible</option>{analysisDates.map((date) => <option key={date} value={date}>{fullDate(date)}</option>)}</select></label>
-        <label>Sources<select value={opportunitySourceFilter} onChange={(event) => setOpportunitySourceFilter(event.target.value as OpportunitySourceFilter)}><option value="both">Disponibilités + intérêts</option><option value="availability">Disponibilités uniquement</option><option value="interest">Intérêts uniquement</option></select></label>
         <label>Responsable<select value={schoolOwnerFilter} onChange={(event) => setSchoolOwnerFilter(event.target.value as SchoolOwnerFilter)}><option value="unassigned">Non attribués</option><option value="kelly">Kelly</option><option value="pierre">Pierre</option><option value="julie">Julie</option><option value="all">Tous</option></select></label>
         <label>Établissement<select value={school} onChange={(event) => setSchool(event.target.value)}><option value="all">Tous</option>{schoolOptions.map((name) => <option key={name}>{name}</option>)}</select></label>
         <label>Recherche<input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tuteur, ID, établissement…" /></label>
       </div>
       <p className="staffing-comparison-note">Les créneaux qui chevauchent une séance affectée sont masqués. {latestTutorSnapshot ? `Statuts déterminés avec la liste des tuteurs du ${fullDate(latestTutorSnapshot.date)}.` : "Aucune liste de tuteurs disponible : les statuts restent inconnus."}</p>
 
-      <div className="coverage-summary">
-        <div><span>Personnes mobilisables</span><strong>{filteredSummary.mobilizablePersonCount}</strong></div>
-        <div><span>Tuteurs</span><strong>{filteredSummary.tutorCount}</strong></div>
-        <div><span>Candidats</span><strong>{filteredSummary.candidateCount}</strong></div>
-        {filteredSummary.unknownCount ? <div><span>Statuts inconnus</span><strong>{filteredSummary.unknownCount}</strong></div> : null}
-        <div><span>Créneaux de disponibilité</span><strong>{filteredSummary.availabilityCount}</strong></div>
-        <div><span>Créneaux d’intérêt</span><strong>{filteredSummary.interestCount}</strong></div>
-        <div><span>Séances affectées</span><strong>{filteredSummary.assignedSessionCount}</strong></div>
-        <div className="highlight"><span>Sans séance</span><strong>{filteredCoverage.unassigned.length}</strong></div>
-        <div className="secondary"><span>Autres horaires libres</span><strong>{filteredCoverage.extra.length}</strong></div>
-      </div>
-
       <div className="availability-tabs">
         <button type="button" className={view === "unassigned" ? "active" : ""} onClick={() => setView("unassigned")}>Sans séance ({filteredCoverage.unassigned.length})</button>
         <button type="button" className={view === "extra" ? "active" : ""} onClick={() => setView("extra")}>Autres horaires ({filteredCoverage.extra.length})</button>
         <span className="coverage-status-filters" role="group" aria-label="Filtrer par statut"><button type="button" className={personStatusFilter === "all" ? "active" : ""} onClick={() => setPersonStatusFilter("all")}>Tous</button><button type="button" className={personStatusFilter === "tutor" ? "active" : ""} onClick={() => setPersonStatusFilter("tutor")}>Tuteurs</button><button type="button" className={personStatusFilter === "candidate" ? "active" : ""} onClick={() => setPersonStatusFilter("candidate")}>Candidats</button><button type="button" className={personStatusFilter === "unknown" ? "active" : ""} onClick={() => setPersonStatusFilter("unknown")}>Inconnus</button></span>
+        <span className="coverage-source-filters" role="group" aria-label="Filtrer par source"><button type="button" className={opportunitySourceFilter === "both" ? "active" : ""} onClick={() => setOpportunitySourceFilter("both")}>Toutes les sources</button><button type="button" className={opportunitySourceFilter === "availability" ? "active" : ""} onClick={() => setOpportunitySourceFilter("availability")}>Disponibilités</button><button type="button" className={opportunitySourceFilter === "interest" ? "active" : ""} onClick={() => setOpportunitySourceFilter("interest")}>Intérêts</button></span>
         <button type="button" className="ghost-button" onClick={exportResults} disabled={!displayed.length}>Export CSV</button>
       </div>
 
