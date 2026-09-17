@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { AvailabilityImport, AvailabilityRow, TutorAssignmentImport, TutorAssignmentRow, TutorCoverageNote, TutorCoverageNoteStatus, TutorInterestImport, TutorInterestRow, TutorTrackingSnapshot } from "@/app/lib/shared-data";
+import PersonAdminLink from "@/app/components/person-admin-link";
 
 type CoverageView = "unassigned" | "extra";
 type ToolView = "coverage" | "staffing-comparison";
@@ -156,6 +157,7 @@ export default function TutorCoverageComparison() {
   const [schoolOwnerFilter, setSchoolOwnerFilter] = useState<SchoolOwnerFilter>("all");
   const [personStatusFilter, setPersonStatusFilter] = useState<PersonStatusFilter>("all");
   const [opportunitySourceFilter, setOpportunitySourceFilter] = useState<OpportunitySourceFilter>("both");
+  const [showRemovedTutors, setShowRemovedTutors] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [notes, setNotes] = useState<TutorCoverageNote[]>([]);
@@ -382,9 +384,34 @@ export default function TutorCoverageComparison() {
     };
   }, [comparisonOwnerFilter, ownerForSchool, staffingComparison]);
 
+  const removedTutorIds = useMemo(
+    () => new Set(notes.filter((item) => item.date === activeDate && item.status === "unavailable").map((item) => item.tutorId)),
+    [activeDate, notes],
+  );
+
+  const removedTutors = useMemo(() => {
+    const currentPeople = new Map([...comparison.unassigned, ...comparison.extra].map((person) => [person.tutorId, person]));
+    return notes
+      .filter((item) => item.date === activeDate && item.status === "unavailable")
+      .map((note) => {
+        const currentPerson = currentPeople.get(note.tutorId);
+        const trackedPerson = latestTutorSnapshot?.records.find((record) => record.tutorId === note.tutorId);
+        return {
+          note,
+          tutorId: note.tutorId,
+          firstName: currentPerson?.firstName || trackedPerson?.firstName || "",
+          lastName: currentPerson?.lastName || trackedPerson?.lastName || "",
+          phone: currentPerson?.phone || trackedPerson?.phone || "",
+          personStatus: currentPerson?.personStatus || (!latestTutorSnapshot ? "unknown" : trackedPerson ? "tutor" : "candidate") as PersonStatus,
+        };
+      })
+      .sort((a, b) => `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`, "fr"));
+  }, [activeDate, comparison, latestTutorSnapshot, notes]);
+
   const filteredCoverage = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase("fr");
     const filterPeople = (people: TutorCoverage[]) => people.flatMap((tutor) => {
+      if (removedTutorIds.has(tutor.tutorId)) return [];
       if (personStatusFilter !== "all" && tutor.personStatus !== personStatusFilter) return [];
       const opportunities = tutor.opportunities.flatMap((row): CoverageOpportunity[] => {
         if (opportunitySourceFilter !== "both" && !row.sources.includes(opportunitySourceFilter)) return [];
@@ -406,7 +433,7 @@ export default function TutorCoverageComparison() {
       return matchesSchool && (!normalizedQuery || haystack.includes(normalizedQuery)) ? [narrowedTutor] : [];
     });
     return { unassigned: filterPeople(comparison.unassigned), extra: filterPeople(comparison.extra) };
-  }, [comparison, opportunitySourceFilter, ownerForSchool, personStatusFilter, query, school, schoolOwnerFilter]);
+  }, [comparison, opportunitySourceFilter, ownerForSchool, personStatusFilter, query, removedTutorIds, school, schoolOwnerFilter]);
 
   const displayed = view === "unassigned" ? filteredCoverage.unassigned : filteredCoverage.extra;
 
@@ -450,6 +477,33 @@ export default function TutorCoverageComparison() {
       if (!response.ok) throw new Error(data.detail || data.error || "Sauvegarde impossible");
       setNotes(data.notes ?? []);
       setMessage("Suivi du tuteur sauvegardé");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Sauvegarde impossible");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function setTutorRemoved(tutorId: string, removed: boolean) {
+    if (!activeDate) return;
+    const key = `${activeDate}:${tutorId}`;
+    const savedNote = notes.find((item) => item.tutorId === tutorId && item.date === activeDate);
+    const draft = noteDrafts[key] ?? { status: savedNote?.status || "to-check" as TutorCoverageNoteStatus, note: savedNote?.note || "" };
+    setSaving(true);
+    try {
+      const response = await fetch("/api/tutor-coverage-notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tutorId, date: activeDate, status: removed ? "unavailable" : "to-check", note: draft.note }),
+      });
+      const data = await response.json() as { notes?: TutorCoverageNote[]; error?: string; detail?: string };
+      if (!response.ok) throw new Error(data.detail || data.error || "Sauvegarde impossible");
+      setNotes(data.notes ?? []);
+      setNoteDrafts((current) => ({
+        ...current,
+        [key]: { ...draft, status: removed ? "unavailable" : "to-check" },
+      }));
+      setMessage(removed ? "Tuteur retiré pour cette date" : "Tuteur réactivé pour cette date");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Sauvegarde impossible");
     } finally {
@@ -552,8 +606,17 @@ export default function TutorCoverageComparison() {
         <button type="button" className={view === "extra" ? "active" : ""} onClick={() => setView("extra")}>Autres horaires ({filteredCoverage.extra.length})</button>
         <span className="coverage-status-filters" role="group" aria-label="Filtrer par statut"><button type="button" className={personStatusFilter === "all" ? "active" : ""} onClick={() => setPersonStatusFilter("all")}>Tous</button><button type="button" className={personStatusFilter === "tutor" ? "active" : ""} onClick={() => setPersonStatusFilter("tutor")}>Tuteurs</button><button type="button" className={personStatusFilter === "candidate" ? "active" : ""} onClick={() => setPersonStatusFilter("candidate")}>Candidats</button><button type="button" className={personStatusFilter === "unknown" ? "active" : ""} onClick={() => setPersonStatusFilter("unknown")}>Inconnus</button></span>
         <span className="coverage-source-filters" role="group" aria-label="Filtrer par source"><button type="button" className={opportunitySourceFilter === "both" ? "active" : ""} onClick={() => setOpportunitySourceFilter("both")}>Toutes les sources</button><button type="button" className={opportunitySourceFilter === "availability" ? "active" : ""} onClick={() => setOpportunitySourceFilter("availability")}>Disponibilités</button><button type="button" className={opportunitySourceFilter === "interest" ? "active" : ""} onClick={() => setOpportunitySourceFilter("interest")}>Intérêts</button></span>
+        <button type="button" className={showRemovedTutors ? "active" : ""} onClick={() => setShowRemovedTutors((current) => !current)}>Tuteurs retirés ({removedTutors.length})</button>
         <button type="button" className="ghost-button" onClick={exportResults} disabled={!displayed.length}>Export CSV</button>
       </div>
+
+      {showRemovedTutors ? <div className="coverage-removed-list">
+        <div className="coverage-removed-heading"><div><strong>Tuteurs retirés pour le {activeDate ? fullDate(activeDate) : "jour sélectionné"}</strong><span>Ils resteront masqués pour cette date lors des prochains imports.</span></div><button type="button" className="text-button" onClick={() => setShowRemovedTutors(false)}>Fermer</button></div>
+        {removedTutors.length ? removedTutors.map((tutor) => <div className="coverage-removed-person" key={tutor.tutorId}>
+          <div><strong><PersonAdminLink personId={tutor.tutorId} status={tutor.personStatus}>{`${tutor.firstName} ${tutor.lastName}`.trim() || `ID ${tutor.tutorId}`}</PersonAdminLink></strong><span>ID {tutor.tutorId}{tutor.phone ? ` · ${tutor.phone}` : ""}</span>{tutor.note.note ? <small>{tutor.note.note}</small> : null}</div>
+          <button type="button" className="button quiet" onClick={() => void setTutorRemoved(tutor.tutorId, false)} disabled={saving}>Réactiver</button>
+        </div>) : <p>Aucun tuteur retiré pour cette date.</p>}
+      </div> : null}
 
       <div className="coverage-results">
         {(!availabilityImport && !interestImport) || !assignmentImport ? <div className="empty-state compact">Choisissez au moins un fichier de disponibilités ou d’intérêts, ainsi qu’un fichier de séances affectées.</div>
@@ -562,8 +625,8 @@ export default function TutorCoverageComparison() {
             const noteKey = `${activeDate}:${tutor.tutorId}`;
             const savedNote = notes.find((item) => item.tutorId === tutor.tutorId && item.date === activeDate);
             const noteDraft = noteDrafts[noteKey] ?? { status: savedNote?.status || "to-check", note: savedNote?.note || "" };
-            return <article className={`coverage-card ${view} ${savedNote?.status === "unavailable" ? "is-unavailable" : ""}`} key={tutor.tutorId}>
-              <div className="coverage-person"><h3>{`${tutor.firstName} ${tutor.lastName}`.trim() || tutor.tutorId} <span className={`person-status ${tutor.personStatus}`}>{tutor.personStatus === "tutor" ? "Tuteur" : tutor.personStatus === "candidate" ? "Candidat" : "Statut inconnu"}</span></h3><p>ID {tutor.tutorId}{tutor.phone ? ` · ${tutor.phone}` : ""}{tutor.grade ? ` · ${tutor.grade}` : ""}</p></div>
+            return <article className={`coverage-card ${view}`} key={tutor.tutorId}>
+              <div className="coverage-person"><div><h3><PersonAdminLink personId={tutor.tutorId} status={tutor.personStatus}>{`${tutor.firstName} ${tutor.lastName}`.trim() || tutor.tutorId}</PersonAdminLink> <span className={`person-status ${tutor.personStatus}`}>{tutor.personStatus === "tutor" ? "Tuteur" : tutor.personStatus === "candidate" ? "Candidat" : "Statut inconnu"}</span></h3><p>ID {tutor.tutorId}{tutor.phone ? ` · ${tutor.phone}` : ""}{tutor.grade ? ` · ${tutor.grade}` : ""}</p></div><button type="button" className="coverage-remove-button" onClick={() => void setTutorRemoved(tutor.tutorId, true)} disabled={saving} aria-label={`Retirer ${`${tutor.firstName} ${tutor.lastName}`.trim() || tutor.tutorId} pour cette date`} title="Retirer ce tuteur pour cette date">×</button></div>
               {tutor.assignments.length ? <div className="coverage-slots assigned"><strong>Autre(s) séance(s) ce jour</strong>{tutor.assignments.map((row, index) => <span key={`${row.timeSlot}-${row.school}-${index}`}>{row.timeSlot} · {row.school}</span>)}</div> : <div className="coverage-slots assigned empty"><strong>Aucune séance affectée</strong></div>}
               <div className="coverage-slots available"><strong>Créneau(x) mobilisable(s) sans chevauchement</strong>{tutor.opportunities.slice(0, 8).map((row, index) => <div className="coverage-opportunity" key={`${row.sessionId}-${row.timeSlot}-${index}`}><span>{row.timeSlot || "Horaire non précisé"} · {row.school || "Établissement non précisé"} · {schoolOwnerLabels[ownerForSchool(row.school)]}</span><em>{row.sources.map((source) => source === "availability" ? "Disponibilité" : "Intérêt").join(" + ")}{row.validatedInterest ? " · validé" : ""}</em></div>)}{tutor.opportunities.length > 8 ? <small>+ {tutor.opportunities.length - 8} autre(s)</small> : null}</div>
               <div className="coverage-note-editor">

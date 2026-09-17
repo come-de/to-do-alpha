@@ -484,8 +484,13 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .coverage-card { display: grid; grid-template-columns: minmax(170px, .55fr) minmax(260px, 1fr) minmax(280px, 1.1fr); gap: 8px; padding: 8px; border: 1px solid var(--line); border-left: 4px solid var(--green); border-radius: 10px; background: white; }
 .coverage-card.extra { border-left-color: var(--blue-main); }
 .coverage-card.is-unavailable { border-left-color: var(--red); background: linear-gradient(90deg, var(--red-pale), white 24%); }
+.coverage-person { min-width: 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 7px; }
+.coverage-person > div { min-width: 0; }
 .coverage-person h3 { margin: 0; color: var(--blue-title); font-size: 12px; }
 .coverage-person p { margin: 3px 0 0; color: var(--muted); font-size: 9.5px; }
+.coverage-remove-button { flex: 0 0 auto; width: 24px; height: 24px; border: 1px solid rgba(190,24,93,.2); border-radius: 999px; background: var(--red-pale); color: var(--red); font-size: 17px; line-height: 1; cursor: pointer; }
+.coverage-remove-button:hover { border-color: var(--red); background: white; }
+.coverage-remove-button:disabled { opacity: .45; cursor: wait; }
 .coverage-slots { min-width: 0; padding: 6px 7px; border-radius: 8px; background: var(--soft); display: grid; align-content: start; gap: 3px; }
 .coverage-slots.assigned { background: #fff7fb; }
 .coverage-slots.available { background: var(--green-pale); }
@@ -495,6 +500,17 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .coverage-opportunity { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 5px; }
 .coverage-opportunity em { border-radius: 999px; padding: 2px 5px; color: var(--green-dark); background: rgba(255,255,255,.78); font-size: 7.5px; font-style: normal; font-weight: 850; white-space: nowrap; }
 .coverage-status-filters, .coverage-source-filters { display: inline-flex; align-items: center; gap: 4px; padding-left: 5px; border-left: 1px solid var(--line); }
+.coverage-removed-list { margin: 0 12px 9px; padding: 8px; border: 1px solid rgba(190,24,93,.22); border-radius: 10px; background: linear-gradient(90deg, rgba(255,241,247,.88), white); display: grid; gap: 5px; }
+.coverage-removed-heading, .coverage-removed-person { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.coverage-removed-heading > div { min-width: 0; display: grid; gap: 1px; }
+.coverage-removed-heading strong { color: var(--blue-title); font-size: 11px; }
+.coverage-removed-heading span { color: var(--muted); font-size: 9px; }
+.coverage-removed-person { padding: 6px 8px; border: 1px solid rgba(213,231,239,.8); border-radius: 8px; background: rgba(255,255,255,.88); }
+.coverage-removed-person > div { min-width: 0; display: grid; grid-template-columns: auto minmax(0,1fr); align-items: baseline; gap: 2px 8px; }
+.coverage-removed-person strong { color: var(--blue-title); font-size: 10.5px; }
+.coverage-removed-person span, .coverage-removed-person small { color: var(--muted); font-size: 9px; }
+.coverage-removed-person small { grid-column: 1 / -1; }
+.coverage-removed-list > p { margin: 2px 0; color: var(--muted); font-size: 10px; }
 .coverage-person h3 .person-status { margin-left: 4px; vertical-align: middle; }
 .coverage-note-editor { grid-column: 1 / -1; display: grid; grid-template-columns: 190px minmax(220px, 1fr) auto; gap: 6px; padding-top: 6px; border-top: 1px solid var(--line); }
 .coverage-note-editor select, .coverage-note-editor input { width: 100%; min-width: 0; height: 29px; border: 1px solid var(--line); border-radius: 7px; padding: 0 7px; background: white; color: var(--blue-title); font-size: 9.5px; }
@@ -1248,6 +1264,8 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .coverage-controls label:last-child { grid-column: auto; }
   .coverage-card { grid-template-columns: 1fr; }
   .coverage-card .coverage-slots.available { grid-column: auto; }
+  .coverage-removed-list { margin: 0 8px 8px; }
+  .coverage-removed-person { align-items: flex-start; }
   .coverage-note-editor { grid-template-columns: 1fr; }
   .coverage-results, .files-grid { padding: 0 8px 8px; }
   .coverage-tool-tabs { margin: 0 8px 7px; display: flex; }
