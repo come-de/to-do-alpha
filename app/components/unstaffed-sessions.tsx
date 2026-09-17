@@ -327,7 +327,7 @@ export default function UnstaffedSessions() {
     };
     (sourceIndexes.interestsBySession.get(session.sessionId) ?? []).forEach((row) => addCandidate(row.personId, row.firstName, row.lastName, row.phone, "interest", row.validated));
     (sourceIndexes.availabilityBySession.get(session.sessionId) ?? []).forEach((row) => addCandidate(row.tutorId, row.firstName, row.lastName, row.phone, "availability"));
-    return { ...session, candidates: Array.from(candidates.values()).sort((a, b) => Number(a.hasConflict) - Number(b.hasConflict) || `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`, "fr")) };
+    return { ...session, candidates: Array.from(candidates.values()).filter((candidate) => !candidate.hasConflict).sort((a, b) => `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`, "fr")) };
   }), [exclusions.sourceKeys, latestTutorSnapshot, sourceIndexes, visibleRows]);
   const groupedRows = useMemo(() => {
     const groups = new Map<string, EnrichedSession[]>();
@@ -553,7 +553,6 @@ export default function UnstaffedSessions() {
               {(() => {
                 const candidates = row.candidates.filter((candidate) => candidate.personStatus === "candidate");
                 const freeTutors = row.candidates.filter((candidate) => candidate.personStatus === "tutor" && !candidate.hasConflict);
-                const busyTutors = row.candidates.filter((candidate) => candidate.personStatus === "tutor" && candidate.hasConflict);
                 const unknownPeople = row.candidates.filter((candidate) => candidate.personStatus === "unknown");
                 const freeTutorNames = freeTutors.map((candidate) => `${candidate.firstName} ${candidate.lastName}`.trim() || `ID ${candidate.personId}`);
                 const visibleFreeTutorNames = freeTutorNames.slice(0, 2).join(", ");
@@ -566,18 +565,17 @@ export default function UnstaffedSessions() {
                       <div className="candidate-counts">
                         {candidates.length ? <span className="candidate-count candidate">{candidates.length} candidat{candidates.length > 1 ? "s" : ""}</span> : null}
                         {freeTutors.length ? <span className="candidate-count free">{freeTutors.length} tuteur{freeTutors.length > 1 ? "s" : ""} libre{freeTutors.length > 1 ? "s" : ""}</span> : null}
-                        {busyTutors.length ? <span className="candidate-count conflict">{busyTutors.length} tuteur{busyTutors.length > 1 ? "s" : ""} avec chevauchement</span> : null}
                         {unknownPeople.length ? <span className="candidate-count unknown">{unknownPeople.length} statut{unknownPeople.length > 1 ? "s" : ""} inconnu{unknownPeople.length > 1 ? "s" : ""}</span> : null}
                       </div>
                     </div>
                     <small>Voir les coordonnées, sources et autres séances</small>
                   </summary>
-                  <div className="session-candidate-list">{row.candidates.map((candidate) => <article className={candidate.hasConflict ? "has-conflict" : ""} key={candidate.personId}>
+                  <div className="session-candidate-list">{row.candidates.map((candidate) => <article key={candidate.personId}>
                     <div className="candidate-name"><div><strong><PersonAdminLink personId={candidate.personId} status={candidate.personStatus}>{`${candidate.firstName} ${candidate.lastName}`.trim() || `Personne ${candidate.personId}`}</PersonAdminLink></strong><span className={`person-status ${candidate.personStatus}`}>{candidate.personStatus === "tutor" ? "Tuteur" : candidate.personStatus === "candidate" ? "Candidat" : "Statut inconnu"}</span></div><small>ID {candidate.personId}{candidate.phone ? ` · ${candidate.phone}` : ""}</small></div>
                     <div className="candidate-sources">{candidate.sources.map((source) => <span className={source} key={source}>{source === "interest" ? "Intérêt déclaré" : "Disponible"}<button type="button" onClick={() => hideCandidateSource(row.sessionId, candidate.personId, source)} disabled={saving} title={`Masquer ${source === "interest" ? "cet intérêt" : "cette disponibilité"}`}>×</button></span>)}{candidate.validatedInterest ? <span className="validated">Intérêt validé</span> : null}</div>
-                    <div className="candidate-assignments">{candidate.assignments.length ? <><strong>{candidate.hasConflict ? "Chevauchement à vérifier" : "Autre séance ce jour"}</strong>{candidate.assignments.map((assignment, index) => <span key={`${assignment.timeSlot}-${assignment.school}-${index}`}>{assignment.timeSlot} · {assignment.school}</span>)}</> : <span className="candidate-free">Aucune autre séance affectée ce jour</span>}</div>
+                    <div className="candidate-assignments">{candidate.assignments.length ? <><strong>Autre séance ce jour</strong>{candidate.assignments.map((assignment, index) => <span key={`${assignment.timeSlot}-${assignment.school}-${index}`}>{assignment.timeSlot} · {assignment.school}</span>)}</> : <span className="candidate-free">Aucune autre séance affectée ce jour</span>}</div>
                   </article>)}</div>
-                </details> : <span className="no-candidates"><strong>↳ Pour la séance #{row.sessionId}</strong> · aucune personne trouvée dans les sources sélectionnées</span>}
+                </details> : <span className="no-candidates"><strong>↳ Pour la séance #{row.sessionId}</strong> · aucune personne mobilisable sans chevauchement</span>}
               </td></tr>;
               })()}
             </Fragment>)}

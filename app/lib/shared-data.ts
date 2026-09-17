@@ -397,6 +397,8 @@ export type StaffingAuditSession = {
   sessionId: string;
   date: string;
   school: string;
+  schoolId: string;
+  sourceRowCount: number | null;
   portfolioOwner: SchoolPortfolioOwner;
   detectedStatus: StaffingAuditClassification;
   resolution: StaffingAuditResolution;
@@ -1540,6 +1542,10 @@ export function sanitizeStaffingAuditSession(raw: Record<string, unknown>): Staf
     sessionId: cleanText(raw.sessionId),
     date: cleanText(raw.date),
     school: cleanText(raw.school),
+    schoolId: cleanText(raw.schoolId),
+    sourceRowCount: raw.sourceRowCount === undefined || raw.sourceRowCount === null || raw.sourceRowCount === ""
+      ? null
+      : Math.max(0, Math.round(Number(raw.sourceRowCount) || 0)),
     portfolioOwner: isStaffingAuditOwner(raw.portfolioOwner) ? raw.portfolioOwner : "",
     detectedStatus: isStaffingAuditClassification(raw.detectedStatus) ? raw.detectedStatus : "ambiguous",
     resolution: isStaffingAuditResolution(raw.resolution) ? raw.resolution : "",
@@ -1580,8 +1586,8 @@ export function parseStaffingAuditCsv(value: string, fileName: string, schools: 
   const tutorLastNameIndex = indexFor(["nomtuteur", "nomdututeur"]);
   const tutorPhoneIndex = indexFor(["numerotuteur", "numerodututeur", "telephone", "numerodetelephone"]);
   if (dateIndex < 0 || sessionIdIndex < 0 || schoolIndex < 0) throw new Error("Colonnes Date, Semaine réelle ou Établissement introuvables dans le CSV");
-  const ownerBySchool = new Map(schools.map((school) => [normalizeSchoolName(school.name), school.portfolioOwner]));
-  type Accumulator = { sessionId: string; date: string; school: string; hasTutor: boolean; hasBlankTutor: boolean; tutorNames: Set<string> };
+  const schoolByName = new Map(schools.map((school) => [normalizeSchoolName(school.name), school]));
+  type Accumulator = { sessionId: string; date: string; school: string; sourceRowCount: number; tutors: Map<string, string>; tutorKeyByName: Map<string, string> };
   const sessions = new Map<string, Accumulator>();
   const rows = csvRows.slice(1);
   rows.forEach((row) => {
@@ -1593,28 +1599,38 @@ export function parseStaffingAuditCsv(value: string, fileName: string, schools: 
     const firstName = tutorFirstNameIndex >= 0 ? cleanText(row[tutorFirstNameIndex]) : "";
     const lastName = tutorLastNameIndex >= 0 ? cleanText(row[tutorLastNameIndex]) : "";
     const phone = tutorPhoneIndex >= 0 ? cleanText(row[tutorPhoneIndex]) : "";
-    const hasTutor = Boolean(firstName || lastName || phone);
-    const item = sessions.get(key) ?? { sessionId, date, school, hasTutor: false, hasBlankTutor: false, tutorNames: new Set<string>() };
-    item.hasTutor ||= hasTutor;
-    item.hasBlankTutor ||= !hasTutor;
     const tutorName = `${firstName} ${lastName}`.trim();
-    if (tutorName) item.tutorNames.add(tutorName);
+    const item = sessions.get(key) ?? { sessionId, date, school, sourceRowCount: 0, tutors: new Map<string, string>(), tutorKeyByName: new Map<string, string>() };
+    item.sourceRowCount += 1;
+    if (phone || tutorName) {
+      const normalizedPhone = phone.replace(/\D/g, "");
+      const normalizedTutorName = normalizeSchoolName(tutorName);
+      const phoneKey = phone ? `phone:${normalizedPhone || phone.toLocaleLowerCase("fr")}` : "";
+      const previousNameKey = normalizedTutorName ? item.tutorKeyByName.get(normalizedTutorName) : "";
+      const tutorKey = phoneKey || previousNameKey || `name:${normalizedTutorName}`;
+      if (phoneKey && previousNameKey && previousNameKey !== phoneKey) item.tutors.delete(previousNameKey);
+      item.tutors.set(tutorKey, tutorName || phone);
+      if (normalizedTutorName) item.tutorKeyByName.set(normalizedTutorName, tutorKey);
+    }
     if (!item.school && school) item.school = school;
     sessions.set(key, item);
   });
   const now = new Date().toISOString();
   const byDate = new Map<string, StaffingAuditSession[]>();
   sessions.forEach((item) => {
-    const detectedStatus: StaffingAuditClassification = item.hasTutor && item.hasBlankTutor ? "ambiguous" : item.hasTutor ? "staffed" : "unstaffed";
+    const school = schoolByName.get(normalizeSchoolName(item.school));
+    const detectedStatus: StaffingAuditClassification = item.tutors.size > 1 ? "ambiguous" : item.tutors.size === 1 ? "staffed" : "unstaffed";
     const session = sanitizeStaffingAuditSession({
       sessionId: item.sessionId,
       date: item.date,
       school: item.school,
-      portfolioOwner: ownerBySchool.get(normalizeSchoolName(item.school)) ?? "",
+      schoolId: school?.externalId ?? "",
+      sourceRowCount: item.sourceRowCount,
+      portfolioOwner: school?.portfolioOwner ?? "",
       detectedStatus,
       resolution: "",
       treated: false,
-      tutorNames: Array.from(item.tutorNames),
+      tutorNames: Array.from(item.tutors.values()),
     });
     byDate.set(item.date, [...(byDate.get(item.date) ?? []), session]);
   });
@@ -1625,6 +1641,18 @@ export function parseStaffingAuditCsv(value: string, fileName: string, schools: 
     sessions: daySessions.sort((a, b) => a.school.localeCompare(b.school, "fr") || a.sessionId.localeCompare(b.sessionId)),
     createdAt: now,
     updatedAt: now,
+  }));
+}
+
+export function enrichStaffingAuditDaysWithSchools(days: StaffingAuditDay[], schools: School[]) {
+  const schoolByName = new Map(schools.map((school) => [normalizeSchoolName(school.name), school]));
+  return days.map((day) => ({
+    ...day,
+    sessions: day.sessions.map((session) => {
+      if (session.schoolId) return session;
+      const school = schoolByName.get(normalizeSchoolName(session.school));
+      return school?.externalId ? { ...session, schoolId: school.externalId } : session;
+    }),
   }));
 }
 

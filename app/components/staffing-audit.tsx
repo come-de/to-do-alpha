@@ -131,8 +131,17 @@ export default function StaffingAudit() {
 
   function sessionRow(session: StaffingAuditSession) {
     const status = effectiveStatus(session);
+    const sessionLabel = `#${session.sessionId}`;
+    const sourceRowsLabel = session.sourceRowCount === null
+      ? "Nombre de lignes non disponible"
+      : `${session.sourceRowCount} ligne${session.sourceRowCount > 1 ? "s" : ""} dans le fichier`;
     return <article className={`staffing-audit-session ${status} ${session.treated ? "treated" : ""}`} key={session.sessionId}>
-      <div><strong>#{session.sessionId}</strong><span>{session.school || "Établissement non précisé"}</span>{session.tutorNames.length ? <small>Tuteur(s) trouvé(s) : {session.tutorNames.join(", ")}</small> : <small>Aucun tuteur renseigné</small>}</div>
+      <div>
+        {session.schoolId ? <a className="staffing-audit-session-link" href={`https://www.alphaeducation.fr/administration/schools/${encodeURIComponent(session.schoolId)}/history`} target="_blank" rel="noreferrer" title={`Ouvrir l’historique de l’établissement (ID ${session.schoolId})`}>{sessionLabel}<span aria-hidden="true">↗</span></a> : <strong>{sessionLabel}</strong>}
+        <span>{session.school || "Établissement non précisé"}</span>
+        <small>{sourceRowsLabel}{session.schoolId ? "" : " · ID établissement introuvable"}</small>
+        {session.tutorNames.length ? <small>Tuteur(s) trouvé(s) : {session.tutorNames.join(", ")}</small> : <small>Aucun tuteur renseigné</small>}
+      </div>
       <label>Responsable RH<select value={session.portfolioOwner} onChange={(event) => changeSession(session, { portfolioOwner: event.target.value as SchoolPortfolioOwner })} disabled={saving}>{owners.map((owner) => <option value={owner} key={owner || "unassigned"}>{ownerLabels[owner]}</option>)}</select></label>
       {session.detectedStatus === "ambiguous" ? <label>Classement<select value={session.resolution} onChange={(event) => changeSession(session, { resolution: event.target.value as StaffingAuditResolution })} disabled={saving}><option value="">À vérifier</option><option value="staffed">Staffée</option><option value="unstaffed">Non staffée</option></select></label> : <span className={`staffing-audit-status ${status}`}>{status === "staffed" ? "Staffée" : "Non staffée"}</span>}
       {status === "unstaffed" ? <button type="button" className="ghost-button" onClick={() => changeSession(session, { treated: !session.treated })} disabled={saving}>{session.treated ? "Réactiver" : "Marquer comme traitée"}</button> : null}

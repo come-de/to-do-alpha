@@ -459,17 +459,17 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .enrollment-student-card details { grid-column: 1 / -1; border-top: 1px solid var(--line); padding-top: 5px; }
 .enrollment-student-card summary { color: var(--blue-main); font-size: 9px; font-weight: 780; cursor: pointer; }
 .enrollment-student-card pre { margin: 6px 0 0; padding: 7px; border-radius: 7px; background: var(--soft); color: var(--ink); font: 10px/1.45 inherit; white-space: pre-wrap; }
-.coverage-upload-grid { margin: 0 12px 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.coverage-upload-grid { margin: 0 12px 8px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
 .coverage-tool-tabs { margin: 0 12px 8px; padding: 3px; display: inline-flex; gap: 3px; border: 1px solid var(--line); border-radius: 10px; background: var(--soft); }
 .coverage-tool-tabs button { min-height: 30px; padding: 0 11px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); font-size: 10px; font-weight: 850; cursor: pointer; }
 .coverage-tool-tabs button.active { color: white; background: linear-gradient(135deg, var(--blue-main), var(--green)); box-shadow: 0 3px 8px rgba(14,165,233,.18); }
 .coverage-upload-grid > div { min-width: 0; padding: 8px 9px; border: 1px solid var(--line); border-radius: 10px; background: linear-gradient(135deg, var(--soft), white); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .coverage-upload-grid strong { display: block; color: var(--blue-title); font-size: 11px; }
 .coverage-upload-grid span { display: block; margin-top: 2px; color: var(--muted); font-size: 9.5px; }
-.coverage-controls { margin: 0 12px 8px; display: grid; grid-template-columns: 1.1fr 1.1fr .7fr .7fr .9fr .8fr; gap: 6px; }
+.coverage-controls { margin: 0 12px 8px; display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); gap: 6px; }
 .coverage-controls label { min-width: 0; display: grid; gap: 3px; color: var(--muted); font-size: 8.5px; font-weight: 850; text-transform: uppercase; letter-spacing: .045em; }
 .coverage-controls select, .coverage-controls input { width: 100%; min-width: 0; height: 31px; border: 1px solid var(--line); border-radius: 8px; padding: 0 8px; background: white; color: var(--blue-title); font-size: 10px; text-transform: none; text-overflow: ellipsis; }
-.coverage-summary { margin: 0 12px 8px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.coverage-summary { margin: 0 12px 8px; display: grid; grid-template-columns: repeat(auto-fit, minmax(125px, 1fr)); gap: 6px; }
 .coverage-summary > div { min-height: 45px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 9px; background: var(--soft); display: flex; align-items: center; justify-content: space-between; gap: 7px; }
 .coverage-summary span { color: var(--muted); font-size: 8.8px; font-weight: 760; }
 .coverage-summary strong { color: var(--blue-title); font-size: 18px; }
@@ -488,6 +488,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .coverage-card.extra .coverage-slots.available { background: #eefaff; }
 .coverage-slots strong { color: var(--blue-title); font-size: 9px; text-transform: uppercase; letter-spacing: .035em; }
 .coverage-slots span, .coverage-slots small { min-width: 0; color: var(--muted); font-size: 9.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.coverage-opportunity { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 5px; }
+.coverage-opportunity em { border-radius: 999px; padding: 2px 5px; color: var(--green-dark); background: rgba(255,255,255,.78); font-size: 7.5px; font-style: normal; font-weight: 850; white-space: nowrap; }
+.coverage-status-filters { display: inline-flex; align-items: center; gap: 4px; padding-left: 5px; border-left: 1px solid var(--line); }
+.coverage-person h3 .person-status { margin-left: 4px; vertical-align: middle; }
 .coverage-note-editor { grid-column: 1 / -1; display: grid; grid-template-columns: 190px minmax(220px, 1fr) auto; gap: 6px; padding-top: 6px; border-top: 1px solid var(--line); }
 .coverage-note-editor select, .coverage-note-editor input { width: 100%; min-width: 0; height: 29px; border: 1px solid var(--line); border-radius: 7px; padding: 0 7px; background: white; color: var(--blue-title); font-size: 9.5px; }
 .coverage-note-editor .text-button { white-space: nowrap; }
@@ -545,6 +549,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .staffing-audit-session.treated { opacity: .78; border-left-color: var(--green); background: var(--green-pale); }
 .staffing-audit-session > div { min-width: 0; }
 .staffing-audit-session > div strong { color: var(--blue-title); font-size: 10px; }
+.staffing-audit-session-link { color: var(--blue-main); font-size: 10px; font-weight: 850; text-decoration: none; }
+.staffing-audit-session-link:hover { color: var(--blue-dark); text-decoration: underline; }
+.staffing-audit-session-link span { margin-left: 3px; color: inherit; font-size: 8px; }
 .staffing-audit-session > div span { margin-left: 8px; color: var(--text); font-size: 10px; }
 .staffing-audit-session > div small { display: block; margin-top: 2px; color: var(--muted); font-size: 8px; }
 .staffing-audit-session label { min-width: 0; display: grid; gap: 2px; color: var(--muted); font-size: 7.5px; font-weight: 850; text-transform: uppercase; }
