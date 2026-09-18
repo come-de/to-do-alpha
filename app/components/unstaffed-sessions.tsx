@@ -393,6 +393,8 @@ export default function UnstaffedSessions() {
       if (data.import?.id) setSelectedImportId(data.import.id);
       setDeselectedNewSchoolIds([]);
       setSelectedDate("all");
+      setSchoolOwnerFilter("all");
+      setQuery("");
       const detection = data.schoolDetection;
       setMessage(`${data.import?.rows.length ?? 0} séances non affectées sauvegardées${detection ? ` · ${detection.newCount} nouvel${detection.newCount > 1 ? "s" : ""} établissement${detection.newCount > 1 ? "s" : ""} à valider` : ""}. Aucune donnée nominative d’élève n’a été conservée.`);
     } catch (error) {
@@ -553,9 +555,9 @@ export default function UnstaffedSessions() {
 
     <div className="unstaffed-toolbar">
       <label className="import-button">Importer le fichier CSV<input type="file" accept=".csv,text/csv" disabled={saving} onChange={(event) => { void upload(event.target.files?.[0]); event.currentTarget.value = ""; }} /></label>
-      <label><span>Fichier analysé</span><select value={selectedImportId} onChange={(event) => { setSelectedImportId(event.target.value); setSelectedDate("all"); setShownSingleStudentAlphaDates([]); setDeselectedNewSchoolIds([]); }}><option value="">Aucun fichier</option>{imports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {formatImportDate(item.importedAt)}</option>)}</select></label>
+      <label><span>Fichier analysé</span><select value={selectedImportId} onChange={(event) => { setSelectedImportId(event.target.value); setSelectedDate("all"); setSchoolOwnerFilter("all"); setQuery(""); setShownSingleStudentAlphaDates([]); setDeselectedNewSchoolIds([]); }}><option value="">Aucun fichier</option>{imports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {formatImportDate(item.importedAt)}</option>)}</select></label>
       <div className="unstaffed-category-filter"><span>Types de séances</span><div>{(Object.keys(categoryLabels) as SessionCategoryKey[]).map((item) => <button type="button" className={selectedCategories.includes(item) ? "active" : ""} onClick={() => toggleCategory(item)} key={item}>{categoryLabels[item]}</button>)}</div></div>
-      <div className="unstaffed-owner-filter"><span>Responsable établissement</span><div>{(["unassigned", "kelly", "pierre", "julie", "all"] as const).map((owner) => <button type="button" className={schoolOwnerFilter === owner ? "active" : ""} onClick={() => setSchoolOwnerFilter(owner)} key={owner}>{owner === "all" ? "Tous" : owner === "unassigned" ? "Non attribués" : schoolOwnerLabels[owner]}</button>)}</div></div>
+      <div className="unstaffed-owner-filter"><span>Responsable établissement</span><div>{(["all", "unassigned", "kelly", "pierre", "julie"] as const).map((owner) => <button type="button" className={schoolOwnerFilter === owner ? "active" : ""} onClick={() => setSchoolOwnerFilter(owner)} key={owner}>{owner === "all" ? "Tous" : owner === "unassigned" ? "Non attribués" : schoolOwnerLabels[owner]}</button>)}</div></div>
       <label className="unstaffed-search"><span>Recherche</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Établissement, classe, groupe…" /></label>
       <button type="button" className="button quiet" onClick={exportCsv} disabled={!visibleRows.length}>Exporter CSV</button>
     </div>
@@ -641,7 +643,7 @@ export default function UnstaffedSessions() {
             </Fragment>)}
             {!rows.length ? <tr><td colSpan={8} className="single-alpha-hidden-note">Les groupes Étude Alpha à un élève sont masqués pour cette date. Utilisez le bouton ci-dessus pour les afficher.</td></tr> : null}
           </tbody></table></div>
-        </article>) : <div className="empty-state"><span>✓</span><h3>Aucune séance à afficher</h3><p>Modifiez les filtres ou choisissez un autre fichier.</p></div>}
+        </article>) : <div className="empty-state"><span>✓</span><h3>Aucune séance avec les filtres actuels</h3><p>{schoolOwnerFilter !== "all" ? `Le filtre responsable « ${schoolOwnerFilter === "unassigned" ? "Non attribués" : schoolOwnerLabels[schoolOwnerFilter]} » ne contient aucune séance dans cet import.` : "Modifiez les filtres ou choisissez un autre fichier."}</p>{schoolOwnerFilter !== "all" ? <button type="button" className="button primary" onClick={() => setSchoolOwnerFilter("all")}>Afficher tous les responsables</button> : null}</div>}
       </div>
     </> : <div className="empty-state"><span>📋</span><h3>Importez le fichier des semaines à venir</h3><p>Le site identifiera les séances sans tuteur et supprimera les répétitions dues aux élèves.</p></div>}
   </section>;

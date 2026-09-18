@@ -520,9 +520,12 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .coverage-card.extra .coverage-slots.available { background: #eefaff; }
 .coverage-slots strong { color: var(--blue-title); font-size: 9px; text-transform: uppercase; letter-spacing: .035em; }
 .coverage-slots span, .coverage-slots small { min-width: 0; color: var(--muted); font-size: 9.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.coverage-opportunity { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 5px; }
+.coverage-opportunity { min-width: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 7px; }
+.coverage-opportunity-school { flex: 1 1 300px; min-width: 0; white-space: normal !important; overflow: visible !important; text-overflow: clip !important; line-height: 1.35; }
+.coverage-opportunity-school .school-admin-link { display: inline; white-space: normal; }
+.coverage-opportunity-school .school-admin-link > span { margin-left: 3px; }
 .coverage-opportunity em { border-radius: 999px; padding: 2px 5px; color: var(--green-dark); background: rgba(255,255,255,.78); font-size: 7.5px; font-style: normal; font-weight: 850; white-space: nowrap; }
-.coverage-opportunity-meta { display: inline-flex; align-items: center; justify-content: flex-end; gap: 4px; overflow: visible !important; }
+.coverage-opportunity-meta { flex: 0 0 auto; margin-left: auto; display: inline-flex; align-items: center; justify-content: flex-end; gap: 4px; overflow: visible !important; }
 .coverage-unstaffed-link, .coverage-unstaffed-none { display: inline-flex; align-items: center; min-height: 20px; padding: 2px 6px; border-radius: 999px; font-size: 7.5px !important; font-weight: 850; white-space: nowrap; text-decoration: none; }
 .coverage-unstaffed-link { border: 1px solid rgba(190,24,93,.24); background: var(--red-pale); color: var(--red) !important; }
 .coverage-unstaffed-link:hover { border-color: var(--red); background: white; }

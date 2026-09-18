@@ -1873,6 +1873,14 @@ export default function Home() {
   const importRef = useRef<HTMLInputElement>(null);
 
   const setAppMode = useCallback((mode: AppMode) => {
+    if (mode === "unstaffed") {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("date-seances");
+      url.searchParams.delete("responsable");
+      url.searchParams.delete("fichier-seances");
+      url.searchParams.delete("recherche-seances");
+      window.history.replaceState(null, "", `${url.pathname}?${url.searchParams.toString()}${url.hash}`);
+    }
     setAppModeState(mode);
   }, []);
 
