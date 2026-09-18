@@ -28,6 +28,11 @@ function formatShortDate(value: string) {
   return date ? new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }).format(date) : value || "Date inconnue";
 }
 
+function formatChartDate(value: string) {
+  const date = staffingAuditDate(value);
+  return date ? new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit" }).format(date) : value;
+}
+
 function effectiveStatus(session: StaffingAuditSession) {
   return session.resolution || session.detectedStatus;
 }
@@ -108,10 +113,14 @@ export default function StaffingAudit() {
   const rangeAnalysis = useMemo(() => {
     const start = effectiveAnalysisStartDate <= effectiveAnalysisEndDate ? effectiveAnalysisStartDate : effectiveAnalysisEndDate;
     const end = effectiveAnalysisStartDate <= effectiveAnalysisEndDate ? effectiveAnalysisEndDate : effectiveAnalysisStartDate;
-    const sessions = savedDays
+    const filteredDays = savedDays
       .filter((day) => (!start || day.date >= start) && (!end || day.date <= end))
-      .flatMap((day) => day.sessions)
-      .filter((session) => categoryFilter === "all" || session.category === categoryFilter);
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map((day) => ({
+        date: day.date,
+        sessions: day.sessions.filter((session) => categoryFilter === "all" || session.category === categoryFilter),
+      }));
+    const sessions = filteredDays.flatMap((day) => day.sessions);
     const isUnstaffed = (session: StaffingAuditSession) => effectiveStatus(session) === "unstaffed" && !session.treated;
     const unstaffed = sessions.filter(isUnstaffed);
     const byOwner = (["kelly", "pierre", "julie"] as const).map((owner) => {
@@ -136,9 +145,45 @@ export default function StaffingAudit() {
       unstaffed: unstaffed.length,
       percentage: sessions.length ? (unstaffed.length / sessions.length) * 100 : 0,
       byOwner,
+      daily: filteredDays.map((day) => {
+        const dailyUnstaffed = day.sessions.filter(isUnstaffed).length;
+        return {
+          date: day.date,
+          total: day.sessions.length,
+          unstaffed: dailyUnstaffed,
+          percentage: day.sessions.length ? (dailyUnstaffed / day.sessions.length) * 100 : 0,
+        };
+      }),
       topSchools: Array.from(schools.values()).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "fr")).slice(0, 10),
     };
   }, [categoryFilter, effectiveAnalysisEndDate, effectiveAnalysisStartDate, savedDays]);
+  const dailyChart = useMemo(() => {
+    const width = Math.max(720, rangeAnalysis.daily.length * 74 + 72);
+    const plotLeft = 54;
+    const plotRight = width - 18;
+    const plotTop = 20;
+    const plotBottom = 156;
+    const highestPercentage = Math.max(0, ...rangeAnalysis.daily.map((day) => day.percentage));
+    const maximumPercentage = Math.max(10, Math.ceil(highestPercentage / 5) * 5);
+    const points = rangeAnalysis.daily.map((day, index) => {
+      const x = rangeAnalysis.daily.length <= 1
+        ? (plotLeft + plotRight) / 2
+        : plotLeft + (index / (rangeAnalysis.daily.length - 1)) * (plotRight - plotLeft);
+      const y = plotBottom - (day.percentage / maximumPercentage) * (plotBottom - plotTop);
+      return { ...day, x, y };
+    });
+    return {
+      width,
+      height: 246,
+      plotLeft,
+      plotRight,
+      plotTop,
+      plotBottom,
+      maximumPercentage,
+      points,
+      polyline: points.map((point) => `${point.x},${point.y}`).join(" "),
+    };
+  }, [rangeAnalysis.daily]);
 
   async function importFile(file: File | undefined) {
     if (!file) return;
@@ -251,6 +296,29 @@ export default function StaffingAudit() {
           <div><span>Séances totales</span><strong>{rangeAnalysis.total}</strong></div>
           <div><span>Séances non staffées</span><strong>{rangeAnalysis.unstaffed}</strong></div>
           <div className="highlight"><span>Non-staffing global</span><strong>{new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(rangeAnalysis.percentage)} %</strong></div>
+        </div>
+        <div className="staffing-daily-chart">
+          <div className="staffing-daily-chart-heading"><div><h4>Évolution quotidienne</h4><span>Pourcentage de séances non staffées</span></div><div className="staffing-daily-chart-legend"><span className="percentage">% non staffé</span><span>Total</span><span>Non staffées</span></div></div>
+          {dailyChart.points.length ? <div className="staffing-daily-chart-scroll"><svg role="img" aria-label="Évolution quotidienne du pourcentage de séances non staffées" viewBox={`0 0 ${dailyChart.width} ${dailyChart.height}`} style={{ minWidth: `${dailyChart.width}px` }}>
+            <defs><linearGradient id="staffing-daily-line" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#f472b6" /><stop offset="1" stopColor="#be185d" /></linearGradient><linearGradient id="staffing-daily-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#f472b6" stopOpacity=".22" /><stop offset="1" stopColor="#f472b6" stopOpacity=".02" /></linearGradient></defs>
+            {Array.from({ length: 5 }, (_, index) => {
+              const percentage = (dailyChart.maximumPercentage / 4) * (4 - index);
+              const y = dailyChart.plotTop + (index / 4) * (dailyChart.plotBottom - dailyChart.plotTop);
+              return <g key={index}><line className="grid-line" x1={dailyChart.plotLeft} x2={dailyChart.plotRight} y1={y} y2={y} /><text className="axis-label y" x={dailyChart.plotLeft - 8} y={y + 3}>{new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(percentage)} %</text></g>;
+            })}
+            {dailyChart.points.length > 1 ? <polygon className="daily-area" points={`${dailyChart.points[0].x},${dailyChart.plotBottom} ${dailyChart.polyline} ${dailyChart.points[dailyChart.points.length - 1].x},${dailyChart.plotBottom}`} /> : null}
+            {dailyChart.points.length > 1 ? <polyline className="daily-line" points={dailyChart.polyline} /> : null}
+            {dailyChart.points.map((point) => <g className="daily-point" key={point.date}>
+              <line className="day-guide" x1={point.x} x2={point.x} y1={dailyChart.plotBottom} y2={dailyChart.plotBottom + 76} />
+              <circle cx={point.x} cy={point.y} r="5"><title>{`${formatDate(point.date)} : ${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(point.percentage)} % · ${point.unstaffed} non staffées sur ${point.total}`}</title></circle>
+              <text className="point-value" x={point.x} y={Math.max(dailyChart.plotTop + 9, point.y - 9)}>{new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(point.percentage)} %</text>
+              <text className="axis-label date" x={point.x} y={dailyChart.plotBottom + 20}>{formatChartDate(point.date)}</text>
+              <text className="daily-total" x={point.x} y={dailyChart.plotBottom + 43}>{point.total}</text>
+              <text className="daily-unstaffed" x={point.x} y={dailyChart.plotBottom + 64}>{point.unstaffed}</text>
+            </g>)}
+            <text className="daily-row-label" x={dailyChart.plotLeft - 8} y={dailyChart.plotBottom + 43}>Total</text>
+            <text className="daily-row-label unstaffed" x={dailyChart.plotLeft - 8} y={dailyChart.plotBottom + 64}>Non staff.</text>
+          </svg></div> : <p className="staffing-daily-chart-empty">Aucune journée enregistrée sur cette période.</p>}
         </div>
         <div className="staffing-range-layout">
           <div className="staffing-range-rh">
