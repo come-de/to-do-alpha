@@ -392,12 +392,14 @@ export type SchoolPortfolioOwner = "" | "kelly" | "pierre" | "julie";
 
 export type StaffingAuditClassification = "staffed" | "unstaffed" | "ambiguous";
 export type StaffingAuditResolution = "" | "staffed" | "unstaffed";
+export type StaffingAuditSessionCategory = "alpha" | "surveillance" | "service";
 
 export type StaffingAuditSession = {
   sessionId: string;
   date: string;
   school: string;
   schoolId: string;
+  category: StaffingAuditSessionCategory;
   sourceRowCount: number | null;
   portfolioOwner: SchoolPortfolioOwner;
   detectedStatus: StaffingAuditClassification;
@@ -1537,6 +1539,20 @@ function isStaffingAuditResolution(value: unknown): value is StaffingAuditResolu
   return value === "" || value === "staffed" || value === "unstaffed";
 }
 
+function isStaffingAuditSessionCategory(value: unknown): value is StaffingAuditSessionCategory {
+  return value === "alpha" || value === "surveillance" || value === "service";
+}
+
+function staffingAuditSessionCategory(schoolName: string, school?: School, storedCategory?: unknown): StaffingAuditSessionCategory {
+  const normalizedName = normalizeSchoolName(schoolName);
+  const normalizedCategory = normalizeSchoolName(school?.category || "");
+  if (normalizedName.includes("alpha")) return "alpha";
+  if (normalizedName.includes("surveill")) return "surveillance";
+  if (normalizedCategory.includes("alpha") || school?.schoolType === "alpha") return "alpha";
+  if (normalizedCategory.includes("surveill")) return "surveillance";
+  return isStaffingAuditSessionCategory(storedCategory) ? storedCategory : "service";
+}
+
 function normalizeStaffingAuditDate(value: unknown) {
   const raw = cleanText(value);
   if (!raw) return "";
@@ -1559,11 +1575,13 @@ function normalizeStaffingAuditDate(value: unknown) {
 
 export function sanitizeStaffingAuditSession(raw: Record<string, unknown>): StaffingAuditSession {
   const rawDate = cleanText(raw.date);
+  const school = cleanText(raw.school);
   return {
     sessionId: cleanText(raw.sessionId),
     date: normalizeStaffingAuditDate(rawDate) || rawDate,
-    school: cleanText(raw.school),
+    school,
     schoolId: cleanText(raw.schoolId),
+    category: staffingAuditSessionCategory(school, undefined, raw.category),
     sourceRowCount: raw.sourceRowCount === undefined || raw.sourceRowCount === null || raw.sourceRowCount === ""
       ? null
       : Math.max(0, Math.round(Number(raw.sourceRowCount) || 0)),
@@ -1654,6 +1672,7 @@ export function parseStaffingAuditCsv(value: string, fileName: string, schools: 
       date: item.date,
       school: item.school,
       schoolId: school?.externalId ?? "",
+      category: staffingAuditSessionCategory(item.school, school),
       sourceRowCount: item.sourceRowCount,
       portfolioOwner: school?.portfolioOwner ?? "",
       detectedStatus,
@@ -1679,9 +1698,12 @@ export function enrichStaffingAuditDaysWithSchools(days: StaffingAuditDay[], sch
   return days.map((day) => ({
     ...day,
     sessions: day.sessions.map((session) => {
-      if (session.schoolId) return session;
       const school = schoolByName.get(normalizeSchoolName(session.school));
-      return school?.externalId ? { ...session, schoolId: school.externalId } : session;
+      return {
+        ...session,
+        schoolId: session.schoolId || school?.externalId || "",
+        category: staffingAuditSessionCategory(session.school, school, session.category),
+      };
     }),
   }));
 }

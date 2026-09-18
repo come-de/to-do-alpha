@@ -580,6 +580,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .staffing-audit-day-heading { margin: 0 12px 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: linear-gradient(100deg,#eefaff,var(--green-pale)); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .staffing-audit-day-heading strong { display: block; color: var(--blue-title); font-size: 13px; text-transform: capitalize; }
 .staffing-audit-day-heading span { color: var(--muted); font-size: 8.5px; }
+.staffing-audit-removed-summary { margin: 0 12px 8px; padding: 6px 9px; border: 1px solid rgba(16,185,129,.28); border-radius: 9px; background: var(--green-pale); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.staffing-audit-removed-summary span { color: var(--green-dark); font-size: 9px; font-weight: 720; }
+.staffing-audit-removed-summary span strong { font-size: 12px; }
+.staffing-audit-removed-summary button { border: 1px solid rgba(16,185,129,.32); border-radius: 999px; padding: 4px 8px; color: var(--green-dark); background: white; font-size: 8px; font-weight: 850; cursor: pointer; white-space: nowrap; }
 .staffing-audit-summary { margin: 0 12px 9px; overflow: hidden; border: 1px solid var(--line); border-radius: 10px; background: white; }
 .staffing-audit-summary .head, .staffing-audit-summary .row { display: grid; grid-template-columns: minmax(130px,1fr) repeat(4,minmax(70px,.55fr)); align-items: center; gap: 5px; padding: 6px 9px; text-align: center; }
 .staffing-audit-summary .head { background: var(--soft); color: var(--muted); font-size: 7.5px; font-weight: 850; text-transform: uppercase; }
@@ -588,6 +592,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .staffing-audit-summary .row span { font-weight: 800; }
 .staffing-audit-summary .row .danger { color: var(--red); }
 .staffing-audit-summary .row .warning { color: #b45309; }
+.staffing-audit-owner-filter, .staffing-audit-category-filter { margin: 0 12px 8px; display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
+.staffing-audit-owner-filter strong, .staffing-audit-category-filter strong { margin-right: 3px; color: var(--muted); font-size: 8px; font-weight: 850; text-transform: uppercase; letter-spacing: .05em; }
+.staffing-audit-owner-filter button, .staffing-audit-category-filter button { border: 1px solid var(--line); border-radius: 999px; padding: 4px 8px; color: var(--muted); background: white; font-size: 8.5px; font-weight: 820; cursor: pointer; }
+.staffing-audit-owner-filter button.active, .staffing-audit-category-filter button.active { border-color: rgba(14,165,233,.38); color: var(--blue-dark); background: #eefaff; box-shadow: inset 0 -2px 0 var(--blue-main); }
 .staffing-audit-list-heading { margin: 0 12px 6px; display: flex; align-items: end; justify-content: space-between; }
 .staffing-audit-list-heading h3 { margin: 0; color: var(--blue-title); font-size: 12px; }
 .staffing-audit-list-heading span { color: var(--muted); font-size: 8.5px; }
@@ -601,15 +609,37 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .staffing-audit-session-link:hover { color: var(--blue-dark); text-decoration: underline; }
 .staffing-audit-session-link span { margin-left: 3px; color: inherit; font-size: 8px; }
 .staffing-audit-session > div span { margin-left: 8px; color: var(--text); font-size: 10px; }
+.staffing-audit-category { display: inline-flex; margin-left: 6px; border-radius: 999px; padding: 2px 6px; font-size: 7px; font-style: normal; font-weight: 850; white-space: nowrap; }
+.staffing-audit-category.alpha { color: var(--green-dark); background: var(--green-pale); }
+.staffing-audit-category.surveillance { color: var(--blue-dark); background: #eaf8ff; }
+.staffing-audit-category.service { color: #6d28d9; background: #f3e8ff; }
 .staffing-audit-session > div small { display: block; margin-top: 2px; color: var(--muted); font-size: 8px; }
 .staffing-audit-session label { min-width: 0; display: grid; gap: 2px; color: var(--muted); font-size: 7.5px; font-weight: 850; text-transform: uppercase; }
 .staffing-audit-session select { width: 100%; min-width: 0; height: 29px; padding: 0 6px; border: 1px solid var(--line); border-radius: 7px; background: white; color: var(--blue-title); font-size: 9px; text-transform: none; }
+.staffing-audit-ignore { max-width: 190px; white-space: normal; line-height: 1.15; }
 .staffing-audit-status { padding: 5px 8px; border-radius: 999px; font-size: 8.5px; font-weight: 850; text-align: center; }
 .staffing-audit-status.unstaffed { color: var(--red); background: var(--red-pale); }
 .staffing-audit-status.staffed { color: var(--green-dark); background: var(--green-pale); }
 .staffing-audit-treated { margin: 0 12px 12px; border: 1px solid rgba(16,185,129,.25); border-radius: 10px; background: var(--green-pale); }
 .staffing-audit-treated summary { padding: 8px 10px; color: var(--green-dark); font-size: 9.5px; font-weight: 850; cursor: pointer; }
+.staffing-audit-treated-heading { padding: 7px 9px 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--green-dark); font-size: 9px; }
+.staffing-audit-treated-heading span { color: var(--muted); font-size: 8px; }
 .staffing-audit-treated .staffing-audit-list { margin: 0 7px 7px; }
+.staffing-audit-chart { margin: 0 12px 9px; padding: 8px 9px; border: 1px solid rgba(14,165,233,.18); border-radius: 10px; background: linear-gradient(100deg, rgba(224,247,255,.34), white 46%, rgba(236,253,245,.44)); display: grid; gap: 6px; }
+.staffing-audit-chart-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.staffing-audit-chart-heading > div:first-child { display: grid; gap: 1px; }
+.staffing-audit-chart-heading strong { color: var(--blue-title); font-size: 10px; }
+.staffing-audit-chart-heading span { color: var(--muted); font-size: 8px; }
+.staffing-audit-chart-legend { display: flex; align-items: center; gap: 9px; }
+.staffing-audit-chart-legend span { display: inline-flex; align-items: center; gap: 4px; }
+.staffing-audit-chart-legend span::before { content: ""; width: 8px; height: 8px; border-radius: 3px; background: var(--green); }
+.staffing-audit-chart-legend span.unstaffed::before { background: var(--red); }
+.staffing-audit-chart-row { display: grid; grid-template-columns: 52px minmax(70px,1fr) 24px minmax(70px,1fr) 24px; gap: 6px; align-items: center; }
+.staffing-audit-chart-row > strong { color: var(--blue-title); font-size: 9px; }
+.staffing-audit-chart-row > div { height: 8px; border-radius: 999px; background: rgba(213,231,239,.55); overflow: hidden; }
+.staffing-audit-chart-row > div span { display: block; min-width: 2px; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--blue-main), var(--green)); }
+.staffing-audit-chart-row > div span.unstaffed { background: linear-gradient(90deg, #f472b6, var(--red)); }
+.staffing-audit-chart-row > b { color: var(--blue-title); font-size: 9px; text-align: right; }
 .staffing-comparison-results { padding: 0 12px 12px; display: grid; gap: 10px; }
 .staffing-comparison-results > section { overflow: hidden; border: 1px solid var(--line); border-radius: 11px; background: white; }
 .staffing-comparison-results h3 { margin: 0; padding: 8px 10px; border-bottom: 1px solid var(--line); background: var(--soft); color: var(--blue-title); font-size: 11px; display: flex; align-items: center; justify-content: space-between; }
@@ -1334,10 +1364,14 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .staffing-comparison-results { padding: 0 8px 8px; }
   .staffing-comparison-results article { grid-template-columns: 1fr; }
   .staffing-session small { grid-column: 1 / -1; }
-  .staffing-audit-source-tabs, .staffing-audit-date-tabs, .staffing-audit-day-heading, .staffing-audit-summary, .staffing-audit-list-heading, .staffing-audit-list, .staffing-audit-treated { margin-left: 8px; margin-right: 8px; }
+  .staffing-audit-source-tabs, .staffing-audit-date-tabs, .staffing-audit-day-heading, .staffing-audit-removed-summary, .staffing-audit-summary, .staffing-audit-category-filter, .staffing-audit-chart, .staffing-audit-owner-filter, .staffing-audit-list-heading, .staffing-audit-list, .staffing-audit-treated { margin-left: 8px; margin-right: 8px; }
   .staffing-audit-day-heading { align-items: stretch; flex-direction: column; }
+  .staffing-audit-removed-summary { align-items: flex-start; flex-direction: column; }
+  .staffing-audit-removed-summary button { width: 100%; }
   .staffing-audit-summary { overflow-x: auto; }
   .staffing-audit-summary .head, .staffing-audit-summary .row { min-width: 520px; }
+  .staffing-audit-chart-heading { align-items: flex-start; flex-direction: column; }
+  .staffing-audit-chart-row { grid-template-columns: 45px minmax(50px,1fr) 21px minmax(50px,1fr) 21px; gap: 4px; }
   .staffing-audit-session { grid-template-columns: 1fr; }
   .staffing-audit-session > button { grid-column: auto; width: 100%; }
   .availability-history-list .text-button { grid-column: 1 / -1; justify-self: start; }
