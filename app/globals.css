@@ -625,21 +625,38 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .staffing-audit-treated-heading { padding: 7px 9px 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--green-dark); font-size: 9px; }
 .staffing-audit-treated-heading span { color: var(--muted); font-size: 8px; }
 .staffing-audit-treated .staffing-audit-list { margin: 0 7px 7px; }
-.staffing-audit-chart { margin: 0 12px 9px; padding: 8px 9px; border: 1px solid rgba(14,165,233,.18); border-radius: 10px; background: linear-gradient(100deg, rgba(224,247,255,.34), white 46%, rgba(236,253,245,.44)); display: grid; gap: 6px; }
-.staffing-audit-chart-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.staffing-audit-chart-heading > div:first-child { display: grid; gap: 1px; }
-.staffing-audit-chart-heading strong { color: var(--blue-title); font-size: 10px; }
-.staffing-audit-chart-heading span { color: var(--muted); font-size: 8px; }
-.staffing-audit-chart-legend { display: flex; align-items: center; gap: 9px; }
-.staffing-audit-chart-legend span { display: inline-flex; align-items: center; gap: 4px; }
-.staffing-audit-chart-legend span::before { content: ""; width: 8px; height: 8px; border-radius: 3px; background: var(--green); }
-.staffing-audit-chart-legend span.unstaffed::before { background: var(--red); }
-.staffing-audit-chart-row { display: grid; grid-template-columns: 52px minmax(70px,1fr) 24px minmax(70px,1fr) 24px; gap: 6px; align-items: center; }
-.staffing-audit-chart-row > strong { color: var(--blue-title); font-size: 9px; }
-.staffing-audit-chart-row > div { height: 8px; border-radius: 999px; background: rgba(213,231,239,.55); overflow: hidden; }
-.staffing-audit-chart-row > div span { display: block; min-width: 2px; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--blue-main), var(--green)); }
-.staffing-audit-chart-row > div span.unstaffed { background: linear-gradient(90deg, #f472b6, var(--red)); }
-.staffing-audit-chart-row > b { color: var(--blue-title); font-size: 9px; text-align: right; }
+.staffing-range-analysis { margin: 0 12px 10px; padding: 10px; border: 1px solid rgba(99,102,241,.25); border-radius: 12px; background: linear-gradient(115deg, rgba(238,242,255,.92), white 46%, rgba(236,253,245,.72)); display: grid; gap: 9px; }
+.staffing-range-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.staffing-range-heading .eyebrow { margin: 0 0 2px; color: #6366f1; font-size: 7px; }
+.staffing-range-heading h3 { margin: 0; color: var(--blue-title); font-size: 12px; }
+.staffing-range-heading > div > span { color: var(--muted); font-size: 8px; }
+.staffing-range-dates { display: flex; align-items: center; gap: 7px; }
+.staffing-range-dates label { display: grid; gap: 2px; color: var(--muted); font-size: 7px; font-weight: 850; text-transform: uppercase; }
+.staffing-range-dates input { height: 30px; padding: 0 7px; border: 1px solid var(--line); border-radius: 7px; background: white; color: var(--blue-title); font: inherit; font-size: 9px; }
+.staffing-range-kpis { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 7px; }
+.staffing-range-kpis > div { padding: 7px 9px; border: 1px solid var(--line); border-radius: 9px; background: rgba(255,255,255,.9); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.staffing-range-kpis span { color: var(--muted); font-size: 8px; font-weight: 760; }
+.staffing-range-kpis strong { color: var(--blue-title); font-size: 16px; }
+.staffing-range-kpis .highlight { border-color: rgba(190,24,93,.24); background: var(--red-pale); }
+.staffing-range-kpis .highlight strong { color: var(--red); }
+.staffing-range-layout { display: grid; grid-template-columns: minmax(0,1.25fr) minmax(260px,.75fr); gap: 8px; }
+.staffing-range-rh, .staffing-range-schools { padding: 8px; border: 1px solid var(--line); border-radius: 9px; background: rgba(255,255,255,.9); }
+.staffing-range-rh h4, .staffing-range-schools h4 { margin: 0 0 6px; color: var(--blue-title); font-size: 9px; }
+.staffing-range-rh article { min-height: 30px; display: grid; grid-template-columns: minmax(130px,.75fr) minmax(100px,1fr) 44px; align-items: center; gap: 7px; border-top: 1px solid rgba(213,231,239,.7); }
+.staffing-range-rh article:first-of-type { border-top: 0; }
+.staffing-range-rh article > div:first-child { display: grid; gap: 1px; }
+.staffing-range-rh article strong { color: var(--blue-title); font-size: 9px; }
+.staffing-range-rh article span { color: var(--muted); font-size: 7.5px; }
+.staffing-range-rh article > b { color: var(--red); font-size: 9px; text-align: right; }
+.staffing-range-rate { height: 8px; overflow: hidden; border-radius: 999px; background: rgba(213,231,239,.65); }
+.staffing-range-rate span { display: block; min-width: 2px; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#f472b6,var(--red)); }
+.staffing-range-schools { display: grid; align-content: start; }
+.staffing-range-schools article { min-height: 25px; padding: 2px 0; border-top: 1px solid rgba(213,231,239,.7); display: grid; grid-template-columns: 20px minmax(0,1fr) auto; align-items: center; gap: 5px; }
+.staffing-range-schools article:first-of-type { border-top: 0; }
+.staffing-range-schools article > span { width: 18px; height: 18px; border-radius: 50%; background: #eef2ff; color: #6366f1; display: grid; place-items: center; font-size: 7px; font-weight: 850; }
+.staffing-range-schools article strong { min-width: 0; overflow: hidden; color: var(--text); font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.staffing-range-schools article b { min-width: 22px; color: var(--red); font-size: 9px; text-align: right; }
+.staffing-range-schools > p { margin: 4px 0; color: var(--muted); font-size: 8px; }
 .staffing-comparison-results { padding: 0 12px 12px; display: grid; gap: 10px; }
 .staffing-comparison-results > section { overflow: hidden; border: 1px solid var(--line); border-radius: 11px; background: white; }
 .staffing-comparison-results h3 { margin: 0; padding: 8px 10px; border-bottom: 1px solid var(--line); background: var(--soft); color: var(--blue-title); font-size: 11px; display: flex; align-items: center; justify-content: space-between; }
@@ -1364,14 +1381,18 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .staffing-comparison-results { padding: 0 8px 8px; }
   .staffing-comparison-results article { grid-template-columns: 1fr; }
   .staffing-session small { grid-column: 1 / -1; }
-  .staffing-audit-source-tabs, .staffing-audit-date-tabs, .staffing-audit-day-heading, .staffing-audit-removed-summary, .staffing-audit-summary, .staffing-audit-category-filter, .staffing-audit-chart, .staffing-audit-owner-filter, .staffing-audit-list-heading, .staffing-audit-list, .staffing-audit-treated { margin-left: 8px; margin-right: 8px; }
+  .staffing-audit-source-tabs, .staffing-audit-date-tabs, .staffing-audit-day-heading, .staffing-audit-removed-summary, .staffing-audit-summary, .staffing-audit-category-filter, .staffing-range-analysis, .staffing-audit-owner-filter, .staffing-audit-list-heading, .staffing-audit-list, .staffing-audit-treated { margin-left: 8px; margin-right: 8px; }
   .staffing-audit-day-heading { align-items: stretch; flex-direction: column; }
   .staffing-audit-removed-summary { align-items: flex-start; flex-direction: column; }
   .staffing-audit-removed-summary button { width: 100%; }
   .staffing-audit-summary { overflow-x: auto; }
   .staffing-audit-summary .head, .staffing-audit-summary .row { min-width: 520px; }
-  .staffing-audit-chart-heading { align-items: flex-start; flex-direction: column; }
-  .staffing-audit-chart-row { grid-template-columns: 45px minmax(50px,1fr) 21px minmax(50px,1fr) 21px; gap: 4px; }
+  .staffing-range-heading { align-items: stretch; flex-direction: column; }
+  .staffing-range-dates { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .staffing-range-dates input { width: 100%; }
+  .staffing-range-kpis { grid-template-columns: 1fr; }
+  .staffing-range-layout { grid-template-columns: 1fr; }
+  .staffing-range-rh article { grid-template-columns: minmax(110px,.8fr) minmax(80px,1fr) 42px; }
   .staffing-audit-session { grid-template-columns: 1fr; }
   .staffing-audit-session > button { grid-column: auto; width: 100%; }
   .availability-history-list .text-button { grid-column: 1 / -1; justify-self: start; }

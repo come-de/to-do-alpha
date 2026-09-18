@@ -52,6 +52,8 @@ export default function StaffingAudit() {
   const [view, setView] = useState<"draft" | "history">("history");
   const [ownerFilter, setOwnerFilter] = useState<"all" | SchoolPortfolioOwner>("all");
   const [categoryFilter, setCategoryFilter] = useState<"all" | StaffingAuditSessionCategory>("all");
+  const [analysisStartDate, setAnalysisStartDate] = useState("");
+  const [analysisEndDate, setAnalysisEndDate] = useState("");
   const [showTreated, setShowTreated] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -97,15 +99,46 @@ export default function StaffingAudit() {
     () => treatedSessions.filter((session) => ownerFilter === "all" || session.portfolioOwner === ownerFilter),
     [ownerFilter, treatedSessions],
   );
-  const chartRows = useMemo(() => (["kelly", "pierre", "julie"] as const).map((owner) => {
-    const sessions = categorySessions.filter((session) => session.portfolioOwner === owner);
+  const historyDateBounds = useMemo(() => {
+    const dates = savedDays.map((day) => day.date).filter(Boolean).sort();
+    return { first: dates[0] || "", last: dates.at(-1) || "" };
+  }, [savedDays]);
+  const effectiveAnalysisStartDate = analysisStartDate || historyDateBounds.first;
+  const effectiveAnalysisEndDate = analysisEndDate || historyDateBounds.last;
+  const rangeAnalysis = useMemo(() => {
+    const start = effectiveAnalysisStartDate <= effectiveAnalysisEndDate ? effectiveAnalysisStartDate : effectiveAnalysisEndDate;
+    const end = effectiveAnalysisStartDate <= effectiveAnalysisEndDate ? effectiveAnalysisEndDate : effectiveAnalysisStartDate;
+    const sessions = savedDays
+      .filter((day) => (!start || day.date >= start) && (!end || day.date <= end))
+      .flatMap((day) => day.sessions)
+      .filter((session) => categoryFilter === "all" || session.category === categoryFilter);
+    const isUnstaffed = (session: StaffingAuditSession) => effectiveStatus(session) === "unstaffed" && !session.treated;
+    const unstaffed = sessions.filter(isUnstaffed);
+    const byOwner = (["kelly", "pierre", "julie"] as const).map((owner) => {
+      const ownerSessions = sessions.filter((session) => session.portfolioOwner === owner);
+      const ownerUnstaffed = ownerSessions.filter(isUnstaffed).length;
+      return {
+        owner,
+        total: ownerSessions.length,
+        unstaffed: ownerUnstaffed,
+        percentage: ownerSessions.length ? (ownerUnstaffed / ownerSessions.length) * 100 : 0,
+      };
+    });
+    const schools = new Map<string, { name: string; count: number }>();
+    unstaffed.forEach((session) => {
+      const key = session.school.trim().toLocaleLowerCase("fr") || "établissement non précisé";
+      const item = schools.get(key) ?? { name: session.school || "Établissement non précisé", count: 0 };
+      item.count += 1;
+      schools.set(key, item);
+    });
     return {
-      owner,
-      staffed: sessions.filter((session) => effectiveStatus(session) === "staffed").length,
-      unstaffed: sessions.filter((session) => effectiveStatus(session) === "unstaffed" && !session.treated).length,
+      total: sessions.length,
+      unstaffed: unstaffed.length,
+      percentage: sessions.length ? (unstaffed.length / sessions.length) * 100 : 0,
+      byOwner,
+      topSchools: Array.from(schools.values()).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "fr")).slice(0, 10),
     };
-  }), [categorySessions]);
-  const chartMaximum = Math.max(1, ...chartRows.flatMap((row) => [row.staffed, row.unstaffed]));
+  }, [categoryFilter, effectiveAnalysisEndDate, effectiveAnalysisStartDate, savedDays]);
 
   async function importFile(file: File | undefined) {
     if (!file) return;
@@ -206,8 +239,35 @@ export default function StaffingAudit() {
       <div className="staffing-audit-day-heading"><div><strong>{formatDate(activeDay.date)}</strong><span>{activeDay.sessions.length} séances uniques · source : {activeDay.sourceFileName}</span></div>{view === "draft" ? <button type="button" className="button primary" onClick={() => void saveDay()} disabled={saving}>Enregistrer cette journée</button> : <span>Enregistré le {new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short" }).format(new Date(activeDay.updatedAt))}</span>}</div>
       {totalTreatedSessions.length ? <div className="staffing-audit-removed-summary"><span><strong>{totalTreatedSessions.length}</strong> séance{totalTreatedSessions.length > 1 ? "s" : ""} retirée{totalTreatedSessions.length > 1 ? "s" : ""} du non-staffing pour cette date{categoryFilter !== "all" || ownerFilter !== "all" ? ` · ${filteredTreatedSessions.length} avec les filtres actuels` : ""}</span><button type="button" onClick={() => setShowTreated((current) => !current)}>{showTreated ? "Masquer" : "Voir et réactiver"}</button></div> : null}
       <div className="staffing-audit-category-filter"><strong>Type de séance</strong>{(["all", "alpha", "surveillance", "service"] as const).map((category) => <button type="button" className={categoryFilter === category ? "active" : ""} onClick={() => setCategoryFilter(category)} key={category}>{category === "all" ? "Tous les types" : categoryLabels[category]}</button>)}</div>
+      {view === "history" && savedDays.length ? <section className="staffing-range-analysis">
+        <div className="staffing-range-heading">
+          <div><p className="eyebrow">Analyse de période</p><h3>Évolution du non-staffing</h3><span>{categoryFilter === "all" ? "Tous les types de séances" : categoryLabels[categoryFilter]}</span></div>
+          <div className="staffing-range-dates">
+            <label>Du<input type="date" min={historyDateBounds.first} max={effectiveAnalysisEndDate || historyDateBounds.last} value={effectiveAnalysisStartDate} onChange={(event) => setAnalysisStartDate(event.target.value)} /></label>
+            <label>Au<input type="date" min={effectiveAnalysisStartDate || historyDateBounds.first} max={historyDateBounds.last} value={effectiveAnalysisEndDate} onChange={(event) => setAnalysisEndDate(event.target.value)} /></label>
+          </div>
+        </div>
+        <div className="staffing-range-kpis">
+          <div><span>Séances totales</span><strong>{rangeAnalysis.total}</strong></div>
+          <div><span>Séances non staffées</span><strong>{rangeAnalysis.unstaffed}</strong></div>
+          <div className="highlight"><span>Non-staffing global</span><strong>{new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(rangeAnalysis.percentage)} %</strong></div>
+        </div>
+        <div className="staffing-range-layout">
+          <div className="staffing-range-rh">
+            <h4>Pourcentage non staffé par RH</h4>
+            {rangeAnalysis.byOwner.map((row) => <article key={row.owner}>
+              <div><strong>{ownerLabels[row.owner]}</strong><span>{row.unstaffed} non staffée{row.unstaffed > 1 ? "s" : ""} / {row.total} séance{row.total > 1 ? "s" : ""}</span></div>
+              <div className="staffing-range-rate"><span style={{ width: `${Math.min(100, row.percentage)}%` }} /></div>
+              <b>{new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(row.percentage)} %</b>
+            </article>)}
+          </div>
+          <div className="staffing-range-schools">
+            <h4>Établissements les plus concernés</h4>
+            {rangeAnalysis.topSchools.length ? rangeAnalysis.topSchools.map((school, index) => <article key={school.name}><span>{index + 1}</span><strong>{school.name}</strong><b>{school.count}</b></article>) : <p>Aucune séance non staffée sur cette période.</p>}
+          </div>
+        </div>
+      </section> : null}
       <div className="staffing-audit-summary"><div className="head"><span>Responsable RH</span><span>Staffées</span><span>Non staffées</span><span>À vérifier</span><span>Total</span></div>{summary.map((row) => <div className="row" key={row.owner || "unassigned"}><strong>{ownerLabels[row.owner]}</strong><span>{row.staffed}</span><span className="danger">{row.unstaffed}</span><span className="warning">{row.ambiguous}</span><span>{row.total}</span></div>)}</div>
-      <section className="staffing-audit-chart"><div className="staffing-audit-chart-heading"><div><strong>Staffing par responsable RH</strong><span>{categoryFilter === "all" ? "Tous les types de séances" : categoryLabels[categoryFilter]}</span></div><div className="staffing-audit-chart-legend"><span className="staffed">Staffées</span><span className="unstaffed">Non staffées</span></div></div>{chartRows.map((row) => <div className="staffing-audit-chart-row" key={row.owner}><strong>{ownerLabels[row.owner]}</strong><div><span className="staffed" style={{ width: `${(row.staffed / chartMaximum) * 100}%` }}></span></div><b>{row.staffed}</b><div><span className="unstaffed" style={{ width: `${(row.unstaffed / chartMaximum) * 100}%` }}></span></div><b>{row.unstaffed}</b></div>)}</section>
       <div className="staffing-audit-owner-filter"><strong>Afficher les séances de</strong>{(["all", "kelly", "pierre", "julie", ""] as const).map((owner) => <button type="button" className={ownerFilter === owner ? "active" : ""} onClick={() => setOwnerFilter(owner)} key={owner || "unassigned"}>{owner === "all" ? "Tous" : ownerLabels[owner]}</button>)}</div>
       <div className="staffing-audit-list-heading"><div><h3>Séances à traiter</h3><span>{filteredActiveSessions.length} affichée{filteredActiveSessions.length > 1 ? "s" : ""}{ownerFilter !== "all" ? ` · ${activeSessions.length} au total` : ""}</span></div></div>
       <div className="staffing-audit-list">{filteredActiveSessions.length ? filteredActiveSessions.map(sessionRow) : <div className="empty-state compact">Aucune séance active à traiter pour ce responsable et cette date.</div>}</div>
