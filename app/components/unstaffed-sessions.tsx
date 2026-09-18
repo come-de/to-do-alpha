@@ -115,6 +115,16 @@ function initialOwnerFilter(): SchoolOwnerFilter {
   return value === "unassigned" || value === "kelly" || value === "pierre" || value === "julie" ? value : "all";
 }
 
+function initialImportFilter() {
+  if (typeof window === "undefined") return "";
+  return new URL(window.location.href).searchParams.get("fichier-seances") || "";
+}
+
+function initialSchoolQuery() {
+  if (typeof window === "undefined") return "";
+  return new URL(window.location.href).searchParams.get("recherche-seances") || "";
+}
+
 const schoolOwnerLabels: Record<SchoolPortfolioOwner, string> = { "": "Non attribué", kelly: "Kelly", pierre: "Pierre", julie: "Julie" };
 
 const categoryLabels: Record<SessionCategoryKey, string> = {
@@ -180,12 +190,12 @@ export default function UnstaffedSessions() {
   const [availabilityImports, setAvailabilityImports] = useState<Array<SourceImport<Availability>>>([]);
   const [assignmentImports, setAssignmentImports] = useState<Array<SourceImport<Assignment>>>([]);
   const [latestTutorSnapshot, setLatestTutorSnapshot] = useState<TutorTrackingSnapshot | null>(null);
-  const [selectedImportId, setSelectedImportId] = useState("");
+  const [selectedImportId, setSelectedImportId] = useState(initialImportFilter);
   const [interestImportId, setInterestImportId] = useState("");
   const [availabilityImportId, setAvailabilityImportId] = useState("");
   const [assignmentImportId, setAssignmentImportId] = useState("");
   const [selectedDate, setSelectedDate] = useState(initialDateFilter);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialSchoolQuery);
   const [selectedCategories, setSelectedCategories] = useState<SessionCategoryKey[]>(["alpha", "surveillance", "service"]);
   const [shownSingleStudentAlphaDates, setShownSingleStudentAlphaDates] = useState<string[]>([]);
   const [exclusions, setExclusions] = useState<UnstaffedExclusions>({ sessionIds: [], sourceKeys: [], updatedAt: "" });
@@ -237,8 +247,12 @@ export default function UnstaffedSessions() {
     else url.searchParams.set("date-seances", selectedDate);
     if (schoolOwnerFilter === "all") url.searchParams.delete("responsable");
     else url.searchParams.set("responsable", schoolOwnerFilter);
+    if (selectedImportId) url.searchParams.set("fichier-seances", selectedImportId);
+    else url.searchParams.delete("fichier-seances");
+    if (query.trim()) url.searchParams.set("recherche-seances", query.trim());
+    else url.searchParams.delete("recherche-seances");
     window.history.replaceState(null, "", `${url.pathname}?${url.searchParams.toString()}${url.hash}`);
-  }, [schoolOwnerFilter, selectedDate]);
+  }, [query, schoolOwnerFilter, selectedDate, selectedImportId]);
 
   const activeImport = imports.find((item) => item.id === selectedImportId) ?? null;
   const activeInterestImport = interestImports.find((item) => item.id === interestImportId) ?? null;

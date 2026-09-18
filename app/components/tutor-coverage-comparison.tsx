@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { AvailabilityImport, AvailabilityRow, TutorAssignmentImport, TutorAssignmentRow, TutorCoverageNote, TutorCoverageNoteStatus, TutorInterestImport, TutorInterestRow, TutorTrackingSnapshot } from "@/app/lib/shared-data";
+import type { AvailabilityImport, AvailabilityRow, TutorAssignmentImport, TutorAssignmentRow, TutorCoverageNote, TutorCoverageNoteStatus, TutorInterestImport, TutorInterestRow, TutorTrackingSnapshot, UnstaffedExclusions, UpcomingSessionImport } from "@/app/lib/shared-data";
 import PersonAdminLink from "@/app/components/person-admin-link";
+import SchoolAdminLink from "@/app/components/school-admin-link";
 
 type CoverageView = "unassigned" | "extra";
 type ToolView = "coverage" | "staffing-comparison";
@@ -37,7 +38,7 @@ type TutorCoverage = {
 type NoteDraft = { status: TutorCoverageNoteStatus; note: string };
 type SchoolPortfolioOwner = "" | "kelly" | "pierre" | "julie";
 type SchoolOwnerFilter = "all" | "unassigned" | Exclude<SchoolPortfolioOwner, "">;
-type SchoolAssignment = { name: string; portfolioOwner: SchoolPortfolioOwner };
+type SchoolAssignment = { externalId: string; name: string; portfolioOwner: SchoolPortfolioOwner };
 type StaffingSession = {
   key: string;
   school: string;
@@ -141,6 +142,11 @@ export default function TutorCoverageComparison() {
   const [availabilityImports, setAvailabilityImports] = useState<AvailabilityImport[]>([]);
   const [interestImports, setInterestImports] = useState<TutorInterestImport[]>([]);
   const [assignmentImports, setAssignmentImports] = useState<TutorAssignmentImport[]>([]);
+  const [upcomingSessionImports, setUpcomingSessionImports] = useState<UpcomingSessionImport[]>([]);
+  const [upcomingSessionId, setUpcomingSessionId] = useState("");
+  const [activeUpcomingSessionImport, setActiveUpcomingSessionImport] = useState<UpcomingSessionImport | null>(null);
+  const [loadingUpcomingSessions, setLoadingUpcomingSessions] = useState(false);
+  const [unstaffedExclusions, setUnstaffedExclusions] = useState<UnstaffedExclusions>({ sessionIds: [], sourceKeys: [], updatedAt: "" });
   const [latestTutorSnapshot, setLatestTutorSnapshot] = useState<TutorTrackingSnapshot | null>(null);
   const [availabilityId, setAvailabilityId] = useState("");
   const [interestId, setInterestId] = useState("");
@@ -165,13 +171,15 @@ export default function TutorCoverageComparison() {
 
   const load = useCallback(async (silent = false) => {
     try {
-      const [availabilityResponse, assignmentResponse, notesResponse, schoolsResponse, interestsResponse, trackingResponse] = await Promise.all([
+      const [availabilityResponse, assignmentResponse, notesResponse, schoolsResponse, interestsResponse, trackingResponse, upcomingResponse, exclusionsResponse] = await Promise.all([
         fetch("/api/availability-imports", { cache: "no-store" }),
         fetch("/api/tutor-assignment-imports", { cache: "no-store" }),
         fetch("/api/tutor-coverage-notes", { cache: "no-store" }),
         fetch("/api/schools", { cache: "no-store" }),
         fetch("/api/tutor-interest-imports", { cache: "no-store" }),
         fetch("/api/tutor-tracking", { cache: "no-store" }),
+        fetch("/api/upcoming-session-imports?summary=1", { cache: "no-store" }),
+        fetch("/api/unstaffed-exclusions", { cache: "no-store" }),
       ]);
       const availabilityData = await availabilityResponse.json() as { imports?: AvailabilityImport[]; error?: string; detail?: string };
       const assignmentData = await assignmentResponse.json() as { imports?: TutorAssignmentImport[]; error?: string; detail?: string };
@@ -179,18 +187,25 @@ export default function TutorCoverageComparison() {
       const schoolsData = await schoolsResponse.json() as { schools?: SchoolAssignment[]; error?: string; detail?: string };
       const interestsData = await interestsResponse.json() as { imports?: TutorInterestImport[]; error?: string; detail?: string };
       const trackingData = await trackingResponse.json() as { tracking?: { snapshots?: TutorTrackingSnapshot[] }; error?: string; detail?: string };
+      const upcomingData = await upcomingResponse.json() as { imports?: UpcomingSessionImport[]; error?: string; detail?: string };
+      const exclusionsData = await exclusionsResponse.json() as { exclusions?: UnstaffedExclusions; error?: string; detail?: string };
       if (!availabilityResponse.ok) throw new Error(availabilityData.detail || availabilityData.error || "Disponibilités indisponibles");
       if (!assignmentResponse.ok) throw new Error(assignmentData.detail || assignmentData.error || "Séances affectées indisponibles");
       if (!notesResponse.ok) throw new Error(notesData.detail || notesData.error || "Annotations indisponibles");
       if (!schoolsResponse.ok) throw new Error(schoolsData.detail || schoolsData.error || "Attributions des établissements indisponibles");
       if (!interestsResponse.ok) throw new Error(interestsData.detail || interestsData.error || "Intérêts indisponibles");
       if (!trackingResponse.ok) throw new Error(trackingData.detail || trackingData.error || "Liste des tuteurs indisponible");
+      if (!upcomingResponse.ok) throw new Error(upcomingData.detail || upcomingData.error || "Séances à venir indisponibles");
+      if (!exclusionsResponse.ok) throw new Error(exclusionsData.detail || exclusionsData.error || "Séances masquées indisponibles");
       const nextAvailability = (availabilityData.imports ?? []).sort((a, b) => timestamp(b.importedAt) - timestamp(a.importedAt));
       const nextInterests = (interestsData.imports ?? []).sort((a, b) => timestamp(b.importedAt) - timestamp(a.importedAt));
       const nextAssignments = (assignmentData.imports ?? []).sort((a, b) => timestamp(b.importedAt) - timestamp(a.importedAt));
+      const nextUpcomingSessions = (upcomingData.imports ?? []).sort((a, b) => timestamp(b.importedAt) - timestamp(a.importedAt));
       setAvailabilityImports(nextAvailability);
       setInterestImports(nextInterests);
       setAssignmentImports(nextAssignments);
+      setUpcomingSessionImports(nextUpcomingSessions);
+      setUnstaffedExclusions(exclusionsData.exclusions ?? { sessionIds: [], sourceKeys: [], updatedAt: "" });
       setLatestTutorSnapshot(trackingData.tracking?.snapshots?.[0] ?? null);
       setNotes(notesData.notes ?? []);
       setSchoolAssignments(schoolsData.schools ?? []);
@@ -201,6 +216,7 @@ export default function TutorCoverageComparison() {
       setAvailabilityId((current) => nextAvailability.some((item) => item.id === current) ? current : nextAvailability[0]?.id || "");
       setInterestId((current) => nextInterests.some((item) => item.id === current) ? current : nextInterests[0]?.id || "");
       setAssignmentId((current) => nextAssignments.some((item) => item.id === current) ? current : nextAssignments[0]?.id || "");
+      setUpcomingSessionId((current) => nextUpcomingSessions.some((item) => item.id === current) ? current : nextUpcomingSessions[0]?.id || "");
       setCompareRecentId((current) => nextAssignments.some((item) => item.id === current) ? current : nextAssignments[0]?.id || "");
       setCompareReferenceId((current) => nextAssignments.some((item) => item.id === current) ? current : nextAssignments[1]?.id || nextAssignments[0]?.id || "");
       if (!silent) setMessage("Fichiers actualisés");
@@ -208,6 +224,32 @@ export default function TutorCoverageComparison() {
       if (!silent) setMessage(error instanceof Error ? error.message : "Chargement impossible");
     }
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      if (!upcomingSessionId) {
+        setActiveUpcomingSessionImport(null);
+        return;
+      }
+      setLoadingUpcomingSessions(true);
+      setActiveUpcomingSessionImport(null);
+      fetch(`/api/upcoming-session-imports?id=${encodeURIComponent(upcomingSessionId)}`, { cache: "no-store" })
+        .then(async (response) => {
+          const data = await response.json() as { import?: UpcomingSessionImport; error?: string; detail?: string };
+          if (!response.ok || !data.import) throw new Error(data.detail || data.error || "Import Semaines à venir indisponible");
+          if (!cancelled) setActiveUpcomingSessionImport(data.import);
+        })
+        .catch((error) => {
+          if (!cancelled) {
+            setActiveUpcomingSessionImport(null);
+            setMessage(error instanceof Error ? error.message : "Chargement des séances à venir impossible");
+          }
+        })
+        .finally(() => { if (!cancelled) setLoadingUpcomingSessions(false); });
+    }, 0);
+    return () => { cancelled = true; window.clearTimeout(timer); };
+  }, [upcomingSessionId]);
 
   useEffect(() => {
     const initialTimer = window.setTimeout(() => void load(true), 0);
@@ -359,10 +401,55 @@ export default function TutorCoverageComparison() {
     [schoolAssignments],
   );
 
+  const schoolByName = useMemo(
+    () => new Map(schoolAssignments.map((item) => [normalizedSchoolName(item.name), item])),
+    [schoolAssignments],
+  );
+
+  const schoolById = useMemo(
+    () => new Map(schoolAssignments.filter((item) => item.externalId).map((item) => [item.externalId, item])),
+    [schoolAssignments],
+  );
+
   const ownerForSchool = useCallback(
     (schoolName: string): SchoolPortfolioOwner => ownerBySchoolName.get(normalizedSchoolName(schoolName)) || "",
     [ownerBySchoolName],
   );
+
+  const schoolRecordForName = useCallback(
+    (schoolName: string) => schoolByName.get(normalizedSchoolName(schoolName)),
+    [schoolByName],
+  );
+
+  const unstaffedCountsBySchool = useMemo(() => {
+    const counts = new Map<string, Set<string>>();
+    const hiddenSessionIds = new Set(unstaffedExclusions.sessionIds);
+    (activeUpcomingSessionImport?.rows ?? []).forEach((row) => {
+      if (row.date !== activeDate || hiddenSessionIds.has(row.sessionId)) return;
+      const normalizedCategory = normalizedAssignmentPart(row.category);
+      if (normalizedCategory.includes("alpha") && row.studentCount === 1) return;
+      const matchedSchool = (row.schoolId ? schoolById.get(row.schoolId) : undefined) ?? schoolByName.get(normalizedSchoolName(row.school));
+      const key = matchedSchool?.externalId ? `id:${matchedSchool.externalId}` : `name:${normalizedSchoolName(row.school)}`;
+      const sessions = counts.get(key) ?? new Set<string>();
+      sessions.add(row.sessionId);
+      counts.set(key, sessions);
+    });
+    return new Map(Array.from(counts.entries()).map(([key, sessions]) => [key, sessions.size]));
+  }, [activeDate, activeUpcomingSessionImport, schoolById, schoolByName, unstaffedExclusions.sessionIds]);
+
+  const unstaffedCountForSchool = useCallback((schoolName: string) => {
+    const matchedSchool = schoolRecordForName(schoolName);
+    const key = matchedSchool?.externalId ? `id:${matchedSchool.externalId}` : `name:${normalizedSchoolName(schoolName)}`;
+    return unstaffedCountsBySchool.get(key) ?? 0;
+  }, [schoolRecordForName, unstaffedCountsBySchool]);
+
+  const unstaffedLinkForSchool = useCallback((schoolName: string) => {
+    const params = new URLSearchParams({ onglet: "seances-non-affectees" });
+    if (activeDate) params.set("date-seances", activeDate);
+    if (upcomingSessionId) params.set("fichier-seances", upcomingSessionId);
+    if (schoolName) params.set("recherche-seances", schoolName);
+    return `?${params.toString()}`;
+  }, [activeDate, upcomingSessionId]);
 
   const staffingComparisonByOwner = useMemo(() => {
     const owners: SchoolPortfolioOwner[] = ["kelly", "pierre", "julie", ""];
@@ -533,7 +620,7 @@ export default function TutorCoverageComparison() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `couverture-tuteurs-${activeDate || "date"}.csv`;
+    link.download = `tuteurs-dispo-sans-seance-${activeDate || "date"}.csv`;
     link.click();
     URL.revokeObjectURL(url);
   }
@@ -541,11 +628,11 @@ export default function TutorCoverageComparison() {
   return (
     <section className="task-panel coverage-panel">
       <div className="panel-heading">
-        <div><p className="eyebrow">Croisement staffing</p><h2>{toolView === "coverage" ? "Disponibilités et séances affectées" : "Comparer deux staffings"}</h2><p>{toolView === "coverage" ? "Repérez les tuteurs mobilisables sans séance et les horaires encore libres." : "Comparez deux exports Prix des tuteurs pour une date précise."}</p></div>
+        <div><p className="eyebrow">Croisement staffing</p><h2>{toolView === "coverage" ? "Tuteurs disponibles sans séance" : "Comparer deux staffings"}</h2><p>{toolView === "coverage" ? "Repérez les tuteurs mobilisables et les établissements qui ont encore des séances à staffer." : "Comparez deux exports Prix des tuteurs pour une date précise."}</p></div>
         <button type="button" className="ghost-button" onClick={() => void load()} disabled={saving}>↻ Actualiser</button>
       </div>
 
-      <div className="coverage-tool-tabs" role="tablist" aria-label="Outils de couverture">
+      <div className="coverage-tool-tabs" role="tablist" aria-label="Outils de disponibilité des tuteurs">
         <button type="button" className={toolView === "coverage" ? "active" : ""} onClick={() => setToolView("coverage")}>Disponibilités ↔ staffing</button>
         <button type="button" className={toolView === "staffing-comparison" ? "active" : ""} onClick={() => setToolView("staffing-comparison")}>Comparer deux staffings</button>
       </div>
@@ -584,9 +671,9 @@ export default function TutorCoverageComparison() {
         {!compareReferenceImport || !compareRecentImport ? <div className="empty-state compact">Choisissez deux exports Prix des tuteurs.</div>
           : !activeComparisonDate ? <div className="empty-state compact">Aucune date n’est disponible dans ces fichiers.</div>
           : <div className="staffing-comparison-results">
-            <section><h3>Changements de tuteur <span>{staffingComparisonByOwner.changed.length}</span></h3>{staffingComparisonByOwner.changed.length ? staffingComparisonByOwner.changed.map((item) => <article key={item.session.key}><div className="staffing-session"><strong>{item.session.timeSlot}</strong><span>{item.session.school}</span><small>{item.session.category || "Catégorie non précisée"} · RH : {schoolOwnerLabels[ownerForSchool(item.session.school)]}</small></div><div className="staffing-change before"><em>Avant</em>{item.before.map((tutor) => <span key={tutor.tutorId}>{tutorLabel(tutor, tutor.tutorId)} <small>#{tutor.tutorId}{tutor.phone ? ` · ${tutor.phone}` : ""}</small></span>)}</div><div className="staffing-change after"><em>Après</em>{item.after.map((tutor) => <span key={tutor.tutorId}>{tutorLabel(tutor, tutor.tutorId)} <small>#{tutor.tutorId}{tutor.phone ? ` · ${tutor.phone}` : ""}</small></span>)}</div></article>) : <p>Aucun remplacement détecté pour ce responsable.</p>}</section>
-            <section><h3>Tuteurs ajoutés <span>{staffingComparisonByOwner.added.length}</span></h3>{staffingComparisonByOwner.added.length ? staffingComparisonByOwner.added.map((item) => <article key={`${item.session.key}-${item.tutor.tutorId}`}><div className="staffing-session"><strong>{item.session.timeSlot}</strong><span>{item.session.school}</span><small>{item.session.category || "Catégorie non précisée"} · RH : {schoolOwnerLabels[ownerForSchool(item.session.school)]}</small></div><div className="staffing-change after"><span>{tutorLabel(item.tutor, item.tutor.tutorId)} <small>#{item.tutor.tutorId}{item.tutor.phone ? ` · ${item.tutor.phone}` : ""}</small></span></div></article>) : <p>Aucun tuteur ajouté pour ce responsable.</p>}</section>
-            <section><h3>Tuteurs retirés <span>{staffingComparisonByOwner.removed.length}</span></h3>{staffingComparisonByOwner.removed.length ? staffingComparisonByOwner.removed.map((item) => <article key={`${item.session.key}-${item.tutor.tutorId}`}><div className="staffing-session"><strong>{item.session.timeSlot}</strong><span>{item.session.school}</span><small>{item.session.category || "Catégorie non précisée"} · RH : {schoolOwnerLabels[ownerForSchool(item.session.school)]}</small></div><div className="staffing-change before"><span>{tutorLabel(item.tutor, item.tutor.tutorId)} <small>#{item.tutor.tutorId}{item.tutor.phone ? ` · ${item.tutor.phone}` : ""}</small></span></div></article>) : <p>Aucun tuteur retiré pour ce responsable.</p>}</section>
+            <section><h3>Changements de tuteur <span>{staffingComparisonByOwner.changed.length}</span></h3>{staffingComparisonByOwner.changed.length ? staffingComparisonByOwner.changed.map((item) => <article key={item.session.key}><div className="staffing-session"><strong>{item.session.timeSlot}</strong><span><SchoolAdminLink schoolId={schoolRecordForName(item.session.school)?.externalId}>{item.session.school}</SchoolAdminLink></span><small>{item.session.category || "Catégorie non précisée"} · RH : {schoolOwnerLabels[ownerForSchool(item.session.school)]}</small></div><div className="staffing-change before"><em>Avant</em>{item.before.map((tutor) => <span key={tutor.tutorId}>{tutorLabel(tutor, tutor.tutorId)} <small>#{tutor.tutorId}{tutor.phone ? ` · ${tutor.phone}` : ""}</small></span>)}</div><div className="staffing-change after"><em>Après</em>{item.after.map((tutor) => <span key={tutor.tutorId}>{tutorLabel(tutor, tutor.tutorId)} <small>#{tutor.tutorId}{tutor.phone ? ` · ${tutor.phone}` : ""}</small></span>)}</div></article>) : <p>Aucun remplacement détecté pour ce responsable.</p>}</section>
+            <section><h3>Tuteurs ajoutés <span>{staffingComparisonByOwner.added.length}</span></h3>{staffingComparisonByOwner.added.length ? staffingComparisonByOwner.added.map((item) => <article key={`${item.session.key}-${item.tutor.tutorId}`}><div className="staffing-session"><strong>{item.session.timeSlot}</strong><span><SchoolAdminLink schoolId={schoolRecordForName(item.session.school)?.externalId}>{item.session.school}</SchoolAdminLink></span><small>{item.session.category || "Catégorie non précisée"} · RH : {schoolOwnerLabels[ownerForSchool(item.session.school)]}</small></div><div className="staffing-change after"><span>{tutorLabel(item.tutor, item.tutor.tutorId)} <small>#{item.tutor.tutorId}{item.tutor.phone ? ` · ${item.tutor.phone}` : ""}</small></span></div></article>) : <p>Aucun tuteur ajouté pour ce responsable.</p>}</section>
+            <section><h3>Tuteurs retirés <span>{staffingComparisonByOwner.removed.length}</span></h3>{staffingComparisonByOwner.removed.length ? staffingComparisonByOwner.removed.map((item) => <article key={`${item.session.key}-${item.tutor.tutorId}`}><div className="staffing-session"><strong>{item.session.timeSlot}</strong><span><SchoolAdminLink schoolId={schoolRecordForName(item.session.school)?.externalId}>{item.session.school}</SchoolAdminLink></span><small>{item.session.category || "Catégorie non précisée"} · RH : {schoolOwnerLabels[ownerForSchool(item.session.school)]}</small></div><div className="staffing-change before"><span>{tutorLabel(item.tutor, item.tutor.tutorId)} <small>#{item.tutor.tutorId}{item.tutor.phone ? ` · ${item.tutor.phone}` : ""}</small></span></div></article>) : <p>Aucun tuteur retiré pour ce responsable.</p>}</section>
           </div>}
       </> : <>
 
@@ -594,12 +681,13 @@ export default function TutorCoverageComparison() {
         <label>Disponibilités<select value={availabilityId} onChange={(event) => { setAvailabilityId(event.target.value); setSelectedDate(""); }}><option value="">Sélectionner</option>{availabilityImports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {importDate(item.importedAt)}</option>)}</select></label>
         <label>Intérêts<select value={interestId} onChange={(event) => { setInterestId(event.target.value); setSelectedDate(""); }}><option value="">Aucun</option>{interestImports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {importDate(item.importedAt)}</option>)}</select></label>
         <label>Séances affectées<select value={assignmentId} onChange={(event) => { setAssignmentId(event.target.value); setSelectedDate(""); }}><option value="">Sélectionner</option>{assignmentImports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {importDate(item.importedAt)}</option>)}</select></label>
+        <label>Semaines à venir<select value={upcomingSessionId} onChange={(event) => setUpcomingSessionId(event.target.value)}><option value="">Aucun fichier</option>{upcomingSessionImports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {importDate(item.importedAt)}</option>)}</select></label>
         <label>Date à analyser<select value={activeDate} onChange={(event) => setSelectedDate(event.target.value)}><option value="">Aucune date disponible</option>{analysisDates.map((date) => <option key={date} value={date}>{fullDate(date)}</option>)}</select></label>
         <label>Responsable<select value={schoolOwnerFilter} onChange={(event) => setSchoolOwnerFilter(event.target.value as SchoolOwnerFilter)}><option value="unassigned">Non attribués</option><option value="kelly">Kelly</option><option value="pierre">Pierre</option><option value="julie">Julie</option><option value="all">Tous</option></select></label>
         <label>Établissement<select value={school} onChange={(event) => setSchool(event.target.value)}><option value="all">Tous</option>{schoolOptions.map((name) => <option key={name}>{name}</option>)}</select></label>
         <label>Recherche<input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tuteur, ID, établissement…" /></label>
       </div>
-      <p className="staffing-comparison-note">Les créneaux qui chevauchent une séance affectée sont masqués. {latestTutorSnapshot ? `Statuts déterminés avec la liste des tuteurs du ${fullDate(latestTutorSnapshot.date)}.` : "Aucune liste de tuteurs disponible : les statuts restent inconnus."}</p>
+      <p className="staffing-comparison-note">Les créneaux qui chevauchent une séance affectée sont masqués. {latestTutorSnapshot ? `Statuts déterminés avec la liste des tuteurs du ${fullDate(latestTutorSnapshot.date)}.` : "Aucune liste de tuteurs disponible : les statuts restent inconnus."} {loadingUpcomingSessions ? "Calcul des séances non staffées…" : activeUpcomingSessionImport ? `Séances non staffées calculées avec « ${activeUpcomingSessionImport.displayName} ».` : "Choisissez un fichier Semaines à venir pour afficher les séances non staffées."}</p>
 
       <div className="availability-tabs">
         <button type="button" className={view === "unassigned" ? "active" : ""} onClick={() => setView("unassigned")}>Sans séance ({filteredCoverage.unassigned.length})</button>
@@ -627,8 +715,14 @@ export default function TutorCoverageComparison() {
             const noteDraft = noteDrafts[noteKey] ?? { status: savedNote?.status || "to-check", note: savedNote?.note || "" };
             return <article className={`coverage-card ${view}`} key={tutor.tutorId}>
               <div className="coverage-person"><div><h3><PersonAdminLink personId={tutor.tutorId} status={tutor.personStatus}>{`${tutor.firstName} ${tutor.lastName}`.trim() || tutor.tutorId}</PersonAdminLink> <span className={`person-status ${tutor.personStatus}`}>{tutor.personStatus === "tutor" ? "Tuteur" : tutor.personStatus === "candidate" ? "Candidat" : "Statut inconnu"}</span></h3><p>ID {tutor.tutorId}{tutor.phone ? ` · ${tutor.phone}` : ""}{tutor.grade ? ` · ${tutor.grade}` : ""}</p></div><button type="button" className="coverage-remove-button" onClick={() => void setTutorRemoved(tutor.tutorId, true)} disabled={saving} aria-label={`Retirer ${`${tutor.firstName} ${tutor.lastName}`.trim() || tutor.tutorId} pour cette date`} title="Retirer ce tuteur pour cette date">×</button></div>
-              {tutor.assignments.length ? <div className="coverage-slots assigned"><strong>Autre(s) séance(s) ce jour</strong>{tutor.assignments.map((row, index) => <span key={`${row.timeSlot}-${row.school}-${index}`}>{row.timeSlot} · {row.school}</span>)}</div> : <div className="coverage-slots assigned empty"><strong>Aucune séance affectée</strong></div>}
-              <div className="coverage-slots available"><strong>Créneau(x) mobilisable(s) sans chevauchement</strong>{tutor.opportunities.slice(0, 8).map((row, index) => <div className="coverage-opportunity" key={`${row.sessionId}-${row.timeSlot}-${index}`}><span>{row.timeSlot || "Horaire non précisé"} · {row.school || "Établissement non précisé"} · {schoolOwnerLabels[ownerForSchool(row.school)]}</span><em>{row.sources.map((source) => source === "availability" ? "Disponibilité" : "Intérêt").join(" + ")}{row.validatedInterest ? " · validé" : ""}</em></div>)}{tutor.opportunities.length > 8 ? <small>+ {tutor.opportunities.length - 8} autre(s)</small> : null}</div>
+              {tutor.assignments.length ? <div className="coverage-slots assigned"><strong>Autre(s) séance(s) ce jour</strong>{tutor.assignments.map((row, index) => <span key={`${row.timeSlot}-${row.school}-${index}`}>{row.timeSlot} · <SchoolAdminLink schoolId={schoolRecordForName(row.school)?.externalId}>{row.school || "Établissement non précisé"}</SchoolAdminLink></span>)}</div> : <div className="coverage-slots assigned empty"><strong>Aucune séance affectée</strong></div>}
+              <div className="coverage-slots available"><strong>Créneau(x) mobilisable(s) sans chevauchement</strong>{tutor.opportunities.slice(0, 8).map((row, index) => {
+                const unstaffedCount = unstaffedCountForSchool(row.school);
+                return <div className="coverage-opportunity" key={`${row.sessionId}-${row.timeSlot}-${index}`}>
+                  <span>{row.timeSlot || "Horaire non précisé"} · <SchoolAdminLink schoolId={schoolRecordForName(row.school)?.externalId}>{row.school || "Établissement non précisé"}</SchoolAdminLink> · {schoolOwnerLabels[ownerForSchool(row.school)]}</span>
+                  <span className="coverage-opportunity-meta"><em>{row.sources.map((source) => source === "availability" ? "Disponibilité" : "Intérêt").join(" + ")}{row.validatedInterest ? " · validé" : ""}</em>{activeUpcomingSessionImport ? unstaffedCount ? <a className="coverage-unstaffed-link" href={unstaffedLinkForSchool(row.school)}>{unstaffedCount} séance{unstaffedCount > 1 ? "s" : ""} non staffée{unstaffedCount > 1 ? "s" : ""}</a> : <span className="coverage-unstaffed-none">Aucune séance non staffée</span> : null}</span>
+                </div>;
+              })}{tutor.opportunities.length > 8 ? <small>+ {tutor.opportunities.length - 8} autre(s)</small> : null}</div>
               <div className="coverage-note-editor">
                 <select value={noteDraft.status} onChange={(event) => setNoteDrafts((current) => ({ ...current, [noteKey]: { ...noteDraft, status: event.target.value as TutorCoverageNoteStatus } }))} aria-label={`Statut de ${tutor.firstName} ${tutor.lastName}`}>
                   <option value="to-check">À vérifier</option><option value="unavailable">N’est plus disponible</option><option value="confirmed">Disponibilité confirmée</option><option value="contacted">Contacté</option>

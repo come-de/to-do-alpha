@@ -3,6 +3,7 @@ import {
   createUpcomingSessionImportFromCsv,
   deleteUpcomingSessionImportById,
   readSchools,
+  readUpcomingSessionImportById,
   readUpcomingSessionImports,
   readUpcomingSessionImportSummaries,
   updateUpcomingSessionImportName,
@@ -17,7 +18,13 @@ function json(data: unknown, status = 200) {
 
 export async function GET(request: Request) {
   try {
-    const summaryOnly = new URL(request.url).searchParams.get("summary") === "1";
+    const searchParams = new URL(request.url).searchParams;
+    const id = searchParams.get("id");
+    if (id) {
+      const selectedImport = await readUpcomingSessionImportById(id);
+      return selectedImport ? json({ import: selectedImport }) : json({ error: "Import introuvable" }, 404);
+    }
+    const summaryOnly = searchParams.get("summary") === "1";
     return json({ imports: summaryOnly ? await readUpcomingSessionImportSummaries() : await readUpcomingSessionImports() });
   } catch (error) {
     const detail = error instanceof Error ? error.message : "Impossible de charger les séances à venir";

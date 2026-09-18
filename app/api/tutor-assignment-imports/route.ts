@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   createTutorAssignmentImportFromCsv,
   deleteTutorAssignmentImportById,
+  readLatestTutorAssignmentImport,
   readTutorAssignmentImports,
   readTutorAssignmentImportSummaries,
   updateTutorAssignmentImportName,
@@ -16,7 +17,9 @@ function json(data: unknown, status = 200) {
 
 export async function GET(request: Request) {
   try {
-    const summaryOnly = new URL(request.url).searchParams.get("summary") === "1";
+    const searchParams = new URL(request.url).searchParams;
+    if (searchParams.get("latest") === "1") return json({ import: await readLatestTutorAssignmentImport() });
+    const summaryOnly = searchParams.get("summary") === "1";
     return json({ imports: summaryOnly ? await readTutorAssignmentImportSummaries() : await readTutorAssignmentImports() });
   } catch (error) {
     const detail = error instanceof Error ? error.message : "Impossible de charger les séances affectées";

@@ -2536,6 +2536,28 @@ export async function readTutorAssignmentImports() {
   }
 }
 
+export async function readLatestTutorAssignmentImport() {
+  try {
+    const store = taskStore();
+    const latest = (await readTutorAssignmentIndex())[0];
+    if (!latest) return null;
+    if (latest.rows.length) return latest;
+    const rows = await store.get(tutorAssignmentRowsKey(latest.id), { type: "json", consistency: "strong" });
+    return {
+      ...latest,
+      rows: Array.isArray(rows)
+        ? rows
+            .filter((row): row is Record<string, unknown> => Boolean(row && typeof row === "object"))
+            .map(sanitizeTutorAssignmentRow)
+            .filter((row) => row.tutorId && row.date && row.timeSlot)
+        : [],
+    };
+  } catch (error) {
+    if (!canUseMemoryFallback()) throw error;
+    return (memory.__petitSuiviTutorAssignmentImports ?? [])[0] ?? null;
+  }
+}
+
 export async function createTutorAssignmentImportFromCsv(input: { fileName: string; rawCsv: string }) {
   const now = new Date().toISOString();
   const parsed = parseTutorAssignmentCsv(input.rawCsv);
@@ -2639,6 +2661,30 @@ export async function readLatestUpcomingSessionImport() {
   } catch (error) {
     if (!canUseMemoryFallback()) throw error;
     return (memory.__petitSuiviUpcomingSessionImports ?? [])[0] ?? null;
+  }
+}
+
+export async function readUpcomingSessionImportById(id: string) {
+  const cleanedId = cleanText(id);
+  if (!cleanedId) return null;
+  try {
+    const store = taskStore();
+    const selected = (await readUpcomingSessionIndex()).find((item) => item.id === cleanedId);
+    if (!selected) return null;
+    if (selected.rows.length) return selected;
+    const rows = await store.get(upcomingSessionRowsKey(selected.id), { type: "json", consistency: "strong" });
+    return {
+      ...selected,
+      rows: Array.isArray(rows)
+        ? rows
+            .filter((row): row is Record<string, unknown> => Boolean(row && typeof row === "object"))
+            .map(sanitizeUpcomingSessionRow)
+            .filter((row) => row.sessionId && row.date && row.school)
+        : [],
+    };
+  } catch (error) {
+    if (!canUseMemoryFallback()) throw error;
+    return (memory.__petitSuiviUpcomingSessionImports ?? []).find((item) => item.id === cleanedId) ?? null;
   }
 }
 

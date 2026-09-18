@@ -10,6 +10,7 @@ import SchoolAdminLink from "@/app/components/school-admin-link";
 import PersonAdminLink from "@/app/components/person-admin-link";
 import HomeDashboard, { type HomeDestination } from "@/app/components/home-dashboard";
 import StaffingAudit from "@/app/components/staffing-audit";
+import type { TutorAssignmentImport, TutorAssignmentRow } from "@/app/lib/shared-data";
 
 type Status = "todo" | "progress" | "done";
 type Priority = "low" | "medium" | "high";
@@ -1710,6 +1711,7 @@ export default function Home() {
   const [tutorReportComments, setTutorReportComments] = useState<TutorReportComment[]>([]);
   const [tutorTracking, setTutorTracking] = useState<TutorTrackingData>({ snapshots: [], comments: [] });
   const [availabilityImports, setAvailabilityImports] = useState<AvailabilityImport[]>([]);
+  const [latestAvailabilityStaffingImport, setLatestAvailabilityStaffingImport] = useState<TutorAssignmentImport | null>(null);
   const [schoolWatchlist, setSchoolWatchlist] = useState<SchoolWatchItem[]>([]);
   const [schools, setSchools] = useState<School[]>([]);
   const [studentHistory, setStudentHistory] = useState<StudentHistoryYear[]>([]);
@@ -2010,6 +2012,18 @@ export default function Home() {
     }
   }, []);
 
+  const loadLatestAvailabilityStaffing = useCallback(async () => {
+    try {
+      const response = await fetch("/api/tutor-assignment-imports?latest=1", { cache: "no-store" });
+      const data = (await response.json()) as { import?: TutorAssignmentImport | null; error?: string; detail?: string };
+      if (!response.ok) throw new Error(data.detail || data.error || "load-latest-staffing-failed");
+      setLatestAvailabilityStaffingImport(data.import ?? null);
+    } catch {
+      setLatestAvailabilityStaffingImport(null);
+      setToast("Dernier fichier de staffing indisponible");
+    }
+  }, []);
+
   const loadSchoolWatchlist = useCallback(async () => {
     try {
       const response = await fetch("/api/school-watchlist", { cache: "no-store" });
@@ -2086,7 +2100,7 @@ export default function Home() {
       else if (appMode === "staffing") void loadStaffingDays();
       else if (appMode === "tutorReports") { void loadTutorReports(); void loadTutorReportComments(); }
       else if (appMode === "tutors") void loadTutorTracking();
-      else if (appMode === "availability") { void loadAvailabilityImports(); void loadSchools(); }
+      else if (appMode === "availability") { void loadAvailabilityImports(); void loadLatestAvailabilityStaffing(); void loadSchools(); }
       else if (appMode === "watchlist") { void loadSchoolWatchlist(); void loadSchools(); }
       else if (appMode === "schools") void loadSchools();
       else if (appMode === "objectives") { void loadObjectives(); void loadPeople(); }
@@ -2095,7 +2109,7 @@ export default function Home() {
     const initial = window.setTimeout(refreshCurrentPage, 0);
     const refresh = window.setInterval(refreshCurrentPage, 30_000);
     return () => { window.clearTimeout(initial); window.clearInterval(refresh); };
-  }, [appMode, loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadCommunications, loadStaffingDays, loadTutorReports, loadTutorReportComments, loadTutorTracking, loadAvailabilityImports, loadSchoolWatchlist, loadSchools, loadStudentHistory]);
+  }, [appMode, loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadCommunications, loadStaffingDays, loadTutorReports, loadTutorReportComments, loadTutorTracking, loadAvailabilityImports, loadLatestAvailabilityStaffing, loadSchoolWatchlist, loadSchools, loadStudentHistory]);
 
   useEffect(() => {
     if (authorName.trim()) localStorage.setItem(AUTHOR_KEY, authorName.trim());
@@ -2530,6 +2544,27 @@ export default function Home() {
     () => new Map(schools.map((school) => [normalizedSchoolLookupName(school.name), school.portfolioOwner || ""])),
     [schools],
   );
+  const availabilitySchoolByName = useMemo(
+    () => new Map(schools.map((school) => [normalizedSchoolLookupName(school.name), school])),
+    [schools],
+  );
+  const availabilityStaffingByTutorId = useMemo(() => {
+    const byTutor = new Map<string, TutorAssignmentRow[]>();
+    const seenByTutor = new Map<string, Set<string>>();
+    (latestAvailabilityStaffingImport?.rows ?? [])
+      .filter((row) => row.date === availabilityDate && !row.absent && row.tutorId.trim())
+      .forEach((row) => {
+        const tutorId = row.tutorId.trim();
+        const key = `${row.timeSlot}|${normalizedSchoolLookupName(row.school)}`;
+        const seen = seenByTutor.get(tutorId) ?? new Set<string>();
+        if (seen.has(key)) return;
+        seen.add(key);
+        seenByTutor.set(tutorId, seen);
+        byTutor.set(tutorId, [...(byTutor.get(tutorId) ?? []), row]);
+      });
+    byTutor.forEach((rows) => rows.sort((a, b) => a.timeSlot.localeCompare(b.timeSlot, "fr")));
+    return byTutor;
+  }, [availabilityDate, latestAvailabilityStaffingImport]);
   const displayedAvailabilityTutors = useMemo(() => {
     const source = availabilityView === "new"
       ? availabilityComparison.newTutors
@@ -4596,7 +4631,7 @@ export default function Home() {
               Importez plusieurs CSV, choisissez une date, puis comparez deux versions. La comparaison se fait par ID tuteur et uniquement pour la date sélectionnée.
             </p>
           </div>
-          <button type="button" className="ghost-button" onClick={() => void loadAvailabilityImports()}>
+          <button type="button" className="ghost-button" onClick={() => { void loadAvailabilityImports(); void loadLatestAvailabilityStaffing(); void loadSchools(); }}>
             ↻ Actualiser
           </button>
         </div>
@@ -4755,13 +4790,19 @@ export default function Home() {
             Export CSV
           </button>
         </div>
+        <p className="availability-staffing-source">
+          {latestAvailabilityStaffingImport
+            ? `Séances déjà prévues vérifiées avec « ${latestAvailabilityStaffingImport.displayName} » (${formatJournalDate(latestAvailabilityStaffingImport.importedAt)}).`
+            : "Aucun fichier de staffing disponible pour vérifier les séances déjà prévues."}
+        </p>
 
         <div className={`availability-results ${availabilityView === "new" ? "is-new" : ""}`}>
           {!selectedAvailabilityReference || !selectedAvailabilityRecent ? (
             <div className="empty-state compact">Importez au moins deux fichiers, puis choisissez une date et deux imports à comparer.</div>
           ) : displayedAvailabilityTutors.length ? (
-            displayedAvailabilityTutors.map((tutor) => (
-              <article key={tutor.tutorId} className="availability-card">
+            displayedAvailabilityTutors.map((tutor) => {
+              const assignedSessions = availabilityStaffingByTutorId.get(tutor.tutorId) ?? [];
+              return <article key={tutor.tutorId} className="availability-card">
                 <div className="availability-card-header">
                   <div>
                     <h3>
@@ -4776,17 +4817,27 @@ export default function Home() {
                   </div>
                   <span>{tutor.rows.length} créneau{tutor.rows.length > 1 ? "x" : ""}</span>
                 </div>
-                <div className="availability-slots">
-                  {tutor.rows.map((row, index) => (
-                    <div key={`${row.sessionId || row.timeSlot}-${index}`}>
-                      <strong>{row.timeSlot || "Horaire non renseigné"}</strong>
-                      <span>{row.school || "Établissement non renseigné"} · {row.className || "classe n/a"} · {row.group || "groupe n/a"}</span>
-                      {row.sessionId ? <small>Séance {row.sessionId}</small> : null}
-                    </div>
-                  ))}
+                <div className={`availability-staffing-status ${assignedSessions.length ? "has-assignment" : "is-free"}`}>
+                  <strong>{assignedSessions.length ? `${assignedSessions.length} séance${assignedSessions.length > 1 ? "s" : ""} déjà prévue${assignedSessions.length > 1 ? "s" : ""} ce jour` : "Aucune séance prévue ce jour"}</strong>
+                  {assignedSessions.map((session, index) => {
+                    const staffingSchool = availabilitySchoolByName.get(normalizedSchoolLookupName(session.school));
+                    return <span key={`${session.timeSlot}-${session.school}-${index}`}>
+                      {session.timeSlot || "Horaire non renseigné"} · <SchoolAdminLink schoolId={staffingSchool?.externalId}>{session.school || "Établissement non renseigné"}</SchoolAdminLink>
+                    </span>;
+                  })}
                 </div>
-              </article>
-            ))
+                <div className="availability-slots">
+                  {tutor.rows.map((row, index) => {
+                    const availabilitySchool = availabilitySchoolByName.get(normalizedSchoolLookupName(row.school));
+                    return <div key={`${row.sessionId || row.timeSlot}-${index}`}>
+                      <strong>{row.timeSlot || "Horaire non renseigné"}</strong>
+                      <span><SchoolAdminLink schoolId={availabilitySchool?.externalId}>{row.school || "Établissement non renseigné"}</SchoolAdminLink> · {row.className || "classe n/a"} · {row.group || "groupe n/a"}</span>
+                      {row.sessionId ? <small>Séance {row.sessionId}</small> : null}
+                    </div>;
+                  })}
+                </div>
+              </article>;
+            })
           ) : (
             <div className="empty-state compact">Aucun tuteur dans cette catégorie pour la date choisie.</div>
           )}
@@ -5545,7 +5596,7 @@ export default function Home() {
                     : appMode === "enrollments"
                       ? "Comparer inscriptions"
                     : appMode === "coverage"
-                      ? "Analyser la couverture"
+                      ? "Voir les tuteurs disponibles"
                     : appMode === "unstaffed"
                       ? "Voir les séances"
                     : appMode === "files"
@@ -5621,7 +5672,7 @@ export default function Home() {
               <span className="tab-icon" aria-hidden="true">🎒</span> Inscriptions
             </button>
             <button className={appMode === "coverage" ? "active" : ""} onClick={() => setAppMode("coverage")}>
-              <span className="tab-icon" aria-hidden="true">🧩</span> Couverture tuteurs
+              <span className="tab-icon" aria-hidden="true">🧩</span> Tuteurs dispo sans séance
             </button>
             <button className={appMode === "files" ? "active" : ""} onClick={() => setAppMode("files")}>
               <span className="tab-icon" aria-hidden="true">🗂️</span> Fichiers

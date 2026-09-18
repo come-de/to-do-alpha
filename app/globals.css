@@ -499,6 +499,11 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .coverage-slots span, .coverage-slots small { min-width: 0; color: var(--muted); font-size: 9.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .coverage-opportunity { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 5px; }
 .coverage-opportunity em { border-radius: 999px; padding: 2px 5px; color: var(--green-dark); background: rgba(255,255,255,.78); font-size: 7.5px; font-style: normal; font-weight: 850; white-space: nowrap; }
+.coverage-opportunity-meta { display: inline-flex; align-items: center; justify-content: flex-end; gap: 4px; overflow: visible !important; }
+.coverage-unstaffed-link, .coverage-unstaffed-none { display: inline-flex; align-items: center; min-height: 20px; padding: 2px 6px; border-radius: 999px; font-size: 7.5px !important; font-weight: 850; white-space: nowrap; text-decoration: none; }
+.coverage-unstaffed-link { border: 1px solid rgba(190,24,93,.24); background: var(--red-pale); color: var(--red) !important; }
+.coverage-unstaffed-link:hover { border-color: var(--red); background: white; }
+.coverage-unstaffed-none { border: 1px solid rgba(95,117,137,.16); background: rgba(255,255,255,.68); color: var(--muted) !important; }
 .coverage-status-filters, .coverage-source-filters { display: inline-flex; align-items: center; gap: 4px; padding-left: 5px; border-left: 1px solid var(--line); }
 .coverage-removed-list { margin: 0 12px 9px; padding: 8px; border: 1px solid rgba(190,24,93,.22); border-radius: 10px; background: linear-gradient(90deg, rgba(255,241,247,.88), white); display: grid; gap: 5px; }
 .coverage-removed-heading, .coverage-removed-person { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
@@ -611,9 +616,11 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .files-import-date { flex: 1 1 120px; display: grid; gap: 3px; color: var(--muted); font-size: 8.5px; font-weight: 850; text-transform: uppercase; letter-spacing: .05em; }
 .files-import-date input { width: 100%; min-height: 29px; border: 1px solid var(--line); border-radius: 7px; padding: 3px 6px; color: var(--blue-title); background: white; font-size: 10px; font-weight: 750; }
 .files-list { max-height: 330px; padding: 7px; overflow: auto; display: grid; gap: 6px; }
-.files-list > div { padding: 6px; border: 1px solid var(--line); border-radius: 8px; background: white; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 6px; align-items: center; }
-.files-list input { width: 100%; min-width: 0; height: 27px; border: 1px solid var(--line); border-radius: 7px; padding: 0 7px; color: var(--blue-title); background: var(--soft); font-size: 10px; font-weight: 750; }
-.files-list small { grid-column: 1 / -1; min-width: 0; color: var(--muted); font-size: 8.8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.files-list > div { padding: 6px 7px; border: 2px solid rgba(14,165,233,.7); border-left: 4px solid #10b981; border-radius: 9px; background: linear-gradient(100deg, rgba(224,247,255,.38), white 45%); box-shadow: 0 0 0 2px rgba(16,185,129,.07); display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 7px; align-items: center; }
+.files-list > div:hover { border-color: #0ea5e9; border-left-color: #00d49a; box-shadow: 0 3px 12px rgba(14,165,233,.16), 0 0 0 2px rgba(16,185,129,.11); }
+.files-list input { grid-column: 1 / -1; width: 100%; min-width: 0; height: 27px; border: 1px solid rgba(14,165,233,.24); border-radius: 7px; padding: 0 7px; color: var(--blue-title); background: rgba(244,251,252,.9); font-size: 10px; font-weight: 750; }
+.files-list small { min-width: 0; color: var(--muted); font-size: 8.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.files-list > div > .text-button { justify-self: end; white-space: nowrap; }
 .files-empty { margin: 4px; color: var(--muted); font-size: 10px; }
 .files-managed-note { color: var(--muted); font-size: 9px; font-weight: 720; }
 .files-static-name { min-width: 0; color: var(--blue-title); font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -621,6 +628,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .availability-tabs button { border: 1px solid var(--line); border-radius: 999px; padding: 6px 10px; color: var(--muted); background: white; font-size: 11px; font-weight: 850; white-space: nowrap; cursor: pointer; }
 .availability-tabs button.active, .availability-tabs button:hover { border-color: rgba(16,185,129,.32); color: var(--green-dark); background: var(--green-pale); }
 .availability-tabs .ghost-button { margin-left: auto; }
+.availability-staffing-source { margin: -3px 12px 8px; color: var(--muted); font-size: 9.5px; font-weight: 680; }
 .availability-results { padding: 0 12px 12px; display: grid; gap: 8px; }
 .availability-results.is-new .availability-card { border-color: rgba(16,185,129,.28); box-shadow: 0 8px 22px rgba(16,185,129,.07); }
 .availability-card { border: 1px solid var(--line); border-radius: 12px; padding: 10px; background: rgba(255,255,255,.92); box-shadow: 0 4px 14px rgba(14,165,233,.035); }
@@ -628,6 +636,12 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .availability-card h3 { margin: 0; color: var(--blue-title); font-size: 14px; line-height: 1.15; }
 .availability-card p { margin: 3px 0 0; color: var(--muted); font-size: 11px; }
 .availability-card-header > span { border-radius: 999px; padding: 4px 8px; color: var(--green-dark); background: var(--green-pale); font-size: 10px; font-weight: 900; white-space: nowrap; }
+.availability-staffing-status { margin-top: 7px; padding: 6px 8px; border: 1px solid rgba(16,185,129,.24); border-radius: 9px; background: var(--green-pale); display: grid; gap: 3px; }
+.availability-staffing-status.has-assignment { border-color: rgba(190,24,93,.24); background: var(--red-pale); }
+.availability-staffing-status strong { color: var(--green-dark); font-size: 9.5px; text-transform: uppercase; letter-spacing: .035em; }
+.availability-staffing-status.has-assignment strong { color: var(--red); }
+.availability-staffing-status span { color: var(--ink); font-size: 10px; }
+.availability-staffing-status .school-admin-link { font-weight: 800; }
 .availability-slots { margin-top: 8px; display: grid; gap: 5px; }
 .availability-slots div { display: grid; grid-template-columns: 120px minmax(0, 1fr) auto; gap: 8px; align-items: center; border: 1px solid rgba(213,231,239,.72); border-radius: 9px; padding: 6px 8px; background: rgba(244,251,252,.48); }
 .availability-slots strong { color: var(--blue-dark); font-size: 11px; }
@@ -1289,6 +1303,7 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .availability-history-list .text-button { grid-column: 1 / -1; justify-self: start; }
   .availability-tabs { padding: 0 8px 8px; }
   .availability-tabs .ghost-button { margin-left: 0; }
+  .availability-staffing-source { margin: -2px 8px 7px; }
   .availability-results { padding: 0 8px 8px; }
   .availability-card { padding: 8px; border-radius: 10px; }
   .availability-card-header { flex-direction: column; gap: 6px; }
