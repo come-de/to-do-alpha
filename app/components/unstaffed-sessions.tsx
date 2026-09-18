@@ -202,6 +202,7 @@ export default function UnstaffedSessions() {
   const [schoolAssignments, setSchoolAssignments] = useState<SchoolAssignment[]>([]);
   const [deselectedNewSchoolIds, setDeselectedNewSchoolIds] = useState<string[]>([]);
   const [schoolOwnerFilter, setSchoolOwnerFilter] = useState<SchoolOwnerFilter>(initialOwnerFilter);
+  const [showHiddenItems, setShowHiddenItems] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -321,6 +322,29 @@ export default function UnstaffedSessions() {
     });
     return { interestsBySession, availabilityBySession, assignmentsByTutorDate, currentTutorIds };
   }, [activeAssignmentImport, activeAvailabilityImport, activeInterestImport, latestTutorSnapshot]);
+  const hiddenItems = useMemo(() => {
+    const sessionsById = new Map<string, UpcomingSession>();
+    imports.forEach((item) => item.rows.forEach((row) => {
+      if (!sessionsById.has(row.sessionId)) sessionsById.set(row.sessionId, row);
+    }));
+    const peopleBySourceKey = new Map<string, { firstName: string; lastName: string; phone: string }>();
+    interestImports.forEach((item) => item.rows.forEach((row) => {
+      const key = sourceExclusionKey(row.sessionId, row.personId, "interest");
+      if (!peopleBySourceKey.has(key)) peopleBySourceKey.set(key, row);
+    }));
+    availabilityImports.forEach((item) => item.rows.forEach((row) => {
+      const key = sourceExclusionKey(row.sessionId, row.tutorId, "availability");
+      if (!peopleBySourceKey.has(key)) peopleBySourceKey.set(key, row);
+    }));
+    return {
+      sessions: exclusions.sessionIds.map((sessionId) => ({ sessionId, session: sessionsById.get(sessionId) })),
+      sources: exclusions.sourceKeys.map((key) => {
+        const [sessionId = "", personId = "", rawSource = ""] = key.split(":");
+        const source = rawSource === "interest" ? "interest" as const : "availability" as const;
+        return { key, sessionId, personId, source, person: peopleBySourceKey.get(key), session: sessionsById.get(sessionId) };
+      }),
+    };
+  }, [availabilityImports, exclusions.sessionIds, exclusions.sourceKeys, imports, interestImports]);
   const enrichedRows = useMemo(() => visibleRows.map((session): EnrichedSession => {
     const candidates = new Map<string, SessionCandidate>();
     const addCandidate = (personId: string, firstName: string, lastName: string, phone: string, source: "interest" | "availability", validatedInterest = false) => {
@@ -459,6 +483,20 @@ export default function UnstaffedSessions() {
     void saveExclusions({ sessionIds: [], sourceKeys: [], updatedAt: "" }, "Tous les éléments masqués sont de nouveau visibles");
   }
 
+  function restoreSession(sessionId: string) {
+    void saveExclusions(
+      { ...exclusions, sessionIds: exclusions.sessionIds.filter((id) => id !== sessionId) },
+      `Séance #${sessionId} réaffichée`,
+    );
+  }
+
+  function restoreCandidateSource(key: string, source: "interest" | "availability") {
+    void saveExclusions(
+      { ...exclusions, sourceKeys: exclusions.sourceKeys.filter((item) => item !== key) },
+      `${source === "interest" ? "Intérêt" : "Disponibilité"} réaffiché${source === "interest" ? "" : "e"}`,
+    );
+  }
+
   function toggleCategory(category: SessionCategoryKey) {
     setSelectedCategories((current) => current.includes(category) ? current.filter((item) => item !== category) : [...current, category]);
   }
@@ -500,10 +538,18 @@ export default function UnstaffedSessions() {
     <div className="panel-heading">
       <div><p className="eyebrow">Pilotage des deux semaines</p><h2>Séances non affectées</h2><p>Une ligne par séance, sans nom d’élève. Les classes sont regroupées automatiquement.</p></div>
       <div className="filters">
-        {exclusions.sessionIds.length + exclusions.sourceKeys.length > 0 ? <button type="button" className="button quiet" onClick={restoreAllExclusions} disabled={saving}>Réafficher les éléments masqués ({exclusions.sessionIds.length + exclusions.sourceKeys.length})</button> : null}
+        {exclusions.sessionIds.length + exclusions.sourceKeys.length > 0 ? <button type="button" className={`button quiet ${showHiddenItems ? "active" : ""}`} onClick={() => setShowHiddenItems((current) => !current)} disabled={saving}>{showHiddenItems ? "Fermer les éléments masqués" : "Voir les éléments masqués"} ({exclusions.sessionIds.length + exclusions.sourceKeys.length})</button> : null}
         <button type="button" className="ghost-button" onClick={() => void load()} disabled={saving}>↻ Actualiser</button>
       </div>
     </div>
+
+    {showHiddenItems && exclusions.sessionIds.length + exclusions.sourceKeys.length > 0 ? <section className="unstaffed-hidden-panel">
+      <div className="unstaffed-hidden-heading"><div><p className="eyebrow">Exclusions durables</p><h3>Éléments masqués</h3><p>Ils restent masqués lors des prochains imports jusqu’à leur réactivation.</p></div><button type="button" className="button quiet" onClick={restoreAllExclusions} disabled={saving}>Tout réafficher</button></div>
+      <div className="unstaffed-hidden-columns">
+        <div><h4>Séances masquées <span>{hiddenItems.sessions.length}</span></h4>{hiddenItems.sessions.length ? <div className="unstaffed-hidden-list">{hiddenItems.sessions.map(({ sessionId, session }) => <article key={sessionId}><div><strong>#{sessionId}{session?.startTime ? ` · ${session.startTime}–${session.endTime}` : ""}</strong><span>{session ? <SchoolAdminLink schoolId={session.schoolId}>{session.school}</SchoolAdminLink> : "Séance absente des imports conservés"}</span>{session ? <small>{formatDate(session.date, true)} · {session.category || "Catégorie non précisée"}</small> : null}</div><button type="button" onClick={() => restoreSession(sessionId)} disabled={saving}>Réafficher</button></article>)}</div> : <p>Aucune séance masquée.</p>}</div>
+        <div><h4>Disponibilités et intérêts masqués <span>{hiddenItems.sources.length}</span></h4>{hiddenItems.sources.length ? <div className="unstaffed-hidden-list">{hiddenItems.sources.map((item) => <article key={item.key}><div><strong>{item.source === "interest" ? "Intérêt" : "Disponibilité"} · {item.person ? `${item.person.firstName} ${item.person.lastName}`.trim() || `ID ${item.personId}` : `ID ${item.personId}`}</strong><span>Séance #{item.sessionId}{item.session ? <> · <SchoolAdminLink schoolId={item.session.schoolId}>{item.session.school}</SchoolAdminLink></> : ""}</span><small>{item.person?.phone || "Coordonnées non disponibles dans les imports conservés"}</small></div><button type="button" onClick={() => restoreCandidateSource(item.key, item.source)} disabled={saving}>Réafficher</button></article>)}</div> : <p>Aucune disponibilité ni aucun intérêt masqué.</p>}</div>
+      </div>
+    </section> : null}
 
     <div className="unstaffed-toolbar">
       <label className="import-button">Importer le fichier CSV<input type="file" accept=".csv,text/csv" disabled={saving} onChange={(event) => { void upload(event.target.files?.[0]); event.currentTarget.value = ""; }} /></label>

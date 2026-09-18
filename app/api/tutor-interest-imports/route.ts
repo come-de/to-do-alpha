@@ -3,6 +3,7 @@ import {
   createTutorInterestImportFromCsv,
   deleteTutorInterestImportById,
   readTutorInterestImports,
+  readTutorInterestImportById,
   readTutorInterestImportSummaries,
   updateTutorInterestImportName,
 } from "@/app/lib/shared-data";
@@ -16,7 +17,13 @@ function json(data: unknown, status = 200) {
 
 export async function GET(request: Request) {
   try {
-    const summaryOnly = new URL(request.url).searchParams.get("summary") === "1";
+    const searchParams = new URL(request.url).searchParams;
+    const id = searchParams.get("id");
+    if (id) {
+      const selectedImport = await readTutorInterestImportById(id);
+      return selectedImport ? json({ import: selectedImport }) : json({ error: "Import introuvable" }, 404);
+    }
+    const summaryOnly = searchParams.get("summary") === "1";
     return json({ imports: summaryOnly ? await readTutorInterestImportSummaries() : await readTutorInterestImports() });
   } catch (error) {
     const detail = error instanceof Error ? error.message : "Impossible de charger les intérêts";

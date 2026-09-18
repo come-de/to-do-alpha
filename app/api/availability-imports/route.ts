@@ -3,6 +3,7 @@ import {
   createAvailabilityImportFromCsv,
   deleteAvailabilityImportById,
   readAvailabilityImports,
+  readAvailabilityImportById,
   readAvailabilityImportSummaries,
   readAvailabilityRawCsv,
   sanitizeAvailabilityImport,
@@ -37,6 +38,10 @@ export async function GET(request: Request) {
         },
       });
     }
+    if (rawImportId) {
+      const selectedImport = await readAvailabilityImportById(rawImportId);
+      return selectedImport ? json({ import: selectedImport }) : json({ error: "Import introuvable" }, 404);
+    }
     if (url.searchParams.get("summary") === "1") {
       return json({ imports: await readAvailabilityImportSummaries() });
     }
@@ -55,7 +60,7 @@ export async function POST(request: Request) {
       fileName: typeof body.fileName === "string" ? body.fileName : "disponibilites.csv",
       rawCsv: body.rawCsv,
     });
-    return json({ import: createdImport, imports: await readAvailabilityImports() }, 201);
+    return json({ import: createdImport, imports: await readAvailabilityImportSummaries() }, 201);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to import availability CSV";
     return json({ error: "Unable to import availability CSV", detail: message }, 500);

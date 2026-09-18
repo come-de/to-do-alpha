@@ -2436,6 +2436,28 @@ export async function readAvailabilityImportSummaries() {
   return (await readAvailabilityIndex()).map((item) => ({ ...item, rows: [], rawCsv: "" }));
 }
 
+export async function readAvailabilityImportById(id: string) {
+  const cleanedId = cleanText(id);
+  if (!cleanedId) return null;
+  try {
+    const store = taskStore();
+    const selected = (await readAvailabilityIndex()).find((item) => item.id === cleanedId);
+    if (!selected) return null;
+    if (selected.rows.length) return selected;
+    const rows = await store.get(availabilityRowsKey(selected.id), { type: "json", consistency: "strong" });
+    return {
+      ...selected,
+      rows: Array.isArray(rows)
+        ? rows.filter((row): row is Record<string, unknown> => Boolean(row && typeof row === "object")).map(sanitizeAvailabilityRow).filter((row) => row.tutorId && row.date)
+        : [],
+      rawCsv: "",
+    };
+  } catch (error) {
+    if (!canUseMemoryFallback()) throw error;
+    return (memory.__petitSuiviAvailabilityImports ?? []).find((item) => item.id === cleanedId) ?? null;
+  }
+}
+
 export async function createAvailabilityImportFromCsv(input: { fileName: string; rawCsv: string }) {
   const now = new Date().toISOString();
   const rows = parseAvailabilityCsv(input.rawCsv);
@@ -2852,6 +2874,27 @@ export async function readTutorInterestImportSummaries() {
   } catch (error) {
     if (!canUseMemoryFallback()) throw error;
     return (memory.__petitSuiviTutorInterestImports ?? []).map((item) => ({ ...item, rows: [] }));
+  }
+}
+
+export async function readTutorInterestImportById(id: string) {
+  const cleanedId = cleanText(id);
+  if (!cleanedId) return null;
+  try {
+    const store = taskStore();
+    const selected = (await readTutorInterestIndex()).find((item) => item.id === cleanedId);
+    if (!selected) return null;
+    if (selected.rows.length) return selected;
+    const rows = await store.get(tutorInterestRowsKey(selected.id), { type: "json", consistency: "strong" });
+    return {
+      ...selected,
+      rows: Array.isArray(rows)
+        ? rows.filter((row): row is Record<string, unknown> => Boolean(row && typeof row === "object")).map(sanitizeTutorInterestRow).filter((row) => row.personId && row.sessionId && row.date)
+        : [],
+    };
+  } catch (error) {
+    if (!canUseMemoryFallback()) throw error;
+    return (memory.__petitSuiviTutorInterestImports ?? []).find((item) => item.id === cleanedId) ?? null;
   }
 }
 
