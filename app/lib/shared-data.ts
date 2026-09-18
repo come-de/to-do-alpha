@@ -1537,10 +1537,31 @@ function isStaffingAuditResolution(value: unknown): value is StaffingAuditResolu
   return value === "" || value === "staffed" || value === "unstaffed";
 }
 
+function normalizeStaffingAuditDate(value: unknown) {
+  const raw = cleanText(value);
+  if (!raw) return "";
+  const isoMatch = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T\s].*)?$/);
+  const frenchMatch = raw.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})(?:[T\s].*)?$/);
+  const parts = isoMatch
+    ? { year: Number(isoMatch[1]), month: Number(isoMatch[2]), day: Number(isoMatch[3]) }
+    : frenchMatch
+      ? { year: Number(frenchMatch[3]), month: Number(frenchMatch[2]), day: Number(frenchMatch[1]) }
+      : null;
+  if (!parts) return "";
+  const candidate = new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
+  if (
+    candidate.getUTCFullYear() !== parts.year
+    || candidate.getUTCMonth() !== parts.month - 1
+    || candidate.getUTCDate() !== parts.day
+  ) return "";
+  return `${String(parts.year).padStart(4, "0")}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}`;
+}
+
 export function sanitizeStaffingAuditSession(raw: Record<string, unknown>): StaffingAuditSession {
+  const rawDate = cleanText(raw.date);
   return {
     sessionId: cleanText(raw.sessionId),
-    date: cleanText(raw.date),
+    date: normalizeStaffingAuditDate(rawDate) || rawDate,
     school: cleanText(raw.school),
     schoolId: cleanText(raw.schoolId),
     sourceRowCount: raw.sourceRowCount === undefined || raw.sourceRowCount === null || raw.sourceRowCount === ""
@@ -1556,8 +1577,9 @@ export function sanitizeStaffingAuditSession(raw: Record<string, unknown>): Staf
 
 export function sanitizeStaffingAuditDay(raw: Record<string, unknown>): StaffingAuditDay {
   const now = new Date().toISOString();
+  const rawDate = cleanText(raw.date);
   return {
-    date: cleanText(raw.date),
+    date: normalizeStaffingAuditDate(rawDate) || rawDate,
     sourceFileName: cleanText(raw.sourceFileName) || "rapports.csv",
     sourceRowCount: Math.max(0, Math.round(Number(raw.sourceRowCount) || 0)),
     sessions: Array.isArray(raw.sessions)
@@ -1570,7 +1592,7 @@ export function sanitizeStaffingAuditDay(raw: Record<string, unknown>): Staffing
 
 export function parseStaffingAuditCsv(value: string, fileName: string, schools: School[]) {
   const csvRows = parseCsvRows(value).filter((row) => row.some(Boolean));
-  if (!csvRows.length) return [] as StaffingAuditDay[];
+  if (!csvRows.length) return { days: [] as StaffingAuditDay[], invalidDateRowCount: 0 };
   const headers = csvRows[0].map(normalizedHeader);
   const indexFor = (aliases: string[]) => {
     for (const alias of aliases) {
@@ -1590,10 +1612,17 @@ export function parseStaffingAuditCsv(value: string, fileName: string, schools: 
   type Accumulator = { sessionId: string; date: string; school: string; sourceRowCount: number; tutors: Map<string, string>; tutorKeyByName: Map<string, string> };
   const sessions = new Map<string, Accumulator>();
   const rows = csvRows.slice(1);
+  const rowCountByDate = new Map<string, number>();
+  let invalidDateRowCount = 0;
   rows.forEach((row) => {
-    const date = cleanText(row[dateIndex]);
+    const date = normalizeStaffingAuditDate(row[dateIndex]);
     const sessionId = cleanText(row[sessionIdIndex]);
-    if (!date || !sessionId) return;
+    if (!date) {
+      invalidDateRowCount += 1;
+      return;
+    }
+    rowCountByDate.set(date, (rowCountByDate.get(date) || 0) + 1);
+    if (!sessionId) return;
     const key = `${date}:${sessionId}`;
     const school = cleanText(row[schoolIndex]);
     const firstName = tutorFirstNameIndex >= 0 ? cleanText(row[tutorFirstNameIndex]) : "";
@@ -1634,14 +1663,15 @@ export function parseStaffingAuditCsv(value: string, fileName: string, schools: 
     });
     byDate.set(item.date, [...(byDate.get(item.date) ?? []), session]);
   });
-  return Array.from(byDate.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([date, daySessions]) => sanitizeStaffingAuditDay({
-    date,
-    sourceFileName: fileName,
-    sourceRowCount: rows.filter((row) => cleanText(row[dateIndex]) === date).length,
-    sessions: daySessions.sort((a, b) => a.school.localeCompare(b.school, "fr") || a.sessionId.localeCompare(b.sessionId)),
-    createdAt: now,
-    updatedAt: now,
-  }));
+  const days = Array.from(byDate.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([date, daySessions]) => sanitizeStaffingAuditDay({
+      date,
+      sourceFileName: fileName,
+      sourceRowCount: rowCountByDate.get(date) || 0,
+      sessions: daySessions.sort((a, b) => a.school.localeCompare(b.school, "fr") || a.sessionId.localeCompare(b.sessionId)),
+      createdAt: now,
+      updatedAt: now,
+    }));
+  return { days, invalidDateRowCount };
 }
 
 export function enrichStaffingAuditDaysWithSchools(days: StaffingAuditDay[], schools: School[]) {

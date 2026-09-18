@@ -6,9 +6,25 @@ import type { SchoolPortfolioOwner, StaffingAuditDay, StaffingAuditResolution, S
 const ownerLabels: Record<SchoolPortfolioOwner, string> = { "": "Non attribué", kelly: "Kelly", pierre: "Pierre", julie: "Julie" };
 const owners: SchoolPortfolioOwner[] = ["kelly", "pierre", "julie", ""];
 
+function staffingAuditDate(value: string) {
+  const isoMatch = value.trim().match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T\s].*)?$/);
+  const frenchMatch = value.trim().match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})(?:[T\s].*)?$/);
+  const year = Number(isoMatch?.[1] ?? frenchMatch?.[3]);
+  const month = Number(isoMatch?.[2] ?? frenchMatch?.[2]);
+  const day = Number(isoMatch?.[3] ?? frenchMatch?.[1]);
+  if (!year || !month || !day) return null;
+  const date = new Date(year, month - 1, day, 12);
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day ? date : null;
+}
+
 function formatDate(value: string) {
-  const date = new Date(`${value}T12:00:00`);
-  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(date);
+  const date = staffingAuditDate(value);
+  return date ? new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(date) : value || "Date inconnue";
+}
+
+function formatShortDate(value: string) {
+  const date = staffingAuditDate(value);
+  return date ? new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }).format(date) : value || "Date inconnue";
 }
 
 function effectiveStatus(session: StaffingAuditSession) {
@@ -39,7 +55,7 @@ export default function StaffingAudit() {
   const load = useCallback(async (silent = false) => {
     try {
       const response = await fetch("/api/staffing-audits", { cache: "no-store" });
-      const data = await response.json() as { days?: StaffingAuditDay[]; error?: string; detail?: string };
+      const data = await response.json() as { days?: StaffingAuditDay[]; invalidDateRowCount?: number; error?: string; detail?: string };
       if (!response.ok) throw new Error(data.detail || data.error || "Chargement impossible");
       const days = data.days ?? [];
       setSavedDays(days);
@@ -71,13 +87,16 @@ export default function StaffingAudit() {
     setMessage("Analyse du fichier…");
     try {
       const response = await fetch(`/api/staffing-audits?fileName=${encodeURIComponent(file.name)}`, { method: "POST", headers: { "Content-Type": "text/csv;charset=utf-8" }, body: await file.text() });
-      const data = await response.json() as { days?: StaffingAuditDay[]; error?: string; detail?: string };
+      const data = await response.json() as { days?: StaffingAuditDay[]; invalidDateRowCount?: number; error?: string; detail?: string };
       if (!response.ok) throw new Error(data.detail || data.error || "Analyse impossible");
       const days = data.days ?? [];
       setDraftDays(days);
       setView("draft");
       setSelectedDate(days[0]?.date || "");
-      setMessage(`${days.reduce((sum, day) => sum + day.sessions.length, 0)} séances uniques détectées sur ${days.length} date${days.length > 1 ? "s" : ""}`);
+      const ignoredDateMessage = data.invalidDateRowCount
+        ? ` · ${data.invalidDateRowCount} ligne${data.invalidDateRowCount > 1 ? "s" : ""} ignorée${data.invalidDateRowCount > 1 ? "s" : ""} car la date est illisible`
+        : "";
+      setMessage(`${days.reduce((sum, day) => sum + day.sessions.length, 0)} séances uniques détectées sur ${days.length} date${days.length > 1 ? "s" : ""}${ignoredDateMessage}`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Analyse impossible");
     } finally {
@@ -155,7 +174,7 @@ export default function StaffingAudit() {
       {draftDays.length ? <button type="button" className={view === "draft" ? "active" : ""} onClick={() => { setView("draft"); setSelectedDate(draftDays[0]?.date || ""); }}>Import en cours ({draftDays.length})</button> : null}
       <button type="button" className={view === "history" ? "active" : ""} onClick={() => { setView("history"); setSelectedDate(savedDays[0]?.date || ""); }}>Historique ({savedDays.length})</button>
     </div>
-    <div className="staffing-audit-date-tabs">{(view === "draft" ? draftDays : savedDays).map((day) => <button type="button" className={selectedDate === day.date ? "active" : ""} onClick={() => setSelectedDate(day.date)} key={day.date}>{new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(`${day.date}T12:00:00`))}{savedDays.some((saved) => saved.date === day.date) && view === "draft" ? <small>déjà enregistré</small> : null}</button>)}</div>
+    <div className="staffing-audit-date-tabs">{(view === "draft" ? draftDays : savedDays).map((day) => <button type="button" className={selectedDate === day.date ? "active" : ""} onClick={() => setSelectedDate(day.date)} key={day.date}>{formatShortDate(day.date)}{savedDays.some((saved) => saved.date === day.date) && view === "draft" ? <small>déjà enregistré</small> : null}</button>)}</div>
     {activeDay ? <>
       <div className="staffing-audit-day-heading"><div><strong>{formatDate(activeDay.date)}</strong><span>{activeDay.sessions.length} séances uniques · source : {activeDay.sourceFileName}</span></div>{view === "draft" ? <button type="button" className="button primary" onClick={() => void saveDay()} disabled={saving}>Enregistrer cette journée</button> : <span>Enregistré le {new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short" }).format(new Date(activeDay.updatedAt))}</span>}</div>
       <div className="staffing-audit-summary"><div className="head"><span>Responsable RH</span><span>Staffées</span><span>Non staffées</span><span>À vérifier</span><span>Total</span></div>{summary.map((row) => <div className="row" key={row.owner || "unassigned"}><strong>{ownerLabels[row.owner]}</strong><span>{row.staffed}</span><span className="danger">{row.unstaffed}</span><span className="warning">{row.ambiguous}</span><span>{row.total}</span></div>)}</div>

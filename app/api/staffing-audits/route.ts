@@ -31,9 +31,14 @@ export async function POST(request: Request) {
     const url = new URL(request.url);
     const rawCsv = await request.text();
     if (!rawCsv.trim()) return json({ error: "Fichier CSV vide" }, 400);
-    const days = parseStaffingAuditCsv(rawCsv, url.searchParams.get("fileName") || "rapports.csv", await readSchools());
-    if (!days.length) return json({ error: "Aucune séance exploitable trouvée" }, 400);
-    return json({ days });
+    const parsed = parseStaffingAuditCsv(rawCsv, url.searchParams.get("fileName") || "rapports.csv", await readSchools());
+    if (!parsed.days.length) {
+      const detail = parsed.invalidDateRowCount
+        ? `${parsed.invalidDateRowCount} ligne(s) possèdent une date vide ou illisible. Formats acceptés : JJ/MM/AAAA, JJ-MM-AAAA ou AAAA-MM-JJ.`
+        : "Vérifiez que les colonnes Date et Semaine réelle contiennent des valeurs.";
+      return json({ error: "Aucune séance exploitable trouvée", detail }, 400);
+    }
+    return json({ days: parsed.days, invalidDateRowCount: parsed.invalidDateRowCount });
   } catch (error) {
     const detail = error instanceof Error ? error.message : "Impossible d’analyser le fichier";
     return json({ error: "Impossible d’analyser le fichier", detail }, 400);
