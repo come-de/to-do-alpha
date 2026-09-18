@@ -291,22 +291,45 @@ export default function UnstaffedSessions() {
   }, [activeImport, schoolAssignments]);
   const schoolsWithoutId = useMemo(() => (activeImport?.schools ?? []).filter((school) => !school.schoolId), [activeImport]);
   const selectedNewSchoolIds = useMemo(() => newSchoolCandidates.map((school) => school.schoolId).filter((schoolId) => !deselectedNewSchoolIds.includes(schoolId)), [deselectedNewSchoolIds, newSchoolCandidates]);
-  const filteredRowsBeforeSingleStudentRule = useMemo(() => {
+  const filteredRowsBeforeDateAndOwner = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase("fr");
     return (activeImport?.rows ?? []).filter((row) => {
       if (exclusions.sessionIds.includes(row.sessionId)) return false;
-      const owner = ownerForSession(row);
-      if (schoolOwnerFilter === "unassigned" ? Boolean(owner) : schoolOwnerFilter !== "all" && owner !== schoolOwnerFilter) return false;
-      if (selectedDate !== "all" && row.date !== selectedDate) return false;
       if (!selectedCategories.includes(sessionCategoryKey(row.category))) return false;
       if (!needle) return true;
       return [row.school, row.schoolId, row.category, row.group, row.room, row.sessionId, ...row.classes].join(" ").toLocaleLowerCase("fr").includes(needle);
     });
-  }, [activeImport, exclusions.sessionIds, ownerForSession, query, schoolOwnerFilter, selectedCategories, selectedDate]);
+  }, [activeImport, exclusions.sessionIds, query, selectedCategories]);
+  const filteredRowsBeforeSingleStudentRule = useMemo(() => filteredRowsBeforeDateAndOwner.filter((row) => {
+    const owner = ownerForSession(row);
+    if (schoolOwnerFilter === "unassigned" ? Boolean(owner) : schoolOwnerFilter !== "all" && owner !== schoolOwnerFilter) return false;
+    return selectedDate === "all" || row.date === selectedDate;
+  }), [filteredRowsBeforeDateAndOwner, ownerForSession, schoolOwnerFilter, selectedDate]);
   const visibleRows = useMemo(() => filteredRowsBeforeSingleStudentRule.filter((row) => {
     const isSingleStudentAlpha = sessionCategoryKey(row.category) === "alpha" && row.studentCount === 1;
     return !isSingleStudentAlpha || shownSingleStudentAlphaDates.includes(row.date);
   }), [filteredRowsBeforeSingleStudentRule, shownSingleStudentAlphaDates]);
+  const matrixVisibleRows = useMemo(() => filteredRowsBeforeDateAndOwner.filter((row) => {
+    const isSingleStudentAlpha = sessionCategoryKey(row.category) === "alpha" && row.studentCount === 1;
+    return !isSingleStudentAlpha || shownSingleStudentAlphaDates.includes(row.date);
+  }), [filteredRowsBeforeDateAndOwner, shownSingleStudentAlphaDates]);
+  const unstaffedMatrix = useMemo(() => {
+    const matrixOwners: SchoolPortfolioOwner[] = ["", "kelly", "pierre", "julie"];
+    const buildCounts = (rows: UpcomingSession[]) => {
+      const counts: Record<SchoolPortfolioOwner, number> = { "": 0, kelly: 0, pierre: 0, julie: 0 };
+      rows.forEach((row) => { counts[ownerForSession(row)] += 1; });
+      return counts;
+    };
+    return {
+      owners: matrixOwners,
+      totals: buildCounts(matrixVisibleRows),
+      total: matrixVisibleRows.length,
+      rows: dates.map((date) => {
+        const dayRows = matrixVisibleRows.filter((row) => row.date === date);
+        return { date, counts: buildCounts(dayRows), total: dayRows.length };
+      }),
+    };
+  }, [dates, matrixVisibleRows, ownerForSession]);
   const sourceIndexes = useMemo(() => {
     const interestsBySession = new Map<string, TutorInterest[]>();
     const availabilityBySession = new Map<string, Availability[]>();
@@ -507,16 +530,6 @@ export default function UnstaffedSessions() {
     setShownSingleStudentAlphaDates((current) => current.includes(date) ? current.filter((item) => item !== date) : [...current, date]);
   }
 
-  function visibleCountForDate(date: string) {
-    return (activeImport?.rows ?? []).filter((row) => {
-      const owner = ownerForSession(row);
-      if (row.date !== date || exclusions.sessionIds.includes(row.sessionId) || !selectedCategories.includes(sessionCategoryKey(row.category))) return false;
-      if (schoolOwnerFilter === "unassigned" ? Boolean(owner) : schoolOwnerFilter !== "all" && owner !== schoolOwnerFilter) return false;
-      const hiddenSingleStudentAlpha = sessionCategoryKey(row.category) === "alpha" && row.studentCount === 1 && !shownSingleStudentAlphaDates.includes(date);
-      return !hiddenSingleStudentAlpha;
-    }).length;
-  }
-
   function exportCsv() {
     const rows = [["Date", "Début", "Fin", "Établissement", "Catégorie", "Groupe", "Classes", "Nombre d’élèves", "Salle", "ID séance", "Personnes mobilisables", "Statuts", "Référence tuteurs", "Sources", "Autres séances du jour"]];
     enrichedRows.forEach((row) => rows.push([
@@ -597,10 +610,13 @@ export default function UnstaffedSessions() {
         <div><span>Personnes distinctes</span><strong>{uniqueCandidateCount}</strong></div>
         <small>Source : {activeImport.sourceRowCount} lignes · {activeImport.sourceSessionCount} séances distinctes</small>
       </div>
-      <div className="unstaffed-date-tabs" role="group" aria-label="Filtrer par jour">
-        <button className={selectedDate === "all" ? "active" : ""} onClick={() => setSelectedDate("all")}>Tous <b>{dates.reduce((sum, date) => sum + visibleCountForDate(date), 0)}</b></button>
-        {dates.map((date) => <button key={date} className={selectedDate === date ? "active" : ""} onClick={() => setSelectedDate(date)}>{formatDate(date)} <b>{visibleCountForDate(date)}</b></button>)}
-      </div>
+      <section className="unstaffed-rh-matrix">
+        <div className="unstaffed-rh-matrix-heading"><div><strong>Séances non staffées par jour et par RH</strong><span>Cliquez sur une date ou un chiffre pour afficher le détail correspondant en dessous.</span></div>{selectedDate !== "all" || schoolOwnerFilter !== "all" ? <button type="button" onClick={() => { setSelectedDate("all"); setSchoolOwnerFilter("all"); }}>Réinitialiser la sélection</button> : null}</div>
+        <div className="unstaffed-rh-matrix-scroll"><table><thead><tr><th>Date</th>{unstaffedMatrix.owners.map((owner) => <th key={owner || "unassigned"}>{schoolOwnerLabels[owner]}</th>)}<th>Total</th></tr></thead><tbody>
+          <tr className="total-row"><th><button type="button" className={selectedDate === "all" && schoolOwnerFilter === "all" ? "active" : ""} onClick={() => { setSelectedDate("all"); setSchoolOwnerFilter("all"); }}>Toutes les dates</button></th>{unstaffedMatrix.owners.map((owner) => <td key={owner || "unassigned"}><button type="button" className={selectedDate === "all" && schoolOwnerFilter === (owner || "unassigned") ? "active" : ""} onClick={() => { setSelectedDate("all"); setSchoolOwnerFilter(owner || "unassigned"); }}>{unstaffedMatrix.totals[owner]}</button></td>)}<td><button type="button" className={selectedDate === "all" && schoolOwnerFilter === "all" ? "active" : ""} onClick={() => { setSelectedDate("all"); setSchoolOwnerFilter("all"); }}>{unstaffedMatrix.total}</button></td></tr>
+          {unstaffedMatrix.rows.map((row) => <tr key={row.date}><th><button type="button" className={selectedDate === row.date && schoolOwnerFilter === "all" ? "active" : ""} onClick={() => { setSelectedDate(row.date); setSchoolOwnerFilter("all"); }}>{formatDate(row.date, true)}</button></th>{unstaffedMatrix.owners.map((owner) => <td key={owner || "unassigned"}><button type="button" className={selectedDate === row.date && schoolOwnerFilter === (owner || "unassigned") ? "active" : ""} onClick={() => { setSelectedDate(row.date); setSchoolOwnerFilter(owner || "unassigned"); }}>{row.counts[owner]}</button></td>)}<td><button type="button" className={selectedDate === row.date && schoolOwnerFilter === "all" ? "active" : ""} onClick={() => { setSelectedDate(row.date); setSchoolOwnerFilter("all"); }}>{row.total}</button></td></tr>)}
+        </tbody></table></div>
+      </section>
       <div className="owner-count-strip unstaffed-owner-counts">
         <span className="owner-count-title">Séances déjà staffées par responsable · {selectedDate === "all" ? "toutes les dates" : formatDate(selectedDate, true)}</span>
         {(["kelly", "pierre", "julie", ""] as SchoolPortfolioOwner[]).map((owner) => <div className={!owner ? "unassigned" : ""} key={owner || "unassigned"}><small>{schoolOwnerLabels[owner]}</small><strong>{staffedSessionsByOwner[owner]}</strong></div>)}
