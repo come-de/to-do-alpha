@@ -287,6 +287,7 @@ export type UpcomingSessionTutor = {
 
 export type UpcomingStaffingSession = {
   sessionId: string;
+  sourceRowCount: number;
   schoolId: string;
   school: string;
   category: string;
@@ -1382,6 +1383,7 @@ export function sanitizeUpcomingSessionTutor(raw: Record<string, unknown>): Upco
 export function sanitizeUpcomingStaffingSession(raw: Record<string, unknown>): UpcomingStaffingSession {
   return {
     sessionId: cleanText(raw.sessionId),
+    sourceRowCount: Math.max(0, Math.round(Number(raw.sourceRowCount) || 0)),
     schoolId: cleanText(raw.schoolId),
     school: cleanText(raw.school),
     category: cleanText(raw.category),
@@ -1428,7 +1430,7 @@ export function parseUpcomingSessionsCsv(value: string) {
     throw new Error("Colonnes ID séance, établissement, date ou ID tuteur introuvables dans le CSV");
   }
 
-  type SessionAccumulator = UpcomingSessionRow & { tutors: Map<string, UpcomingSessionTutor>; studentIds: Set<string>; classSet: Set<string>; declaredStudentCount: number };
+  type SessionAccumulator = UpcomingSessionRow & { sourceRowCount: number; tutors: Map<string, UpcomingSessionTutor>; studentIds: Set<string>; classSet: Set<string>; declaredStudentCount: number };
   type SchoolAccumulator = UpcomingSessionSchool & { categorySet: Set<string> };
   const sessions = new Map<string, SessionAccumulator>();
   const schools = new Map<string, SchoolAccumulator>();
@@ -1447,6 +1449,7 @@ export function parseUpcomingSessionsCsv(value: string) {
     if (!sessionId) return;
     const existing = sessions.get(sessionId) ?? {
       sessionId,
+      sourceRowCount: 0,
       schoolId,
       school: schoolName,
       category,
@@ -1464,6 +1467,7 @@ export function parseUpcomingSessionsCsv(value: string) {
       declaredStudentCount: 0,
     };
     const tutorId = valueAt(row, tutorIdIndex).trim();
+    existing.sourceRowCount += 1;
     const studentId = valueAt(row, studentIdIndex).trim();
     const className = valueAt(row, classIndex).trim();
     if (tutorId) {

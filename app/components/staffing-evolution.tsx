@@ -9,7 +9,7 @@ type Owner = "" | "kelly" | "pierre" | "julie";
 type OwnerFilter = "all" | "unassigned" | Exclude<Owner, "">;
 type ChangeKind = "replacements" | "additions" | "removals" | "appeared" | "disappeared";
 type SchoolRecord = { externalId: string; name: string; portfolioOwner: Owner };
-type SessionChange = { kind: ChangeKind; session: UpcomingStaffingSession; before: UpcomingSessionTutor[]; after: UpcomingSessionTutor[] };
+type SessionChange = { kind: ChangeKind; session: UpcomingStaffingSession; before: UpcomingSessionTutor[]; after: UpcomingSessionTutor[]; beforeSourceRowCount: number; afterSourceRowCount: number };
 
 const ownerLabels: Record<Owner, string> = { "": "Non attribué", kelly: "Kelly", pierre: "Pierre", julie: "Julie" };
 const kindLabels: Record<ChangeKind, string> = {
@@ -125,11 +125,11 @@ export default function StaffingEvolution() {
       const beforeSession = beforeSessions.get(sessionId);
       const afterSession = afterSessions.get(sessionId);
       if (beforeSession && !afterSession) {
-        items.push({ kind: "disappeared", session: beforeSession, before: beforeSession.tutors, after: [] });
+        items.push({ kind: "disappeared", session: beforeSession, before: beforeSession.tutors, after: [], beforeSourceRowCount: beforeSession.sourceRowCount, afterSourceRowCount: 0 });
         return;
       }
       if (!beforeSession && afterSession) {
-        items.push({ kind: "appeared", session: afterSession, before: [], after: afterSession.tutors });
+        items.push({ kind: "appeared", session: afterSession, before: [], after: afterSession.tutors, beforeSourceRowCount: 0, afterSourceRowCount: afterSession.sourceRowCount });
         return;
       }
       if (!beforeSession || !afterSession) return;
@@ -137,10 +137,10 @@ export default function StaffingEvolution() {
       const afterIds = new Set(afterSession.tutors.map((item) => item.tutorId));
       const added = afterSession.tutors.filter((item) => !beforeIds.has(item.tutorId));
       const removed = beforeSession.tutors.filter((item) => !afterIds.has(item.tutorId));
-      if (added.length && removed.length) items.push({ kind: "replacements", session: afterSession, before: removed, after: added });
+      if (added.length && removed.length) items.push({ kind: "replacements", session: afterSession, before: removed, after: added, beforeSourceRowCount: beforeSession.sourceRowCount, afterSourceRowCount: afterSession.sourceRowCount });
       else {
-        if (added.length) items.push({ kind: "additions", session: afterSession, before: [], after: added });
-        if (removed.length) items.push({ kind: "removals", session: beforeSession, before: removed, after: [] });
+        if (added.length) items.push({ kind: "additions", session: afterSession, before: [], after: added, beforeSourceRowCount: beforeSession.sourceRowCount, afterSourceRowCount: afterSession.sourceRowCount });
+        if (removed.length) items.push({ kind: "removals", session: beforeSession, before: removed, after: [], beforeSourceRowCount: beforeSession.sourceRowCount, afterSourceRowCount: afterSession.sourceRowCount });
       }
     });
     return items.sort((a, b) => `${a.session.date} ${a.session.startTime} ${a.session.school}`.localeCompare(`${b.session.date} ${b.session.startTime} ${b.session.school}`, "fr"));
@@ -186,9 +186,9 @@ export default function StaffingEvolution() {
   }
 
   function exportCsv() {
-    const rows = [["Évolution", "ID séance", "Date", "Horaire", "Établissement", "ID établissement", "Responsable RH", "Catégorie", "Avant", "Après"], ...filtered.map((item) => [
+    const rows = [["Évolution", "ID séance", "Date", "Horaire", "Établissement", "ID établissement", "Responsable RH", "Catégorie", "Lignes avant", "Lignes après", "Tuteurs avant", "Tuteurs après"], ...filtered.map((item) => [
       kindLabels[item.kind], item.session.sessionId, item.session.date, timeSlot(item.session), item.session.school, item.session.schoolId, ownerLabels[ownerFor(item.session)], item.session.category,
-      item.before.map((row) => `${tutorName(row)} (#${row.tutorId})`).join(" | "), item.after.map((row) => `${tutorName(row)} (#${row.tutorId})`).join(" | "),
+      item.beforeSourceRowCount, item.afterSourceRowCount, item.before.map((row) => `${tutorName(row)} (#${row.tutorId})`).join(" | "), item.after.map((row) => `${tutorName(row)} (#${row.tutorId})`).join(" | "),
     ])];
     const blob = new Blob([`\uFEFF${rows.map((row) => row.map(csvCell).join(";")).join("\n")}`], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -226,7 +226,7 @@ export default function StaffingEvolution() {
       const school = schoolFor(item.session);
       const renderTutors = (rows: UpcomingSessionTutor[]) => rows.length ? rows.map((row) => <span key={`${row.tutorId}-${row.phone}`}><PersonAdminLink personId={row.tutorId} status="tutor">{tutorName(row)}</PersonAdminLink><small>#{row.tutorId}{row.phone ? ` · ${row.phone}` : ""}</small></span>) : <em>Aucun tuteur</em>;
       return <article className={`staffing-evolution-card ${item.kind}`} key={`${item.kind}-${item.session.sessionId}-${index}`}>
-        <div className="staffing-evolution-session"><span>{fullDate(item.session.date)} · {timeSlot(item.session)} · #{item.session.sessionId}</span><strong><SchoolAdminLink schoolId={item.session.schoolId || school?.externalId}>{item.session.school || "Établissement non précisé"}</SchoolAdminLink></strong><small>{item.session.category || "Catégorie non précisée"} · RH : {ownerLabels[ownerFor(item.session)]}</small></div>
+        <div className="staffing-evolution-session"><span>{fullDate(item.session.date)} · {timeSlot(item.session)} · #{item.session.sessionId}</span><strong><SchoolAdminLink schoolId={item.session.schoolId || school?.externalId}>{item.session.school || "Établissement non précisé"}</SchoolAdminLink></strong><small>{item.session.category || "Catégorie non précisée"} · RH : {ownerLabels[ownerFor(item.session)]}</small><small className="staffing-evolution-row-count">Lignes : avant {item.beforeSourceRowCount || "—"} · après {item.afterSourceRowCount || "—"}</small></div>
         <div className="staffing-evolution-kind"><span>{kindLabels[item.kind]}</span></div>
         <div className="staffing-evolution-before"><b>Avant</b>{renderTutors(item.before)}</div>
         <div className="staffing-evolution-after"><b>Après</b>{renderTutors(item.after)}</div>

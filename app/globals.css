@@ -462,6 +462,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .enrollment-summary .positive strong, .enrollment-school-table .positive { color: #047857; }
 .enrollment-summary .negative { border-color: rgba(190,24,93,.22); background: var(--red-pale); }
 .enrollment-summary .negative strong, .enrollment-school-table .negative { color: var(--red); }
+.enrollment-scope-note { margin: 0 12px 8px; padding: 6px 9px; border: 1px solid rgba(16,185,129,.25); border-radius: 9px; background: var(--green-pale); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.enrollment-scope-note strong { color: var(--green-dark); font-size: 9px; }
+.enrollment-scope-note span { color: var(--muted); font-size: 8px; text-align: right; }
 .owner-count-strip { margin: 0 12px 8px; padding: 6px 8px; border: 1px solid rgba(14,165,233,.2); border-radius: 9px; background: linear-gradient(100deg, rgba(224,247,255,.58), rgba(236,253,245,.62)); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .owner-count-strip .owner-count-title { margin-right: auto; color: var(--blue-title); font-size: 9.5px; font-weight: 850; }
 .owner-count-strip > div { min-width: 72px; padding: 4px 7px; border: 1px solid rgba(16,185,129,.22); border-radius: 8px; background: rgba(255,255,255,.88); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -612,6 +615,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .staffing-evolution-session > span { color: var(--muted); font-size: 8px; text-transform: capitalize; }
 .staffing-evolution-session > strong { color: var(--blue-title); font-size: 10px; }
 .staffing-evolution-session > small { color: var(--muted); font-size: 7.5px; }
+.staffing-evolution-session > small.staffing-evolution-row-count { width: fit-content; margin-top: 2px; border-radius: 999px; padding: 2px 6px; color: var(--blue-dark); background: #eefaff; font-weight: 820; }
 .staffing-evolution-kind span { display: inline-flex; border-radius: 999px; padding: 4px 7px; color: var(--blue-dark); background: #eaf8ff; font-size: 7.5px; font-weight: 850; text-align: center; }
 .staffing-evolution-card.additions .staffing-evolution-kind span, .staffing-evolution-card.appeared .staffing-evolution-kind span { color: var(--green-dark); background: var(--green-pale); }
 .staffing-evolution-card.replacements .staffing-evolution-kind span { color: #6d28d9; background: #f3e8ff; }
@@ -1434,6 +1438,8 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .enrollment-controls { grid-template-columns: 1fr 1fr; margin: 0 8px 8px; }
   .enrollment-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0 8px 8px; }
   .enrollment-summary > div:last-child { grid-column: 1 / -1; }
+  .enrollment-scope-note { margin: 0 8px 8px; align-items: flex-start; flex-direction: column; }
+  .enrollment-scope-note span { text-align: left; }
   .enrollment-school-summary { margin: 0 8px 8px; }
   .enrollment-history .availability-history-list > div { grid-template-columns: minmax(0, 1fr) auto; }
   .enrollment-student-card { grid-template-columns: 1fr auto; }

@@ -5,7 +5,7 @@ import type { EnrollmentImport, EnrollmentRow } from "@/app/lib/shared-data";
 
 type ComparisonView = "new" | "lost" | "same";
 type SchoolPortfolioOwner = "" | "kelly" | "pierre" | "julie";
-type SchoolAssignment = { name: string; portfolioOwner: SchoolPortfolioOwner };
+type SchoolAssignment = { name: string; category: string; schoolType: "alpha" | "mise-a-dispo" | "mixed"; portfolioOwner: SchoolPortfolioOwner };
 
 const schoolOwnerLabels: Record<SchoolPortfolioOwner, string> = { "": "Non attribués", kelly: "Kelly", pierre: "Pierre", julie: "Julie" };
 
@@ -107,19 +107,29 @@ export default function EnrollmentComparison() {
 
   const referenceImport = imports.find((item) => item.id === referenceId) ?? null;
   const recentImport = imports.find((item) => item.id === recentId) ?? null;
+  const alphaSchoolKeys = useMemo(() => new Set(schoolAssignments
+    .filter((school) => school.schoolType === "alpha" || normalizeSchool(school.category).includes("etude alpha"))
+    .map((school) => normalizeSchool(school.name))), [schoolAssignments]);
+  const isAlphaStudent = useCallback((row: EnrollmentRow) => {
+    const schoolKey = normalizeSchool(row.school);
+    return alphaSchoolKeys.has(schoolKey) || schoolKey.includes("etude alpha");
+  }, [alphaSchoolKeys]);
+  const alphaRows = useCallback((rows: EnrollmentRow[]) => rows.filter(isAlphaStudent), [isAlphaStudent]);
 
   const schools = useMemo(() => {
     const labels = new Map<string, string>();
-    imports.flatMap((item) => item.rows).forEach((row) => {
+    imports.flatMap((item) => alphaRows(item.rows)).forEach((row) => {
       const key = normalizeSchool(row.school);
       if (key && !labels.has(key)) labels.set(key, row.school.trim());
     });
     return Array.from(labels.entries()).sort((a, b) => a[1].localeCompare(b[1], "fr"));
-  }, [imports]);
+  }, [alphaRows, imports]);
 
   const comparison = useMemo(() => {
-    const filterRows = (rows: EnrollmentRow[]) =>
-      schoolFilter === "all" ? rows : rows.filter((row) => normalizeSchool(row.school) === schoolFilter);
+    const filterRows = (rows: EnrollmentRow[]) => {
+      const scopedRows = alphaRows(rows);
+      return schoolFilter === "all" ? scopedRows : scopedRows.filter((row) => normalizeSchool(row.school) === schoolFilter);
+    };
     const referenceMap = studentMap(filterRows(referenceImport?.rows ?? []));
     const recentMap = studentMap(filterRows(recentImport?.rows ?? []));
     const newStudents = Array.from(recentMap.values()).filter((student) => !referenceMap.has(student.studentId));
@@ -133,7 +143,7 @@ export default function EnrollmentComparison() {
       lostStudents: sort(lostStudents),
       sameStudents: sort(sameStudents),
     };
-  }, [recentImport, referenceImport, schoolFilter]);
+  }, [alphaRows, recentImport, referenceImport, schoolFilter]);
 
   const schoolSummary = useMemo(() => {
     const referenceBySchool = new Map<string, Map<string, EnrollmentRow>>();
@@ -144,8 +154,8 @@ export default function EnrollmentComparison() {
       if (!target.has(schoolKey)) target.set(schoolKey, new Map());
       target.get(schoolKey)?.set(row.studentId, row);
     };
-    (referenceImport?.rows ?? []).forEach((row) => add(referenceBySchool, row));
-    (recentImport?.rows ?? []).forEach((row) => add(recentBySchool, row));
+    alphaRows(referenceImport?.rows ?? []).forEach((row) => add(referenceBySchool, row));
+    alphaRows(recentImport?.rows ?? []).forEach((row) => add(recentBySchool, row));
     return schools
       .map(([key, label]) => {
         const before = referenceBySchool.get(key) ?? new Map<string, EnrollmentRow>();
@@ -156,16 +166,21 @@ export default function EnrollmentComparison() {
       })
       .filter((item) => item.before || item.after)
       .sort((a, b) => Math.abs(b.added + b.lost) - Math.abs(a.added + a.lost) || a.label.localeCompare(b.label, "fr"));
-  }, [recentImport, referenceImport, schools]);
+  }, [alphaRows, recentImport, referenceImport, schools]);
 
   const studentsByOwner = useMemo(() => {
     const counts: Record<SchoolPortfolioOwner, number> = { "": 0, kelly: 0, pierre: 0, julie: 0 };
     const ownersBySchool = new Map(schoolAssignments.map((school) => [normalizeSchool(school.name), school.portfolioOwner]));
-    studentMap(recentImport?.rows ?? []).forEach((student) => {
+    studentMap(alphaRows(recentImport?.rows ?? [])).forEach((student) => {
       counts[ownersBySchool.get(normalizeSchool(student.school)) ?? ""] += 1;
     });
     return counts;
-  }, [recentImport, schoolAssignments]);
+  }, [alphaRows, recentImport, schoolAssignments]);
+
+  const excludedStudentCounts = useMemo(() => ({
+    reference: studentMap(referenceImport?.rows ?? []).size - studentMap(alphaRows(referenceImport?.rows ?? [])).size,
+    recent: studentMap(recentImport?.rows ?? []).size - studentMap(alphaRows(recentImport?.rows ?? [])).size,
+  }), [alphaRows, recentImport, referenceImport]);
 
   const displayedStudents = useMemo(() => {
     const rows = view === "new" ? comparison.newStudents : view === "lost" ? comparison.lostStudents : comparison.sameStudents;
@@ -206,7 +221,7 @@ export default function EnrollmentComparison() {
       setReferenceId(previousNewestId || nextImports[1]?.id || created?.id || "");
       setSchoolFilter("all");
       setView("new");
-      setMessage(`Import sauvegardé : ${created?.rows.length ?? 0} élève(s) inscrit(s)`);
+      setMessage(`Import sauvegardé : ${created ? studentMap(alphaRows(created.rows)).size : 0} élève(s) Étude Alpha inscrit(s)`);
     } catch (error) {
       setMessage(error instanceof Error ? `Import non sauvegardé : ${error.message}` : "Import non sauvegardé");
     } finally {
@@ -279,7 +294,7 @@ export default function EnrollmentComparison() {
         <div>
           <p className="eyebrow">Suivi des inscriptions</p>
           <h2>Comparer les inscriptions par établissement</h2>
-          <p>Un élève est considéré inscrit uniquement lorsqu’il possède au moins un créneau.</p>
+          <p>Seuls les élèves rattachés à un établissement Étude Alpha et possédant au moins un créneau sont comptés.</p>
         </div>
         <button type="button" className="ghost-button" onClick={() => void loadImports()} disabled={saving}>↻ Actualiser</button>
       </div>
@@ -327,6 +342,7 @@ export default function EnrollmentComparison() {
         <div className="negative"><span>Inscriptions perdues</span><strong>-{comparison.lostStudents.length}</strong></div>
         <div><span>Évolution nette</span><strong>{comparison.recentCount - comparison.referenceCount > 0 ? "+" : ""}{comparison.recentCount - comparison.referenceCount}</strong></div>
       </div>
+      <div className="enrollment-scope-note"><strong>Périmètre : Étude Alpha uniquement</strong><span>{excludedStudentCounts.reference} élève(s) hors périmètre exclu(s) du fichier de référence · {excludedStudentCounts.recent} du fichier récent</span></div>
 
       <div className="owner-count-strip enrollment-owner-counts">
         <span className="owner-count-title">Élèves inscrits par RH · fichier récent</span>
@@ -354,7 +370,7 @@ export default function EnrollmentComparison() {
           {imports.map((item) => (
             <div key={item.id}>
               <label className="availability-import-name"><span>Nom de l’import</span><input value={nameDrafts[item.id] ?? item.displayName} onChange={(event) => setNameDrafts((current) => ({ ...current, [item.id]: event.target.value }))} onKeyDown={(event) => { if (event.key === "Enter") void renameImport(item.id); }} /></label>
-              <small>{importDate(item.importedAt)} · {item.fileName} · {item.rows.length} inscrit(s) sur {item.sourceRowCount} ligne(s)</small>
+              <small>{importDate(item.importedAt)} · {item.fileName} · {studentMap(alphaRows(item.rows)).size} inscrit(s) Étude Alpha sur {item.sourceRowCount} ligne(s)</small>
               <div className="availability-history-actions">
                 <button type="button" className="text-button" onClick={() => void renameImport(item.id)}>Enregistrer le nom</button>
                 <button type="button" className="text-button danger" onClick={() => void deleteImport(item)}>Supprimer</button>
