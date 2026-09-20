@@ -10,12 +10,13 @@ import SchoolAdminLink from "@/app/components/school-admin-link";
 import PersonAdminLink from "@/app/components/person-admin-link";
 import HomeDashboard, { type HomeDestination } from "@/app/components/home-dashboard";
 import StaffingAudit from "@/app/components/staffing-audit";
+import StaffingEvolution from "@/app/components/staffing-evolution";
 import type { TutorAssignmentImport, TutorAssignmentRow, TutorInterestImport, TutorInterestRow, UnstaffedExclusions } from "@/app/lib/shared-data";
 
 type Status = "todo" | "progress" | "done";
 type Priority = "low" | "medium" | "high";
 type Density = "compact" | "comfortable";
-type AppMode = "dashboard" | "tasks" | "recurring" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffing" | "staffingAudit" | "watchlist" | "tutorReports" | "tutors" | "availability" | "availabilityFeed" | "enrollments" | "coverage" | "unstaffed" | "files";
+type AppMode = "dashboard" | "tasks" | "recurring" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffing" | "staffingAudit" | "staffingEvolution" | "watchlist" | "tutorReports" | "tutors" | "availability" | "availabilityFeed" | "enrollments" | "coverage" | "unstaffed" | "files";
 type ViewMode = "list" | "matrix";
 type DurationBucket = "short" | "medium" | "long" | "unset";
 type ObjectiveKind = "counter" | "qualitative";
@@ -414,6 +415,7 @@ const appModeSlugs: Record<AppMode, string> = {
   communications: "communications",
   staffing: "staffing",
   staffingAudit: "bilan-staffing",
+  staffingEvolution: "evolution-staffing",
   watchlist: "a-suivre",
   tutorReports: "bilans-tuteurs",
   tutors: "tuteurs",
@@ -446,6 +448,8 @@ const appModeAliases: Record<string, AppMode> = {
   staffing: "staffing",
   "bilan-staffing": "staffingAudit",
   "historique-staffing": "staffingAudit",
+  "evolution-staffing": "staffingEvolution",
+  "comparaison-staffing": "staffingEvolution",
   "bilans-tuteurs": "tutorReports",
   bilans: "tutorReports",
   tuteurs: "tutors",
@@ -5745,6 +5749,9 @@ export default function Home() {
             <button className={appMode === "staffingAudit" ? "active" : ""} onClick={() => setAppMode("staffingAudit")}>
               <span className="tab-icon" aria-hidden="true">📊</span> Bilan staffing
             </button>
+            <button className={appMode === "staffingEvolution" ? "active" : ""} onClick={() => setAppMode("staffingEvolution")}>
+              <span className="tab-icon" aria-hidden="true">🔄</span> Évolution staffing
+            </button>
             <button className={appMode === "unstaffed" ? "active" : ""} onClick={() => setAppMode("unstaffed")}>
               <span className="tab-icon" aria-hidden="true">📋</span> Séances non affectées
             </button>
@@ -6321,6 +6328,7 @@ export default function Home() {
         : appMode === "coverage" ? <TutorCoverageComparison />
         : appMode === "unstaffed" ? <UnstaffedSessions />
         : appMode === "staffingAudit" ? <StaffingAudit />
+        : appMode === "staffingEvolution" ? <StaffingEvolution />
         : appMode === "files" ? <FilesHub onOpen={(kind) => setAppMode(kind === "availability" ? "availability" : kind === "assignments" ? "coverage" : kind === "interests" || kind === "upcomingSessions" ? "unstaffed" : kind === "tutors" ? "tutors" : "enrollments")} />
         : appMode === "tutorReports" ? renderTutorReportsSection()
         : appMode === "watchlist" ? <section className="task-panel">

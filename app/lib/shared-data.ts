@@ -2584,6 +2584,30 @@ export async function readTutorAssignmentImportSummaries() {
   return (await readTutorAssignmentIndex()).map((item) => ({ ...item, rows: [] }));
 }
 
+export async function readTutorAssignmentImportById(id: string) {
+  const cleanedId = cleanText(id);
+  if (!cleanedId) return null;
+  try {
+    const store = taskStore();
+    const selected = (await readTutorAssignmentIndex()).find((item) => item.id === cleanedId);
+    if (!selected) return null;
+    if (selected.rows.length) return selected;
+    const rows = await store.get(tutorAssignmentRowsKey(selected.id), { type: "json", consistency: "strong" });
+    return {
+      ...selected,
+      rows: Array.isArray(rows)
+        ? rows
+            .filter((row): row is Record<string, unknown> => Boolean(row && typeof row === "object"))
+            .map(sanitizeTutorAssignmentRow)
+            .filter((row) => row.tutorId && row.date && row.timeSlot)
+        : [],
+    };
+  } catch (error) {
+    if (!canUseMemoryFallback()) throw error;
+    return (memory.__petitSuiviTutorAssignmentImports ?? []).find((item) => item.id === cleanedId) ?? null;
+  }
+}
+
 export async function readTutorAssignmentImports() {
   try {
     const store = taskStore();

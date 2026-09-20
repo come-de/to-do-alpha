@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   createTutorAssignmentImportFromCsv,
   deleteTutorAssignmentImportById,
+  readTutorAssignmentImportById,
   readLatestTutorAssignmentImport,
   readTutorAssignmentImports,
   readTutorAssignmentImportSummaries,
@@ -19,6 +20,11 @@ export async function GET(request: Request) {
   try {
     const searchParams = new URL(request.url).searchParams;
     if (searchParams.get("latest") === "1") return json({ import: await readLatestTutorAssignmentImport() });
+    const id = searchParams.get("id");
+    if (id) {
+      const selectedImport = await readTutorAssignmentImportById(id);
+      return selectedImport ? json({ import: selectedImport }) : json({ error: "Import introuvable" }, 404);
+    }
     const summaryOnly = searchParams.get("summary") === "1";
     return json({ imports: summaryOnly ? await readTutorAssignmentImportSummaries() : await readTutorAssignmentImports() });
   } catch (error) {

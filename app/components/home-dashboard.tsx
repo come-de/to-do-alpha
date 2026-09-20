@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-export type HomeDestination = "tasks" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffing" | "staffingAudit" | "watchlist" | "tutorReports" | "tutors" | "availability" | "availabilityFeed" | "enrollments" | "coverage" | "unstaffed" | "files";
+export type HomeDestination = "tasks" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffing" | "staffingAudit" | "staffingEvolution" | "watchlist" | "tutorReports" | "tutors" | "availability" | "availabilityFeed" | "enrollments" | "coverage" | "unstaffed" | "files";
 type Owner = "kelly" | "pierre" | "julie" | "unassigned";
 type DashboardPayload = {
   unstaffed?: {
@@ -19,6 +19,7 @@ const ownerLabels: Record<Owner, string> = { kelly: "Kelly", pierre: "Pierre", j
 const menuItems: Array<{ mode: HomeDestination; icon: string; title: string; description: string; countKey?: string }> = [
   { mode: "watchlist", icon: "👀", title: "À suivre", description: "Établissements nécessitant une attention particulière.", countKey: "watchlist" },
   { mode: "staffingAudit", icon: "📊", title: "Bilan staffing", description: "Enregistrer et suivre les séances non staffées par journée." },
+  { mode: "staffingEvolution", icon: "🔄", title: "Évolution staffing", description: "Comparer deux exports Prix des tuteurs et suivre les changements par RH." },
   { mode: "tutorReports", icon: "🧾", title: "Bilans tuteurs", description: "Suivre les bilans non réalisés et les commentaires." },
   { mode: "communications", icon: "📣", title: "Communications", description: "Journal des communications envoyées aux différents publics.", countKey: "communications" },
   { mode: "availability", icon: "📆", title: "Comparaison dispos", description: "Comparer deux exports de disponibilités tuteurs.", countKey: "availability" },
