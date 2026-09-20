@@ -278,6 +278,25 @@ export type UpcomingSessionSchoolStaffing = {
   unstaffedSessions: number;
 };
 
+export type UpcomingSessionTutor = {
+  tutorId: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+};
+
+export type UpcomingStaffingSession = {
+  sessionId: string;
+  schoolId: string;
+  school: string;
+  category: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  group: string;
+  tutors: UpcomingSessionTutor[];
+};
+
 export type UpcomingSessionImport = {
   id: string;
   importedAt: string;
@@ -287,6 +306,7 @@ export type UpcomingSessionImport = {
   sourceSessionCount: number;
   schools: UpcomingSessionSchool[];
   schoolStaffing: UpcomingSessionSchoolStaffing[];
+  staffingSessions: UpcomingStaffingSession[];
   rows: UpcomingSessionRow[];
   createdAt: string;
 };
@@ -1350,9 +1370,34 @@ export function sanitizeUpcomingSessionSchoolStaffing(raw: Record<string, unknow
   };
 }
 
+export function sanitizeUpcomingSessionTutor(raw: Record<string, unknown>): UpcomingSessionTutor {
+  return {
+    tutorId: cleanText(raw.tutorId),
+    firstName: cleanText(raw.firstName),
+    lastName: cleanText(raw.lastName),
+    phone: cleanText(raw.phone),
+  };
+}
+
+export function sanitizeUpcomingStaffingSession(raw: Record<string, unknown>): UpcomingStaffingSession {
+  return {
+    sessionId: cleanText(raw.sessionId),
+    schoolId: cleanText(raw.schoolId),
+    school: cleanText(raw.school),
+    category: cleanText(raw.category),
+    date: cleanText(raw.date),
+    startTime: cleanText(raw.startTime),
+    endTime: cleanText(raw.endTime),
+    group: cleanText(raw.group),
+    tutors: Array.isArray(raw.tutors)
+      ? raw.tutors.filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object")).map(sanitizeUpcomingSessionTutor).filter((item) => item.tutorId)
+      : [],
+  };
+}
+
 export function parseUpcomingSessionsCsv(value: string) {
   const csvRows = parseCsvRows(value).filter((row) => row.some(Boolean));
-  if (!csvRows.length) return { rows: [] as UpcomingSessionRow[], schools: [] as UpcomingSessionSchool[], schoolStaffing: [] as UpcomingSessionSchoolStaffing[], sourceRowCount: 0, sourceSessionCount: 0 };
+  if (!csvRows.length) return { rows: [] as UpcomingSessionRow[], schools: [] as UpcomingSessionSchool[], schoolStaffing: [] as UpcomingSessionSchoolStaffing[], staffingSessions: [] as UpcomingStaffingSession[], sourceRowCount: 0, sourceSessionCount: 0 };
   const headers = csvRows[0].map(normalizedHeader);
   const indexFor = (aliases: string[]) => {
     for (const alias of aliases) {
@@ -1374,13 +1419,16 @@ export function parseUpcomingSessionsCsv(value: string) {
   const declaredStudentCountIndex = indexFor(["nbreleves", "nombreeleves"]);
   const roomIndex = indexFor(["salle"]);
   const tutorIdIndex = indexFor(["idtuteur", "iddututeur"]);
+  const tutorFirstNameIndex = indexFor(["prenomtuteur", "prenomdututeur"]);
+  const tutorLastNameIndex = indexFor(["nomtuteur", "nomdututeur"]);
+  const tutorPhoneIndex = indexFor(["numerodutelephonedetuteur", "numerotuteur", "telephone", "numerodetelephone"]);
   const studentIdIndex = indexFor(["ideleve", "iddeleve"]);
   const classIndex = indexFor(["classe"]);
   if (sessionIdIndex < 0 || schoolIndex < 0 || dateIndex < 0 || tutorIdIndex < 0) {
     throw new Error("Colonnes ID séance, établissement, date ou ID tuteur introuvables dans le CSV");
   }
 
-  type SessionAccumulator = UpcomingSessionRow & { tutorIds: Set<string>; studentIds: Set<string>; classSet: Set<string>; declaredStudentCount: number };
+  type SessionAccumulator = UpcomingSessionRow & { tutors: Map<string, UpcomingSessionTutor>; studentIds: Set<string>; classSet: Set<string>; declaredStudentCount: number };
   type SchoolAccumulator = UpcomingSessionSchool & { categorySet: Set<string> };
   const sessions = new Map<string, SessionAccumulator>();
   const schools = new Map<string, SchoolAccumulator>();
@@ -1410,7 +1458,7 @@ export function parseUpcomingSessionsCsv(value: string) {
       studentCount: 0,
       classes: [],
       room: valueAt(row, roomIndex),
-      tutorIds: new Set<string>(),
+      tutors: new Map<string, UpcomingSessionTutor>(),
       studentIds: new Set<string>(),
       classSet: new Set<string>(),
       declaredStudentCount: 0,
@@ -1418,7 +1466,15 @@ export function parseUpcomingSessionsCsv(value: string) {
     const tutorId = valueAt(row, tutorIdIndex).trim();
     const studentId = valueAt(row, studentIdIndex).trim();
     const className = valueAt(row, classIndex).trim();
-    if (tutorId) existing.tutorIds.add(tutorId);
+    if (tutorId) {
+      const previous = existing.tutors.get(tutorId);
+      existing.tutors.set(tutorId, {
+        tutorId,
+        firstName: previous?.firstName || valueAt(row, tutorFirstNameIndex).trim(),
+        lastName: previous?.lastName || valueAt(row, tutorLastNameIndex).trim(),
+        phone: previous?.phone || valueAt(row, tutorPhoneIndex).trim(),
+      });
+    }
     if (studentId) existing.studentIds.add(studentId);
     if (className) existing.classSet.add(className);
     existing.declaredStudentCount = Math.max(existing.declaredStudentCount, Math.round(Number(valueAt(row, declaredStudentCountIndex).replace(",", ".")) || 0));
@@ -1426,7 +1482,7 @@ export function parseUpcomingSessionsCsv(value: string) {
   });
 
   const rows = Array.from(sessions.values())
-    .filter((session) => session.date && session.school && session.tutorIds.size === 0)
+    .filter((session) => session.date && session.school && session.tutors.size === 0)
     .map((session) => sanitizeUpcomingSessionRow({
       ...session,
       classes: Array.from(session.classSet).sort((a, b) => a.localeCompare(b, "fr")),
@@ -1436,17 +1492,21 @@ export function parseUpcomingSessionsCsv(value: string) {
   const schoolCatalog = Array.from(schools.values())
     .map((school) => sanitizeUpcomingSessionSchool({ ...school, categories: Array.from(school.categorySet).sort((a, b) => a.localeCompare(b, "fr")) }))
     .sort((a, b) => a.name.localeCompare(b.name, "fr"));
+  const staffingSessions = Array.from(sessions.values())
+    .filter((session) => session.sessionId && session.date && session.school)
+    .map((session) => sanitizeUpcomingStaffingSession({ ...session, tutors: Array.from(session.tutors.values()) }))
+    .sort((a, b) => `${a.date}-${a.startTime}-${a.school}-${a.sessionId}`.localeCompare(`${b.date}-${b.startTime}-${b.school}-${b.sessionId}`, "fr"));
   const staffingBySchool = new Map<string, UpcomingSessionSchoolStaffing>();
   sessions.forEach((session) => {
     if (!session.school) return;
     const schoolKey = `${session.schoolId || `missing:${normalizeSchoolName(session.school)}`}:${session.date}`;
     const staffing = staffingBySchool.get(schoolKey) ?? { schoolId: session.schoolId, name: session.school, date: session.date, staffedSessions: 0, unstaffedSessions: 0 };
-    if (session.tutorIds.size > 0) staffing.staffedSessions += 1;
+    if (session.tutors.size > 0) staffing.staffedSessions += 1;
     else staffing.unstaffedSessions += 1;
     staffingBySchool.set(schoolKey, staffing);
   });
   const schoolStaffing = Array.from(staffingBySchool.values()).sort((a, b) => a.name.localeCompare(b.name, "fr"));
-  return { rows, schools: schoolCatalog, schoolStaffing, sourceRowCount: dataRows.length, sourceSessionCount: sessions.size };
+  return { rows, schools: schoolCatalog, schoolStaffing, staffingSessions, sourceRowCount: dataRows.length, sourceSessionCount: sessions.size };
 }
 
 export function sanitizeUpcomingSessionImport(raw: Record<string, unknown>): UpcomingSessionImport {
@@ -1463,6 +1523,9 @@ export function sanitizeUpcomingSessionImport(raw: Record<string, unknown>): Upc
       : [],
     schoolStaffing: Array.isArray(raw.schoolStaffing)
       ? raw.schoolStaffing.filter((school): school is Record<string, unknown> => Boolean(school && typeof school === "object")).map(sanitizeUpcomingSessionSchoolStaffing).filter((school) => school.name)
+      : [],
+    staffingSessions: Array.isArray(raw.staffingSessions)
+      ? raw.staffingSessions.filter((session): session is Record<string, unknown> => Boolean(session && typeof session === "object")).map(sanitizeUpcomingStaffingSession).filter((session) => session.sessionId && session.date && session.school)
       : [],
     rows: Array.isArray(raw.rows)
       ? raw.rows.filter((row): row is Record<string, unknown> => Boolean(row && typeof row === "object")).map(sanitizeUpcomingSessionRow).filter((row) => row.sessionId && row.date && row.school)
@@ -2707,6 +2770,10 @@ function upcomingSessionRowsKey(id: string) {
   return `upcoming-session-imports/${id}.rows.json`;
 }
 
+function upcomingStaffingSessionsKey(id: string) {
+  return `upcoming-session-imports/${id}.staffing.json`;
+}
+
 async function readUpcomingSessionIndex() {
   const store = taskStore();
   const imports = await store.get(UPCOMING_SESSION_IMPORTS_KEY, { type: "json", consistency: "strong" });
@@ -2717,10 +2784,10 @@ async function readUpcomingSessionIndex() {
 
 export async function readUpcomingSessionImportSummaries() {
   try {
-    return (await readUpcomingSessionIndex()).map((item) => ({ ...item, rows: [] }));
+    return (await readUpcomingSessionIndex()).map((item) => ({ ...item, rows: [], staffingSessions: [] }));
   } catch (error) {
     if (!canUseMemoryFallback()) throw error;
-    return (memory.__petitSuiviUpcomingSessionImports ?? []).map((item) => ({ ...item, rows: [] }));
+    return (memory.__petitSuiviUpcomingSessionImports ?? []).map((item) => ({ ...item, rows: [], staffingSessions: [] }));
   }
 }
 
@@ -2729,9 +2796,16 @@ export async function readUpcomingSessionImports() {
     const store = taskStore();
     const imports = await readUpcomingSessionIndex();
     const hydrated = await Promise.all(imports.map(async (item) => {
-      if (item.rows.length) return item;
-      const rows = await store.get(upcomingSessionRowsKey(item.id), { type: "json", consistency: "strong" });
-      return { ...item, rows: Array.isArray(rows) ? rows.filter((row): row is Record<string, unknown> => Boolean(row && typeof row === "object")).map(sanitizeUpcomingSessionRow).filter((row) => row.sessionId && row.date && row.school) : [] };
+      if (item.rows.length && item.staffingSessions.length) return item;
+      const [rows, staffingSessions] = await Promise.all([
+        store.get(upcomingSessionRowsKey(item.id), { type: "json", consistency: "strong" }),
+        store.get(upcomingStaffingSessionsKey(item.id), { type: "json", consistency: "strong" }),
+      ]);
+      return {
+        ...item,
+        rows: Array.isArray(rows) ? rows.filter((row): row is Record<string, unknown> => Boolean(row && typeof row === "object")).map(sanitizeUpcomingSessionRow).filter((row) => row.sessionId && row.date && row.school) : [],
+        staffingSessions: Array.isArray(staffingSessions) ? staffingSessions.filter((row): row is Record<string, unknown> => Boolean(row && typeof row === "object")).map(sanitizeUpcomingStaffingSession).filter((row) => row.sessionId && row.date && row.school) : [],
+      };
     }));
     return hydrated.sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt));
   } catch (error) {
@@ -2745,8 +2819,11 @@ export async function readLatestUpcomingSessionImport() {
     const store = taskStore();
     const [latest] = await readUpcomingSessionIndex();
     if (!latest) return null;
-    if (latest.rows.length) return latest;
-    const rows = await store.get(upcomingSessionRowsKey(latest.id), { type: "json", consistency: "strong" });
+    if (latest.rows.length && latest.staffingSessions.length) return latest;
+    const [rows, staffingSessions] = await Promise.all([
+      store.get(upcomingSessionRowsKey(latest.id), { type: "json", consistency: "strong" }),
+      store.get(upcomingStaffingSessionsKey(latest.id), { type: "json", consistency: "strong" }),
+    ]);
     return {
       ...latest,
       rows: Array.isArray(rows)
@@ -2754,6 +2831,9 @@ export async function readLatestUpcomingSessionImport() {
             .filter((row): row is Record<string, unknown> => Boolean(row && typeof row === "object"))
             .map(sanitizeUpcomingSessionRow)
             .filter((row) => row.sessionId && row.date && row.school)
+        : [],
+      staffingSessions: Array.isArray(staffingSessions)
+        ? staffingSessions.filter((row): row is Record<string, unknown> => Boolean(row && typeof row === "object")).map(sanitizeUpcomingStaffingSession).filter((row) => row.sessionId && row.date && row.school)
         : [],
     };
   } catch (error) {
@@ -2769,8 +2849,11 @@ export async function readUpcomingSessionImportById(id: string) {
     const store = taskStore();
     const selected = (await readUpcomingSessionIndex()).find((item) => item.id === cleanedId);
     if (!selected) return null;
-    if (selected.rows.length) return selected;
-    const rows = await store.get(upcomingSessionRowsKey(selected.id), { type: "json", consistency: "strong" });
+    if (selected.rows.length && selected.staffingSessions.length) return selected;
+    const [rows, staffingSessions] = await Promise.all([
+      store.get(upcomingSessionRowsKey(selected.id), { type: "json", consistency: "strong" }),
+      store.get(upcomingStaffingSessionsKey(selected.id), { type: "json", consistency: "strong" }),
+    ]);
     return {
       ...selected,
       rows: Array.isArray(rows)
@@ -2778,6 +2861,9 @@ export async function readUpcomingSessionImportById(id: string) {
             .filter((row): row is Record<string, unknown> => Boolean(row && typeof row === "object"))
             .map(sanitizeUpcomingSessionRow)
             .filter((row) => row.sessionId && row.date && row.school)
+        : [],
+      staffingSessions: Array.isArray(staffingSessions)
+        ? staffingSessions.filter((row): row is Record<string, unknown> => Boolean(row && typeof row === "object")).map(sanitizeUpcomingStaffingSession).filter((row) => row.sessionId && row.date && row.school)
         : [],
     };
   } catch (error) {
@@ -2799,14 +2885,18 @@ export async function createUpcomingSessionImportFromCsv(input: { fileName: stri
     sourceSessionCount: parsed.sourceSessionCount,
     schools: parsed.schools,
     schoolStaffing: parsed.schoolStaffing,
+    staffingSessions: parsed.staffingSessions,
     rows: parsed.rows,
     createdAt: now,
   });
   try {
     const store = taskStore();
-    await store.setJSON(upcomingSessionRowsKey(nextImport.id), nextImport.rows);
+    await Promise.all([
+      store.setJSON(upcomingSessionRowsKey(nextImport.id), nextImport.rows),
+      store.setJSON(upcomingStaffingSessionsKey(nextImport.id), nextImport.staffingSessions),
+    ]);
     const existing = await readUpcomingSessionIndex();
-    await store.setJSON(UPCOMING_SESSION_IMPORTS_KEY, [{ ...nextImport, rows: [] }, ...existing.filter((item) => item.id !== nextImport.id).map((item) => ({ ...item, rows: [] }))]);
+    await store.setJSON(UPCOMING_SESSION_IMPORTS_KEY, [{ ...nextImport, rows: [], staffingSessions: [] }, ...existing.filter((item) => item.id !== nextImport.id).map((item) => ({ ...item, rows: [], staffingSessions: [] }))]);
   } catch (error) {
     if (!canUseMemoryFallback()) throw error;
     memory.__petitSuiviUpcomingSessionImports = [nextImport, ...(memory.__petitSuiviUpcomingSessionImports ?? [])];
@@ -2820,14 +2910,14 @@ export async function updateUpcomingSessionImportName(id: string, displayName: s
   if (!existing.some((item) => item.id === id)) throw new Error("Import introuvable");
   const cleanedName = cleanText(displayName);
   if (!cleanedName) throw new Error("Le nom de l’import est obligatoire");
-  await store.setJSON(UPCOMING_SESSION_IMPORTS_KEY, existing.map((item) => item.id === id ? { ...item, displayName: cleanedName, rows: [] } : { ...item, rows: [] }));
+  await store.setJSON(UPCOMING_SESSION_IMPORTS_KEY, existing.map((item) => item.id === id ? { ...item, displayName: cleanedName, rows: [], staffingSessions: [] } : { ...item, rows: [], staffingSessions: [] }));
 }
 
 export async function deleteUpcomingSessionImportById(id: string) {
   const store = taskStore();
   const existing = await readUpcomingSessionIndex();
-  await store.setJSON(UPCOMING_SESSION_IMPORTS_KEY, existing.filter((item) => item.id !== id).map((item) => ({ ...item, rows: [] })));
-  await store.delete(upcomingSessionRowsKey(id));
+  await store.setJSON(UPCOMING_SESSION_IMPORTS_KEY, existing.filter((item) => item.id !== id).map((item) => ({ ...item, rows: [], staffingSessions: [] })));
+  await Promise.all([store.delete(upcomingSessionRowsKey(id)), store.delete(upcomingStaffingSessionsKey(id))]);
 }
 
 export async function readActualSessionImports() {

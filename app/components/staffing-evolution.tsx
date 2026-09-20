@@ -3,26 +3,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import PersonAdminLink from "@/app/components/person-admin-link";
 import SchoolAdminLink from "@/app/components/school-admin-link";
-import type { TutorAssignmentImport, TutorAssignmentRow } from "@/app/lib/shared-data";
+import type { UpcomingSessionImport, UpcomingSessionTutor, UpcomingStaffingSession } from "@/app/lib/shared-data";
 
 type Owner = "" | "kelly" | "pierre" | "julie";
 type OwnerFilter = "all" | "unassigned" | Exclude<Owner, "">;
 type ChangeKind = "replacements" | "additions" | "removals" | "appeared" | "disappeared";
 type SchoolRecord = { externalId: string; name: string; portfolioOwner: Owner };
-type Session = {
-  key: string;
-  date: string;
-  school: string;
-  timeSlot: string;
-  category: string;
-  tutors: Map<string, TutorAssignmentRow>;
-};
-type SessionChange = {
-  kind: ChangeKind;
-  session: Session;
-  before: TutorAssignmentRow[];
-  after: TutorAssignmentRow[];
-};
+type SessionChange = { kind: ChangeKind; session: UpcomingStaffingSession; before: UpcomingSessionTutor[]; after: UpcomingSessionTutor[] };
 
 const ownerLabels: Record<Owner, string> = { "": "Non attribué", kelly: "Kelly", pierre: "Pierre", julie: "Julie" };
 const kindLabels: Record<ChangeKind, string> = {
@@ -42,7 +29,7 @@ function timestamp(value: string) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function importLabel(item: TutorAssignmentImport) {
+function importLabel(item: UpcomingSessionImport) {
   const date = new Date(item.importedAt);
   const importedAt = Number.isNaN(date.getTime()) ? item.importedAt : new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short" }).format(date);
   return `${item.displayName} · ${importedAt}`;
@@ -53,23 +40,12 @@ function fullDate(value: string) {
   return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("fr-FR", { dateStyle: "long" }).format(date);
 }
 
-function sessionKey(row: TutorAssignmentRow) {
-  return [row.date, normalize(row.school), normalize(row.timeSlot), normalize(row.category)].join("|");
-}
-
-function groupSessions(rows: TutorAssignmentRow[], selectedDate: string) {
-  const sessions = new Map<string, Session>();
-  rows.filter((row) => !row.absent && (!selectedDate || row.date === selectedDate)).forEach((row) => {
-    const key = sessionKey(row);
-    const session = sessions.get(key) ?? { key, date: row.date, school: row.school, timeSlot: row.timeSlot, category: row.category, tutors: new Map<string, TutorAssignmentRow>() };
-    if (row.tutorId && !session.tutors.has(row.tutorId)) session.tutors.set(row.tutorId, row);
-    sessions.set(key, session);
-  });
-  return sessions;
-}
-
-function tutorName(row: TutorAssignmentRow) {
+function tutorName(row: UpcomingSessionTutor) {
   return `${row.firstName} ${row.lastName}`.trim() || `ID ${row.tutorId}`;
+}
+
+function timeSlot(session: UpcomingStaffingSession) {
+  return [session.startTime, session.endTime].filter(Boolean).join(" → ") || "Horaire non précisé";
 }
 
 function csvCell(value: unknown) {
@@ -78,8 +54,8 @@ function csvCell(value: unknown) {
 }
 
 export default function StaffingEvolution() {
-  const [imports, setImports] = useState<TutorAssignmentImport[]>([]);
-  const [loadedImports, setLoadedImports] = useState<Record<string, TutorAssignmentImport>>({});
+  const [imports, setImports] = useState<UpcomingSessionImport[]>([]);
+  const [loadedImports, setLoadedImports] = useState<Record<string, UpcomingSessionImport>>({});
   const [schools, setSchools] = useState<SchoolRecord[]>([]);
   const [referenceId, setReferenceId] = useState("");
   const [recentId, setRecentId] = useState("");
@@ -95,10 +71,10 @@ export default function StaffingEvolution() {
     setLoading(true);
     try {
       const [importsResponse, schoolsResponse] = await Promise.all([
-        fetch("/api/tutor-assignment-imports?summary=1", { cache: "no-store" }),
+        fetch("/api/upcoming-session-imports?summary=1", { cache: "no-store" }),
         fetch("/api/schools", { cache: "no-store" }),
       ]);
-      const importsData = await importsResponse.json() as { imports?: TutorAssignmentImport[]; error?: string; detail?: string };
+      const importsData = await importsResponse.json() as { imports?: UpcomingSessionImport[]; error?: string; detail?: string };
       const schoolsData = await schoolsResponse.json() as { schools?: SchoolRecord[]; error?: string; detail?: string };
       if (!importsResponse.ok) throw new Error(importsData.detail || importsData.error || "Imports indisponibles");
       if (!schoolsResponse.ok) throw new Error(schoolsData.detail || schoolsData.error || "Établissements indisponibles");
@@ -122,8 +98,8 @@ export default function StaffingEvolution() {
     if (!ids.length) return;
     let cancelled = false;
     Promise.all(ids.map(async (id) => {
-      const response = await fetch(`/api/tutor-assignment-imports?id=${encodeURIComponent(id)}`, { cache: "no-store" });
-      const data = await response.json() as { import?: TutorAssignmentImport; error?: string; detail?: string };
+      const response = await fetch(`/api/upcoming-session-imports?id=${encodeURIComponent(id)}`, { cache: "no-store" });
+      const data = await response.json() as { import?: UpcomingSessionImport; error?: string; detail?: string };
       if (!response.ok || !data.import) throw new Error(data.detail || data.error || "Import indisponible");
       return data.import;
     })).then((items) => {
@@ -134,53 +110,58 @@ export default function StaffingEvolution() {
 
   const reference = loadedImports[referenceId] ?? null;
   const recent = loadedImports[recentId] ?? null;
-  const dates = useMemo(() => Array.from(new Set([...(reference?.rows ?? []), ...(recent?.rows ?? [])].map((row) => row.date).filter(Boolean))).sort(), [recent, reference]);
+  const dates = useMemo(() => Array.from(new Set([...(reference?.staffingSessions ?? []), ...(recent?.staffingSessions ?? [])].map((row) => row.date).filter(Boolean))).sort(), [recent, reference]);
   const schoolByName = useMemo(() => new Map(schools.map((school) => [normalize(school.name), school])), [schools]);
-  const ownerFor = useCallback((schoolName: string): Owner => schoolByName.get(normalize(schoolName))?.portfolioOwner || "", [schoolByName]);
+  const schoolFor = useCallback((session: UpcomingStaffingSession) => schools.find((school) => session.schoolId && school.externalId === session.schoolId) || schoolByName.get(normalize(session.school)), [schoolByName, schools]);
+  const ownerFor = useCallback((session: UpcomingStaffingSession): Owner => schoolFor(session)?.portfolioOwner || "", [schoolFor]);
+  const hasComparableSnapshots = Boolean(reference?.staffingSessions.length && recent?.staffingSessions.length);
 
   const changes = useMemo(() => {
-    const beforeSessions = groupSessions(reference?.rows ?? [], selectedDate);
-    const afterSessions = groupSessions(recent?.rows ?? [], selectedDate);
+    if (!reference || !recent) return [];
+    const beforeSessions = new Map(reference.staffingSessions.filter((item) => !selectedDate || item.date === selectedDate).map((item) => [item.sessionId, item]));
+    const afterSessions = new Map(recent.staffingSessions.filter((item) => !selectedDate || item.date === selectedDate).map((item) => [item.sessionId, item]));
     const items: SessionChange[] = [];
-    new Set([...beforeSessions.keys(), ...afterSessions.keys()]).forEach((key) => {
-      const beforeSession = beforeSessions.get(key);
-      const afterSession = afterSessions.get(key);
+    new Set([...beforeSessions.keys(), ...afterSessions.keys()]).forEach((sessionId) => {
+      const beforeSession = beforeSessions.get(sessionId);
+      const afterSession = afterSessions.get(sessionId);
       if (beforeSession && !afterSession) {
-        items.push({ kind: "disappeared", session: beforeSession, before: Array.from(beforeSession.tutors.values()), after: [] });
+        items.push({ kind: "disappeared", session: beforeSession, before: beforeSession.tutors, after: [] });
         return;
       }
       if (!beforeSession && afterSession) {
-        items.push({ kind: "appeared", session: afterSession, before: [], after: Array.from(afterSession.tutors.values()) });
+        items.push({ kind: "appeared", session: afterSession, before: [], after: afterSession.tutors });
         return;
       }
       if (!beforeSession || !afterSession) return;
-      const added = Array.from(afterSession.tutors.values()).filter((row) => !beforeSession.tutors.has(row.tutorId));
-      const removed = Array.from(beforeSession.tutors.values()).filter((row) => !afterSession.tutors.has(row.tutorId));
+      const beforeIds = new Set(beforeSession.tutors.map((item) => item.tutorId));
+      const afterIds = new Set(afterSession.tutors.map((item) => item.tutorId));
+      const added = afterSession.tutors.filter((item) => !beforeIds.has(item.tutorId));
+      const removed = beforeSession.tutors.filter((item) => !afterIds.has(item.tutorId));
       if (added.length && removed.length) items.push({ kind: "replacements", session: afterSession, before: removed, after: added });
       else {
         if (added.length) items.push({ kind: "additions", session: afterSession, before: [], after: added });
         if (removed.length) items.push({ kind: "removals", session: beforeSession, before: removed, after: [] });
       }
     });
-    return items.sort((a, b) => `${a.session.date} ${a.session.timeSlot} ${a.session.school}`.localeCompare(`${b.session.date} ${b.session.timeSlot} ${b.session.school}`, "fr"));
+    return items.sort((a, b) => `${a.session.date} ${a.session.startTime} ${a.session.school}`.localeCompare(`${b.session.date} ${b.session.startTime} ${b.session.school}`, "fr"));
   }, [recent, reference, selectedDate]);
 
   const countsByOwner = useMemo(() => (["kelly", "pierre", "julie", ""] as Owner[]).map((owner) => ({
     owner,
-    replacements: changes.filter((item) => ownerFor(item.session.school) === owner && item.kind === "replacements").length,
-    additions: changes.filter((item) => ownerFor(item.session.school) === owner && item.kind === "additions").length,
-    removals: changes.filter((item) => ownerFor(item.session.school) === owner && item.kind === "removals").length,
-    appeared: changes.filter((item) => ownerFor(item.session.school) === owner && item.kind === "appeared").length,
-    disappeared: changes.filter((item) => ownerFor(item.session.school) === owner && item.kind === "disappeared").length,
+    replacements: changes.filter((item) => ownerFor(item.session) === owner && item.kind === "replacements").length,
+    additions: changes.filter((item) => ownerFor(item.session) === owner && item.kind === "additions").length,
+    removals: changes.filter((item) => ownerFor(item.session) === owner && item.kind === "removals").length,
+    appeared: changes.filter((item) => ownerFor(item.session) === owner && item.kind === "appeared").length,
+    disappeared: changes.filter((item) => ownerFor(item.session) === owner && item.kind === "disappeared").length,
   })), [changes, ownerFor]);
 
   const filtered = useMemo(() => {
     const normalizedQuery = normalize(query);
     return changes.filter((item) => {
-      const owner = ownerFor(item.session.school);
+      const owner = ownerFor(item.session);
       const ownerMatches = ownerFilter === "all" || (ownerFilter === "unassigned" ? !owner : owner === ownerFilter);
       const kindMatches = kindFilter === "all" || item.kind === kindFilter;
-      const text = normalize(`${item.session.school} ${item.session.category} ${item.session.timeSlot} ${item.before.map(tutorName).join(" ")} ${item.after.map(tutorName).join(" ")}`);
+      const text = normalize(`${item.session.sessionId} ${item.session.school} ${item.session.category} ${timeSlot(item.session)} ${item.before.map(tutorName).join(" ")} ${item.after.map(tutorName).join(" ")}`);
       return ownerMatches && kindMatches && (!normalizedQuery || text.includes(normalizedQuery));
     });
   }, [changes, kindFilter, ownerFilter, ownerFor, query]);
@@ -189,14 +170,14 @@ export default function StaffingEvolution() {
     if (!file) return;
     setSaving(true);
     try {
-      const response = await fetch(`/api/tutor-assignment-imports?fileName=${encodeURIComponent(file.name)}`, { method: "POST", headers: { "Content-Type": "text/csv;charset=utf-8" }, body: await file.text() });
-      const data = await response.json() as { import?: TutorAssignmentImport; error?: string; detail?: string };
+      const response = await fetch(`/api/upcoming-session-imports?fileName=${encodeURIComponent(file.name)}`, { method: "POST", headers: { "Content-Type": "text/csv;charset=utf-8" }, body: await file.text() });
+      const data = await response.json() as { import?: UpcomingSessionImport; error?: string; detail?: string };
       if (!response.ok || !data.import) throw new Error(data.detail || data.error || "Import impossible");
       setLoadedImports((current) => ({ ...current, [data.import!.id]: data.import! }));
       setReferenceId(recentId || data.import.id);
       setRecentId(data.import.id);
       await loadSummaries();
-      setMessage("Nouveau fichier Prix des tuteurs enregistré");
+      setMessage("Export Semaines à venir enregistré et prêt à comparer");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Import impossible");
     } finally {
@@ -205,8 +186,8 @@ export default function StaffingEvolution() {
   }
 
   function exportCsv() {
-    const rows = [["Évolution", "Date", "Horaire", "Établissement", "Responsable RH", "Catégorie", "Avant", "Après"], ...filtered.map((item) => [
-      kindLabels[item.kind], item.session.date, item.session.timeSlot, item.session.school, ownerLabels[ownerFor(item.session.school)], item.session.category,
+    const rows = [["Évolution", "ID séance", "Date", "Horaire", "Établissement", "ID établissement", "Responsable RH", "Catégorie", "Avant", "Après"], ...filtered.map((item) => [
+      kindLabels[item.kind], item.session.sessionId, item.session.date, timeSlot(item.session), item.session.school, item.session.schoolId, ownerLabels[ownerFor(item.session)], item.session.category,
       item.before.map((row) => `${tutorName(row)} (#${row.tutorId})`).join(" | "), item.after.map((row) => `${tutorName(row)} (#${row.tutorId})`).join(" | "),
     ])];
     const blob = new Blob([`\uFEFF${rows.map((row) => row.map(csvCell).join(";")).join("\n")}`], { type: "text/csv;charset=utf-8" });
@@ -222,33 +203,34 @@ export default function StaffingEvolution() {
 
   return <section className="task-panel staffing-evolution">
     <div className="panel-heading">
-      <div><p className="eyebrow">Comparaison des exports Prix des tuteurs</p><h2>Évolution staffing</h2><p>Suivez les nouvelles affectations, remplacements et sessions disparues entre deux fichiers.</p></div>
-      <div className="filters"><label className="import-button">Importer un CSV<input type="file" accept=".csv,text/csv" disabled={saving} onChange={(event) => { void upload(event.target.files?.[0]); event.currentTarget.value = ""; }} /></label><button type="button" className="button quiet" onClick={() => void loadSummaries()} disabled={loading}>↻ Actualiser</button></div>
+      <div><p className="eyebrow">Comparaison des exports Semaines à venir</p><h2>Évolution staffing</h2><p>Comparez les tuteurs réellement affectés à chaque session entre deux exports successifs.</p></div>
+      <div className="filters"><label className="import-button">Importer Semaines à venir<input type="file" accept=".csv,text/csv" disabled={saving} onChange={(event) => { void upload(event.target.files?.[0]); event.currentTarget.value = ""; }} /></label><button type="button" className="button quiet" onClick={() => void loadSummaries()} disabled={loading}>↻ Actualiser</button></div>
     </div>
     {message ? <p className="enrollment-message">{message}</p> : null}
     <div className="staffing-evolution-controls">
-      <label>Fichier de référence<select value={referenceId} onChange={(event) => setReferenceId(event.target.value)}>{imports.map((item) => <option value={item.id} key={item.id}>{importLabel(item)}</option>)}</select></label>
+      <label>Export de référence<select value={referenceId} onChange={(event) => setReferenceId(event.target.value)}>{imports.map((item) => <option value={item.id} key={item.id}>{importLabel(item)}</option>)}</select></label>
       <span aria-hidden="true">→</span>
-      <label>Fichier récent<select value={recentId} onChange={(event) => setRecentId(event.target.value)}>{imports.map((item) => <option value={item.id} key={item.id}>{importLabel(item)}</option>)}</select></label>
-      <label>Date des missions<select value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)}><option value="">Toutes les dates</option>{dates.map((date) => <option key={date} value={date}>{fullDate(date)}</option>)}</select></label>
-      <label>Recherche<input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Établissement ou tuteur…" /></label>
+      <label>Export récent<select value={recentId} onChange={(event) => setRecentId(event.target.value)}>{imports.map((item) => <option value={item.id} key={item.id}>{importLabel(item)}</option>)}</select></label>
+      <label>Date des sessions<select value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)}><option value="">Toutes les dates</option>{dates.map((date) => <option key={date} value={date}>{fullDate(date)}</option>)}</select></label>
+      <label>Recherche<input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="ID, établissement ou tuteur…" /></label>
     </div>
-    <p className="staffing-comparison-note">Les sessions sont rapprochées par date, établissement, horaire et catégorie. Les lignes de groupes identiques sont dédupliquées.</p>
+    <p className="staffing-comparison-note">Les sessions sont rapprochées prioritairement par leur ID séance. Les groupes et élèves présents sur plusieurs lignes ne créent pas de doublons.</p>
+    {reference && recent && !hasComparableSnapshots ? <div className="staffing-evolution-legacy-warning"><strong>Ces anciens imports ne contiennent pas le détail des tuteurs staffés.</strong><span>Réimportez les deux exports « Semaines à venir » dans cet onglet pour obtenir une comparaison complète.</span></div> : null}
     <div className="staffing-evolution-totals">{totals.map((item) => <button type="button" className={`${item.kind} ${kindFilter === item.kind ? "active" : ""}`} onClick={() => setKindFilter((current) => current === item.kind ? "all" : item.kind)} key={item.kind}><span>{kindLabels[item.kind]}</span><strong>{item.count}</strong></button>)}</div>
     <div className="staffing-evolution-owner-table">
       <div className="head"><span>Responsable RH</span><span>Nouveaux tuteurs</span><span>Changements</span><span>Tuteurs retirés</span><span>Sessions apparues</span><span>Sessions disparues</span></div>
-      {countsByOwner.map((row) => <button type="button" className={(ownerFilter === "unassigned" ? !row.owner : ownerFilter === row.owner) ? "active" : ""} onClick={() => setOwnerFilter((current) => (current === (row.owner || "unassigned") ? "all" : row.owner || "unassigned"))} key={row.owner || "unassigned"}><strong>{ownerLabels[row.owner]}</strong><span>{row.additions}</span><span>{row.replacements}</span><span>{row.removals}</span><span>{row.appeared}</span><span>{row.disappeared}</span></button>)}
+      {countsByOwner.map((row) => <button type="button" className={(ownerFilter === "unassigned" ? !row.owner : ownerFilter === row.owner) ? "active" : ""} onClick={() => setOwnerFilter((current) => current === (row.owner || "unassigned") ? "all" : row.owner || "unassigned")} key={row.owner || "unassigned"}><strong>{ownerLabels[row.owner]}</strong><span>{row.additions}</span><span>{row.replacements}</span><span>{row.removals}</span><span>{row.appeared}</span><span>{row.disappeared}</span></button>)}
     </div>
-    <div className="staffing-evolution-list-heading"><div><strong>{filtered.length} évolution{filtered.length > 1 ? "s" : ""}</strong><span>{selectedDate ? fullDate(selectedDate) : "Toutes les dates des deux fichiers"}{ownerFilter !== "all" ? ` · ${ownerFilter === "unassigned" ? ownerLabels[""] : ownerLabels[ownerFilter]}` : ""}</span></div><button type="button" className="ghost-button" onClick={exportCsv} disabled={!filtered.length}>Export CSV</button></div>
-    {!reference || !recent ? <div className="empty-state compact">{imports.length < 2 ? "Importez au moins deux fichiers Prix des tuteurs pour commencer." : "Chargement des deux fichiers…"}</div> : filtered.length ? <div className="staffing-evolution-results">{filtered.map((item, index) => {
-      const school = schoolByName.get(normalize(item.session.school));
-      const renderTutors = (rows: TutorAssignmentRow[]) => rows.length ? rows.map((row) => <span key={`${row.tutorId}-${row.phone}`}><PersonAdminLink personId={row.tutorId} status="tutor">{tutorName(row)}</PersonAdminLink><small>#{row.tutorId}{row.phone ? ` · ${row.phone}` : ""}</small></span>) : <em>Aucun tuteur</em>;
-      return <article className={`staffing-evolution-card ${item.kind}`} key={`${item.kind}-${item.session.key}-${index}`}>
-        <div className="staffing-evolution-session"><span>{fullDate(item.session.date)} · {item.session.timeSlot || "Horaire non précisé"}</span><strong><SchoolAdminLink schoolId={school?.externalId}>{item.session.school || "Établissement non précisé"}</SchoolAdminLink></strong><small>{item.session.category || "Catégorie non précisée"} · RH : {ownerLabels[ownerFor(item.session.school)]}</small></div>
+    <div className="staffing-evolution-list-heading"><div><strong>{filtered.length} évolution{filtered.length > 1 ? "s" : ""}</strong><span>{selectedDate ? fullDate(selectedDate) : "Toutes les dates des deux exports"}{ownerFilter !== "all" ? ` · ${ownerFilter === "unassigned" ? ownerLabels[""] : ownerLabels[ownerFilter]}` : ""}</span></div><button type="button" className="ghost-button" onClick={exportCsv} disabled={!filtered.length}>Export CSV</button></div>
+    {!reference || !recent ? <div className="empty-state compact">{imports.length < 2 ? "Importez au moins deux exports Semaines à venir pour commencer." : "Chargement des deux fichiers…"}</div> : !hasComparableSnapshots ? <div className="empty-state compact"><h3>Réimport nécessaire</h3><p>Les anciens imports restent disponibles pour les séances non affectées, mais ne contiennent pas les noms et ID des tuteurs staffés.</p></div> : filtered.length ? <div className="staffing-evolution-results">{filtered.map((item, index) => {
+      const school = schoolFor(item.session);
+      const renderTutors = (rows: UpcomingSessionTutor[]) => rows.length ? rows.map((row) => <span key={`${row.tutorId}-${row.phone}`}><PersonAdminLink personId={row.tutorId} status="tutor">{tutorName(row)}</PersonAdminLink><small>#{row.tutorId}{row.phone ? ` · ${row.phone}` : ""}</small></span>) : <em>Aucun tuteur</em>;
+      return <article className={`staffing-evolution-card ${item.kind}`} key={`${item.kind}-${item.session.sessionId}-${index}`}>
+        <div className="staffing-evolution-session"><span>{fullDate(item.session.date)} · {timeSlot(item.session)} · #{item.session.sessionId}</span><strong><SchoolAdminLink schoolId={item.session.schoolId || school?.externalId}>{item.session.school || "Établissement non précisé"}</SchoolAdminLink></strong><small>{item.session.category || "Catégorie non précisée"} · RH : {ownerLabels[ownerFor(item.session)]}</small></div>
         <div className="staffing-evolution-kind"><span>{kindLabels[item.kind]}</span></div>
         <div className="staffing-evolution-before"><b>Avant</b>{renderTutors(item.before)}</div>
         <div className="staffing-evolution-after"><b>Après</b>{renderTutors(item.after)}</div>
       </article>;
-    })}</div> : <div className="empty-state compact"><span>✓</span><h3>Aucune évolution détectée</h3><p>Les deux fichiers sont identiques pour les filtres sélectionnés.</p></div>}
+    })}</div> : <div className="empty-state compact"><span>✓</span><h3>Aucune évolution détectée</h3><p>Les deux exports sont identiques pour les filtres sélectionnés.</p></div>}
   </section>;
 }
