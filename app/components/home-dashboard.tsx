@@ -3,18 +3,11 @@
 import { useCallback, useEffect, useState } from "react";
 
 export type HomeDestination = "tasks" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffing" | "staffingAudit" | "staffingEvolution" | "watchlist" | "tutorReports" | "tutors" | "availability" | "availabilityFeed" | "enrollments" | "coverage" | "unstaffed" | "files";
-type Owner = "kelly" | "pierre" | "julie" | "unassigned";
 type DashboardPayload = {
-  unstaffed?: {
-    importName: string;
-    dates: Array<{ date: string; counts: Record<Owner, number>; total: number }>;
-  };
   counts?: Record<string, number>;
   error?: string;
   detail?: string;
 };
-
-const ownerLabels: Record<Owner, string> = { kelly: "Kelly", pierre: "Pierre", julie: "Julie", unassigned: "Non attribués" };
 
 const menuItems: Array<{ mode: HomeDestination; icon: string; title: string; description: string; countKey?: string }> = [
   { mode: "watchlist", icon: "👀", title: "À suivre", description: "Établissements nécessitant une attention particulière.", countKey: "watchlist" },
@@ -32,25 +25,13 @@ const menuItems: Array<{ mode: HomeDestination; icon: string; title: string; des
   { mode: "journal", icon: "✍️", title: "Journal", description: "Relire les nouvelles et décisions de l’Étude Alpha.", countKey: "journal" },
   { mode: "links", icon: "🔗", title: "Liens", description: "Accéder rapidement aux ressources partagées.", countKey: "links" },
   { mode: "objectives", icon: "🎯", title: "Objectifs", description: "Suivre les objectifs collectifs et individuels.", countKey: "objectives" },
-  { mode: "unstaffed", icon: "📋", title: "Séances non affectées", description: "Identifier les séances à staffer et les personnes mobilisables.", countKey: "unstaffed" },
+  { mode: "unstaffed", icon: "📋", title: "Séances non affectées", description: "Identifier les séances à staffer et les personnes mobilisables." },
   { mode: "staffing", icon: "👥", title: "Staffing", description: "Suivre les volumes staffés et non staffés au quotidien.", countKey: "staffing" },
   { mode: "tasks", icon: "✅", title: "Tâches", description: "Organiser et suivre les actions de l’équipe.", countKey: "tasks" },
   { mode: "tutors", icon: "👨‍🏫", title: "Tuteurs", description: "Suivre les entrées, sorties et commentaires tuteurs." },
 ];
 
-function formatDate(value: string) {
-  const date = new Date(`${value}T12:00:00`);
-  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("fr-FR", { weekday: "short", day: "numeric", month: "short" }).format(date);
-}
-
-function localDateKey() {
-  const date = new Date();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${date.getFullYear()}-${month}-${day}`;
-}
-
-export default function HomeDashboard({ onNavigate, onOpenUnstaffed }: { onNavigate: (mode: HomeDestination) => void; onOpenUnstaffed: (date: string, owner: Owner | "all") => void }) {
+export default function HomeDashboard({ onNavigate }: { onNavigate: (mode: HomeDestination) => void }) {
   const [data, setData] = useState<DashboardPayload>({});
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
@@ -58,8 +39,7 @@ export default function HomeDashboard({ onNavigate, onOpenUnstaffed }: { onNavig
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const today = localDateKey();
-      const response = await fetch(`/api/dashboard?today=${today}`, { cache: "no-store" });
+      const response = await fetch("/api/dashboard", { cache: "no-store" });
       const payload = await response.json() as DashboardPayload;
       if (!response.ok) throw new Error(payload.detail || payload.error || "Chargement impossible");
       setData(payload);
@@ -77,28 +57,9 @@ export default function HomeDashboard({ onNavigate, onOpenUnstaffed }: { onNavig
     return () => { window.clearTimeout(initial); window.clearInterval(refresh); };
   }, [load]);
 
-  const dates = data.unstaffed?.dates ?? [];
-  const owners: Owner[] = ["kelly", "pierre", "julie", "unassigned"];
-
   return <>
-    <section className="home-unstaffed-panel">
-      <div className="home-section-heading">
-        <div><p className="eyebrow">Trois prochaines dates</p><h2>Séances non staffées par responsable</h2><span>{data.unstaffed?.importName ? `Source : ${data.unstaffed.importName}` : "Dernier import Semaines à venir"}</span></div>
-        <button type="button" className="ghost-button" onClick={() => void load()} disabled={loading}>↻ Actualiser</button>
-      </div>
-      {message ? <p className="enrollment-message">{message}</p> : null}
-      {loading && !dates.length ? <div className="home-dashboard-loading">Chargement du résumé…</div> : dates.length ? <div className="home-unstaffed-table">
-        <div className="home-unstaffed-row head"><span>Date</span>{owners.map((owner) => <span key={owner}>{ownerLabels[owner]}</span>)}<span>Total</span></div>
-        {dates.map((item) => <div className="home-unstaffed-row" key={item.date}>
-          <strong>{formatDate(item.date)}</strong>
-          {owners.map((owner) => <button type="button" key={owner} onClick={() => onOpenUnstaffed(item.date, owner)}><b>{item.counts[owner]}</b><small>{ownerLabels[owner]}</small></button>)}
-          <button type="button" className="total" onClick={() => onOpenUnstaffed(item.date, "all")}><b>{item.total}</b><small>Toutes</small></button>
-        </div>)}
-      </div> : <div className="empty-state compact"><span>✓</span><h3>Aucune séance à afficher</h3><p>Aucune date future n’est disponible dans le dernier import.</p></div>}
-    </section>
-
     <section className="home-menu-section">
-      <div className="home-section-heading"><div><p className="eyebrow">Navigation</p><h2>Tous les outils Alpha</h2><span>Choisissez un espace pour commencer.</span></div></div>
+      <div className="home-section-heading"><div><p className="eyebrow">Navigation</p><h2>Tous les outils Alpha</h2><span>Choisissez un espace pour commencer.</span></div>{loading ? <span>Actualisation…</span> : message ? <span>{message}</span> : null}</div>
       <div className="home-menu-grid">{menuItems.map((item) => {
         const count = item.countKey ? data.counts?.[item.countKey] : undefined;
         return <button type="button" className="home-menu-card" key={item.mode} onClick={() => onNavigate(item.mode)}>

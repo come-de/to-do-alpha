@@ -1888,15 +1888,6 @@ export default function Home() {
     setAppModeState(mode);
   }, []);
 
-  const openFilteredUnstaffed = useCallback((date: string, owner: "kelly" | "pierre" | "julie" | "unassigned" | "all") => {
-    const url = new URL(window.location.href);
-    url.searchParams.set("onglet", appModeSlugs.unstaffed);
-    url.searchParams.set("date-seances", date);
-    url.searchParams.set("responsable", owner);
-    window.history.replaceState(null, "", `${url.pathname}?${url.searchParams.toString()}${url.hash}`);
-    setAppModeState("unstaffed");
-  }, []);
-
   const loadTasks = useCallback(async (silent = false) => {
     try {
       if (!silent) setSyncError("");
@@ -5721,7 +5712,7 @@ export default function Home() {
           </div>
         </section>}
 
-        {appMode === "dashboard" && <HomeDashboard onNavigate={(mode: HomeDestination) => setAppMode(mode)} onOpenUnstaffed={openFilteredUnstaffed} />}
+        {appMode === "dashboard" && <HomeDashboard onNavigate={(mode: HomeDestination) => setAppMode(mode)} />}
 
         <div className="tabs-shell">
           <div className="main-tabs" role="group" aria-label="Choisir le type de suivi">
