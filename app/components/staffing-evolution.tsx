@@ -59,7 +59,8 @@ export default function StaffingEvolution() {
   const [schools, setSchools] = useState<SchoolRecord[]>([]);
   const [referenceId, setReferenceId] = useState("");
   const [recentId, setRecentId] = useState("");
-  const [selectedDate, setSelectedDate] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [ownerFilter, setOwnerFilter] = useState<OwnerFilter>("all");
   const [kindFilter, setKindFilter] = useState<"all" | ChangeKind>("all");
   const [query, setQuery] = useState("");
@@ -111,6 +112,8 @@ export default function StaffingEvolution() {
   const reference = loadedImports[referenceId] ?? null;
   const recent = loadedImports[recentId] ?? null;
   const dates = useMemo(() => Array.from(new Set([...(reference?.staffingSessions ?? []), ...(recent?.staffingSessions ?? [])].map((row) => row.date).filter(Boolean))).sort(), [recent, reference]);
+  const activeStartDate = dates.includes(startDate) ? startDate : dates[0] || "";
+  const activeEndDate = dates.includes(endDate) ? endDate : dates.at(-1) || activeStartDate;
   const schoolByName = useMemo(() => new Map(schools.map((school) => [normalize(school.name), school])), [schools]);
   const schoolFor = useCallback((session: UpcomingStaffingSession) => schools.find((school) => session.schoolId && school.externalId === session.schoolId) || schoolByName.get(normalize(session.school)), [schoolByName, schools]);
   const ownerFor = useCallback((session: UpcomingStaffingSession): Owner => schoolFor(session)?.portfolioOwner || "", [schoolFor]);
@@ -118,8 +121,9 @@ export default function StaffingEvolution() {
 
   const changes = useMemo(() => {
     if (!reference || !recent) return [];
-    const beforeSessions = new Map(reference.staffingSessions.filter((item) => !selectedDate || item.date === selectedDate).map((item) => [item.sessionId, item]));
-    const afterSessions = new Map(recent.staffingSessions.filter((item) => !selectedDate || item.date === selectedDate).map((item) => [item.sessionId, item]));
+    const inRange = (date: string) => (!activeStartDate || date >= activeStartDate) && (!activeEndDate || date <= activeEndDate);
+    const beforeSessions = new Map(reference.staffingSessions.filter((item) => inRange(item.date)).map((item) => [item.sessionId, item]));
+    const afterSessions = new Map(recent.staffingSessions.filter((item) => inRange(item.date)).map((item) => [item.sessionId, item]));
     const items: SessionChange[] = [];
     new Set([...beforeSessions.keys(), ...afterSessions.keys()]).forEach((sessionId) => {
       const beforeSession = beforeSessions.get(sessionId);
@@ -144,27 +148,31 @@ export default function StaffingEvolution() {
       }
     });
     return items.sort((a, b) => `${a.session.date} ${a.session.startTime} ${a.session.school}`.localeCompare(`${b.session.date} ${b.session.startTime} ${b.session.school}`, "fr"));
-  }, [recent, reference, selectedDate]);
+  }, [activeEndDate, activeStartDate, recent, reference]);
+
+  const searchFilteredChanges = useMemo(() => {
+    const normalizedQuery = normalize(query);
+    if (!normalizedQuery) return changes;
+    return changes.filter((item) => normalize(`${item.session.sessionId} ${item.session.school} ${item.session.category} ${timeSlot(item.session)} ${item.before.map(tutorName).join(" ")} ${item.after.map(tutorName).join(" ")}`).includes(normalizedQuery));
+  }, [changes, query]);
 
   const countsByOwner = useMemo(() => (["kelly", "pierre", "julie", ""] as Owner[]).map((owner) => ({
     owner,
-    replacements: changes.filter((item) => ownerFor(item.session) === owner && item.kind === "replacements").length,
-    additions: changes.filter((item) => ownerFor(item.session) === owner && item.kind === "additions").length,
-    removals: changes.filter((item) => ownerFor(item.session) === owner && item.kind === "removals").length,
-    appeared: changes.filter((item) => ownerFor(item.session) === owner && item.kind === "appeared").length,
-    disappeared: changes.filter((item) => ownerFor(item.session) === owner && item.kind === "disappeared").length,
-  })), [changes, ownerFor]);
+    replacements: searchFilteredChanges.filter((item) => ownerFor(item.session) === owner && item.kind === "replacements").length,
+    additions: searchFilteredChanges.filter((item) => ownerFor(item.session) === owner && item.kind === "additions").length,
+    removals: searchFilteredChanges.filter((item) => ownerFor(item.session) === owner && item.kind === "removals").length,
+    appeared: searchFilteredChanges.filter((item) => ownerFor(item.session) === owner && item.kind === "appeared").length,
+    disappeared: searchFilteredChanges.filter((item) => ownerFor(item.session) === owner && item.kind === "disappeared").length,
+  })), [ownerFor, searchFilteredChanges]);
 
   const filtered = useMemo(() => {
-    const normalizedQuery = normalize(query);
-    return changes.filter((item) => {
+    return searchFilteredChanges.filter((item) => {
       const owner = ownerFor(item.session);
       const ownerMatches = ownerFilter === "all" || (ownerFilter === "unassigned" ? !owner : owner === ownerFilter);
       const kindMatches = kindFilter === "all" || item.kind === kindFilter;
-      const text = normalize(`${item.session.sessionId} ${item.session.school} ${item.session.category} ${timeSlot(item.session)} ${item.before.map(tutorName).join(" ")} ${item.after.map(tutorName).join(" ")}`);
-      return ownerMatches && kindMatches && (!normalizedQuery || text.includes(normalizedQuery));
+      return ownerMatches && kindMatches;
     });
-  }, [changes, kindFilter, ownerFilter, ownerFor, query]);
+  }, [kindFilter, ownerFilter, ownerFor, searchFilteredChanges]);
 
   async function upload(file?: File) {
     if (!file) return;
@@ -194,12 +202,13 @@ export default function StaffingEvolution() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `evolution-staffing-${selectedDate || "toutes-dates"}.csv`;
+    link.download = `evolution-staffing-${activeStartDate || "debut"}-${activeEndDate || "fin"}.csv`;
     link.click();
     URL.revokeObjectURL(url);
   }
 
-  const totals = (Object.keys(kindLabels) as ChangeKind[]).map((kind) => ({ kind, count: changes.filter((item) => item.kind === kind).length }));
+  const totalScope = ownerFilter === "all" ? searchFilteredChanges : searchFilteredChanges.filter((item) => ownerFilter === "unassigned" ? !ownerFor(item.session) : ownerFor(item.session) === ownerFilter);
+  const totals = (Object.keys(kindLabels) as ChangeKind[]).map((kind) => ({ kind, count: totalScope.filter((item) => item.kind === kind).length }));
 
   return <section className="task-panel staffing-evolution">
     <div className="panel-heading">
@@ -211,7 +220,8 @@ export default function StaffingEvolution() {
       <label>Export de référence<select value={referenceId} onChange={(event) => setReferenceId(event.target.value)}>{imports.map((item) => <option value={item.id} key={item.id}>{importLabel(item)}</option>)}</select></label>
       <span aria-hidden="true">→</span>
       <label>Export récent<select value={recentId} onChange={(event) => setRecentId(event.target.value)}>{imports.map((item) => <option value={item.id} key={item.id}>{importLabel(item)}</option>)}</select></label>
-      <label>Date des sessions<select value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)}><option value="">Toutes les dates</option>{dates.map((date) => <option key={date} value={date}>{fullDate(date)}</option>)}</select></label>
+      <label>Du<select value={activeStartDate} onChange={(event) => { const next = event.target.value; setStartDate(next); if (activeEndDate && next > activeEndDate) setEndDate(next); }}>{dates.map((date) => <option key={date} value={date}>{fullDate(date)}</option>)}</select></label>
+      <label>Au<select value={activeEndDate} onChange={(event) => { const next = event.target.value; setEndDate(next); if (activeStartDate && next < activeStartDate) setStartDate(next); }}>{dates.map((date) => <option key={date} value={date}>{fullDate(date)}</option>)}</select></label>
       <label>Recherche<input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="ID, établissement ou tuteur…" /></label>
     </div>
     <p className="staffing-comparison-note">Les sessions sont rapprochées prioritairement par leur ID séance. Les groupes et élèves présents sur plusieurs lignes ne créent pas de doublons.</p>
@@ -221,7 +231,7 @@ export default function StaffingEvolution() {
       <div className="head"><span>Responsable RH</span><span>Nouveaux tuteurs</span><span>Changements</span><span>Tuteurs retirés</span><span>Sessions apparues</span><span>Sessions disparues</span></div>
       {countsByOwner.map((row) => <button type="button" className={(ownerFilter === "unassigned" ? !row.owner : ownerFilter === row.owner) ? "active" : ""} onClick={() => setOwnerFilter((current) => current === (row.owner || "unassigned") ? "all" : row.owner || "unassigned")} key={row.owner || "unassigned"}><strong>{ownerLabels[row.owner]}</strong><span>{row.additions}</span><span>{row.replacements}</span><span>{row.removals}</span><span>{row.appeared}</span><span>{row.disappeared}</span></button>)}
     </div>
-    <div className="staffing-evolution-list-heading"><div><strong>{filtered.length} évolution{filtered.length > 1 ? "s" : ""}</strong><span>{selectedDate ? fullDate(selectedDate) : "Toutes les dates des deux exports"}{ownerFilter !== "all" ? ` · ${ownerFilter === "unassigned" ? ownerLabels[""] : ownerLabels[ownerFilter]}` : ""}</span></div><button type="button" className="ghost-button" onClick={exportCsv} disabled={!filtered.length}>Export CSV</button></div>
+    <div className="staffing-evolution-list-heading"><div><strong>{filtered.length} évolution{filtered.length > 1 ? "s" : ""}</strong><span>{activeStartDate && activeEndDate ? `Du ${fullDate(activeStartDate)} au ${fullDate(activeEndDate)}` : "Toutes les dates des deux exports"}{ownerFilter !== "all" ? ` · ${ownerFilter === "unassigned" ? ownerLabels[""] : ownerLabels[ownerFilter]}` : ""}</span></div><button type="button" className="ghost-button" onClick={exportCsv} disabled={!filtered.length}>Export CSV</button></div>
     {!reference || !recent ? <div className="empty-state compact">{imports.length < 2 ? "Importez au moins deux exports Semaines à venir pour commencer." : "Chargement des deux fichiers…"}</div> : !hasComparableSnapshots ? <div className="empty-state compact"><h3>Réimport nécessaire</h3><p>Les anciens imports restent disponibles pour les séances non affectées, mais ne contiennent pas les noms et ID des tuteurs staffés.</p></div> : filtered.length ? <div className="staffing-evolution-results">{filtered.map((item, index) => {
       const school = schoolFor(item.session);
       const renderTutors = (rows: UpcomingSessionTutor[]) => rows.length ? rows.map((row) => <span key={`${row.tutorId}-${row.phone}`}><PersonAdminLink personId={row.tutorId} status="tutor">{tutorName(row)}</PersonAdminLink><small>#{row.tutorId}{row.phone ? ` · ${row.phone}` : ""}</small></span>) : <em>Aucun tuteur</em>;

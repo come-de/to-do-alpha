@@ -579,7 +579,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .staffing-rh-summary .negative { color: var(--red); }
 .staffing-rh-summary .changed { color: #6d28d9; }
 .staffing-rh-show-all { margin: 5px 9px 7px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 7px; background: white; color: var(--blue-main); font-size: 8.5px; font-weight: 800; cursor: pointer; }
-.staffing-evolution-controls { margin: 0 12px 8px; display: grid; grid-template-columns: minmax(220px,1fr) auto minmax(220px,1fr) minmax(170px,.55fr) minmax(180px,.6fr); align-items: end; gap: 8px; }
+.staffing-evolution-controls { margin: 0 12px 8px; display: grid; grid-template-columns: minmax(210px,1fr) auto minmax(210px,1fr) minmax(135px,.42fr) minmax(135px,.42fr) minmax(180px,.6fr); align-items: end; gap: 8px; }
 .staffing-evolution-controls > span { align-self: center; color: var(--green-dark); font-size: 22px; font-weight: 900; }
 .staffing-evolution-controls label { min-width: 0; display: grid; gap: 3px; color: var(--muted); font-size: 8px; font-weight: 850; text-transform: uppercase; letter-spacing: .05em; }
 .staffing-evolution-controls select, .staffing-evolution-controls input { width: 100%; min-width: 0; height: 35px; padding: 0 9px; border: 1px solid var(--line); border-radius: 8px; color: var(--blue-title); background: white; font: inherit; font-size: 9px; font-weight: 650; text-transform: none; text-overflow: ellipsis; }
