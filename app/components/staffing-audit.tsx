@@ -51,6 +51,7 @@ function daySummary(day: StaffingAuditDay) {
 }
 
 export default function StaffingAudit() {
+  const [sectionTab, setSectionTab] = useState<"general" | "daily">("general");
   const [savedDays, setSavedDays] = useState<StaffingAuditDay[]>([]);
   const [draftDays, setDraftDays] = useState<StaffingAuditDay[]>([]);
   const [selectedDate, setSelectedDate] = useState("");
@@ -195,6 +196,7 @@ export default function StaffingAudit() {
       if (!response.ok) throw new Error(data.detail || data.error || "Analyse impossible");
       const days = data.days ?? [];
       setDraftDays(days);
+      setSectionTab("daily");
       setView("draft");
       setSelectedDate(days[0]?.date || "");
       const ignoredDateMessage = data.invalidDateRowCount
@@ -273,18 +275,22 @@ export default function StaffingAudit() {
   }
 
   return <section className="task-panel staffing-audit-panel">
-    <div className="panel-heading"><div><p className="eyebrow">Historique quotidien</p><h2>Bilan staffing</h2><p>Importez un rapport, vérifiez une date puis enregistrez un bilan autonome.</p></div><label className="import-button">Importer un rapport CSV<input type="file" accept=".csv,text/csv" disabled={saving} onChange={(event) => { void importFile(event.target.files?.[0]); event.currentTarget.value = ""; }} /></label></div>
+    <div className="panel-heading"><div><p className="eyebrow">Pilotage du staffing</p><h2>Bilan staffing</h2><p>{sectionTab === "general" ? "Analysez l’évolution du staffing sur une période." : "Importez un rapport, vérifiez une date puis enregistrez un bilan autonome."}</p></div>{sectionTab === "daily" ? <label className="import-button">Importer un rapport CSV<input type="file" accept=".csv,text/csv" disabled={saving} onChange={(event) => { void importFile(event.target.files?.[0]); event.currentTarget.value = ""; }} /></label> : null}</div>
+    <div className="staffing-audit-main-tabs" role="tablist" aria-label="Choisir la vue du bilan staffing">
+      <button type="button" role="tab" aria-selected={sectionTab === "general"} className={sectionTab === "general" ? "active" : ""} onClick={() => { setSectionTab("general"); setView("history"); setSelectedDate((current) => savedDays.some((day) => day.date === current) ? current : savedDays[0]?.date || ""); }}>📈 Bilan général</button>
+      <button type="button" role="tab" aria-selected={sectionTab === "daily"} className={sectionTab === "daily" ? "active" : ""} onClick={() => { setSectionTab("daily"); setSelectedDate((current) => (view === "draft" ? draftDays : savedDays).some((day) => day.date === current) ? current : (view === "draft" ? draftDays[0]?.date : savedDays[0]?.date) || ""); }}>📅 Bilans par date et imports</button>
+    </div>
     {message ? <p className="enrollment-message">{message}</p> : null}
-    <div className="staffing-audit-source-tabs">
+    {sectionTab === "daily" ? <><div className="staffing-audit-source-tabs">
       {draftDays.length ? <button type="button" className={view === "draft" ? "active" : ""} onClick={() => { setView("draft"); setSelectedDate(draftDays[0]?.date || ""); }}>Import en cours ({draftDays.length})</button> : null}
       <button type="button" className={view === "history" ? "active" : ""} onClick={() => { setView("history"); setSelectedDate(savedDays[0]?.date || ""); }}>Historique ({savedDays.length})</button>
     </div>
-    <div className="staffing-audit-date-tabs">{(view === "draft" ? draftDays : savedDays).map((day) => <button type="button" className={selectedDate === day.date ? "active" : ""} onClick={() => setSelectedDate(day.date)} key={day.date}>{formatShortDate(day.date)}{savedDays.some((saved) => saved.date === day.date) && view === "draft" ? <small>déjà enregistré</small> : null}</button>)}</div>
+    <div className="staffing-audit-date-tabs">{(view === "draft" ? draftDays : savedDays).map((day) => <button type="button" className={selectedDate === day.date ? "active" : ""} onClick={() => setSelectedDate(day.date)} key={day.date}>{formatShortDate(day.date)}{savedDays.some((saved) => saved.date === day.date) && view === "draft" ? <small>déjà enregistré</small> : null}</button>)}</div></> : null}
     {activeDay ? <>
-      <div className="staffing-audit-day-heading"><div><strong>{formatDate(activeDay.date)}</strong><span>{activeDay.sessions.length} séances uniques · source : {activeDay.sourceFileName}</span></div>{view === "draft" ? <button type="button" className="button primary" onClick={() => void saveDay()} disabled={saving}>Enregistrer cette journée</button> : <span>Enregistré le {new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short" }).format(new Date(activeDay.updatedAt))}</span>}</div>
-      {totalTreatedSessions.length ? <div className="staffing-audit-removed-summary"><span><strong>{totalTreatedSessions.length}</strong> séance{totalTreatedSessions.length > 1 ? "s" : ""} retirée{totalTreatedSessions.length > 1 ? "s" : ""} du non-staffing pour cette date{categoryFilter !== "all" || ownerFilter !== "all" ? ` · ${filteredTreatedSessions.length} avec les filtres actuels` : ""}</span><button type="button" onClick={() => setShowTreated((current) => !current)}>{showTreated ? "Masquer" : "Voir et réactiver"}</button></div> : null}
+      {sectionTab === "daily" ? <div className="staffing-audit-day-heading"><div><strong>{formatDate(activeDay.date)}</strong><span>{activeDay.sessions.length} séances uniques · source : {activeDay.sourceFileName}</span></div>{view === "draft" ? <button type="button" className="button primary" onClick={() => void saveDay()} disabled={saving}>Enregistrer cette journée</button> : <span>Enregistré le {new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short" }).format(new Date(activeDay.updatedAt))}</span>}</div> : null}
+      {sectionTab === "daily" && totalTreatedSessions.length ? <div className="staffing-audit-removed-summary"><span><strong>{totalTreatedSessions.length}</strong> séance{totalTreatedSessions.length > 1 ? "s" : ""} retirée{totalTreatedSessions.length > 1 ? "s" : ""} du non-staffing pour cette date{categoryFilter !== "all" || ownerFilter !== "all" ? ` · ${filteredTreatedSessions.length} avec les filtres actuels` : ""}</span><button type="button" onClick={() => setShowTreated((current) => !current)}>{showTreated ? "Masquer" : "Voir et réactiver"}</button></div> : null}
       <div className="staffing-audit-category-filter"><strong>Type de séance</strong>{(["all", "alpha", "surveillance", "service"] as const).map((category) => <button type="button" className={categoryFilter === category ? "active" : ""} onClick={() => setCategoryFilter(category)} key={category}>{category === "all" ? "Tous les types" : categoryLabels[category]}</button>)}</div>
-      {view === "history" && savedDays.length ? <section className="staffing-range-analysis">
+      {sectionTab === "general" && savedDays.length ? <section className="staffing-range-analysis">
         <div className="staffing-range-heading">
           <div><p className="eyebrow">Analyse de période</p><h3>Évolution du non-staffing</h3><span>{categoryFilter === "all" ? "Tous les types de séances" : categoryLabels[categoryFilter]}</span></div>
           <div className="staffing-range-dates">
@@ -335,11 +341,11 @@ export default function StaffingAudit() {
           </div>
         </div>
       </section> : null}
-      <div className="staffing-audit-summary"><div className="head"><span>Responsable RH</span><span>Staffées</span><span>Non staffées</span><span>À vérifier</span><span>Total</span></div>{summary.map((row) => <div className="row" key={row.owner || "unassigned"}><strong>{ownerLabels[row.owner]}</strong><span>{row.staffed}</span><span className="danger">{row.unstaffed}</span><span className="warning">{row.ambiguous}</span><span>{row.total}</span></div>)}</div>
+      {sectionTab === "daily" ? <><div className="staffing-audit-summary"><div className="head"><span>Responsable RH</span><span>Staffées</span><span>Non staffées</span><span>À vérifier</span><span>Total</span></div>{summary.map((row) => <div className="row" key={row.owner || "unassigned"}><strong>{ownerLabels[row.owner]}</strong><span>{row.staffed}</span><span className="danger">{row.unstaffed}</span><span className="warning">{row.ambiguous}</span><span>{row.total}</span></div>)}</div>
       <div className="staffing-audit-owner-filter"><strong>Afficher les séances de</strong>{(["all", "kelly", "pierre", "julie", ""] as const).map((owner) => <button type="button" className={ownerFilter === owner ? "active" : ""} onClick={() => setOwnerFilter(owner)} key={owner || "unassigned"}>{owner === "all" ? "Tous" : ownerLabels[owner]}</button>)}</div>
       <div className="staffing-audit-list-heading"><div><h3>Séances à traiter</h3><span>{filteredActiveSessions.length} affichée{filteredActiveSessions.length > 1 ? "s" : ""}{ownerFilter !== "all" ? ` · ${activeSessions.length} au total` : ""}</span></div></div>
       <div className="staffing-audit-list">{filteredActiveSessions.length ? filteredActiveSessions.map(sessionRow) : <div className="empty-state compact">Aucune séance active à traiter pour ce responsable et cette date.</div>}</div>
-      {showTreated && totalTreatedSessions.length ? <section className="staffing-audit-treated"><div className="staffing-audit-treated-heading"><strong>Séances retirées du non-staffing</strong><span>{filteredTreatedSessions.length} affichée{filteredTreatedSessions.length > 1 ? "s" : ""}</span></div><div className="staffing-audit-list">{filteredTreatedSessions.length ? filteredTreatedSessions.map(sessionRow) : <div className="empty-state compact">Aucune séance retirée avec les filtres actuels.</div>}</div></section> : null}
-    </> : <div className="empty-state"><span>📊</span><h3>Aucun bilan sélectionné</h3><p>Importez un fichier de rapports ou ouvrez une journée déjà enregistrée.</p></div>}
+      {showTreated && totalTreatedSessions.length ? <section className="staffing-audit-treated"><div className="staffing-audit-treated-heading"><strong>Séances retirées du non-staffing</strong><span>{filteredTreatedSessions.length} affichée{filteredTreatedSessions.length > 1 ? "s" : ""}</span></div><div className="staffing-audit-list">{filteredTreatedSessions.length ? filteredTreatedSessions.map(sessionRow) : <div className="empty-state compact">Aucune séance retirée avec les filtres actuels.</div>}</div></section> : null}</> : null}
+    </> : <div className="empty-state"><span>📊</span><h3>{sectionTab === "general" ? "Aucun bilan enregistré" : "Aucun bilan sélectionné"}</h3><p>{sectionTab === "general" ? "Enregistrez au moins une journée dans l’onglet Bilans par date pour construire l’analyse générale." : "Importez un fichier de rapports ou ouvrez une journée déjà enregistrée."}</p></div>}
   </section>;
 }

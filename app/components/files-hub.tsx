@@ -14,7 +14,7 @@ type StoredImport = {
 
 const fileConfig: Record<FileKind, { title: string; description: string; endpoint: string; icon: string; canUpload: boolean }> = {
   availability: { title: "Disponibilités des tuteurs", description: "Utilisées dans Comparaison dispos et Tuteurs dispo sans séance.", endpoint: "/api/availability-imports", icon: "📆", canUpload: true },
-  assignments: { title: "Séances affectées", description: "Utilisées dans Tuteurs dispo sans séance.", endpoint: "/api/tutor-assignment-imports", icon: "🧩", canUpload: true },
+  assignments: { title: "Séances affectées", description: "Extraire entre aujourd’hui et samedi de la semaine prochaine.", endpoint: "/api/tutor-assignment-imports", icon: "🧩", canUpload: true },
   interests: { title: "Intérêts tuteurs et candidats", description: "Croisés avec les séances non affectées.", endpoint: "/api/tutor-interest-imports", icon: "🙋", canUpload: true },
   upcomingSessions: { title: "Séances des semaines à venir", description: "Utilisées pour repérer les séances encore non affectées.", endpoint: "/api/upcoming-session-imports", icon: "📋", canUpload: true },
   enrollments: { title: "Inscriptions parents", description: "Utilisées dans Comparaison inscriptions.", endpoint: "/api/enrollment-imports", icon: "🎒", canUpload: true },
