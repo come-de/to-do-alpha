@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-type FileKind = "availability" | "assignments" | "interests" | "upcomingSessions" | "enrollments" | "tutors";
+export type FileKind = "availability" | "assignments" | "interests" | "upcomingSessions" | "enrollments" | "tutors";
 type StoredImport = {
   id: string;
   importedAt: string;
@@ -11,6 +11,7 @@ type StoredImport = {
   sourceRowCount?: number;
   date?: string;
 };
+type TrashedImport = StoredImport & { kind: FileKind; deletedAt: string };
 
 const fileConfig: Record<FileKind, { title: string; description: string; endpoint: string; icon: string; canUpload: boolean }> = {
   availability: { title: "Disponibilités des tuteurs", description: "Utilisées dans Comparaison dispos et Tuteurs dispo sans séance.", endpoint: "/api/availability-imports", icon: "📆", canUpload: true },
@@ -26,24 +27,30 @@ function formatDate(value: string) {
   return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short" }).format(date);
 }
 
-export default function FilesHub({ onOpen }: { onOpen: (kind: FileKind) => void }) {
+export default function FilesHub({ onOpen, focusKind = null }: { onOpen: (kind: FileKind) => void; focusKind?: FileKind | null }) {
   const [files, setFiles] = useState<Record<FileKind, StoredImport[]>>({ availability: [], assignments: [], interests: [], upcomingSessions: [], enrollments: [], tutors: [] });
   const [draftNames, setDraftNames] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [trash, setTrash] = useState<TrashedImport[]>([]);
+  const [showTrash, setShowTrash] = useState(false);
+  const [highlightedKind, setHighlightedKind] = useState<FileKind | null>(focusKind);
   const [tutorImportDate, setTutorImportDate] = useState(() => new Date().toISOString().slice(0, 10));
 
   const load = useCallback(async (silent = false) => {
     try {
       const kinds = Object.keys(fileConfig) as FileKind[];
-      const responses = await Promise.all(kinds.map((kind) => fetch(`${fileConfig[kind].endpoint}?summary=1`, { cache: "no-store" })));
+      const responses = await Promise.all([...kinds.map((kind) => fetch(`${fileConfig[kind].endpoint}?summary=1`, { cache: "no-store" })), fetch("/api/file-trash", { cache: "no-store" })]);
       const payloads = await Promise.all(responses.map((response) => response.json()));
       const next = { availability: [], assignments: [], interests: [], upcomingSessions: [], enrollments: [], tutors: [] } as Record<FileKind, StoredImport[]>;
-      responses.forEach((response, index) => {
+      responses.slice(0, kinds.length).forEach((response, index) => {
         if (!response.ok) throw new Error(payloads[index]?.detail || payloads[index]?.error || "Chargement impossible");
         const kind = kinds[index];
         next[kind] = Array.isArray(payloads[index]?.imports) ? payloads[index].imports : [];
       });
+      const trashResponse = responses[kinds.length];
+      if (!trashResponse?.ok) throw new Error(payloads[kinds.length]?.detail || payloads[kinds.length]?.error || "Corbeille indisponible");
+      setTrash(Array.isArray(payloads[kinds.length]?.imports) ? payloads[kinds.length].imports : []);
       setFiles(next);
       setDraftNames(Object.fromEntries(kinds.flatMap((kind) => next[kind].map((item) => [item.id, item.displayName]))));
       if (!silent) setMessage("Bibliothèque actualisée");
@@ -56,6 +63,14 @@ export default function FilesHub({ onOpen }: { onOpen: (kind: FileKind) => void 
     const timer = window.setTimeout(() => void load(true), 0);
     return () => window.clearTimeout(timer);
   }, [load]);
+
+  useEffect(() => {
+    if (!focusKind) return;
+    const highlightTimer = window.setTimeout(() => setHighlightedKind(focusKind), 0);
+    const scrollTimer = window.setTimeout(() => document.getElementById(`files-${focusKind}`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
+    const clearTimer = window.setTimeout(() => setHighlightedKind(null), 2600);
+    return () => { window.clearTimeout(highlightTimer); window.clearTimeout(scrollTimer); window.clearTimeout(clearTimer); };
+  }, [focusKind]);
 
   async function upload(kind: FileKind, file: File | undefined) {
     if (!file) return;
@@ -102,14 +117,46 @@ export default function FilesHub({ onOpen }: { onOpen: (kind: FileKind) => void 
     }
   }
 
+  async function remove(kind: FileKind, item: StoredImport) {
+    if (!window.confirm(`Placer « ${item.displayName} » dans la corbeille ?`)) return;
+    setSaving(true);
+    try {
+      const response = await fetch(`${fileConfig[kind].endpoint}?id=${encodeURIComponent(item.id)}`, { method: "DELETE" });
+      const data = await response.json() as { error?: string; detail?: string };
+      if (!response.ok) throw new Error(data.detail || data.error || "Suppression impossible");
+      await load(true);
+      setMessage("Fichier placé dans la corbeille");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Suppression impossible");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function restore(item: TrashedImport) {
+    setSaving(true);
+    try {
+      const response = await fetch("/api/file-trash", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind: item.kind, id: item.id }) });
+      const data = await response.json() as { error?: string; detail?: string };
+      if (!response.ok) throw new Error(data.detail || data.error || "Restauration impossible");
+      await load(true);
+      setMessage(`« ${item.displayName} » a été restauré`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Restauration impossible");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <section className="task-panel files-panel">
-      <div className="panel-heading"><div><p className="eyebrow">Bibliothèque partagée</p><h2>Fichiers</h2><p>Un fichier importé ici devient disponible dans tous les onglets qui l’utilisent.</p></div><button type="button" className="ghost-button" onClick={() => void load()} disabled={saving}>↻ Actualiser</button></div>
+      <div className="panel-heading"><div><p className="eyebrow">Bibliothèque partagée</p><h2>Fichiers</h2><p>Un fichier importé ici devient disponible dans tous les onglets qui l’utilisent.</p></div><div className="files-heading-actions"><button type="button" className="ghost-button" onClick={() => setShowTrash((current) => !current)} disabled={saving}>Corbeille ({trash.length})</button><button type="button" className="ghost-button" onClick={() => void load()} disabled={saving}>↻ Actualiser</button></div></div>
       {message ? <p className="enrollment-message">{message}</p> : null}
+      {showTrash ? <section className="files-trash"><div className="files-trash-heading"><div><h3>Corbeille</h3><p>Les fichiers restent conservés sans limite et peuvent être restaurés.</p></div><button type="button" className="text-button" onClick={() => setShowTrash(false)}>Fermer</button></div>{trash.length ? <div className="files-trash-list">{trash.map((item) => <article key={`${item.kind}-${item.id}`}><div><strong>{item.displayName}</strong><span>{fileConfig[item.kind].title} · supprimé le {formatDate(item.deletedAt)}</span><small>{formatDate(item.importedAt)} · {item.fileName}{item.sourceRowCount ? ` · ${item.sourceRowCount} lignes` : ""}</small></div><button type="button" className="button quiet" onClick={() => void restore(item)} disabled={saving}>Restaurer</button></article>)}</div> : <p className="files-empty">La corbeille est vide.</p>}</section> : null}
       <div className="files-grid">
         {(Object.keys(fileConfig) as FileKind[]).map((kind) => {
           const config = fileConfig[kind];
-          return <article className="files-category" key={kind}>
+          return <article className={`files-category ${highlightedKind === kind ? "is-highlighted" : ""}`} id={`files-${kind}`} key={kind}>
             <div className="files-category-heading"><span>{config.icon}</span><div><h3>{config.title}</h3><p>{config.description}</p></div></div>
             <div className={`files-category-actions ${kind === "tutors" ? "with-date" : ""}`}>
               {kind === "tutors" ? <label className="files-import-date"><span>Date de la liste</span><input type="date" value={tutorImportDate} onChange={(event) => setTutorImportDate(event.target.value)} disabled={saving} /></label> : null}
@@ -120,7 +167,7 @@ export default function FilesHub({ onOpen }: { onOpen: (kind: FileKind) => void 
               {files[kind].length ? files[kind].map((item) => <div key={item.id}>
                 <input value={draftNames[item.id] ?? item.displayName} onChange={(event) => setDraftNames((current) => ({ ...current, [item.id]: event.target.value }))} onKeyDown={(event) => { if (event.key === "Enter") void rename(kind, item); }} aria-label={`Nom du fichier ${item.fileName}`} />
                 <small>{kind === "tutors" && item.date ? `Liste du ${new Intl.DateTimeFormat("fr-FR").format(new Date(`${item.date}T12:00:00`))} · ` : ""}{formatDate(item.importedAt)} · {item.fileName}{item.sourceRowCount ? ` · ${item.sourceRowCount} lignes` : ""}</small>
-                <button type="button" className="text-button" onClick={() => void rename(kind, item)}>Enregistrer</button>
+                <div className="files-item-actions"><button type="button" className="text-button" onClick={() => void rename(kind, item)}>Enregistrer</button><button type="button" className="text-button danger-text" onClick={() => void remove(kind, item)}>Supprimer</button></div>
               </div>) : <p className="files-empty">Aucun fichier enregistré.</p>}
             </div>
           </article>;

@@ -3,6 +3,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import SchoolAdminLink from "@/app/components/school-admin-link";
 import PersonAdminLink from "@/app/components/person-admin-link";
+import type { FileKind } from "@/app/components/files-hub";
 
 type UpcomingSession = {
   sessionId: string;
@@ -184,11 +185,15 @@ function rangesOverlap(session: UpcomingSession, assignment: Assignment) {
   return Boolean(sessionRange && assignmentRange && sessionRange[0] < assignmentRange[1] && assignmentRange[0] < sessionRange[1]);
 }
 
-export default function UnstaffedSessions() {
+export default function UnstaffedSessions({ onOpenFiles }: { onOpenFiles: (kind: FileKind) => void }) {
   const [imports, setImports] = useState<SessionImport[]>([]);
   const [interestImports, setInterestImports] = useState<Array<SourceImport<TutorInterest>>>([]);
   const [availabilityImports, setAvailabilityImports] = useState<Array<SourceImport<Availability>>>([]);
   const [assignmentImports, setAssignmentImports] = useState<Array<SourceImport<Assignment>>>([]);
+  const [sessionData, setSessionData] = useState<Record<string, SessionImport>>({});
+  const [interestData, setInterestData] = useState<Record<string, SourceImport<TutorInterest>>>({});
+  const [availabilityData, setAvailabilityData] = useState<Record<string, SourceImport<Availability>>>({});
+  const [assignmentData, setAssignmentData] = useState<Record<string, SourceImport<Assignment>>>({});
   const [latestTutorSnapshot, setLatestTutorSnapshot] = useState<TutorTrackingSnapshot | null>(null);
   const [selectedImportId, setSelectedImportId] = useState(initialImportFilter);
   const [interestImportId, setInterestImportId] = useState("");
@@ -205,35 +210,50 @@ export default function UnstaffedSessions() {
   const [showHiddenItems, setShowHiddenItems] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [detailError, setDetailError] = useState("");
+  const [detailRetry, setDetailRetry] = useState(0);
 
   const load = useCallback(async (silent = false) => {
-    try {
-      const endpoints = ["/api/upcoming-session-imports", "/api/tutor-interest-imports", "/api/availability-imports", "/api/tutor-assignment-imports", "/api/tutor-tracking", "/api/unstaffed-exclusions", "/api/schools"];
-      const responses = await Promise.all(endpoints.map((endpoint) => fetch(endpoint, { cache: "no-store" })));
-      const payloads = await Promise.all(responses.map((response) => response.json())) as Array<{ imports?: unknown[]; tracking?: { snapshots?: TutorTrackingSnapshot[] }; exclusions?: UnstaffedExclusions; schools?: SchoolAssignment[]; error?: string; detail?: string }>;
-      const failedIndex = responses.findIndex((response) => !response.ok);
-      if (failedIndex >= 0) throw new Error(payloads[failedIndex].detail || payloads[failedIndex].error || "Chargement impossible");
-      const next = (payloads[0].imports ?? []) as SessionImport[];
-      const nextInterests = (payloads[1].imports ?? []) as Array<SourceImport<TutorInterest>>;
-      const nextAvailability = (payloads[2].imports ?? []) as Array<SourceImport<Availability>>;
-      const nextAssignments = (payloads[3].imports ?? []) as Array<SourceImport<Assignment>>;
-      const nextTutorSnapshots = payloads[4].tracking?.snapshots ?? [];
-      const nextExclusions = payloads[5].exclusions ?? { sessionIds: [], sourceKeys: [], updatedAt: "" };
+    const sources = [
+      ["Semaines à venir", "/api/upcoming-session-imports?summary=1"],
+      ["Intérêts", "/api/tutor-interest-imports?summary=1"],
+      ["Disponibilités", "/api/availability-imports?summary=1"],
+      ["Séances affectées", "/api/tutor-assignment-imports?summary=1"],
+      ["Liste des tuteurs", "/api/tutor-tracking?latest=1"],
+      ["Éléments masqués", "/api/unstaffed-exclusions"],
+      ["Établissements", "/api/schools"],
+    ] as const;
+    const results = await Promise.allSettled(sources.map(async ([label, endpoint]) => {
+      const response = await fetch(endpoint, { cache: "no-store" });
+      const payload = await response.json() as { imports?: unknown[]; snapshot?: TutorTrackingSnapshot | null; exclusions?: UnstaffedExclusions; schools?: SchoolAssignment[]; error?: string; detail?: string };
+      if (!response.ok) throw new Error(`${label} : ${payload.detail || payload.error || "chargement impossible"}`);
+      return payload;
+    }));
+    const errors = results.flatMap((result) => result.status === "rejected" ? [result.reason instanceof Error ? result.reason.message : "Chargement impossible"] : []);
+    if (results[0]?.status === "fulfilled") {
+      const next = (results[0].value.imports ?? []) as SessionImport[];
       setImports(next);
-      setInterestImports(nextInterests);
-      setAvailabilityImports(nextAvailability);
-      setAssignmentImports(nextAssignments);
-      setLatestTutorSnapshot(nextTutorSnapshots[0] ?? null);
-      setExclusions(nextExclusions);
-      setSchoolAssignments(payloads[6].schools ?? []);
       setSelectedImportId((current) => next.some((item) => item.id === current) ? current : next[0]?.id || "");
-      setInterestImportId((current) => nextInterests.some((item) => item.id === current) ? current : nextInterests[0]?.id || "");
-      setAvailabilityImportId((current) => nextAvailability.some((item) => item.id === current) ? current : nextAvailability[0]?.id || "");
-      setAssignmentImportId((current) => nextAssignments.some((item) => item.id === current) ? current : nextAssignments[0]?.id || "");
-      if (!silent) setMessage("Données actualisées");
-    } catch (error) {
-      if (!silent) setMessage(error instanceof Error ? error.message : "Chargement impossible");
     }
+    if (results[1]?.status === "fulfilled") {
+      const next = (results[1].value.imports ?? []) as Array<SourceImport<TutorInterest>>;
+      setInterestImports(next);
+      setInterestImportId((current) => next.some((item) => item.id === current) ? current : next[0]?.id || "");
+    }
+    if (results[2]?.status === "fulfilled") {
+      const next = (results[2].value.imports ?? []) as Array<SourceImport<Availability>>;
+      setAvailabilityImports(next);
+      setAvailabilityImportId((current) => next.some((item) => item.id === current) ? current : next[0]?.id || "");
+    }
+    if (results[3]?.status === "fulfilled") {
+      const next = (results[3].value.imports ?? []) as Array<SourceImport<Assignment>>;
+      setAssignmentImports(next);
+      setAssignmentImportId((current) => next.some((item) => item.id === current) ? current : next[0]?.id || "");
+    }
+    if (results[4]?.status === "fulfilled") setLatestTutorSnapshot(results[4].value.snapshot ?? null);
+    if (results[5]?.status === "fulfilled") setExclusions(results[5].value.exclusions ?? { sessionIds: [], sourceKeys: [], updatedAt: "" });
+    if (results[6]?.status === "fulfilled") setSchoolAssignments(results[6].value.schools ?? []);
+    setMessage(errors.length ? errors.join(" · ") : silent ? "" : "Données actualisées");
   }, []);
 
   useEffect(() => {
@@ -255,10 +275,44 @@ export default function UnstaffedSessions() {
     window.history.replaceState(null, "", `${url.pathname}?${url.searchParams.toString()}${url.hash}`);
   }, [query, schoolOwnerFilter, selectedDate, selectedImportId]);
 
-  const activeImport = imports.find((item) => item.id === selectedImportId) ?? null;
-  const activeInterestImport = interestImports.find((item) => item.id === interestImportId) ?? null;
-  const activeAvailabilityImport = availabilityImports.find((item) => item.id === availabilityImportId) ?? null;
-  const activeAssignmentImport = assignmentImports.find((item) => item.id === assignmentImportId) ?? null;
+  useEffect(() => {
+    const requests = [
+      selectedImportId && !sessionData[selectedImportId] ? ["sessions", selectedImportId, "/api/upcoming-session-imports"] : null,
+      interestImportId && !interestData[interestImportId] ? ["interests", interestImportId, "/api/tutor-interest-imports"] : null,
+      availabilityImportId && !availabilityData[availabilityImportId] ? ["availability", availabilityImportId, "/api/availability-imports"] : null,
+      assignmentImportId && !assignmentData[assignmentImportId] ? ["assignments", assignmentImportId, "/api/tutor-assignment-imports"] : null,
+    ].filter(Boolean) as string[][];
+    if (!requests.length) return;
+    let cancelled = false;
+    Promise.all(requests.map(async ([kind, id, endpoint]) => {
+      const response = await fetch(`${endpoint}?id=${encodeURIComponent(id)}`, { cache: "no-store" });
+      const data = await response.json() as { import?: SessionImport | SourceImport<TutorInterest | Availability | Assignment>; error?: string; detail?: string };
+      if (!response.ok || !data.import) throw new Error(data.detail || data.error || "Fichier sélectionné indisponible");
+      return { kind, item: data.import };
+    })).then((items) => {
+      if (cancelled) return;
+      items.forEach(({ kind, item }) => {
+        if (kind === "sessions") setSessionData((current) => ({ ...current, [item.id]: item as SessionImport }));
+        else if (kind === "interests") setInterestData((current) => ({ ...current, [item.id]: item as SourceImport<TutorInterest> }));
+        else if (kind === "availability") setAvailabilityData((current) => ({ ...current, [item.id]: item as SourceImport<Availability> }));
+        else setAssignmentData((current) => ({ ...current, [item.id]: item as SourceImport<Assignment> }));
+      });
+      setDetailError("");
+      setMessage("");
+    }).catch((error) => { if (!cancelled) { const text = error instanceof Error ? error.message : "Chargement impossible"; setDetailError(text); setMessage(text); } });
+    return () => { cancelled = true; };
+  }, [assignmentData, assignmentImportId, availabilityData, availabilityImportId, detailRetry, interestData, interestImportId, selectedImportId, sessionData]);
+
+  const activeImport = sessionData[selectedImportId] ?? null;
+  const activeInterestImport = interestData[interestImportId] ?? null;
+  const activeAvailabilityImport = availabilityData[availabilityImportId] ?? null;
+  const activeAssignmentImport = assignmentData[assignmentImportId] ?? null;
+  const loadingDetails = !detailError && Boolean(
+    (selectedImportId && !activeImport)
+    || (interestImportId && !activeInterestImport)
+    || (availabilityImportId && !activeAvailabilityImport)
+    || (assignmentImportId && !activeAssignmentImport),
+  );
   const dates = useMemo(() => Array.from(new Set((activeImport?.rows ?? []).map((row) => row.date))).sort(), [activeImport]);
   const schoolOwnerIndexes = useMemo(() => ({
     byId: new Map(schoolAssignments.filter((school) => school.externalId).map((school) => [school.externalId, school.portfolioOwner])),
@@ -412,6 +466,7 @@ export default function UnstaffedSessions() {
       const response = await fetch(`/api/upcoming-session-imports?fileName=${encodeURIComponent(file.name)}`, { method: "POST", headers: { "Content-Type": "text/csv;charset=utf-8" }, body: rawCsv });
       const data = await response.json() as { import?: SessionImport; schoolDetection?: { newCount: number; existingCount: number; missingIdCount: number }; error?: string; detail?: string };
       if (!response.ok) throw new Error(data.detail || data.error || "Import impossible");
+      if (data.import) setSessionData((current) => ({ ...current, [data.import!.id]: data.import! }));
       await load(true);
       if (data.import?.id) setSelectedImportId(data.import.id);
       setDeselectedNewSchoolIds([]);
@@ -459,6 +514,7 @@ export default function UnstaffedSessions() {
       const response = await fetch(`/api/tutor-interest-imports?fileName=${encodeURIComponent(file.name)}`, { method: "POST", headers: { "Content-Type": "text/csv;charset=utf-8" }, body: rawCsv });
       const data = await response.json() as { import?: SourceImport<TutorInterest>; error?: string; detail?: string };
       if (!response.ok) throw new Error(data.detail || data.error || "Import impossible");
+      if (data.import) setInterestData((current) => ({ ...current, [data.import!.id]: data.import! }));
       await load(true);
       if (data.import?.id) setInterestImportId(data.import.id);
       setMessage(`${data.import?.rows.length ?? 0} déclarations d’intérêt sauvegardées`);
@@ -568,7 +624,7 @@ export default function UnstaffedSessions() {
 
     <div className="unstaffed-toolbar">
       <label className="import-button">Importer le fichier CSV<input type="file" accept=".csv,text/csv" disabled={saving} onChange={(event) => { void upload(event.target.files?.[0]); event.currentTarget.value = ""; }} /></label>
-      <label><span>Fichier analysé</span><select value={selectedImportId} onChange={(event) => { setSelectedImportId(event.target.value); setSelectedDate("all"); setSchoolOwnerFilter("all"); setQuery(""); setShownSingleStudentAlphaDates([]); setDeselectedNewSchoolIds([]); }}><option value="">Aucun fichier</option>{imports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {formatImportDate(item.importedAt)}</option>)}</select></label>
+      <label><span>Fichier analysé{!imports.length ? <button type="button" className="source-files-link" onClick={() => onOpenFiles("upcomingSessions")}>Ouvrir Fichiers</button> : null}</span><select value={selectedImportId} onChange={(event) => { setSelectedImportId(event.target.value); setSelectedDate("all"); setSchoolOwnerFilter("all"); setQuery(""); setShownSingleStudentAlphaDates([]); setDeselectedNewSchoolIds([]); }}><option value="">Aucun fichier</option>{imports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {formatImportDate(item.importedAt)}</option>)}</select></label>
       <div className="unstaffed-category-filter"><span>Types de séances</span><div>{(Object.keys(categoryLabels) as SessionCategoryKey[]).map((item) => <button type="button" className={selectedCategories.includes(item) ? "active" : ""} onClick={() => toggleCategory(item)} key={item}>{categoryLabels[item]}</button>)}</div></div>
       <div className="unstaffed-owner-filter"><span>Responsable établissement</span><div>{(["all", "unassigned", "kelly", "pierre", "julie"] as const).map((owner) => <button type="button" className={schoolOwnerFilter === owner ? "active" : ""} onClick={() => setSchoolOwnerFilter(owner)} key={owner}>{owner === "all" ? "Tous" : owner === "unassigned" ? "Non attribués" : schoolOwnerLabels[owner]}</button>)}</div></div>
       <label className="unstaffed-search"><span>Recherche</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Établissement, classe, groupe…" /></label>
@@ -595,12 +651,12 @@ export default function UnstaffedSessions() {
     <div className="candidate-source-bar">
       <div className="candidate-source-title"><strong>Sources des personnes mobilisables</strong><span>L’ID séance relie les intérêts et les disponibilités à chaque séance.</span>{latestTutorSnapshot ? <em>Statuts déterminés avec la liste des tuteurs du {formatDate(latestTutorSnapshot.date)}</em> : <em>Aucune liste de tuteurs : statuts inconnus</em>}</div>
       <label className="import-button">Importer des intérêts<input type="file" accept=".csv,text/csv" disabled={saving} onChange={(event) => { void uploadInterests(event.target.files?.[0]); event.currentTarget.value = ""; }} /></label>
-      <label><span>Intérêts</span><select value={interestImportId} onChange={(event) => setInterestImportId(event.target.value)}><option value="">Aucun</option>{interestImports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {formatImportDate(item.importedAt)}</option>)}</select></label>
-      <label><span>Disponibilités</span><select value={availabilityImportId} onChange={(event) => setAvailabilityImportId(event.target.value)}><option value="">Aucun</option>{availabilityImports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {formatImportDate(item.importedAt)}</option>)}</select></label>
-      <label><span>Séances déjà affectées</span><select value={assignmentImportId} onChange={(event) => setAssignmentImportId(event.target.value)}><option value="">Aucun</option>{assignmentImports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {formatImportDate(item.importedAt)}</option>)}</select></label>
+      <label><span>Intérêts{!interestImports.length ? <button type="button" className="source-files-link" onClick={() => onOpenFiles("interests")}>Ouvrir Fichiers</button> : null}</span><select value={interestImportId} onChange={(event) => setInterestImportId(event.target.value)}><option value="">Aucun</option>{interestImports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {formatImportDate(item.importedAt)}</option>)}</select></label>
+      <label><span>Disponibilités{!availabilityImports.length ? <button type="button" className="source-files-link" onClick={() => onOpenFiles("availability")}>Ouvrir Fichiers</button> : null}</span><select value={availabilityImportId} onChange={(event) => setAvailabilityImportId(event.target.value)}><option value="">Aucun</option>{availabilityImports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {formatImportDate(item.importedAt)}</option>)}</select></label>
+      <label><span>Séances déjà affectées{!assignmentImports.length ? <button type="button" className="source-files-link" onClick={() => onOpenFiles("assignments")}>Ouvrir Fichiers</button> : null}</span><select value={assignmentImportId} onChange={(event) => setAssignmentImportId(event.target.value)}><option value="">Aucun</option>{assignmentImports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {formatImportDate(item.importedAt)}</option>)}</select></label>
     </div>
 
-    {activeImport ? <>
+    {detailError ? <div className="empty-state"><span>!</span><h3>Fichier sélectionné indisponible</h3><p>{detailError}</p><button type="button" className="button quiet" onClick={() => { setDetailError(""); setDetailRetry((value) => value + 1); }}>Réessayer</button></div> : loadingDetails ? <div className="empty-state"><span>⏳</span><h3>Chargement du fichier sélectionné…</h3></div> : activeImport ? <>
       <div className="unstaffed-summary">
         <div className="highlight"><span>Séances non affectées</span><strong>{visibleRows.length}</strong></div>
         <div><span>Jours concernés</span><strong>{new Set(visibleRows.map((row) => row.date)).size}</strong></div>
@@ -661,6 +717,6 @@ export default function UnstaffedSessions() {
           </tbody></table></div>
         </article>) : <div className="empty-state"><span>✓</span><h3>Aucune séance avec les filtres actuels</h3><p>{schoolOwnerFilter !== "all" ? `Le filtre responsable « ${schoolOwnerFilter === "unassigned" ? "Non attribués" : schoolOwnerLabels[schoolOwnerFilter]} » ne contient aucune séance dans cet import.` : "Modifiez les filtres ou choisissez un autre fichier."}</p>{schoolOwnerFilter !== "all" ? <button type="button" className="button primary" onClick={() => setSchoolOwnerFilter("all")}>Afficher tous les responsables</button> : null}</div>}
       </div>
-    </> : <div className="empty-state"><span>📋</span><h3>Importez le fichier des semaines à venir</h3><p>Le site identifiera les séances sans tuteur et supprimera les répétitions dues aux élèves.</p></div>}
+    </> : <div className="empty-state"><span>📋</span><h3>Aucun fichier Semaines à venir disponible</h3><p>Ajoutez ou restaurez un fichier depuis la bibliothèque partagée.</p><button type="button" className="button quiet" onClick={() => onOpenFiles("upcomingSessions")}>Ouvrir Fichiers</button></div>}
   </section>;
 }

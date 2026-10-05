@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import EnrollmentComparison from "@/app/components/enrollment-comparison";
-import FilesHub from "@/app/components/files-hub";
+import FilesHub, { type FileKind } from "@/app/components/files-hub";
 import TutorCoverageComparison from "@/app/components/tutor-coverage-comparison";
 import UnstaffedSessions from "@/app/components/unstaffed-sessions";
 import TutorAvailabilityFeed from "@/app/components/tutor-availability-feed";
@@ -21,7 +21,7 @@ type ViewMode = "list" | "matrix";
 type DurationBucket = "short" | "medium" | "long" | "unset";
 type ObjectiveKind = "counter" | "qualitative";
 type ObjectiveStatus = "todo" | "progress" | "done";
-type CommunicationAudience = "tuteurs" | "etablissements" | "parents" | "coordinateurs";
+type CommunicationAudience = "tuteurs" | "candidats" | "etablissements" | "parents" | "coordinateurs";
 type CommunicationStatus = "draft" | "sent" | "to-follow-up" | "cancelled";
 type StaffingPersonKey = "pierre" | "julie" | "kelly";
 
@@ -123,6 +123,7 @@ type MassCommunication = {
   title: string;
   messageSummary: string;
   audiences: CommunicationAudience[];
+  recipients: string[];
   channel: string;
   status: CommunicationStatus;
   sentAt: string;
@@ -616,6 +617,7 @@ const emptyCommunicationDraft: CommunicationDraft = {
   title: "",
   messageSummary: "",
   audiences: [],
+  recipients: [],
   channel: "Email",
   status: "sent",
   sentAt: new Date().toISOString().slice(0, 10),
@@ -692,6 +694,7 @@ const schoolPortfolioOwnerEmails: Record<SchoolPortfolioOwner, string> = {
 
 const communicationAudienceLabels: Record<CommunicationAudience, string> = {
   tuteurs: "Tuteurs",
+  candidats: "Candidats",
   etablissements: "Établissements",
   parents: "Parents",
   coordinateurs: "Coordinateurs",
@@ -704,9 +707,9 @@ const communicationStatusLabels: Record<CommunicationStatus, string> = {
   cancelled: "Annulé",
 };
 
-const communicationAudiences: CommunicationAudience[] = ["tuteurs", "etablissements", "parents", "coordinateurs"];
+const communicationAudiences: CommunicationAudience[] = ["tuteurs", "candidats", "etablissements", "parents", "coordinateurs"];
 const communicationStatuses: ("all" | CommunicationStatus)[] = ["all", "sent", "to-follow-up", "draft", "cancelled"];
-const communicationChannels = ["Email", "WhatsApp", "Téléphone", "Réunion", "Autre"];
+const communicationChannels = ["Email", "SMS", "WhatsApp", "Téléphone", "Réunion", "Autre"];
 const staffingPeople: { key: StaffingPersonKey; label: string }[] = [
   { key: "pierre", label: "Pierre" },
   { key: "julie", label: "Julie" },
@@ -895,6 +898,7 @@ function normalizeMassCommunication(raw: Partial<MassCommunication>): MassCommun
     audiences: Array.isArray(raw.audiences)
       ? raw.audiences.filter((audience): audience is CommunicationAudience => communicationAudiences.includes(audience as CommunicationAudience))
       : [],
+    recipients: Array.isArray(raw.recipients) ? Array.from(new Set(raw.recipients.map((item) => String(item).trim()).filter(Boolean))) : [],
     channel: raw.channel || "Email",
     status:
       raw.status === "draft" || raw.status === "sent" || raw.status === "to-follow-up" || raw.status === "cancelled"
@@ -1785,6 +1789,7 @@ export default function Home() {
   const [appMode, setAppModeState] = useState<AppMode>(() =>
     typeof window === "undefined" ? "dashboard" : appModeFromUrl(new URL(window.location.href)) || "dashboard",
   );
+  const [filesFocusKind, setFilesFocusKind] = useState<FileKind | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [density, setDensity] = useState<Density>(() =>
     typeof window === "undefined" || localStorage.getItem(DENSITY_KEY) !== "comfortable"
@@ -1877,6 +1882,7 @@ export default function Home() {
   const importRef = useRef<HTMLInputElement>(null);
 
   const setAppMode = useCallback((mode: AppMode) => {
+    if (mode === "files") setFilesFocusKind(null);
     if (mode === "unstaffed") {
       const url = new URL(window.location.href);
       url.searchParams.delete("date-seances");
@@ -1886,6 +1892,11 @@ export default function Home() {
       window.history.replaceState(null, "", `${url.pathname}?${url.searchParams.toString()}${url.hash}`);
     }
     setAppModeState(mode);
+  }, []);
+
+  const openFiles = useCallback((kind: FileKind) => {
+    setFilesFocusKind(kind);
+    setAppModeState("files");
   }, []);
 
   const loadTasks = useCallback(async (silent = false) => {
@@ -2350,7 +2361,7 @@ export default function Home() {
       .filter((communication) => {
         const matchesText =
           !normalized ||
-          `${communication.title} ${communication.messageSummary} ${communication.notes} ${communication.author} ${communication.tags.join(" ")} ${communication.audiences.map((audience) => communicationAudienceLabels[audience]).join(" ")} ${communication.channel}`
+          `${communication.title} ${communication.messageSummary} ${communication.notes} ${communication.author} ${communication.tags.join(" ")} ${communication.audiences.map((audience) => communicationAudienceLabels[audience]).join(" ")} ${communication.recipients.join(" ")} ${communication.channel}`
             .toLocaleLowerCase("fr")
             .includes(normalized);
         const matchesAudience =
@@ -3508,6 +3519,7 @@ export default function Home() {
       title: communication.title,
       messageSummary: communication.messageSummary,
       audiences: communication.audiences,
+      recipients: communication.recipients,
       channel: communication.channel,
       status: communication.status,
       sentAt: communication.sentAt ? communication.sentAt.slice(0, 10) : "",
@@ -3530,13 +3542,14 @@ export default function Home() {
 
   async function saveCommunication(event: FormEvent) {
     event.preventDefault();
-    if (!communicationDraft.title.trim() || communicationDraft.audiences.length === 0 || saving) return;
+    if (!communicationDraft.title.trim() || (communicationDraft.audiences.length === 0 && communicationDraft.recipients.every((item) => !item.trim())) || saving) return;
     const now = new Date().toISOString();
     const cleanDraft = {
       ...communicationDraft,
       title: communicationDraft.title.trim(),
       messageSummary: communicationDraft.messageSummary.trim(),
       audiences: Array.from(new Set(communicationDraft.audiences)),
+      recipients: Array.from(new Set(communicationDraft.recipients.map((item) => item.trim()).filter(Boolean))),
       channel: communicationDraft.channel.trim() || "Email",
       sentAt: communicationDraft.sentAt,
       followUpDate: communicationDraft.followUpDate,
@@ -3877,16 +3890,21 @@ export default function Home() {
 
   async function deleteTutorTrackingSnapshot(snapshotId: string) {
     const snapshot = tutorTracking.snapshots.find((item) => item.id === snapshotId);
-    if (!snapshot || !window.confirm(`Supprimer « ${tutorTrackingImportLabel(snapshot)} » ?`)) return;
-    const nextSnapshots = tutorTracking.snapshots.filter((item) => item.id !== snapshotId);
-    await saveTutorTracking({ ...tutorTracking, snapshots: nextSnapshots }, "Import tuteurs supprimé");
-    const nextSelectedId = nextSnapshots[0]?.id || "";
-    setSelectedTutorTrackingSnapshotId(nextSelectedId);
-    if (tutorTrackingCompareStartId === snapshotId) {
-      setTutorTrackingCompareStartId(nextSnapshots[1]?.id || nextSelectedId);
-    }
-    if (tutorTrackingCompareEndId === snapshotId) {
-      setTutorTrackingCompareEndId(nextSelectedId);
+    if (!snapshot || !window.confirm(`Placer « ${tutorTrackingImportLabel(snapshot)} » dans la corbeille ?`)) return;
+    try {
+      const response = await fetch(`/api/tutor-tracking?id=${encodeURIComponent(snapshotId)}`, { method: "DELETE" });
+      const data = await response.json() as { tracking?: Partial<TutorTrackingData>; error?: string; detail?: string };
+      if (!response.ok) throw new Error(data.detail || data.error || "Suppression impossible");
+      const nextTracking = normalizeTutorTrackingData(data.tracking || {});
+      setTutorTracking(nextTracking);
+      const nextSnapshots = nextTracking.snapshots;
+      setToast("Import tuteurs placé dans la corbeille");
+      const nextSelectedId = nextSnapshots[0]?.id || "";
+      setSelectedTutorTrackingSnapshotId(nextSelectedId);
+      if (tutorTrackingCompareStartId === snapshotId) setTutorTrackingCompareStartId(nextSnapshots[1]?.id || nextSelectedId);
+      if (tutorTrackingCompareEndId === snapshotId) setTutorTrackingCompareEndId(nextSelectedId);
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : "Suppression impossible");
     }
   }
 
@@ -6160,6 +6178,7 @@ export default function Home() {
                       {communication.audiences.map((audience) => <button key={audience} onClick={() => setCommunicationAudienceFilter(audience)}>{communicationAudienceLabels[audience]}</button>)}
                       {communication.tags.map((tag) => <button key={tag} onClick={() => setCommunicationQuery(tag)}>#{tag}</button>)}
                     </div>
+                    {communication.recipients.length ? <div className="communication-recipients"><strong>Destinataires nominatifs</strong>{communication.recipients.map((recipient) => <span key={recipient}>{recipient}</span>)}</div> : null}
                     <div className="communication-meta">
                       <span>{communication.author}</span>
                       {communication.sentAt && <span>Envoyé le {formatDate(communication.sentAt)}</span>}
@@ -6314,13 +6333,13 @@ export default function Home() {
         </section>
         : appMode === "tutors" ? renderTutorTrackingSection()
         : appMode === "availability" ? renderAvailabilityComparisonSection()
-        : appMode === "availabilityFeed" ? <TutorAvailabilityFeed />
-        : appMode === "enrollments" ? <EnrollmentComparison />
-        : appMode === "coverage" ? <TutorCoverageComparison />
-        : appMode === "unstaffed" ? <UnstaffedSessions />
+        : appMode === "availabilityFeed" ? <TutorAvailabilityFeed onOpenFiles={openFiles} />
+        : appMode === "enrollments" ? <EnrollmentComparison onOpenFiles={openFiles} />
+        : appMode === "coverage" ? <TutorCoverageComparison onOpenFiles={openFiles} />
+        : appMode === "unstaffed" ? <UnstaffedSessions onOpenFiles={openFiles} />
         : appMode === "staffingAudit" ? <StaffingAudit />
         : appMode === "staffingEvolution" ? <StaffingEvolution />
-        : appMode === "files" ? <FilesHub onOpen={(kind) => setAppMode(kind === "availability" ? "availability" : kind === "assignments" ? "coverage" : kind === "interests" || kind === "upcomingSessions" ? "unstaffed" : kind === "tutors" ? "tutors" : "enrollments")} />
+        : appMode === "files" ? <FilesHub focusKind={filesFocusKind} onOpen={(kind) => setAppMode(kind === "availability" ? "availability" : kind === "assignments" ? "coverage" : kind === "interests" || kind === "upcomingSessions" ? "unstaffed" : kind === "tutors" ? "tutors" : "enrollments")} />
         : appMode === "tutorReports" ? renderTutorReportsSection()
         : appMode === "watchlist" ? <section className="task-panel">
           <div className="panel-heading">
@@ -6812,7 +6831,7 @@ export default function Home() {
             <form onSubmit={saveCommunication} className="task-form">
               <label className="field full"><span>Titre *</span><input autoFocus required value={communicationDraft.title} onChange={(event) => setCommunicationDraft({ ...communicationDraft, title: event.target.value })} placeholder="Ex. Relance rentrée aux parents" /></label>
               <div className="field full">
-                <span>Publics concernés *</span>
+                <span>Publics concernés</span>
                 <div className="recipient-list objective-recipient-list communication-audience-picker">
                   {communicationAudiences.map((audience) => (
                     <label className="recipient-row" key={audience}>
@@ -6832,12 +6851,13 @@ export default function Home() {
               <label className="field"><span>Date d&apos;envoi</span><input type="date" value={communicationDraft.sentAt} onChange={(event) => setCommunicationDraft({ ...communicationDraft, sentAt: event.target.value })} /></label>
               <label className="field"><span>Date de relance</span><input type="date" value={communicationDraft.followUpDate} onChange={(event) => setCommunicationDraft({ ...communicationDraft, followUpDate: event.target.value })} /></label>
               <label className="field full"><span>Résumé du message</span><textarea rows={4} value={communicationDraft.messageSummary} onChange={(event) => setCommunicationDraft({ ...communicationDraft, messageSummary: event.target.value })} placeholder="Sujet du message, information transmise, appel à action..." /></label>
+              <label className="field full"><span>Destinataires nominatifs {communicationDraft.channel === "SMS" ? "du SMS" : "(facultatif)"}</span><textarea rows={4} value={communicationDraft.recipients.join("\n")} onChange={(event) => setCommunicationDraft({ ...communicationDraft, recipients: event.target.value.split(/\r?\n/) })} placeholder={"Une personne par ligne, par exemple :\nAïcha Martin — 06 12 34 56 78\nLucas Dupont, candidat — 07 12 34 56 78"} /><small>Liste libre : tuteurs, candidats ayant postulé ou tout autre contact. Renseignez au moins un public ou un destinataire nominatif.</small></label>
               <label className="field full"><span>Notes internes</span><textarea rows={3} value={communicationDraft.notes} onChange={(event) => setCommunicationDraft({ ...communicationDraft, notes: event.target.value })} placeholder="Retours observés, éléments à surveiller, prochaine étape..." /></label>
               <label className="field full"><span>Tags</span><input value={tagsToText(communicationDraft.tags)} onChange={(event) => setCommunicationDraft({ ...communicationDraft, tags: normalizeTags(event.target.value) })} placeholder="rentrée, relance, inscription" /></label>
               <label className="field full"><span>Auteur</span><input value={communicationDraft.author} onChange={(event) => setCommunicationDraft({ ...communicationDraft, author: event.target.value })} placeholder={authorName || "Equipe Alpha"} /></label>
               <div className="form-actions">
                 <button type="button" className="button quiet" onClick={() => setCommunicationOpen(false)}>Annuler</button>
-                <button type="submit" className="button primary" disabled={saving || !communicationDraft.title.trim() || communicationDraft.audiences.length === 0}>{saving ? "Sauvegarde..." : "Enregistrer"}</button>
+                <button type="submit" className="button primary" disabled={saving || !communicationDraft.title.trim() || (communicationDraft.audiences.length === 0 && communicationDraft.recipients.every((item) => !item.trim()))}>{saving ? "Sauvegarde..." : "Enregistrer"}</button>
               </div>
             </form>
           </section>

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { EnrollmentImport, EnrollmentRow } from "@/app/lib/shared-data";
+import type { FileKind } from "@/app/components/files-hub";
 
 type ComparisonView = "new" | "lost" | "same";
 type SchoolPortfolioOwner = "" | "kelly" | "pierre" | "julie";
@@ -58,8 +59,9 @@ function csvCell(value: unknown) {
   return /[;"\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
-export default function EnrollmentComparison() {
+export default function EnrollmentComparison({ onOpenFiles }: { onOpenFiles: (kind: FileKind) => void }) {
   const [imports, setImports] = useState<EnrollmentImport[]>([]);
+  const [loadedImports, setLoadedImports] = useState<Record<string, EnrollmentImport>>({});
   const [schoolAssignments, setSchoolAssignments] = useState<SchoolAssignment[]>([]);
   const [referenceId, setReferenceId] = useState("");
   const [recentId, setRecentId] = useState("");
@@ -69,31 +71,35 @@ export default function EnrollmentComparison() {
   const [nameDrafts, setNameDrafts] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [detailError, setDetailError] = useState("");
+  const [detailRetry, setDetailRetry] = useState(0);
 
   const loadImports = useCallback(async (silent = false) => {
-    try {
-      const [response, schoolsResponse] = await Promise.all([
-        fetch("/api/enrollment-imports", { cache: "no-store" }),
-        fetch("/api/schools", { cache: "no-store" }),
-      ]);
-      const data = (await response.json()) as { imports?: Partial<EnrollmentImport>[]; error?: string; detail?: string };
-      const schoolsData = (await schoolsResponse.json()) as { schools?: SchoolAssignment[]; error?: string };
-      if (!response.ok) throw new Error(data.detail || data.error || "Chargement impossible");
-      if (!schoolsResponse.ok) throw new Error(schoolsData.error || "Répartition des établissements indisponible");
-      const nextImports = Array.isArray(data.imports)
-        ? data.imports.map(normalizeImport).sort((a, b) => sortTimestamp(b.importedAt) - sortTimestamp(a.importedAt))
-        : [];
+    const results = await Promise.allSettled([
+      fetch("/api/enrollment-imports?summary=1", { cache: "no-store" }).then(async (response) => {
+        const data = await response.json() as { imports?: Partial<EnrollmentImport>[]; error?: string; detail?: string };
+        if (!response.ok) throw new Error(data.detail || data.error || "Fichiers d’inscriptions indisponibles");
+        return data;
+      }),
+      fetch("/api/schools", { cache: "no-store" }).then(async (response) => {
+        const data = await response.json() as { schools?: SchoolAssignment[]; error?: string; detail?: string };
+        if (!response.ok) throw new Error(data.detail || data.error || "Répartition des établissements indisponible");
+        return data;
+      }),
+    ]);
+    const errors = results.flatMap((result) => result.status === "rejected" ? [result.reason instanceof Error ? result.reason.message : "Chargement impossible"] : []);
+    if (results[0]?.status === "fulfilled") {
+      const nextImports = Array.isArray(results[0].value.imports)
+        ? results[0].value.imports.map(normalizeImport).sort((a, b) => sortTimestamp(b.importedAt) - sortTimestamp(a.importedAt)) : [];
       setImports(nextImports);
-      setSchoolAssignments(schoolsData.schools ?? []);
       setNameDrafts(Object.fromEntries(nextImports.map((item) => [item.id, item.displayName])));
       setRecentId((current) => (nextImports.some((item) => item.id === current) ? current : nextImports[0]?.id || ""));
       setReferenceId((current) =>
         nextImports.some((item) => item.id === current) ? current : nextImports[1]?.id || nextImports[0]?.id || "",
       );
-      if (!silent) setMessage(nextImports.length ? "Historique chargé" : "Aucun export importé");
-    } catch (error) {
-      if (!silent) setMessage(error instanceof Error ? error.message : "Historique indisponible");
     }
+    if (results[1]?.status === "fulfilled") setSchoolAssignments(results[1].value.schools ?? []);
+    setMessage(errors.length ? errors.join(" · ") : silent ? "" : "Historique chargé");
   }, []);
 
   useEffect(() => {
@@ -105,8 +111,23 @@ export default function EnrollmentComparison() {
     };
   }, [loadImports]);
 
-  const referenceImport = imports.find((item) => item.id === referenceId) ?? null;
-  const recentImport = imports.find((item) => item.id === recentId) ?? null;
+  useEffect(() => {
+    const ids = Array.from(new Set([referenceId, recentId].filter(Boolean))).filter((id) => !loadedImports[id]);
+    if (!ids.length) return;
+    let cancelled = false;
+    Promise.all(ids.map(async (id) => {
+      const response = await fetch(`/api/enrollment-imports?id=${encodeURIComponent(id)}`, { cache: "no-store" });
+      const data = await response.json() as { import?: Partial<EnrollmentImport>; error?: string; detail?: string };
+      if (!response.ok || !data.import) throw new Error(data.detail || data.error || "Fichier d’inscriptions indisponible");
+      return normalizeImport(data.import);
+    })).then((items) => {
+      if (!cancelled) { setLoadedImports((current) => ({ ...current, ...Object.fromEntries(items.map((item) => [item.id, item])) })); setDetailError(""); }
+    }).catch((error) => { if (!cancelled) { const text = error instanceof Error ? error.message : "Chargement du fichier impossible"; setDetailError(text); setMessage(text); } });
+    return () => { cancelled = true; };
+  }, [detailRetry, loadedImports, recentId, referenceId]);
+
+  const referenceImport = loadedImports[referenceId] ?? null;
+  const recentImport = loadedImports[recentId] ?? null;
   const alphaSchoolKeys = useMemo(() => new Set(schoolAssignments
     .filter((school) => school.schoolType === "alpha" || normalizeSchool(school.category).includes("etude alpha"))
     .map((school) => normalizeSchool(school.name))), [schoolAssignments]);
@@ -118,12 +139,12 @@ export default function EnrollmentComparison() {
 
   const schools = useMemo(() => {
     const labels = new Map<string, string>();
-    imports.flatMap((item) => alphaRows(item.rows)).forEach((row) => {
+    [referenceImport, recentImport].flatMap((item) => alphaRows(item?.rows ?? [])).forEach((row) => {
       const key = normalizeSchool(row.school);
       if (key && !labels.has(key)) labels.set(key, row.school.trim());
     });
     return Array.from(labels.entries()).sort((a, b) => a[1].localeCompare(b[1], "fr"));
-  }, [alphaRows, imports]);
+  }, [alphaRows, recentImport, referenceImport]);
 
   const comparison = useMemo(() => {
     const filterRows = (rows: EnrollmentRow[]) => {
@@ -216,6 +237,7 @@ export default function EnrollmentComparison() {
       const created = data.import ? normalizeImport(data.import) : nextImports[0];
       const previousNewestId = imports[0]?.id || "";
       setImports(nextImports);
+      if (created) setLoadedImports((current) => ({ ...current, [created.id]: created }));
       setNameDrafts(Object.fromEntries(nextImports.map((item) => [item.id, item.displayName])));
       if (created) setRecentId(created.id);
       setReferenceId(previousNewestId || nextImports[1]?.id || created?.id || "");
@@ -243,6 +265,7 @@ export default function EnrollmentComparison() {
       if (!response.ok) throw new Error(data.detail || data.error || "Renommage impossible");
       const nextImports = (data.imports ?? []).map(normalizeImport).sort((a, b) => sortTimestamp(b.importedAt) - sortTimestamp(a.importedAt));
       setImports(nextImports);
+      setLoadedImports((current) => current[id] ? { ...current, [id]: { ...current[id], displayName } } : current);
       setNameDrafts(Object.fromEntries(nextImports.map((item) => [item.id, item.displayName])));
       setMessage("Nom sauvegardé");
     } catch (error) {
@@ -253,7 +276,7 @@ export default function EnrollmentComparison() {
   }
 
   async function deleteImport(item: EnrollmentImport) {
-    if (!window.confirm(`Supprimer l’import « ${item.displayName} » ?`)) return;
+    if (!window.confirm(`Placer l’import « ${item.displayName} » dans la corbeille ?`)) return;
     setSaving(true);
     try {
       const response = await fetch(`/api/enrollment-imports?id=${encodeURIComponent(item.id)}`, { method: "DELETE" });
@@ -261,9 +284,10 @@ export default function EnrollmentComparison() {
       if (!response.ok) throw new Error(data.detail || data.error || "Suppression impossible");
       const nextImports = (data.imports ?? []).map(normalizeImport).sort((a, b) => sortTimestamp(b.importedAt) - sortTimestamp(a.importedAt));
       setImports(nextImports);
+      setLoadedImports((current) => { const next = { ...current }; delete next[item.id]; return next; });
       setRecentId((current) => (nextImports.some((entry) => entry.id === current) ? current : nextImports[0]?.id || ""));
       setReferenceId((current) => (nextImports.some((entry) => entry.id === current) ? current : nextImports[1]?.id || nextImports[0]?.id || ""));
-      setMessage("Import supprimé");
+      setMessage("Import placé dans la corbeille");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Suppression impossible");
     } finally {
@@ -370,7 +394,7 @@ export default function EnrollmentComparison() {
           {imports.map((item) => (
             <div key={item.id}>
               <label className="availability-import-name"><span>Nom de l’import</span><input value={nameDrafts[item.id] ?? item.displayName} onChange={(event) => setNameDrafts((current) => ({ ...current, [item.id]: event.target.value }))} onKeyDown={(event) => { if (event.key === "Enter") void renameImport(item.id); }} /></label>
-              <small>{importDate(item.importedAt)} · {item.fileName} · {studentMap(alphaRows(item.rows)).size} inscrit(s) Étude Alpha sur {item.sourceRowCount} ligne(s)</small>
+              <small>{importDate(item.importedAt)} · {item.fileName} · {item.sourceRowCount} ligne(s)</small>
               <div className="availability-history-actions">
                 <button type="button" className="text-button" onClick={() => void renameImport(item.id)}>Enregistrer le nom</button>
                 <button type="button" className="text-button danger" onClick={() => void deleteImport(item)}>Supprimer</button>
@@ -388,7 +412,9 @@ export default function EnrollmentComparison() {
       </div>
 
       <div className={`enrollment-results ${view === "new" ? "is-new" : view === "lost" ? "is-lost" : ""}`}>
-        {!referenceImport || !recentImport ? <div className="empty-state compact">Importez au moins deux fichiers, puis choisissez les deux exports à comparer.</div>
+        {!imports.length ? <div className="empty-state compact"><h3>Aucun fichier d’inscriptions enregistré</h3><p>Ajoutez vos exports depuis la bibliothèque partagée.</p><button type="button" className="button quiet" onClick={() => onOpenFiles("enrollments")}>Ouvrir Fichiers</button></div>
+          : detailError ? <div className="empty-state compact"><h3>Fichier sélectionné indisponible</h3><p>{detailError}</p><button type="button" className="button quiet" onClick={() => { setDetailError(""); setDetailRetry((value) => value + 1); }}>Réessayer</button></div>
+          : !referenceImport || !recentImport ? <div className="empty-state compact">Chargement des fichiers sélectionnés…</div>
           : displayedStudents.length ? displayedStudents.map((student) => (
             <article key={student.studentId} className="enrollment-student-card">
               <div><h3>{studentName(student)}</h3><p>ID {student.studentId}{student.className ? ` · ${student.className}` : ""}</p></div>

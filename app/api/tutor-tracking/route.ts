@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   createTutorTrackingSnapshotFromCsv,
+  moveFileImportToTrash,
   readTutorTracking,
   sanitizeTutorTrackingData,
   updateTutorTrackingSnapshotName,
@@ -21,7 +22,9 @@ function json(data: unknown, status = 200) {
 
 export async function GET(request: Request) {
   const tracking = await readTutorTracking();
-  if (new URL(request.url).searchParams.get("summary") === "1") {
+  const searchParams = new URL(request.url).searchParams;
+  if (searchParams.get("latest") === "1") return json({ snapshot: tracking.snapshots[0] ?? null });
+  if (searchParams.get("summary") === "1") {
     return json({
       imports: tracking.snapshots.map((snapshot) => ({
         id: snapshot.id,
@@ -76,5 +79,17 @@ export async function PATCH(request: Request) {
   } catch (error) {
     const detail = error instanceof Error ? error.message : "Renommage impossible";
     return json({ error: "Renommage impossible", detail }, 500);
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const id = new URL(request.url).searchParams.get("id");
+    if (!id) return json({ error: "Identifiant manquant" }, 400);
+    await moveFileImportToTrash("tutors", id);
+    return json({ tracking: await readTutorTracking() });
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : "Suppression impossible";
+    return json({ error: "Suppression impossible", detail }, 500);
   }
 }

@@ -5,6 +5,7 @@ import type { SchoolPortfolioOwner, StaffingAuditDay, StaffingAuditResolution, S
 
 const ownerLabels: Record<SchoolPortfolioOwner, string> = { "": "Non attribué", kelly: "Kelly", pierre: "Pierre", julie: "Julie" };
 const owners: SchoolPortfolioOwner[] = ["kelly", "pierre", "julie", ""];
+const categories: StaffingAuditSessionCategory[] = ["alpha", "surveillance", "service"];
 const categoryLabels: Record<StaffingAuditSessionCategory, string> = { alpha: "Étude Alpha", surveillance: "Surveillance", service: "Prestation de service" };
 
 function staffingAuditDate(value: string) {
@@ -60,6 +61,7 @@ export default function StaffingAudit() {
   const [categoryFilter, setCategoryFilter] = useState<"all" | StaffingAuditSessionCategory>("all");
   const [analysisStartDate, setAnalysisStartDate] = useState("");
   const [analysisEndDate, setAnalysisEndDate] = useState("");
+  const [sessionListMode, setSessionListMode] = useState<"active" | "staffed">("active");
   const [showTreated, setShowTreated] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -100,6 +102,14 @@ export default function StaffingAudit() {
   const filteredActiveSessions = useMemo(
     () => activeSessions.filter((session) => ownerFilter === "all" || session.portfolioOwner === ownerFilter),
     [activeSessions, ownerFilter],
+  );
+  const staffedSessions = useMemo(
+    () => categorySessions.filter((session) => effectiveStatus(session) === "staffed"),
+    [categorySessions],
+  );
+  const filteredStaffedSessions = useMemo(
+    () => staffedSessions.filter((session) => ownerFilter === "all" || session.portfolioOwner === ownerFilter),
+    [ownerFilter, staffedSessions],
   );
   const filteredTreatedSessions = useMemo(
     () => treatedSessions.filter((session) => ownerFilter === "all" || session.portfolioOwner === ownerFilter),
@@ -274,6 +284,26 @@ export default function StaffingAudit() {
     </article>;
   }
 
+  function groupedSessionRows(sessions: StaffingAuditSession[]) {
+    return <div className="staffing-audit-grouped-list">{owners.map((owner) => {
+      const ownerSessions = sessions.filter((session) => session.portfolioOwner === owner);
+      if (!ownerSessions.length) return null;
+      return <section className="staffing-audit-owner-group" key={owner || "unassigned"}>
+        <div className="staffing-audit-owner-group-heading"><strong>{ownerLabels[owner]}</strong><span>{ownerSessions.length} séance{ownerSessions.length > 1 ? "s" : ""}</span></div>
+        {categories.map((category) => {
+          const categoryRows = ownerSessions
+            .filter((session) => session.category === category)
+            .sort((a, b) => a.school.localeCompare(b.school, "fr") || a.sessionId.localeCompare(b.sessionId, "fr"));
+          if (!categoryRows.length) return null;
+          return <div className="staffing-audit-category-group" key={category}>
+            <div className={`staffing-audit-category-group-heading ${category}`}><strong>{categoryLabels[category]}</strong><span>{categoryRows.length}</span></div>
+            <div className="staffing-audit-list">{categoryRows.map(sessionRow)}</div>
+          </div>;
+        })}
+      </section>;
+    })}</div>;
+  }
+
   return <section className="task-panel staffing-audit-panel">
     <div className="panel-heading"><div><p className="eyebrow">Pilotage du staffing</p><h2>Bilan staffing</h2><p>{sectionTab === "general" ? "Analysez l’évolution du staffing sur une période." : "Importez un rapport, vérifiez une date puis enregistrez un bilan autonome."}</p></div>{sectionTab === "daily" ? <label className="import-button">Importer un rapport CSV<input type="file" accept=".csv,text/csv" disabled={saving} onChange={(event) => { void importFile(event.target.files?.[0]); event.currentTarget.value = ""; }} /></label> : null}</div>
     <div className="staffing-audit-main-tabs" role="tablist" aria-label="Choisir la vue du bilan staffing">
@@ -343,8 +373,9 @@ export default function StaffingAudit() {
       </section> : null}
       {sectionTab === "daily" ? <><div className="staffing-audit-summary"><div className="head"><span>Responsable RH</span><span>Staffées</span><span>Non staffées</span><span>À vérifier</span><span>Total</span></div>{summary.map((row) => <div className="row" key={row.owner || "unassigned"}><strong>{ownerLabels[row.owner]}</strong><span>{row.staffed}</span><span className="danger">{row.unstaffed}</span><span className="warning">{row.ambiguous}</span><span>{row.total}</span></div>)}</div>
       <div className="staffing-audit-owner-filter"><strong>Afficher les séances de</strong>{(["all", "kelly", "pierre", "julie", ""] as const).map((owner) => <button type="button" className={ownerFilter === owner ? "active" : ""} onClick={() => setOwnerFilter(owner)} key={owner || "unassigned"}>{owner === "all" ? "Tous" : ownerLabels[owner]}</button>)}</div>
-      <div className="staffing-audit-list-heading"><div><h3>Séances à traiter</h3><span>{filteredActiveSessions.length} affichée{filteredActiveSessions.length > 1 ? "s" : ""}{ownerFilter !== "all" ? ` · ${activeSessions.length} au total` : ""}</span></div></div>
-      <div className="staffing-audit-list">{filteredActiveSessions.length ? filteredActiveSessions.map(sessionRow) : <div className="empty-state compact">Aucune séance active à traiter pour ce responsable et cette date.</div>}</div>
+      <div className="staffing-audit-session-mode" role="tablist" aria-label="Choisir les séances à afficher"><button type="button" role="tab" aria-selected={sessionListMode === "active"} className={sessionListMode === "active" ? "active" : ""} onClick={() => setSessionListMode("active")}>Séances à traiter <span>{activeSessions.length}</span></button><button type="button" role="tab" aria-selected={sessionListMode === "staffed"} className={sessionListMode === "staffed" ? "active" : ""} onClick={() => setSessionListMode("staffed")}>Séances staffées <span>{staffedSessions.length}</span></button></div>
+      <div className="staffing-audit-list-heading"><div><h3>{sessionListMode === "active" ? "Séances non staffées et à vérifier" : "Séances staffées"}</h3><span>{sessionListMode === "active" ? filteredActiveSessions.length : filteredStaffedSessions.length} affichée{(sessionListMode === "active" ? filteredActiveSessions.length : filteredStaffedSessions.length) > 1 ? "s" : ""}{ownerFilter !== "all" ? ` · ${sessionListMode === "active" ? activeSessions.length : staffedSessions.length} au total` : ""}</span></div></div>
+      {sessionListMode === "active" ? (filteredActiveSessions.length ? groupedSessionRows(filteredActiveSessions) : <div className="staffing-audit-list"><div className="empty-state compact">Aucune séance active à traiter pour ce responsable et cette date.</div></div>) : (filteredStaffedSessions.length ? groupedSessionRows(filteredStaffedSessions) : <div className="staffing-audit-list"><div className="empty-state compact">Aucune séance staffée pour ce responsable et cette date.</div></div>)}
       {showTreated && totalTreatedSessions.length ? <section className="staffing-audit-treated"><div className="staffing-audit-treated-heading"><strong>Séances retirées du non-staffing</strong><span>{filteredTreatedSessions.length} affichée{filteredTreatedSessions.length > 1 ? "s" : ""}</span></div><div className="staffing-audit-list">{filteredTreatedSessions.length ? filteredTreatedSessions.map(sessionRow) : <div className="empty-state compact">Aucune séance retirée avec les filtres actuels.</div>}</div></section> : null}</> : null}
     </> : <div className="empty-state"><span>📊</span><h3>{sectionTab === "general" ? "Aucun bilan enregistré" : "Aucun bilan sélectionné"}</h3><p>{sectionTab === "general" ? "Enregistrez au moins une journée dans l’onglet Bilans par date pour construire l’analyse générale." : "Importez un fichier de rapports ou ouvrez une journée déjà enregistrée."}</p></div>}
   </section>;

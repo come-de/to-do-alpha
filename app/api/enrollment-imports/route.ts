@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   createEnrollmentImportFromCsv,
   deleteEnrollmentImportById,
+  readEnrollmentImportById,
   readEnrollmentImports,
   readEnrollmentImportSummaries,
   updateEnrollmentImportName,
@@ -16,7 +17,13 @@ function json(data: unknown, status = 200) {
 
 export async function GET(request: Request) {
   try {
-    if (new URL(request.url).searchParams.get("summary") === "1") {
+    const searchParams = new URL(request.url).searchParams;
+    const id = searchParams.get("id");
+    if (id) {
+      const selectedImport = await readEnrollmentImportById(id);
+      return selectedImport ? json({ import: selectedImport }) : json({ error: "Import introuvable" }, 404);
+    }
+    if (searchParams.get("summary") === "1") {
       return json({ imports: await readEnrollmentImportSummaries() });
     }
     return json({ imports: await readEnrollmentImports() });
@@ -35,7 +42,7 @@ export async function POST(request: Request) {
       fileName: url.searchParams.get("fileName") || "parents.csv",
       rawCsv,
     });
-    return json({ import: createdImport, imports: await readEnrollmentImports() }, 201);
+    return json({ import: createdImport, imports: await readEnrollmentImportSummaries() }, 201);
   } catch (error) {
     const detail = error instanceof Error ? error.message : "Impossible d’importer le CSV";
     return json({ error: "Impossible d’importer le CSV", detail }, 500);
@@ -49,7 +56,7 @@ export async function PATCH(request: Request) {
       return json({ error: "Nom d’import invalide" }, 400);
     }
     await updateEnrollmentImportName(body.id, body.displayName);
-    return json({ imports: await readEnrollmentImports() });
+    return json({ imports: await readEnrollmentImportSummaries() });
   } catch (error) {
     const detail = error instanceof Error ? error.message : "Impossible de renommer l’import";
     return json({ error: "Impossible de renommer l’import", detail }, 500);
@@ -61,7 +68,7 @@ export async function DELETE(request: Request) {
     const id = new URL(request.url).searchParams.get("id");
     if (!id) return json({ error: "Identifiant manquant" }, 400);
     await deleteEnrollmentImportById(id);
-    return json({ imports: await readEnrollmentImports() });
+    return json({ imports: await readEnrollmentImportSummaries() });
   } catch (error) {
     const detail = error instanceof Error ? error.message : "Impossible de supprimer l’import";
     return json({ error: "Impossible de supprimer l’import", detail }, 500);

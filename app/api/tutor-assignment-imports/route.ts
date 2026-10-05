@@ -42,7 +42,7 @@ export async function POST(request: Request) {
       fileName: url.searchParams.get("fileName") || "seances-affectees.csv",
       rawCsv,
     });
-    return json({ import: createdImport, imports: await readTutorAssignmentImports() }, 201);
+    return json({ import: createdImport, imports: await readTutorAssignmentImportSummaries() }, 201);
   } catch (error) {
     const detail = error instanceof Error ? error.message : "Impossible d’importer les séances affectées";
     return json({ error: "Impossible d’importer les séances affectées", detail }, 500);
@@ -54,7 +54,7 @@ export async function PATCH(request: Request) {
     const body = (await request.json()) as { id?: unknown; displayName?: unknown };
     if (typeof body.id !== "string" || typeof body.displayName !== "string") return json({ error: "Nom invalide" }, 400);
     await updateTutorAssignmentImportName(body.id, body.displayName);
-    return json({ imports: await readTutorAssignmentImports() });
+    return json({ imports: await readTutorAssignmentImportSummaries() });
   } catch (error) {
     const detail = error instanceof Error ? error.message : "Impossible de renommer l’import";
     return json({ error: "Impossible de renommer l’import", detail }, 500);
@@ -66,7 +66,7 @@ export async function DELETE(request: Request) {
     const id = new URL(request.url).searchParams.get("id");
     if (!id) return json({ error: "Identifiant manquant" }, 400);
     await deleteTutorAssignmentImportById(id);
-    return json({ imports: await readTutorAssignmentImports() });
+    return json({ imports: await readTutorAssignmentImportSummaries() });
   } catch (error) {
     const detail = error instanceof Error ? error.message : "Impossible de supprimer l’import";
     return json({ error: "Impossible de supprimer l’import", detail }, 500);

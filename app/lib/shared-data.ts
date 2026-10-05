@@ -97,7 +97,7 @@ export type JournalPost = {
   updatedAt: string;
 };
 
-export type CommunicationAudience = "tuteurs" | "etablissements" | "parents" | "coordinateurs";
+export type CommunicationAudience = "tuteurs" | "candidats" | "etablissements" | "parents" | "coordinateurs";
 export type CommunicationStatus = "draft" | "sent" | "to-follow-up" | "cancelled";
 
 export type MassCommunication = {
@@ -105,6 +105,7 @@ export type MassCommunication = {
   title: string;
   messageSummary: string;
   audiences: CommunicationAudience[];
+  recipients: string[];
   channel: string;
   status: CommunicationStatus;
   sentAt: string;
@@ -385,6 +386,19 @@ export type EnrollmentImport = {
   createdAt: string;
 };
 
+export type FileImportKind = "availability" | "assignments" | "interests" | "upcomingSessions" | "enrollments" | "tutors";
+
+export type TrashedFileImport = {
+  kind: FileImportKind;
+  id: string;
+  importedAt: string;
+  displayName: string;
+  fileName: string;
+  sourceRowCount?: number;
+  date?: string;
+  deletedAt: string;
+};
+
 export type SchoolWatchTag = "Nouvel établissement" | "Nouveau besoin" | "Suivi particulier";
 export type SchoolWatchStatus = "active" | "resolved";
 
@@ -524,6 +538,7 @@ export const ENROLLMENT_IMPORTS_KEY = "enrollment-imports.json";
 export const SCHOOL_WATCHLIST_KEY = "school-watchlist.json";
 export const SCHOOLS_KEY = "schools.json";
 export const STUDENT_HISTORY_KEY = "student-history.json";
+export const FILE_IMPORT_TRASH_KEY = "file-import-trash.json";
 
 const memory = globalThis as typeof globalThis & {
   __petitSuiviTasks?: Task[];
@@ -549,6 +564,7 @@ const memory = globalThis as typeof globalThis & {
   __petitSuiviSchoolWatchlist?: SchoolWatchItem[];
   __petitSuiviSchools?: School[];
   __petitSuiviStudentHistory?: StudentHistoryYear[];
+  __petitSuiviFileImportTrash?: Array<{ summary: TrashedFileImport; record: unknown }>;
 };
 
 const defaultObjectives: Objective[] = [
@@ -836,7 +852,7 @@ export function sanitizeJournalPost(raw: Record<string, unknown>): JournalPost {
 }
 
 function isCommunicationAudience(value: unknown): value is CommunicationAudience {
-  return value === "tuteurs" || value === "etablissements" || value === "parents" || value === "coordinateurs";
+  return value === "tuteurs" || value === "candidats" || value === "etablissements" || value === "parents" || value === "coordinateurs";
 }
 
 function isCommunicationStatus(value: unknown): value is CommunicationStatus {
@@ -854,12 +870,16 @@ export function sanitizeMassCommunication(raw: Record<string, unknown>): MassCom
   const audiences = Array.isArray(raw.audiences)
     ? raw.audiences.filter(isCommunicationAudience)
     : [];
+  const recipients = Array.isArray(raw.recipients)
+    ? raw.recipients.map(cleanText).filter(Boolean)
+    : cleanText(raw.recipients).split(/\r?\n/).map((item) => item.trim()).filter(Boolean);
 
   return {
     id: cleanText(raw.id) || crypto.randomUUID(),
     title: cleanText(raw.title),
     messageSummary: cleanText(raw.messageSummary),
     audiences,
+    recipients: Array.from(new Set(recipients)),
     channel: cleanText(raw.channel) || "Email",
     status: isCommunicationStatus(raw.status) ? raw.status : "sent",
     sentAt: cleanText(raw.sentAt),
@@ -2618,10 +2638,7 @@ export async function updateAvailabilityImportName(id: string, displayName: stri
 }
 
 export async function deleteAvailabilityImportById(id: string) {
-  const store = taskStore();
-  const existingImports = await readAvailabilityIndex();
-  await store.setJSON(AVAILABILITY_IMPORTS_KEY, existingImports.filter((item) => item.id !== id).map((item) => ({ ...item, rows: [], rawCsv: "" })));
-  await Promise.all([store.delete(availabilityRawKey(id)), store.delete(availabilityRowsKey(id))]);
+  await moveFileImportToTrash("availability", id);
 }
 
 export async function readAvailabilityRawCsv(id: string) {
@@ -2764,10 +2781,7 @@ export async function updateTutorAssignmentImportName(id: string, displayName: s
 }
 
 export async function deleteTutorAssignmentImportById(id: string) {
-  const store = taskStore();
-  const existing = await readTutorAssignmentIndex();
-  await store.setJSON(TUTOR_ASSIGNMENT_IMPORTS_KEY, existing.filter((item) => item.id !== id).map((item) => ({ ...item, rows: [] })));
-  await store.delete(tutorAssignmentRowsKey(id));
+  await moveFileImportToTrash("assignments", id);
 }
 
 function upcomingSessionRowsKey(id: string) {
@@ -2918,10 +2932,7 @@ export async function updateUpcomingSessionImportName(id: string, displayName: s
 }
 
 export async function deleteUpcomingSessionImportById(id: string) {
-  const store = taskStore();
-  const existing = await readUpcomingSessionIndex();
-  await store.setJSON(UPCOMING_SESSION_IMPORTS_KEY, existing.filter((item) => item.id !== id).map((item) => ({ ...item, rows: [], staffingSessions: [] })));
-  await Promise.all([store.delete(upcomingSessionRowsKey(id)), store.delete(upcomingStaffingSessionsKey(id))]);
+  await moveFileImportToTrash("upcomingSessions", id);
 }
 
 export async function readActualSessionImports() {
@@ -3116,10 +3127,7 @@ export async function updateTutorInterestImportName(id: string, displayName: str
 }
 
 export async function deleteTutorInterestImportById(id: string) {
-  const store = taskStore();
-  const existing = await readTutorInterestIndex();
-  await store.setJSON(TUTOR_INTEREST_IMPORTS_KEY, existing.filter((item) => item.id !== id).map((item) => ({ ...item, rows: [] })));
-  await store.delete(tutorInterestRowsKey(id));
+  await moveFileImportToTrash("interests", id);
 }
 
 export async function readTutorCoverageNotes() {
@@ -3170,6 +3178,27 @@ async function readEnrollmentIndex() {
 
 export async function readEnrollmentImportSummaries() {
   return (await readEnrollmentIndex()).map((item) => ({ ...item, rows: [] }));
+}
+
+export async function readEnrollmentImportById(id: string) {
+  const cleanedId = cleanText(id);
+  if (!cleanedId) return null;
+  try {
+    const store = taskStore();
+    const selected = (await readEnrollmentIndex()).find((item) => item.id === cleanedId);
+    if (!selected) return null;
+    if (selected.rows.length) return selected;
+    const rows = await store.get(enrollmentRowsKey(selected.id), { type: "json", consistency: "strong" });
+    return {
+      ...selected,
+      rows: Array.isArray(rows)
+        ? rows.filter((row): row is Record<string, unknown> => Boolean(row && typeof row === "object")).map(sanitizeEnrollmentRow).filter((row) => row.studentId && row.slots)
+        : [],
+    };
+  } catch (error) {
+    if (!canUseMemoryFallback()) throw error;
+    return (memory.__petitSuiviEnrollmentImports ?? []).find((item) => item.id === cleanedId) ?? null;
+  }
 }
 
 export async function readEnrollmentImports() {
@@ -3241,10 +3270,170 @@ export async function updateEnrollmentImportName(id: string, displayName: string
 }
 
 export async function deleteEnrollmentImportById(id: string) {
+  await moveFileImportToTrash("enrollments", id);
+}
+
+function trashPayloadKey(kind: FileImportKind, id: string) {
+  return `file-import-trash/${kind}/${id}.json`;
+}
+
+function sanitizeTrashedFileImport(raw: Record<string, unknown>): TrashedFileImport {
+  const allowedKinds: FileImportKind[] = ["availability", "assignments", "interests", "upcomingSessions", "enrollments", "tutors"];
+  const kind = allowedKinds.includes(raw.kind as FileImportKind) ? raw.kind as FileImportKind : "availability";
+  const sourceRowCount = Math.max(0, Math.round(Number(raw.sourceRowCount) || 0));
+  return {
+    kind,
+    id: cleanText(raw.id),
+    importedAt: cleanText(raw.importedAt),
+    displayName: cleanText(raw.displayName) || cleanText(raw.fileName) || "Import sans nom",
+    fileName: cleanText(raw.fileName),
+    ...(sourceRowCount ? { sourceRowCount } : {}),
+    ...(cleanText(raw.date) ? { date: cleanText(raw.date) } : {}),
+    deletedAt: cleanText(raw.deletedAt) || new Date().toISOString(),
+  };
+}
+
+async function readFileImportTrashPayloads() {
+  try {
+    const store = taskStore();
+    const index = await store.get(FILE_IMPORT_TRASH_KEY, { type: "json", consistency: "strong" });
+    const summaries = Array.isArray(index)
+      ? index.filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object")).map(sanitizeTrashedFileImport).filter((item) => item.id)
+      : [];
+    return summaries.sort((a, b) => dateValueForSort(b.deletedAt) - dateValueForSort(a.deletedAt));
+  } catch (error) {
+    if (!canUseMemoryFallback()) throw error;
+    return (memory.__petitSuiviFileImportTrash ?? []).map((item) => item.summary);
+  }
+}
+
+export async function readFileImportTrash() {
+  return readFileImportTrashPayloads();
+}
+
+async function saveTrashEntry(summary: TrashedFileImport, record: unknown) {
+  try {
+    const store = taskStore();
+    const current = await readFileImportTrashPayloads();
+    await store.setJSON(trashPayloadKey(summary.kind, summary.id), { summary, record });
+    await store.setJSON(FILE_IMPORT_TRASH_KEY, [summary, ...current.filter((item) => !(item.kind === summary.kind && item.id === summary.id))]);
+  } catch (error) {
+    if (!canUseMemoryFallback()) throw error;
+    memory.__petitSuiviFileImportTrash = [
+      { summary, record },
+      ...(memory.__petitSuiviFileImportTrash ?? []).filter((item) => !(item.summary.kind === summary.kind && item.summary.id === summary.id)),
+    ];
+  }
+}
+
+export async function moveFileImportToTrash(kind: FileImportKind, id: string) {
+  const cleanedId = cleanText(id);
+  if (!cleanedId) throw new Error("Identifiant manquant");
   const store = taskStore();
-  const existing = await readEnrollmentIndex();
-  await store.setJSON(ENROLLMENT_IMPORTS_KEY, existing.filter((item) => item.id !== id).map((item) => ({ ...item, rows: [] })));
-  await store.delete(enrollmentRowsKey(id));
+  let record: AvailabilityImport | TutorAssignmentImport | TutorInterestImport | UpcomingSessionImport | EnrollmentImport | TutorTrackingSnapshot | undefined;
+  if (kind === "availability") record = (await readAvailabilityIndex()).find((item) => item.id === cleanedId);
+  else if (kind === "assignments") record = (await readTutorAssignmentIndex()).find((item) => item.id === cleanedId);
+  else if (kind === "interests") record = (await readTutorInterestIndex()).find((item) => item.id === cleanedId);
+  else if (kind === "upcomingSessions") record = (await readUpcomingSessionIndex()).find((item) => item.id === cleanedId);
+  else if (kind === "enrollments") record = (await readEnrollmentIndex()).find((item) => item.id === cleanedId);
+  else record = (await readTutorTracking()).snapshots.find((item) => item.id === cleanedId);
+  if (!record) throw new Error("Import introuvable");
+  const deletedAt = new Date().toISOString();
+  const summary = sanitizeTrashedFileImport({
+    kind,
+    id: record.id,
+    importedAt: "date" in record ? record.updatedAt || record.createdAt || record.date : record.importedAt,
+    displayName: record.displayName,
+    fileName: record.fileName,
+    sourceRowCount: "sourceRowCount" in record ? record.sourceRowCount : undefined,
+    date: "date" in record ? record.date : "",
+    deletedAt,
+  });
+  await saveTrashEntry(summary, record);
+  if (kind === "availability") {
+    const existing = await readAvailabilityIndex();
+    await store.setJSON(AVAILABILITY_IMPORTS_KEY, existing.filter((item) => item.id !== cleanedId).map((item) => ({ ...item, rows: [], rawCsv: "" })));
+  } else if (kind === "assignments") {
+    const existing = await readTutorAssignmentIndex();
+    await store.setJSON(TUTOR_ASSIGNMENT_IMPORTS_KEY, existing.filter((item) => item.id !== cleanedId).map((item) => ({ ...item, rows: [] })));
+  } else if (kind === "interests") {
+    const existing = await readTutorInterestIndex();
+    await store.setJSON(TUTOR_INTEREST_IMPORTS_KEY, existing.filter((item) => item.id !== cleanedId).map((item) => ({ ...item, rows: [] })));
+  } else if (kind === "upcomingSessions") {
+    const existing = await readUpcomingSessionIndex();
+    await store.setJSON(UPCOMING_SESSION_IMPORTS_KEY, existing.filter((item) => item.id !== cleanedId).map((item) => ({ ...item, rows: [], staffingSessions: [] })));
+  } else if (kind === "enrollments") {
+    const existing = await readEnrollmentIndex();
+    await store.setJSON(ENROLLMENT_IMPORTS_KEY, existing.filter((item) => item.id !== cleanedId).map((item) => ({ ...item, rows: [] })));
+  } else {
+    const tracking = await readTutorTracking();
+    await writeTutorTracking({ ...tracking, snapshots: tracking.snapshots.filter((item) => item.id !== cleanedId) });
+  }
+  return summary;
+}
+
+export async function restoreFileImportFromTrash(kind: FileImportKind, id: string) {
+  const cleanedId = cleanText(id);
+  if (!cleanedId) throw new Error("Identifiant manquant");
+  let summary: TrashedFileImport | undefined;
+  let record: unknown;
+  try {
+    const store = taskStore();
+    const payload = await store.get(trashPayloadKey(kind, cleanedId), { type: "json", consistency: "strong" });
+    if (payload && typeof payload === "object") {
+      const rawPayload = payload as Record<string, unknown>;
+      summary = rawPayload.summary && typeof rawPayload.summary === "object" ? sanitizeTrashedFileImport(rawPayload.summary as Record<string, unknown>) : undefined;
+      record = rawPayload.record;
+    }
+  } catch (error) {
+    if (!canUseMemoryFallback()) throw error;
+    const payload = (memory.__petitSuiviFileImportTrash ?? []).find((item) => item.summary.kind === kind && item.summary.id === cleanedId);
+    summary = payload?.summary;
+    record = payload?.record;
+  }
+  if (!summary || !record || typeof record !== "object") throw new Error("Fichier introuvable dans la corbeille");
+  const store = taskStore();
+  if (kind === "availability") {
+    const restored = sanitizeAvailabilityImport(record as Record<string, unknown>);
+    const existing = await readAvailabilityIndex();
+    if (restored.rows.length) await store.setJSON(availabilityRowsKey(restored.id), restored.rows);
+    if (restored.rawCsv) await store.set(availabilityRawKey(restored.id), restored.rawCsv);
+    await store.setJSON(AVAILABILITY_IMPORTS_KEY, [restored, ...existing.filter((item) => item.id !== cleanedId)].map((item) => ({ ...item, rows: [], rawCsv: "" })).sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt)));
+  } else if (kind === "assignments") {
+    const restored = sanitizeTutorAssignmentImport(record as Record<string, unknown>);
+    const existing = await readTutorAssignmentIndex();
+    if (restored.rows.length) await store.setJSON(tutorAssignmentRowsKey(restored.id), restored.rows);
+    await store.setJSON(TUTOR_ASSIGNMENT_IMPORTS_KEY, [restored, ...existing.filter((item) => item.id !== cleanedId)].map((item) => ({ ...item, rows: [] })).sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt)));
+  } else if (kind === "interests") {
+    const restored = sanitizeTutorInterestImport(record as Record<string, unknown>);
+    const existing = await readTutorInterestIndex();
+    if (restored.rows.length) await store.setJSON(tutorInterestRowsKey(restored.id), restored.rows);
+    await store.setJSON(TUTOR_INTEREST_IMPORTS_KEY, [restored, ...existing.filter((item) => item.id !== cleanedId)].map((item) => ({ ...item, rows: [] })).sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt)));
+  } else if (kind === "upcomingSessions") {
+    const restored = sanitizeUpcomingSessionImport(record as Record<string, unknown>);
+    const existing = await readUpcomingSessionIndex();
+    if (restored.rows.length) await store.setJSON(upcomingSessionRowsKey(restored.id), restored.rows);
+    if (restored.staffingSessions.length) await store.setJSON(upcomingStaffingSessionsKey(restored.id), restored.staffingSessions);
+    await store.setJSON(UPCOMING_SESSION_IMPORTS_KEY, [restored, ...existing.filter((item) => item.id !== cleanedId)].map((item) => ({ ...item, rows: [], staffingSessions: [] })).sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt)));
+  } else if (kind === "enrollments") {
+    const restored = sanitizeEnrollmentImport(record as Record<string, unknown>);
+    const existing = await readEnrollmentIndex();
+    if (restored.rows.length) await store.setJSON(enrollmentRowsKey(restored.id), restored.rows);
+    await store.setJSON(ENROLLMENT_IMPORTS_KEY, [restored, ...existing.filter((item) => item.id !== cleanedId)].map((item) => ({ ...item, rows: [] })).sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt)));
+  } else {
+    const restored = sanitizeTutorTrackingSnapshot(record as Record<string, unknown>);
+    const tracking = await readTutorTracking();
+    await writeTutorTracking({ ...tracking, snapshots: [restored, ...tracking.snapshots.filter((item) => item.id !== cleanedId)] });
+  }
+  try {
+    const current = await readFileImportTrashPayloads();
+    await store.setJSON(FILE_IMPORT_TRASH_KEY, current.filter((item) => !(item.kind === kind && item.id === cleanedId)));
+    await store.delete(trashPayloadKey(kind, cleanedId));
+  } catch (error) {
+    if (!canUseMemoryFallback()) throw error;
+    memory.__petitSuiviFileImportTrash = (memory.__petitSuiviFileImportTrash ?? []).filter((item) => !(item.summary.kind === kind && item.summary.id === cleanedId));
+  }
+  return summary;
 }
 
 export async function readSchoolWatchlist() {

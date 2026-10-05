@@ -91,7 +91,7 @@ export async function PATCH(request: Request) {
       return json({ error: "Invalid import name" }, 400);
     }
     await updateAvailabilityImportName(body.id, body.displayName);
-    return json({ imports: await readAvailabilityImports() });
+    return json({ imports: await readAvailabilityImportSummaries() });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to rename availability import";
     return json({ error: "Unable to rename availability import", detail: message }, 500);
@@ -104,7 +104,7 @@ export async function DELETE(request: Request) {
     const id = url.searchParams.get("id");
     if (!id) return json({ error: "Missing import id" }, 400);
     await deleteAvailabilityImportById(id);
-    return json({ imports: await readAvailabilityImports() });
+    return json({ imports: await readAvailabilityImportSummaries() });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to delete availability import";
     return json({ error: "Unable to delete availability import", detail: message }, 500);

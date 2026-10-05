@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import PersonAdminLink from "@/app/components/person-admin-link";
+import type { FileKind } from "@/app/components/files-hub";
 
 type AvailabilityRow = {
   tutorId: string;
@@ -122,10 +123,13 @@ function normalizedSchoolName(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr").replace(/[^a-z0-9]+/g, " ").trim();
 }
 
-export default function TutorAvailabilityFeed() {
+export default function TutorAvailabilityFeed({ onOpenFiles }: { onOpenFiles: (kind: FileKind) => void }) {
   const [availabilityImports, setAvailabilityImports] = useState<Array<SourceImport<AvailabilityRow>>>([]);
   const [interestImports, setInterestImports] = useState<Array<SourceImport<InterestRow>>>([]);
   const [assignmentImports, setAssignmentImports] = useState<Array<SourceImport<AssignmentRow>>>([]);
+  const [availabilityData, setAvailabilityData] = useState<Record<string, SourceImport<AvailabilityRow>>>({});
+  const [interestData, setInterestData] = useState<Record<string, SourceImport<InterestRow>>>({});
+  const [assignmentData, setAssignmentData] = useState<Record<string, SourceImport<AssignmentRow>>>({});
   const [latestTutorSnapshot, setLatestTutorSnapshot] = useState<TutorSnapshot | null>(null);
   const [schoolAssignments, setSchoolAssignments] = useState<SchoolAssignment[]>([]);
   const [availabilityImportId, setAvailabilityImportId] = useState("");
@@ -138,32 +142,44 @@ export default function TutorAvailabilityFeed() {
   const [schoolOwnerFilter, setSchoolOwnerFilter] = useState<SchoolOwnerFilter>("all");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [detailError, setDetailError] = useState("");
+  const [detailRetry, setDetailRetry] = useState(0);
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
-    try {
-      const endpoints = ["/api/availability-imports", "/api/tutor-interest-imports", "/api/tutor-assignment-imports", "/api/tutor-tracking", "/api/schools"];
-      const responses = await Promise.all(endpoints.map((endpoint) => fetch(endpoint, { cache: "no-store" })));
-      const payloads = await Promise.all(responses.map((response) => response.json())) as Array<{ imports?: unknown[]; tracking?: { snapshots?: TutorSnapshot[] }; schools?: SchoolAssignment[]; error?: string; detail?: string }>;
-      const failedIndex = responses.findIndex((response) => !response.ok);
-      if (failedIndex >= 0) throw new Error(payloads[failedIndex].detail || payloads[failedIndex].error || "Chargement impossible");
-      const availability = (payloads[0].imports ?? []) as Array<SourceImport<AvailabilityRow>>;
-      const interests = (payloads[1].imports ?? []) as Array<SourceImport<InterestRow>>;
-      const assignments = (payloads[2].imports ?? []) as Array<SourceImport<AssignmentRow>>;
+    const sources = [
+      ["Disponibilités", "/api/availability-imports?summary=1"],
+      ["Intérêts", "/api/tutor-interest-imports?summary=1"],
+      ["Séances affectées", "/api/tutor-assignment-imports?summary=1"],
+      ["Liste des tuteurs", "/api/tutor-tracking?latest=1"],
+      ["Établissements", "/api/schools"],
+    ] as const;
+    const results = await Promise.allSettled(sources.map(async ([label, endpoint]) => {
+      const response = await fetch(endpoint, { cache: "no-store" });
+      const payload = await response.json() as { imports?: unknown[]; snapshot?: TutorSnapshot | null; schools?: SchoolAssignment[]; error?: string; detail?: string };
+      if (!response.ok) throw new Error(`${label} : ${payload.detail || payload.error || "chargement impossible"}`);
+      return payload;
+    }));
+    const errors = results.flatMap((result) => result.status === "rejected" ? [result.reason instanceof Error ? result.reason.message : "Chargement impossible"] : []);
+    if (results[0]?.status === "fulfilled") {
+      const availability = (results[0].value.imports ?? []) as Array<SourceImport<AvailabilityRow>>;
       setAvailabilityImports(availability);
-      setInterestImports(interests);
-      setAssignmentImports(assignments);
-      setLatestTutorSnapshot(payloads[3].tracking?.snapshots?.[0] ?? null);
-      setSchoolAssignments(payloads[4].schools ?? []);
       setAvailabilityImportId((current) => availability.some((item) => item.id === current) ? current : availability[0]?.id || "");
-      setInterestImportId((current) => interests.some((item) => item.id === current) ? current : interests[0]?.id || "");
-      setAssignmentImportId((current) => assignments.some((item) => item.id === current) ? current : assignments[0]?.id || "");
-      if (!silent) setMessage("Fil actualisé");
-    } catch (error) {
-      if (!silent) setMessage(error instanceof Error ? error.message : "Chargement impossible");
-    } finally {
-      if (!silent) setLoading(false);
     }
+    if (results[1]?.status === "fulfilled") {
+      const interests = (results[1].value.imports ?? []) as Array<SourceImport<InterestRow>>;
+      setInterestImports(interests);
+      setInterestImportId((current) => interests.some((item) => item.id === current) ? current : interests[0]?.id || "");
+    }
+    if (results[2]?.status === "fulfilled") {
+      const assignments = (results[2].value.imports ?? []) as Array<SourceImport<AssignmentRow>>;
+      setAssignmentImports(assignments);
+      setAssignmentImportId((current) => assignments.some((item) => item.id === current) ? current : assignments[0]?.id || "");
+    }
+    if (results[3]?.status === "fulfilled") setLatestTutorSnapshot(results[3].value.snapshot ?? null);
+    if (results[4]?.status === "fulfilled") setSchoolAssignments(results[4].value.schools ?? []);
+    setMessage(errors.length ? errors.join(" · ") : silent ? "" : "Fil actualisé");
+    if (!silent) setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -172,9 +188,40 @@ export default function TutorAvailabilityFeed() {
     return () => { window.clearTimeout(timer); window.clearInterval(refresh); };
   }, [load]);
 
-  const availabilityImport = availabilityImports.find((item) => item.id === availabilityImportId) ?? null;
-  const interestImport = interestImports.find((item) => item.id === interestImportId) ?? null;
-  const assignmentImport = assignmentImports.find((item) => item.id === assignmentImportId) ?? null;
+  useEffect(() => {
+    const requests = [
+      availabilityImportId && !availabilityData[availabilityImportId] ? ["availability", availabilityImportId, "/api/availability-imports"] : null,
+      interestImportId && !interestData[interestImportId] ? ["interest", interestImportId, "/api/tutor-interest-imports"] : null,
+      assignmentImportId && !assignmentData[assignmentImportId] ? ["assignment", assignmentImportId, "/api/tutor-assignment-imports"] : null,
+    ].filter(Boolean) as string[][];
+    if (!requests.length) return;
+    let cancelled = false;
+    Promise.all(requests.map(async ([kind, id, endpoint]) => {
+      const response = await fetch(`${endpoint}?id=${encodeURIComponent(id)}`, { cache: "no-store" });
+      const data = await response.json() as { import?: SourceImport<AvailabilityRow | InterestRow | AssignmentRow>; error?: string; detail?: string };
+      if (!response.ok || !data.import) throw new Error(data.detail || data.error || "Fichier sélectionné indisponible");
+      return { kind, item: data.import };
+    })).then((items) => {
+      if (cancelled) return;
+      items.forEach(({ kind, item }) => {
+        if (kind === "availability") setAvailabilityData((current) => ({ ...current, [item.id]: item as SourceImport<AvailabilityRow> }));
+        else if (kind === "interest") setInterestData((current) => ({ ...current, [item.id]: item as SourceImport<InterestRow> }));
+        else setAssignmentData((current) => ({ ...current, [item.id]: item as SourceImport<AssignmentRow> }));
+      });
+      setDetailError("");
+      setMessage("");
+    }).catch((error) => { if (!cancelled) { const text = error instanceof Error ? error.message : "Chargement impossible"; setDetailError(text); setMessage(text); } });
+    return () => { cancelled = true; };
+  }, [assignmentData, assignmentImportId, availabilityData, availabilityImportId, detailRetry, interestData, interestImportId]);
+
+  const availabilityImport = availabilityData[availabilityImportId] ?? null;
+  const interestImport = interestData[interestImportId] ?? null;
+  const assignmentImport = assignmentData[assignmentImportId] ?? null;
+  const loadingDetails = !detailError && Boolean(
+    (availabilityImportId && !availabilityImport)
+    || (interestImportId && !interestImport)
+    || (assignmentImportId && !assignmentImport),
+  );
   const dates = useMemo(() => Array.from(new Set([...(availabilityImport?.rows ?? []).map((row) => row.date), ...(interestImport?.rows ?? []).map((row) => row.date)].filter(Boolean))).sort(), [availabilityImport, interestImport]);
   const today = new Date().toISOString().slice(0, 10);
   const activeDate = dates.includes(selectedDate) ? selectedDate : dates.includes(today) ? today : dates[0] || "";
@@ -249,9 +296,9 @@ export default function TutorAvailabilityFeed() {
     <div className="panel-heading"><div><p className="eyebrow">Vue chronologique quotidienne</p><h2>Fil des disponibilités</h2><p>Uniquement les créneaux réellement libres, issus des disponibilités et des intérêts.</p></div><button className="ghost-button" type="button" onClick={() => void load()} disabled={loading}>↻ Actualiser</button></div>
     {message ? <p className="enrollment-message">{message}</p> : null}
     <div className="tutor-feed-sources">
-      <label><span>Disponibilités</span><select value={availabilityImportId} onChange={(event) => setAvailabilityImportId(event.target.value)}><option value="">Aucun fichier</option>{availabilityImports.map((item) => <option value={item.id} key={item.id}>{item.displayName} · {formatImportDate(item.importedAt)}</option>)}</select></label>
-      <label><span>Intérêts</span><select value={interestImportId} onChange={(event) => setInterestImportId(event.target.value)}><option value="">Aucun fichier</option>{interestImports.map((item) => <option value={item.id} key={item.id}>{item.displayName} · {formatImportDate(item.importedAt)}</option>)}</select></label>
-      <label><span>Séances affectées</span><select value={assignmentImportId} onChange={(event) => setAssignmentImportId(event.target.value)}><option value="">Aucun fichier</option>{assignmentImports.map((item) => <option value={item.id} key={item.id}>{item.displayName} · {formatImportDate(item.importedAt)}</option>)}</select></label>
+      <label><span>Disponibilités{!availabilityImports.length ? <button type="button" className="source-files-link" onClick={() => onOpenFiles("availability")}>Ouvrir Fichiers</button> : null}</span><select value={availabilityImportId} onChange={(event) => setAvailabilityImportId(event.target.value)}><option value="">Aucun fichier</option>{availabilityImports.map((item) => <option value={item.id} key={item.id}>{item.displayName} · {formatImportDate(item.importedAt)}</option>)}</select></label>
+      <label><span>Intérêts{!interestImports.length ? <button type="button" className="source-files-link" onClick={() => onOpenFiles("interests")}>Ouvrir Fichiers</button> : null}</span><select value={interestImportId} onChange={(event) => setInterestImportId(event.target.value)}><option value="">Aucun fichier</option>{interestImports.map((item) => <option value={item.id} key={item.id}>{item.displayName} · {formatImportDate(item.importedAt)}</option>)}</select></label>
+      <label><span>Séances affectées{!assignmentImports.length ? <button type="button" className="source-files-link" onClick={() => onOpenFiles("assignments")}>Ouvrir Fichiers</button> : null}</span><select value={assignmentImportId} onChange={(event) => setAssignmentImportId(event.target.value)}><option value="">Aucun fichier</option>{assignmentImports.map((item) => <option value={item.id} key={item.id}>{item.displayName} · {formatImportDate(item.importedAt)}</option>)}</select></label>
       <small>{latestTutorSnapshot ? `Statuts issus de la liste des tuteurs du ${formatDate(latestTutorSnapshot.date)}` : "Aucune liste de tuteurs disponible"}</small>
     </div>
     <div className="tutor-feed-date-tabs">{dates.map((date) => <button className={activeDate === date ? "active" : ""} onClick={() => setSelectedDate(date)} key={date}>{formatDate(date)}</button>)}</div>
@@ -264,7 +311,7 @@ export default function TutorAvailabilityFeed() {
     </div>
     <div className="tutor-feed-kpis"><span className="free"><strong>{visibleSlots.length}</strong> créneaux libres</span><span><strong>{peopleCount}</strong> personnes</span><span><strong>{tutorCount}</strong> tuteurs</span><span><strong>{candidateCount}</strong> candidats</span><span><strong>{availabilityCount}</strong> depuis disponibilités</span><span><strong>{interestCount}</strong> depuis intérêts</span></div>
     <div className="tutor-feed-list">
-      {visibleSlots.length ? visibleSlots.map((slot) => <article className={`tutor-feed-card slot-card status-${slot.status} ${slot.otherAssignments.length ? "has-other-assignment" : "no-other-assignment"}`} key={`${slot.personId}-${slot.key}`}>
+      {detailError ? <div className="empty-state"><span>!</span><h3>Fichier sélectionné indisponible</h3><p>{detailError}</p><button type="button" className="button quiet" onClick={() => { setDetailError(""); setDetailRetry((value) => value + 1); }}>Réessayer</button></div> : loadingDetails ? <div className="empty-state"><span>⏳</span><h3>Chargement des fichiers sélectionnés…</h3></div> : !availabilityImport && !interestImport ? <div className="empty-state"><span>🗂️</span><h3>Aucune source de disponibilités</h3><p>Choisissez un fichier existant ou ouvrez la bibliothèque partagée.</p><button type="button" className="button quiet" onClick={() => onOpenFiles("availability")}>Ouvrir Fichiers</button></div> : visibleSlots.length ? visibleSlots.map((slot) => <article className={`tutor-feed-card slot-card status-${slot.status} ${slot.otherAssignments.length ? "has-other-assignment" : "no-other-assignment"}`} key={`${slot.personId}-${slot.key}`}>
         <div className="tutor-feed-time"><strong>{slot.timeSlot.match(/\b\d{1,2}:\d{2}\b/)?.[0] || "—"}</strong><span>créneau libre</span></div>
         <div className="tutor-feed-person"><div><h3><PersonAdminLink personId={slot.personId} status={slot.status}>{tutorName(slot)}</PersonAdminLink></h3><span className={`person-status ${slot.status}`}>{slot.status === "tutor" ? "Tuteur" : slot.status === "candidate" ? "Candidat" : "Statut inconnu"}</span></div><p>ID {slot.personId}{slot.phone ? ` · ${slot.phone}` : ""}</p></div>
         <div className="tutor-feed-opportunities"><div><strong>{slot.timeSlot || "Horaire non précisé"}</strong><span>{slot.school || "Établissement non précisé"}{slot.className ? ` · ${slot.className}` : ""} · {schoolOwnerLabels[ownerForSlot(slot)]}</span><em>{slot.sources.map((source) => source === "availability" ? "Disponibilité" : "Intérêt").join(" + ")}{slot.validatedInterest ? " · validé" : ""}</em></div></div>

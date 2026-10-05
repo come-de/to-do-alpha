@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { AvailabilityImport, AvailabilityRow, TutorAssignmentImport, TutorAssignmentRow, TutorCoverageNote, TutorCoverageNoteStatus, TutorInterestImport, TutorInterestRow, TutorTrackingSnapshot, UnstaffedExclusions, UpcomingSessionImport } from "@/app/lib/shared-data";
 import PersonAdminLink from "@/app/components/person-admin-link";
 import SchoolAdminLink from "@/app/components/school-admin-link";
+import type { FileKind } from "@/app/components/files-hub";
 
 type CoverageView = "unassigned" | "extra";
 type ToolView = "coverage" | "staffing-comparison";
@@ -61,11 +62,6 @@ function normalizedSchoolName(value: string) {
     .toLocaleLowerCase("fr")
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
-}
-
-function timestamp(value: string) {
-  const parsed = new Date(value).getTime();
-  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function importDate(value: string) {
@@ -137,11 +133,14 @@ function csvCell(value: unknown) {
   return /[;"\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
-export default function TutorCoverageComparison() {
+export default function TutorCoverageComparison({ onOpenFiles }: { onOpenFiles: (kind: FileKind) => void }) {
   const [toolView, setToolView] = useState<ToolView>("coverage");
   const [availabilityImports, setAvailabilityImports] = useState<AvailabilityImport[]>([]);
   const [interestImports, setInterestImports] = useState<TutorInterestImport[]>([]);
   const [assignmentImports, setAssignmentImports] = useState<TutorAssignmentImport[]>([]);
+  const [availabilityData, setAvailabilityData] = useState<Record<string, AvailabilityImport>>({});
+  const [interestData, setInterestData] = useState<Record<string, TutorInterestImport>>({});
+  const [assignmentData, setAssignmentData] = useState<Record<string, TutorAssignmentImport>>({});
   const [upcomingSessionImports, setUpcomingSessionImports] = useState<UpcomingSessionImport[]>([]);
   const [upcomingSessionId, setUpcomingSessionId] = useState("");
   const [activeUpcomingSessionImport, setActiveUpcomingSessionImport] = useState<UpcomingSessionImport | null>(null);
@@ -166,63 +165,38 @@ export default function TutorCoverageComparison() {
   const [showRemovedTutors, setShowRemovedTutors] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [detailError, setDetailError] = useState("");
+  const [detailRetry, setDetailRetry] = useState(0);
   const [notes, setNotes] = useState<TutorCoverageNote[]>([]);
   const [noteDrafts, setNoteDrafts] = useState<Record<string, NoteDraft>>({});
 
   const load = useCallback(async (silent = false) => {
-    try {
-      const [availabilityResponse, assignmentResponse, notesResponse, schoolsResponse, interestsResponse, trackingResponse, upcomingResponse, exclusionsResponse] = await Promise.all([
-        fetch("/api/availability-imports", { cache: "no-store" }),
-        fetch("/api/tutor-assignment-imports", { cache: "no-store" }),
-        fetch("/api/tutor-coverage-notes", { cache: "no-store" }),
-        fetch("/api/schools", { cache: "no-store" }),
-        fetch("/api/tutor-interest-imports", { cache: "no-store" }),
-        fetch("/api/tutor-tracking", { cache: "no-store" }),
-        fetch("/api/upcoming-session-imports?summary=1", { cache: "no-store" }),
-        fetch("/api/unstaffed-exclusions", { cache: "no-store" }),
-      ]);
-      const availabilityData = await availabilityResponse.json() as { imports?: AvailabilityImport[]; error?: string; detail?: string };
-      const assignmentData = await assignmentResponse.json() as { imports?: TutorAssignmentImport[]; error?: string; detail?: string };
-      const notesData = await notesResponse.json() as { notes?: TutorCoverageNote[]; error?: string; detail?: string };
-      const schoolsData = await schoolsResponse.json() as { schools?: SchoolAssignment[]; error?: string; detail?: string };
-      const interestsData = await interestsResponse.json() as { imports?: TutorInterestImport[]; error?: string; detail?: string };
-      const trackingData = await trackingResponse.json() as { tracking?: { snapshots?: TutorTrackingSnapshot[] }; error?: string; detail?: string };
-      const upcomingData = await upcomingResponse.json() as { imports?: UpcomingSessionImport[]; error?: string; detail?: string };
-      const exclusionsData = await exclusionsResponse.json() as { exclusions?: UnstaffedExclusions; error?: string; detail?: string };
-      if (!availabilityResponse.ok) throw new Error(availabilityData.detail || availabilityData.error || "Disponibilités indisponibles");
-      if (!assignmentResponse.ok) throw new Error(assignmentData.detail || assignmentData.error || "Séances affectées indisponibles");
-      if (!notesResponse.ok) throw new Error(notesData.detail || notesData.error || "Annotations indisponibles");
-      if (!schoolsResponse.ok) throw new Error(schoolsData.detail || schoolsData.error || "Attributions des établissements indisponibles");
-      if (!interestsResponse.ok) throw new Error(interestsData.detail || interestsData.error || "Intérêts indisponibles");
-      if (!trackingResponse.ok) throw new Error(trackingData.detail || trackingData.error || "Liste des tuteurs indisponible");
-      if (!upcomingResponse.ok) throw new Error(upcomingData.detail || upcomingData.error || "Séances à venir indisponibles");
-      if (!exclusionsResponse.ok) throw new Error(exclusionsData.detail || exclusionsData.error || "Séances masquées indisponibles");
-      const nextAvailability = (availabilityData.imports ?? []).sort((a, b) => timestamp(b.importedAt) - timestamp(a.importedAt));
-      const nextInterests = (interestsData.imports ?? []).sort((a, b) => timestamp(b.importedAt) - timestamp(a.importedAt));
-      const nextAssignments = (assignmentData.imports ?? []).sort((a, b) => timestamp(b.importedAt) - timestamp(a.importedAt));
-      const nextUpcomingSessions = (upcomingData.imports ?? []).sort((a, b) => timestamp(b.importedAt) - timestamp(a.importedAt));
-      setAvailabilityImports(nextAvailability);
-      setInterestImports(nextInterests);
-      setAssignmentImports(nextAssignments);
-      setUpcomingSessionImports(nextUpcomingSessions);
-      setUnstaffedExclusions(exclusionsData.exclusions ?? { sessionIds: [], sourceKeys: [], updatedAt: "" });
-      setLatestTutorSnapshot(trackingData.tracking?.snapshots?.[0] ?? null);
-      setNotes(notesData.notes ?? []);
-      setSchoolAssignments(schoolsData.schools ?? []);
-      setNoteDrafts((current) => ({
-        ...Object.fromEntries((notesData.notes ?? []).map((item) => [`${item.date}:${item.tutorId}`, { status: item.status, note: item.note }])),
-        ...current,
-      }));
-      setAvailabilityId((current) => nextAvailability.some((item) => item.id === current) ? current : nextAvailability[0]?.id || "");
-      setInterestId((current) => nextInterests.some((item) => item.id === current) ? current : nextInterests[0]?.id || "");
-      setAssignmentId((current) => nextAssignments.some((item) => item.id === current) ? current : nextAssignments[0]?.id || "");
-      setUpcomingSessionId((current) => nextUpcomingSessions.some((item) => item.id === current) ? current : nextUpcomingSessions[0]?.id || "");
-      setCompareRecentId((current) => nextAssignments.some((item) => item.id === current) ? current : nextAssignments[0]?.id || "");
-      setCompareReferenceId((current) => nextAssignments.some((item) => item.id === current) ? current : nextAssignments[1]?.id || nextAssignments[0]?.id || "");
-      if (!silent) setMessage("Fichiers actualisés");
-    } catch (error) {
-      if (!silent) setMessage(error instanceof Error ? error.message : "Chargement impossible");
+    const sources = [
+      ["Disponibilités", "/api/availability-imports?summary=1"], ["Séances affectées", "/api/tutor-assignment-imports?summary=1"],
+      ["Annotations", "/api/tutor-coverage-notes"], ["Établissements", "/api/schools"],
+      ["Intérêts", "/api/tutor-interest-imports?summary=1"], ["Liste des tuteurs", "/api/tutor-tracking?latest=1"],
+      ["Semaines à venir", "/api/upcoming-session-imports?summary=1"], ["Éléments masqués", "/api/unstaffed-exclusions"],
+    ] as const;
+    const results = await Promise.allSettled(sources.map(async ([label, endpoint]) => {
+      const response = await fetch(endpoint, { cache: "no-store" });
+      const data = await response.json() as { imports?: unknown[]; notes?: TutorCoverageNote[]; schools?: SchoolAssignment[]; snapshot?: TutorTrackingSnapshot | null; exclusions?: UnstaffedExclusions; error?: string; detail?: string };
+      if (!response.ok) throw new Error(`${label} : ${data.detail || data.error || "chargement impossible"}`);
+      return data;
+    }));
+    const errors = results.flatMap((result) => result.status === "rejected" ? [result.reason instanceof Error ? result.reason.message : "Chargement impossible"] : []);
+    if (results[0]?.status === "fulfilled") {
+      const next = (results[0].value.imports ?? []) as AvailabilityImport[]; setAvailabilityImports(next); setAvailabilityId((current) => next.some((item) => item.id === current) ? current : next[0]?.id || "");
     }
+    if (results[1]?.status === "fulfilled") {
+      const next = (results[1].value.imports ?? []) as TutorAssignmentImport[]; setAssignmentImports(next); setAssignmentId((current) => next.some((item) => item.id === current) ? current : next[0]?.id || ""); setCompareRecentId((current) => next.some((item) => item.id === current) ? current : next[0]?.id || ""); setCompareReferenceId((current) => next.some((item) => item.id === current) ? current : next[1]?.id || next[0]?.id || "");
+    }
+    if (results[2]?.status === "fulfilled") { const next = results[2].value.notes ?? []; setNotes(next); setNoteDrafts((current) => ({ ...Object.fromEntries(next.map((item) => [`${item.date}:${item.tutorId}`, { status: item.status, note: item.note }])), ...current })); }
+    if (results[3]?.status === "fulfilled") setSchoolAssignments(results[3].value.schools ?? []);
+    if (results[4]?.status === "fulfilled") { const next = (results[4].value.imports ?? []) as TutorInterestImport[]; setInterestImports(next); setInterestId((current) => next.some((item) => item.id === current) ? current : next[0]?.id || ""); }
+    if (results[5]?.status === "fulfilled") setLatestTutorSnapshot(results[5].value.snapshot ?? null);
+    if (results[6]?.status === "fulfilled") { const next = (results[6].value.imports ?? []) as UpcomingSessionImport[]; setUpcomingSessionImports(next); setUpcomingSessionId((current) => next.some((item) => item.id === current) ? current : next[0]?.id || ""); }
+    if (results[7]?.status === "fulfilled") setUnstaffedExclusions(results[7].value.exclusions ?? { sessionIds: [], sourceKeys: [], updatedAt: "" });
+    setMessage(errors.length ? errors.join(" · ") : silent ? "" : "Fichiers actualisés");
   }, []);
 
   useEffect(() => {
@@ -257,11 +231,45 @@ export default function TutorCoverageComparison() {
     return () => { window.clearTimeout(initialTimer); window.clearInterval(refreshTimer); };
   }, [load]);
 
-  const availabilityImport = availabilityImports.find((item) => item.id === availabilityId) ?? null;
-  const interestImport = interestImports.find((item) => item.id === interestId) ?? null;
-  const assignmentImport = assignmentImports.find((item) => item.id === assignmentId) ?? null;
-  const compareReferenceImport = assignmentImports.find((item) => item.id === compareReferenceId) ?? null;
-  const compareRecentImport = assignmentImports.find((item) => item.id === compareRecentId) ?? null;
+  useEffect(() => {
+    const assignmentIds = Array.from(new Set([assignmentId, compareReferenceId, compareRecentId].filter(Boolean)));
+    const requests = [
+      availabilityId && !availabilityData[availabilityId] ? ["availability", availabilityId, "/api/availability-imports"] : null,
+      interestId && !interestData[interestId] ? ["interest", interestId, "/api/tutor-interest-imports"] : null,
+      ...assignmentIds.filter((id) => !assignmentData[id]).map((id) => ["assignment", id, "/api/tutor-assignment-imports"]),
+    ].filter(Boolean) as string[][];
+    if (!requests.length) return;
+    let cancelled = false;
+    Promise.all(requests.map(async ([kind, id, endpoint]) => {
+      const response = await fetch(`${endpoint}?id=${encodeURIComponent(id)}`, { cache: "no-store" });
+      const data = await response.json() as { import?: AvailabilityImport | TutorInterestImport | TutorAssignmentImport; error?: string; detail?: string };
+      if (!response.ok || !data.import) throw new Error(data.detail || data.error || "Fichier sélectionné indisponible");
+      return { kind, item: data.import };
+    })).then((items) => {
+      if (cancelled) return;
+      items.forEach(({ kind, item }) => {
+        if (kind === "availability") setAvailabilityData((current) => ({ ...current, [item.id]: item as AvailabilityImport }));
+        else if (kind === "interest") setInterestData((current) => ({ ...current, [item.id]: item as TutorInterestImport }));
+        else setAssignmentData((current) => ({ ...current, [item.id]: item as TutorAssignmentImport }));
+      });
+      setDetailError("");
+      setMessage("");
+    }).catch((error) => { if (!cancelled) { const text = error instanceof Error ? error.message : "Chargement impossible"; setDetailError(text); setMessage(text); } });
+    return () => { cancelled = true; };
+  }, [assignmentData, assignmentId, availabilityData, availabilityId, compareRecentId, compareReferenceId, detailRetry, interestData, interestId]);
+
+  const availabilityImport = availabilityData[availabilityId] ?? null;
+  const interestImport = interestData[interestId] ?? null;
+  const assignmentImport = assignmentData[assignmentId] ?? null;
+  const compareReferenceImport = assignmentData[compareReferenceId] ?? null;
+  const compareRecentImport = assignmentData[compareRecentId] ?? null;
+  const loadingDetails = !detailError && Boolean(
+    (availabilityId && !availabilityImport)
+    || (interestId && !interestImport)
+    || (assignmentId && !assignmentImport)
+    || (compareReferenceId && !compareReferenceImport)
+    || (compareRecentId && !compareRecentImport),
+  );
   const analysisDates = useMemo(() => Array.from(new Set([
     ...(availabilityImport?.rows ?? []).map((row) => row.date),
     ...(interestImport?.rows ?? []).map((row) => row.date),
@@ -538,8 +546,13 @@ export default function TutorCoverageComparison() {
       const response = await fetch(endpoint, kind === "availability"
         ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fileName: file.name, rawCsv }) }
         : { method: "POST", headers: { "Content-Type": "text/csv;charset=utf-8" }, body: rawCsv });
-      const data = await response.json() as { error?: string; detail?: string };
+      const data = await response.json() as { import?: AvailabilityImport | TutorInterestImport | TutorAssignmentImport; error?: string; detail?: string };
       if (!response.ok) throw new Error(data.detail || data.error || "Import impossible");
+      if (data.import) {
+        if (kind === "availability") setAvailabilityData((current) => ({ ...current, [data.import!.id]: data.import as AvailabilityImport }));
+        else if (kind === "interests") setInterestData((current) => ({ ...current, [data.import!.id]: data.import as TutorInterestImport }));
+        else setAssignmentData((current) => ({ ...current, [data.import!.id]: data.import as TutorAssignmentImport }));
+      }
       await load(true);
       setMessage(kind === "availability" ? "Fichier de disponibilités sauvegardé" : kind === "interests" ? "Fichier d’intérêts sauvegardé" : "Fichier de séances affectées sauvegardé");
     } catch (error) {
@@ -646,7 +659,7 @@ export default function TutorCoverageComparison() {
 
       {toolView === "staffing-comparison" ? <>
         <div className="staffing-comparison-controls">
-          <label>Fichier 1 · référence<select value={compareReferenceId} onChange={(event) => { setCompareReferenceId(event.target.value); setComparisonDate(""); }}><option value="">Sélectionner</option>{assignmentImports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {importDate(item.importedAt)}</option>)}</select></label>
+          <label><span>Fichier 1 · référence{!assignmentImports.length ? <button type="button" className="source-files-link" onClick={() => onOpenFiles("assignments")}>Ouvrir Fichiers</button> : null}</span><select value={compareReferenceId} onChange={(event) => { setCompareReferenceId(event.target.value); setComparisonDate(""); }}><option value="">Sélectionner</option>{assignmentImports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {importDate(item.importedAt)}</option>)}</select></label>
           <span aria-hidden="true">→</span>
           <label>Fichier 2 · plus récent<select value={compareRecentId} onChange={(event) => { setCompareRecentId(event.target.value); setComparisonDate(""); }}><option value="">Sélectionner</option>{assignmentImports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {importDate(item.importedAt)}</option>)}</select></label>
           <label>Date à comparer<select value={activeComparisonDate} onChange={(event) => setComparisonDate(event.target.value)}><option value="">Aucune date disponible</option>{comparisonDates.map((date) => <option value={date} key={date}>{fullDate(date)}</option>)}</select></label>
@@ -668,7 +681,7 @@ export default function TutorCoverageComparison() {
           {staffingComparisonByOwner.summary.map((row) => <button type="button" className={(comparisonOwnerFilter === "unassigned" ? !row.owner : comparisonOwnerFilter === row.owner) ? "active" : ""} onClick={() => setComparisonOwnerFilter(row.owner || "unassigned")} key={row.owner || "unassigned"}><strong>{schoolOwnerLabels[row.owner]}</strong><span className="positive">+{row.added}</span><span className="negative">−{row.removed}</span><span className="changed">{row.changed}</span></button>)}
           {comparisonOwnerFilter !== "all" ? <button type="button" className="staffing-rh-show-all" onClick={() => setComparisonOwnerFilter("all")}>Afficher tous les responsables</button> : null}
         </div>
-        {!compareReferenceImport || !compareRecentImport ? <div className="empty-state compact">Choisissez deux exports Prix des tuteurs.</div>
+        {detailError ? <div className="empty-state compact"><h3>Fichier sélectionné indisponible</h3><p>{detailError}</p><button type="button" className="button quiet" onClick={() => { setDetailError(""); setDetailRetry((value) => value + 1); }}>Réessayer</button></div> : loadingDetails ? <div className="empty-state compact">Chargement des fichiers sélectionnés…</div> : !compareReferenceImport || !compareRecentImport ? <div className="empty-state compact"><h3>Deux exports de séances affectées sont nécessaires</h3><button type="button" className="button quiet" onClick={() => onOpenFiles("assignments")}>Ouvrir Fichiers</button></div>
           : !activeComparisonDate ? <div className="empty-state compact">Aucune date n’est disponible dans ces fichiers.</div>
           : <div className="staffing-comparison-results">
             <section><h3>Changements de tuteur <span>{staffingComparisonByOwner.changed.length}</span></h3>{staffingComparisonByOwner.changed.length ? staffingComparisonByOwner.changed.map((item) => <article key={item.session.key}><div className="staffing-session"><strong>{item.session.timeSlot}</strong><span><SchoolAdminLink schoolId={schoolRecordForName(item.session.school)?.externalId}>{item.session.school}</SchoolAdminLink></span><small>{item.session.category || "Catégorie non précisée"} · RH : {schoolOwnerLabels[ownerForSchool(item.session.school)]}</small></div><div className="staffing-change before"><em>Avant</em>{item.before.map((tutor) => <span key={tutor.tutorId}>{tutorLabel(tutor, tutor.tutorId)} <small>#{tutor.tutorId}{tutor.phone ? ` · ${tutor.phone}` : ""}</small></span>)}</div><div className="staffing-change after"><em>Après</em>{item.after.map((tutor) => <span key={tutor.tutorId}>{tutorLabel(tutor, tutor.tutorId)} <small>#{tutor.tutorId}{tutor.phone ? ` · ${tutor.phone}` : ""}</small></span>)}</div></article>) : <p>Aucun remplacement détecté pour ce responsable.</p>}</section>
@@ -678,10 +691,10 @@ export default function TutorCoverageComparison() {
       </> : <>
 
       <div className="coverage-controls">
-        <label>Disponibilités<select value={availabilityId} onChange={(event) => { setAvailabilityId(event.target.value); setSelectedDate(""); }}><option value="">Sélectionner</option>{availabilityImports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {importDate(item.importedAt)}</option>)}</select></label>
-        <label>Intérêts<select value={interestId} onChange={(event) => { setInterestId(event.target.value); setSelectedDate(""); }}><option value="">Aucun</option>{interestImports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {importDate(item.importedAt)}</option>)}</select></label>
-        <label>Séances affectées<select value={assignmentId} onChange={(event) => { setAssignmentId(event.target.value); setSelectedDate(""); }}><option value="">Sélectionner</option>{assignmentImports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {importDate(item.importedAt)}</option>)}</select></label>
-        <label>Semaines à venir<select value={upcomingSessionId} onChange={(event) => setUpcomingSessionId(event.target.value)}><option value="">Aucun fichier</option>{upcomingSessionImports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {importDate(item.importedAt)}</option>)}</select></label>
+        <label><span>Disponibilités{!availabilityImports.length ? <button type="button" className="source-files-link" onClick={() => onOpenFiles("availability")}>Ouvrir Fichiers</button> : null}</span><select value={availabilityId} onChange={(event) => { setAvailabilityId(event.target.value); setSelectedDate(""); }}><option value="">Sélectionner</option>{availabilityImports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {importDate(item.importedAt)}</option>)}</select></label>
+        <label><span>Intérêts{!interestImports.length ? <button type="button" className="source-files-link" onClick={() => onOpenFiles("interests")}>Ouvrir Fichiers</button> : null}</span><select value={interestId} onChange={(event) => { setInterestId(event.target.value); setSelectedDate(""); }}><option value="">Aucun</option>{interestImports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {importDate(item.importedAt)}</option>)}</select></label>
+        <label><span>Séances affectées{!assignmentImports.length ? <button type="button" className="source-files-link" onClick={() => onOpenFiles("assignments")}>Ouvrir Fichiers</button> : null}</span><select value={assignmentId} onChange={(event) => { setAssignmentId(event.target.value); setSelectedDate(""); }}><option value="">Sélectionner</option>{assignmentImports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {importDate(item.importedAt)}</option>)}</select></label>
+        <label><span>Semaines à venir{!upcomingSessionImports.length ? <button type="button" className="source-files-link" onClick={() => onOpenFiles("upcomingSessions")}>Ouvrir Fichiers</button> : null}</span><select value={upcomingSessionId} onChange={(event) => setUpcomingSessionId(event.target.value)}><option value="">Aucun fichier</option>{upcomingSessionImports.map((item) => <option key={item.id} value={item.id}>{item.displayName} · {importDate(item.importedAt)}</option>)}</select></label>
         <label>Date à analyser<select value={activeDate} onChange={(event) => setSelectedDate(event.target.value)}><option value="">Aucune date disponible</option>{analysisDates.map((date) => <option key={date} value={date}>{fullDate(date)}</option>)}</select></label>
         <label>Responsable<select value={schoolOwnerFilter} onChange={(event) => setSchoolOwnerFilter(event.target.value as SchoolOwnerFilter)}><option value="unassigned">Non attribués</option><option value="kelly">Kelly</option><option value="pierre">Pierre</option><option value="julie">Julie</option><option value="all">Tous</option></select></label>
         <label>Établissement<select value={school} onChange={(event) => setSchool(event.target.value)}><option value="all">Tous</option>{schoolOptions.map((name) => <option key={name}>{name}</option>)}</select></label>
@@ -707,7 +720,7 @@ export default function TutorCoverageComparison() {
       </div> : null}
 
       <div className="coverage-results">
-        {(!availabilityImport && !interestImport) || !assignmentImport ? <div className="empty-state compact">Choisissez au moins un fichier de disponibilités ou d’intérêts, ainsi qu’un fichier de séances affectées.</div>
+        {detailError ? <div className="empty-state compact"><h3>Fichier sélectionné indisponible</h3><p>{detailError}</p><button type="button" className="button quiet" onClick={() => { setDetailError(""); setDetailRetry((value) => value + 1); }}>Réessayer</button></div> : loadingDetails ? <div className="empty-state compact">Chargement des fichiers sélectionnés…</div> : (!availabilityImport && !interestImport) || !assignmentImport ? <div className="empty-state compact"><h3>Sources de comparaison manquantes</h3><p>Choisissez au moins un fichier de disponibilités ou d’intérêts, ainsi qu’un fichier de séances affectées.</p><button type="button" className="button quiet" onClick={() => onOpenFiles(!assignmentImports.length ? "assignments" : "availability")}>Ouvrir Fichiers</button></div>
           : !activeDate ? <div className="empty-state compact">Aucune date n’est présente dans les sources sélectionnées.</div>
           : displayed.length ? displayed.map((tutor) => {
             const noteKey = `${activeDate}:${tutor.tutorId}`;
