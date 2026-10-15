@@ -1,9 +1,10 @@
-globalThis.__VINEXT_LAZY_CHUNKS__ = ["assets/page-DjNIlrfF.js","assets/layout-segment-context-C9uSwv4U.js"];
+globalThis.__VINEXT_LAZY_CHUNKS__ = ["assets/page-BgJZabB2.js","assets/page-TG_0yaiq.js","assets/layout-segment-context-BB0IixYO.js"];
 import * as __viteRscAsyncHooks from "node:async_hooks";
 import { AsyncLocalStorage as AsyncLocalStorage$1 } from "node:async_hooks";
 import assetsManifest from "./__vite_rsc_assets_manifest.js";
 import "node:fs";
 import "node:path";
+import "process";
 //#region \0rolldown/runtime.js
 var __create = Object.create;
 var __defProp = Object.defineProperty;
@@ -36,7 +37,7 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 	enumerable: true
 }) : target, mod));
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/http-error-responses.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/http-error-responses.js
 /**
 * Build a 400 Bad Request plain-text response.
 *
@@ -110,7 +111,7 @@ function internalServerErrorResponse(message, init) {
 	});
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/image-optimization.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/image-optimization.js
 /**
 * Next.js default device sizes and image sizes.
 * These are the allowed widths for image optimization when no custom
@@ -285,7 +286,7 @@ async function handleImageOptimization(request, handlers, allowedWidths, imageCo
 	}
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/shims/internal/als-registry.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/shims/internal/als-registry.js
 /**
 * Shared helper for registering AsyncLocalStorage instances on `globalThis`
 * via `Symbol.for(...)` so that they survive multiple module instances.
@@ -336,7 +337,7 @@ function getOrCreateAls(key) {
 	return _g$8[sym] ??= new AsyncLocalStorage$1();
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/shims/unified-request-context.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/shims/unified-request-context.js
 var _REQUEST_CONTEXT_ALS_KEY = Symbol.for("vinext.requestContext.als");
 var _g$7 = globalThis;
 var _als$4 = getOrCreateAls("vinext.unifiedRequestContext.als");
@@ -413,7 +414,7 @@ function isInsideUnifiedScope() {
 	return _als$4.getStore() != null;
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/shims/request-context.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/shims/request-context.js
 /**
 * Request ExecutionContext — AsyncLocalStorage-backed accessor.
 *
@@ -455,7 +456,7 @@ function getRequestExecutionContext() {
 	return _als$3.getStore() ?? null;
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/utils/base-path.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/utils/base-path.js
 /**
 * Shared basePath helpers.
 *
@@ -490,7 +491,7 @@ function removeTrailingSlash(pathname) {
 	return end === 0 ? "/" : pathname.slice(0, end);
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/headers.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/headers.js
 /**
 * Internal HTTP header name constants used throughout vinext.
 *
@@ -576,7 +577,7 @@ var INTERNAL_HEADERS = [
 	"x-next-resume-state-length"
 ];
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/middleware-request-headers.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/middleware-request-headers.js
 var CREDENTIAL_REQUEST_HEADERS = ["authorization", "cookie"];
 function getMiddlewareHeaderValue(source, key) {
 	if (source instanceof Headers) return source.get(key);
@@ -607,6 +608,11 @@ function cloneHeaders(source) {
 	for (const [key, value] of source.entries()) cloned.append(key, value);
 	return cloned;
 }
+function encodeMiddlewareRequestHeaders(targetHeaders, requestHeaders) {
+	const overrideHeaderNames = [...requestHeaders.keys()];
+	targetHeaders.set(MIDDLEWARE_OVERRIDE_HEADERS, overrideHeaderNames.join(","));
+	for (const [key, value] of requestHeaders.entries()) targetHeaders.set(`${MIDDLEWARE_REQUEST_HEADER_PREFIX}${key}`, value);
+}
 function buildRequestHeadersFromMiddlewareResponse(baseHeaders, middlewareHeaders, options = {}) {
 	const overrideHeaderNames = getOverrideHeaderNames(middlewareHeaders);
 	const forwardedHeaders = getForwardedRequestHeaders(middlewareHeaders);
@@ -634,7 +640,7 @@ function shouldKeepMiddlewareHeader(key) {
 	return key === "x-middleware-override-headers" || key === "x-middleware-set-cookie" || key.startsWith("x-middleware-request-");
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/config/config-matchers.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/config/config-matchers.js
 /**
 * Cache for compiled regex patterns in matchConfigPattern.
 *
@@ -1392,7 +1398,7 @@ function matchHeaders(pathname, headers, ctx) {
 	return result;
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/request-pipeline.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/request-pipeline.js
 /**
 * Shared request pipeline utilities.
 *
@@ -1754,7 +1760,7 @@ function cloneRequestWithHeaders(request, headers) {
 	return cloned;
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/worker-utils.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/worker-utils.js
 /**
 * Shared utilities for Cloudflare Worker entries.
 *
@@ -4669,7 +4675,7 @@ function renderToReadableStream$1(data, options, extraOptions) {
 	} });
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/rsc-stream-hints.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/rsc-stream-hints.js
 var REACT_FLIGHT_STYLESHEET_PRELOAD_HINT = /(\d*:HL\[.*?),"stylesheet"(\]|,)/g;
 /**
 * React Flight emits HL hints with "stylesheet" for CSS preloads, but the
@@ -4704,7 +4710,7 @@ function createRscRenderer(render) {
 	return (model, options) => normalizeReactFlightPreloadHints(render(model, options));
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/shims/readonly-url-search-params.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/shims/readonly-url-search-params.js
 var import_react_react_server = /* @__PURE__ */ __toESM(require_react_react_server(), 1);
 var ReadonlyURLSearchParamsError = class extends Error {
 	constructor() {
@@ -4730,7 +4736,7 @@ var ReadonlyURLSearchParams = class extends URLSearchParams {
 	}
 };
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/shims/url-safety.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/shims/url-safety.js
 /**
 * Shared URL safety utilities for Link, Form, and navigation shims.
 *
@@ -4758,9 +4764,21 @@ function buildDangerousSchemeRegex(scheme) {
 	const chars = scheme.split("").join(SCHEME_IGNORED);
 	return new RegExp(`^${LEADING_IGNORED}${chars}${SCHEME_IGNORED}:`, "i");
 }
-buildDangerousSchemeRegex("javascript"), buildDangerousSchemeRegex("data"), buildDangerousSchemeRegex("vbscript");
+var DANGEROUS_SCHEME_RES = [
+	buildDangerousSchemeRegex("javascript"),
+	buildDangerousSchemeRegex("data"),
+	buildDangerousSchemeRegex("vbscript")
+];
+var DANGEROUS_URL_BLOCK_MESSAGE = "Next.js has blocked a javascript: URL as a security precaution.";
+function isDangerousScheme(url) {
+	const str = "" + url;
+	return DANGEROUS_SCHEME_RES.some((re) => re.test(str));
+}
+function assertSafeNavigationUrl(url) {
+	if (isDangerousScheme(url)) throw new Error(DANGEROUS_URL_BLOCK_MESSAGE);
+}
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/utils/hash.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/utils/hash.js
 /**
 * FNV-1a hash producing a 64-bit result (two 32-bit rounds with different seeds).
 * Used for deterministic key generation where collisions must be rare.
@@ -4779,7 +4797,7 @@ function fnv1a64(input) {
 	return h1.toString(36) + h2.toString(36);
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/artifact-compatibility.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/artifact-compatibility.js
 function createArtifactCompatibilityEnvelope(input = {}) {
 	return {
 		schemaVersion: 1,
@@ -4821,7 +4839,7 @@ function parseArtifactCompatibilityEnvelope(value) {
 	};
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-elements-wire.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-elements-wire.js
 var APP_INTERCEPTION_SEPARATOR = "\0";
 var APP_ARTIFACT_COMPATIBILITY_KEY = "__artifactCompatibility";
 var APP_INTERCEPTION_CONTEXT_KEY = "__interceptionContext";
@@ -5037,7 +5055,7 @@ var AppElementsWire = {
 	withLayoutFlags
 };
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-mounted-slots-header.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-mounted-slots-header.js
 /**
 * Normalize the `x-vinext-mounted-slots` header for request handling and cache keying.
 *
@@ -5055,7 +5073,7 @@ function normalizeMountedSlotsHeader(raw) {
 	return Array.from(new Set(raw.split(/\s+/).filter(Boolean))).sort().join(" ") || null;
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-rsc-render-mode.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-rsc-render-mode.js
 var APP_RSC_RENDER_MODE_NAVIGATION = "navigation";
 var APP_RSC_RENDER_MODE_REFRESH_PRESERVE_UI = "refresh-preserve-ui";
 var APP_RSC_RENDER_MODE_ACTION_RERENDER_PRESERVE_UI = "action-rerender-preserve-ui";
@@ -5073,7 +5091,7 @@ function parseAppRscRenderMode(value) {
 	}
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-rsc-cache-busting.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-rsc-cache-busting.js
 /**
 * RSC cache-busting hashes cover the headers that make a `.rsc` payload vary.
 * Client-side variant headers must survive transit through CDNs and reverse
@@ -5213,7 +5231,7 @@ async function resolveInvalidRscCacheBustingRequest(options) {
 	});
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/shims/navigation.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/shims/navigation.js
 var _SERVER_INSERTED_HTML_CTX_KEY = Symbol.for("vinext.serverInsertedHTMLContext");
 function getServerInsertedHTMLContext() {
 	if (typeof import_react_react_server.createContext !== "function") return null;
@@ -5406,7 +5424,7 @@ if (!isServer) {
 	}
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/shims/client-hook-error.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/shims/client-hook-error.js
 /**
 * Shared error helper for client-only hooks called in Server Components.
 *
@@ -5419,7 +5437,7 @@ function buildClientHookErrorMessage(hookName) {
 	return `${hookName} only works in Client Components. Add the "use client" directive at the top of the file to use it. Read more: https://nextjs.org/docs/messages/react-client-hook-in-server-component`;
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/shims/internal/cookie-serialize.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/shims/internal/cookie-serialize.js
 /**
 * RFC 6265 §4.1.1: cookie-name is a token (RFC 2616 §2.2).
 * Allowed: any visible ASCII (0x21-0x7E) except separators: ()<>@,;:\"/[]?={}
@@ -5428,8 +5446,46 @@ var VALID_COOKIE_NAME_RE = /^[\x21\x23-\x27\x2A\x2B\x2D\x2E\x30-\x39\x41-\x5A\x5
 function validateCookieName(name) {
 	if (!name || !VALID_COOKIE_NAME_RE.test(name)) throw new Error(`Invalid cookie name: ${JSON.stringify(name)}`);
 }
+/**
+* Validate cookie attribute values (path, domain) to prevent injection
+* via semicolons, newlines, or other control characters.
+*/
+function validateCookieAttributeValue(value, attributeName) {
+	for (let i = 0; i < value.length; i++) {
+		const code = value.charCodeAt(i);
+		if (code <= 31 || code === 127 || value[i] === ";") throw new Error(`Invalid cookie ${attributeName} value: ${JSON.stringify(value)}`);
+	}
+}
+/**
+* Build a Set-Cookie header string from a cookie name, value, and attributes.
+*
+* - Encodes the value with `encodeURIComponent`.
+* - Defaults `Path` to `/` (matching @edge-runtime/cookies and Next.js).
+* - Validates path/domain to reject control characters and semicolons.
+* - Emits attributes in the order: Path, Domain, Max-Age, Expires, HttpOnly,
+*   Secure, SameSite.
+*
+* The caller is responsible for validating the cookie name (typically before
+* mutating any internal state) via `validateCookieName`.
+*/
+function serializeSetCookie(name, value, options) {
+	const parts = [`${name}=${encodeURIComponent(value)}`];
+	const path = options?.path ?? "/";
+	validateCookieAttributeValue(path, "Path");
+	parts.push(`Path=${path}`);
+	if (options?.domain) {
+		validateCookieAttributeValue(options.domain, "Domain");
+		parts.push(`Domain=${options.domain}`);
+	}
+	if (options?.maxAge !== void 0) parts.push(`Max-Age=${options.maxAge}`);
+	if (options?.expires) parts.push(`Expires=${options.expires.toUTCString()}`);
+	if (options?.httpOnly) parts.push("HttpOnly");
+	if (options?.secure) parts.push("Secure");
+	if (options?.sameSite) parts.push(`SameSite=${options.sameSite}`);
+	return parts.join("; ");
+}
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/shims/internal/parse-cookie-header.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/shims/internal/parse-cookie-header.js
 /**
 * Port of the current Next.js/@edge-runtime request cookie parser semantics.
 *
@@ -5458,7 +5514,7 @@ function parseCookieHeader(cookieHeader) {
 	return cookies;
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/shims/headers.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/shims/headers.js
 var _FALLBACK_KEY$4 = Symbol.for("vinext.nextHeadersShim.fallback");
 var _g$6 = globalThis;
 var _als$2 = getOrCreateAls("vinext.nextHeadersShim.als");
@@ -5726,7 +5782,7 @@ function getAndClearPendingCookies() {
 var DRAFT_MODE_COOKIE = "__prerender_bypass";
 (/* @__PURE__ */ new Date(0)).toUTCString();
 function getDraftSecret() {
-	return "fae477a4-5cda-4ca0-90c5-471c503fbbc4";
+	return "84c887cb-17b9-4edc-8486-7eab4eda1d9d";
 }
 /**
 * Get any Set-Cookie header generated by draftMode().enable()/disable().
@@ -5744,7 +5800,7 @@ function isDraftModeRequest(request) {
 	return parseCookieHeader(cookieHeader).get(DRAFT_MODE_COOKIE) === getDraftSecret();
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/shims/thenable-params.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/shims/thenable-params.js
 function hasParamProperty(obj, prop) {
 	return Object.prototype.hasOwnProperty.call(obj, prop);
 }
@@ -5833,7 +5889,7 @@ var require_react_jsx_runtime_react_server_production = /* @__PURE__ */ __common
 	exports.jsxs = jsxProd;
 }));
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/shims/metadata.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/shims/metadata.js
 var import_jsx_runtime_react_server = (/* @__PURE__ */ __commonJSMin(((exports, module) => {
 	module.exports = require_react_jsx_runtime_react_server_production();
 })))();
@@ -6495,7 +6551,582 @@ function MetadataHead({ metadata }) {
 	return /* @__PURE__ */ (0, import_jsx_runtime_react_server.jsx)(import_jsx_runtime_react_server.Fragment, { children: elements });
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/utils/encode-cache-tag.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/shims/server.js
+var NextRequest = class extends Request {
+	_nextUrl;
+	_url;
+	_cookies;
+	constructor(input, init) {
+		const { nextConfig: _nextConfig, ...requestInit } = init ?? {};
+		if (input instanceof Request) {
+			const requestInput = requestInit.body === void 0 && input.body && !input.bodyUsed ? input.clone() : input;
+			super(requestInput, requestInit);
+		} else super(input, requestInit);
+		const url = typeof input === "string" ? new URL(input, "http://localhost") : input instanceof URL ? input : new URL(input.url, "http://localhost");
+		const urlConfig = _nextConfig ? {
+			basePath: _nextConfig.basePath,
+			nextConfig: { i18n: _nextConfig.i18n }
+		} : void 0;
+		this._nextUrl = new NextURL(url, void 0, urlConfig);
+		this._url = process.env.__NEXT_NO_MIDDLEWARE_URL_NORMALIZE ? url.toString() : this._nextUrl.toString();
+		this._cookies = new RequestCookies(this.headers);
+	}
+	get nextUrl() {
+		return this._nextUrl;
+	}
+	get url() {
+		return this._url;
+	}
+	get cookies() {
+		return this._cookies;
+	}
+	/**
+	* Client IP address. Prefers Cloudflare's trusted CF-Connecting-IP header
+	* over the spoofable X-Forwarded-For. Returns undefined if unavailable.
+	*/
+	get ip() {
+		return this.headers.get("cf-connecting-ip") ?? this.headers.get("x-real-ip") ?? this.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? void 0;
+	}
+	/**
+	* Geolocation data. Platform-dependent (e.g., Cloudflare, Vercel).
+	* Returns undefined if not available.
+	*/
+	get geo() {
+		const country = this.headers.get("cf-ipcountry") ?? this.headers.get("x-vercel-ip-country") ?? void 0;
+		if (!country) return void 0;
+		return {
+			country,
+			city: this.headers.get("cf-ipcity") ?? this.headers.get("x-vercel-ip-city") ?? void 0,
+			region: this.headers.get("cf-region") ?? this.headers.get("x-vercel-ip-country-region") ?? void 0,
+			latitude: this.headers.get("cf-iplatitude") ?? this.headers.get("x-vercel-ip-latitude") ?? void 0,
+			longitude: this.headers.get("cf-iplongitude") ?? this.headers.get("x-vercel-ip-longitude") ?? void 0
+		};
+	}
+	/**
+	* The build ID of the Next.js application.
+	* Delegates to `nextUrl.buildId` to match Next.js API surface.
+	* Can be used in middleware to detect deployment skew between client and server.
+	*/
+	get buildId() {
+		return this._nextUrl.buildId;
+	}
+};
+/** Valid HTTP redirect status codes, matching Next.js's REDIRECTS set. */
+var REDIRECT_STATUSES = new Set([
+	301,
+	302,
+	303,
+	307,
+	308
+]);
+function validateURL(url) {
+	assertSafeNavigationUrl(String(url));
+	try {
+		return String(new URL(String(url)));
+	} catch (error) {
+		throw new Error(`URL is malformed "${String(url)}". Please use only absolute URLs - https://nextjs.org/docs/messages/middleware-relative-urls`, { cause: error });
+	}
+}
+var NextResponse = class NextResponse extends Response {
+	_cookies;
+	constructor(body, init) {
+		super(body, init);
+		this._cookies = new MiddlewareResponseCookies(this.headers);
+	}
+	get cookies() {
+		return this._cookies;
+	}
+	/**
+	* Create a JSON response.
+	*/
+	static json(body, init) {
+		const headers = new Headers(init?.headers);
+		if (!headers.has("content-type")) headers.set("content-type", "application/json");
+		return new NextResponse(JSON.stringify(body), {
+			...init,
+			headers
+		});
+	}
+	/**
+	* Create a redirect response.
+	*/
+	static redirect(url, init) {
+		const status = typeof init === "number" ? init : init?.status ?? 307;
+		if (!REDIRECT_STATUSES.has(status)) throw new RangeError(`Failed to execute "redirect" on "response": Invalid status code`);
+		const headers = new Headers(typeof init === "object" ? init?.headers : void 0);
+		headers.set("Location", validateURL(url));
+		return new NextResponse(null, {
+			status,
+			headers
+		});
+	}
+	/**
+	* Create a rewrite response (middleware pattern).
+	* Sets the x-middleware-rewrite header.
+	*/
+	static rewrite(destination, init) {
+		const headers = new Headers(init?.headers);
+		headers.set(MIDDLEWARE_REWRITE_HEADER, validateURL(destination));
+		if (init?.request?.headers) encodeMiddlewareRequestHeaders(headers, init.request.headers);
+		return new NextResponse(null, {
+			...init,
+			headers
+		});
+	}
+	/**
+	* Continue to the next handler (middleware pattern).
+	* Sets the x-middleware-next header.
+	*/
+	static next(init) {
+		const headers = new Headers(init?.headers);
+		headers.set(MIDDLEWARE_NEXT_HEADER, "1");
+		if (init?.request?.headers) encodeMiddlewareRequestHeaders(headers, init.request.headers);
+		return new NextResponse(null, {
+			...init,
+			headers
+		});
+	}
+};
+var NextURL = class NextURL {
+	/** Internal URL stores the pathname WITHOUT basePath or locale prefix. */
+	_url;
+	_basePath;
+	_locale;
+	_defaultLocale;
+	_locales;
+	constructor(input, base, config) {
+		this._url = new URL(input.toString(), base);
+		this._basePath = config?.basePath ?? "";
+		this._stripBasePath();
+		const i18n = config?.nextConfig?.i18n;
+		if (i18n) {
+			this._locales = [...i18n.locales];
+			this._defaultLocale = i18n.defaultLocale;
+			this._analyzeLocale(this._locales);
+		}
+	}
+	/** Strip basePath prefix from the internal pathname. */
+	_stripBasePath() {
+		if (!this._basePath) return;
+		this._url.pathname = stripBasePath(this._url.pathname, this._basePath);
+	}
+	/** Extract locale from pathname, stripping it from the internal URL. */
+	_analyzeLocale(locales) {
+		const segments = this._url.pathname.split("/");
+		const candidate = segments[1]?.toLowerCase();
+		const match = locales.find((l) => l.toLowerCase() === candidate);
+		if (match) {
+			this._locale = match;
+			this._url.pathname = "/" + segments.slice(2).join("/");
+		} else this._locale = this._defaultLocale;
+	}
+	/**
+	* Reconstruct the full pathname with basePath + locale prefix.
+	* Mirrors Next.js's internal formatPathname().
+	*/
+	_formatPathname() {
+		let prefix = this._basePath;
+		if (this._locale && this._locale !== this._defaultLocale) prefix += "/" + this._locale;
+		if (!prefix) return this._url.pathname;
+		const inner = this._url.pathname;
+		return inner === "/" ? prefix : prefix + inner;
+	}
+	get href() {
+		const formatted = this._formatPathname();
+		if (formatted === this._url.pathname) return this._url.href;
+		const { href, pathname, search, hash } = this._url;
+		const baseEnd = href.length - pathname.length - search.length - hash.length;
+		return href.slice(0, baseEnd) + formatted + search + hash;
+	}
+	set href(value) {
+		this._url.href = value;
+		this._stripBasePath();
+		if (this._locales) this._analyzeLocale(this._locales);
+	}
+	get origin() {
+		return this._url.origin;
+	}
+	get protocol() {
+		return this._url.protocol;
+	}
+	set protocol(value) {
+		this._url.protocol = value;
+	}
+	get username() {
+		return this._url.username;
+	}
+	set username(value) {
+		this._url.username = value;
+	}
+	get password() {
+		return this._url.password;
+	}
+	set password(value) {
+		this._url.password = value;
+	}
+	get host() {
+		return this._url.host;
+	}
+	set host(value) {
+		this._url.host = value;
+	}
+	get hostname() {
+		return this._url.hostname;
+	}
+	set hostname(value) {
+		this._url.hostname = value;
+	}
+	get port() {
+		return this._url.port;
+	}
+	set port(value) {
+		this._url.port = value;
+	}
+	/** Returns the pathname WITHOUT basePath or locale prefix. */
+	get pathname() {
+		return this._url.pathname;
+	}
+	set pathname(value) {
+		this._url.pathname = value;
+	}
+	get search() {
+		return this._url.search;
+	}
+	set search(value) {
+		this._url.search = value;
+	}
+	get searchParams() {
+		return this._url.searchParams;
+	}
+	get hash() {
+		return this._url.hash;
+	}
+	set hash(value) {
+		this._url.hash = value;
+	}
+	get basePath() {
+		return this._basePath;
+	}
+	set basePath(value) {
+		this._basePath = value === "" ? "" : value.startsWith("/") ? value : "/" + value;
+	}
+	get locale() {
+		return this._locale ?? "";
+	}
+	set locale(value) {
+		if (this._locales) {
+			if (!value) {
+				this._locale = this._defaultLocale;
+				return;
+			}
+			if (!this._locales.includes(value)) throw new TypeError(`The locale "${value}" is not in the configured locales: ${this._locales.join(", ")}`);
+		}
+		this._locale = this._locales ? value : this._locale;
+	}
+	get defaultLocale() {
+		return this._defaultLocale;
+	}
+	get locales() {
+		return this._locales ? [...this._locales] : void 0;
+	}
+	clone() {
+		const config = {
+			basePath: this._basePath,
+			nextConfig: this._locales ? { i18n: {
+				locales: [...this._locales],
+				defaultLocale: this._defaultLocale
+			} } : void 0
+		};
+		return new NextURL(this.href, void 0, config);
+	}
+	toString() {
+		return this.href;
+	}
+	/**
+	* The build ID of the Next.js application.
+	* Set from `generateBuildId` in next.config.js, or a random UUID if not configured.
+	* Can be used in middleware to detect deployment skew between client and server.
+	* Matches the Next.js API: `request.nextUrl.buildId`.
+	*/
+	get buildId() {
+		return "398d0a0d-0356-4371-b55b-58927a68fa1c";
+	}
+};
+var RequestCookies = class {
+	_headers;
+	_parsed;
+	constructor(headers) {
+		this._headers = headers;
+		this._parsed = parseCookieHeader(headers.get("cookie") ?? "");
+	}
+	get(name) {
+		const value = this._parsed.get(name);
+		return value !== void 0 ? {
+			name,
+			value
+		} : void 0;
+	}
+	getAll(nameOrOptions) {
+		const name = typeof nameOrOptions === "string" ? nameOrOptions : nameOrOptions?.name;
+		return [...this._parsed.entries()].filter(([cookieName]) => name === void 0 || cookieName === name).map(([cookieName, value]) => ({
+			name: cookieName,
+			value
+		}));
+	}
+	has(name) {
+		return this._parsed.has(name);
+	}
+	set(nameOrOptions, value) {
+		let cookieName;
+		let cookieValue;
+		if (typeof nameOrOptions === "string") {
+			cookieName = nameOrOptions;
+			cookieValue = value ?? "";
+		} else {
+			cookieName = nameOrOptions.name;
+			cookieValue = nameOrOptions.value;
+		}
+		validateCookieName(cookieName);
+		this._parsed.set(cookieName, cookieValue);
+		this._syncHeader();
+		return this;
+	}
+	delete(names) {
+		if (Array.isArray(names)) {
+			const results = names.map((name) => {
+				validateCookieName(name);
+				return this._parsed.delete(name);
+			});
+			this._syncHeader();
+			return results;
+		}
+		validateCookieName(names);
+		const result = this._parsed.delete(names);
+		this._syncHeader();
+		return result;
+	}
+	clear() {
+		this._parsed.clear();
+		this._syncHeader();
+		return this;
+	}
+	get size() {
+		return this._parsed.size;
+	}
+	toString() {
+		return this._serialize();
+	}
+	_serialize() {
+		return [...this._parsed.entries()].map(([n, v]) => `${n}=${encodeURIComponent(v)}`).join("; ");
+	}
+	_syncHeader() {
+		if (this._parsed.size === 0) this._headers.delete("cookie");
+		else this._headers.set("cookie", this._serialize());
+	}
+	[Symbol.iterator]() {
+		return this.getAll().map((c) => [c.name, c])[Symbol.iterator]();
+	}
+};
+var ReadonlyRequestCookiesError = class ReadonlyRequestCookiesError extends Error {
+	constructor() {
+		super("Cookies can only be modified in a Server Action or Route Handler. Read more: https://nextjs.org/docs/app/api-reference/functions/cookies#options");
+	}
+	static callable() {
+		throw new ReadonlyRequestCookiesError();
+	}
+};
+var REQUEST_HEADERS_MUTATING_METHODS = new Set([
+	"set",
+	"delete",
+	"append"
+]);
+var ReadonlyRequestHeadersError = class ReadonlyRequestHeadersError extends Error {
+	constructor() {
+		super("Headers cannot be modified. Read more: https://nextjs.org/docs/app/api-reference/functions/headers");
+	}
+	static callable() {
+		throw new ReadonlyRequestHeadersError();
+	}
+};
+function sealRequestHeaders(headers) {
+	return new Proxy(headers, { get(target, prop) {
+		if (typeof prop === "string" && REQUEST_HEADERS_MUTATING_METHODS.has(prop)) return ReadonlyRequestHeadersError.callable;
+		const value = Reflect.get(target, prop, target);
+		return typeof value === "function" ? value.bind(target) : value;
+	} });
+}
+function sealRequestCookies(cookies) {
+	return new Proxy(cookies, { get(target, prop) {
+		if (prop === "set" || prop === "delete" || prop === "clear") return ReadonlyRequestCookiesError.callable;
+		const value = Reflect.get(target, prop, target);
+		return typeof value === "function" ? value.bind(target) : value;
+	} });
+}
+var ResponseCookies = class {
+	_headers;
+	/** Internal map keyed by cookie name — single source of truth. */
+	_parsed = /* @__PURE__ */ new Map();
+	constructor(headers) {
+		this._headers = headers;
+		for (const header of headers.getSetCookie()) {
+			const eq = header.indexOf("=");
+			if (eq === -1) continue;
+			const cookieName = header.slice(0, eq);
+			const semi = header.indexOf(";", eq);
+			const raw = header.slice(eq + 1, semi === -1 ? void 0 : semi);
+			let value;
+			try {
+				value = decodeURIComponent(raw);
+			} catch {
+				value = raw;
+			}
+			this._parsed.set(cookieName, {
+				serialized: header,
+				entry: {
+					name: cookieName,
+					value
+				}
+			});
+		}
+	}
+	set(...args) {
+		const [name, value, opts] = parseCookieSetArgs(args);
+		validateCookieName(name);
+		const serialized = serializeSetCookie(name, value, opts);
+		this._parsed.set(name, {
+			serialized,
+			entry: {
+				name,
+				value
+			}
+		});
+		this._syncHeaders();
+		return this;
+	}
+	get(...args) {
+		const key = typeof args[0] === "string" ? args[0] : args[0].name;
+		return this._parsed.get(key)?.entry;
+	}
+	has(name) {
+		return this._parsed.has(name);
+	}
+	getAll(...args) {
+		const all = [...this._parsed.values()].map((v) => v.entry);
+		if (args.length === 0) return all;
+		const key = typeof args[0] === "string" ? args[0] : args[0].name;
+		return all.filter((c) => c.name === key);
+	}
+	delete(...args) {
+		const [name, opts] = typeof args[0] === "string" ? [args[0], void 0] : [args[0].name, args[0]];
+		return this.set({
+			name,
+			value: "",
+			expires: /* @__PURE__ */ new Date(0),
+			path: opts?.path,
+			domain: opts?.domain,
+			httpOnly: opts?.httpOnly,
+			secure: opts?.secure,
+			sameSite: opts?.sameSite
+		});
+	}
+	[Symbol.iterator]() {
+		return [...this._parsed.values()].map((v) => [v.entry.name, v.entry])[Symbol.iterator]();
+	}
+	/** Delete all Set-Cookie headers and re-append from the internal map. */
+	_syncHeaders() {
+		this._headers.delete("Set-Cookie");
+		for (const { serialized } of this._parsed.values()) this._headers.append("Set-Cookie", serialized);
+	}
+};
+var MiddlewareResponseCookies = class extends ResponseCookies {
+	_responseHeaders;
+	constructor(headers) {
+		super(headers);
+		this._responseHeaders = headers;
+	}
+	set(...args) {
+		super.set(...args);
+		this._syncMiddlewareCookieHeader();
+		return this;
+	}
+	delete(...args) {
+		super.delete(...args);
+		this._syncMiddlewareCookieHeader();
+		return this;
+	}
+	_syncMiddlewareCookieHeader() {
+		const cookies = this._responseHeaders.getSetCookie();
+		if (cookies.length === 0) {
+			this._responseHeaders.delete(MIDDLEWARE_SET_COOKIE_HEADER);
+			return;
+		}
+		this._responseHeaders.set(MIDDLEWARE_SET_COOKIE_HEADER, cookies.join(","));
+	}
+};
+/**
+* Parse the overloaded arguments for ResponseCookies.set():
+*   - (name, value, options?) — positional form
+*   - ({ name, value, ...options }) — object form
+*/
+function parseCookieSetArgs(args) {
+	if (typeof args[0] === "string") return [
+		args[0],
+		args[1],
+		args[2]
+	];
+	const { name, value, ...opts } = args[0];
+	return [
+		name,
+		value,
+		opts
+	];
+}
+/**
+* Minimal NextFetchEvent — extends FetchEvent where available,
+* otherwise provides the waitUntil pattern standalone.
+*/
+var NextFetchEvent = class {
+	sourcePage;
+	_waitUntilPromises = [];
+	constructor(params) {
+		this.sourcePage = params.page;
+	}
+	waitUntil(promise) {
+		this._waitUntilPromises.push(promise);
+	}
+	get waitUntilPromises() {
+		return this._waitUntilPromises;
+	}
+	/** Drain all waitUntil promises. Returns a single promise that settles when all are done. */
+	drainWaitUntil() {
+		return Promise.allSettled(this._waitUntilPromises);
+	}
+};
+globalThis.URLPattern;
+//#endregion
+//#region proxy.ts
+var proxy_exports = /* @__PURE__ */ __exportAll({
+	config: () => config,
+	proxy: () => proxy
+});
+var ACCESS_COOKIE$1 = "alpha_access";
+var ACCESS_TOKEN$1 = "alpha-unlocked-v1";
+function isPublicPath(pathname) {
+	return pathname === "/access" || pathname === "/api/access" || pathname.startsWith("/_next/") || pathname.startsWith("/favicon") || pathname.startsWith("/public/") || Boolean(pathname.match(/\.(?:png|jpg|jpeg|gif|webp|svg|ico|css|js|map|txt|xml)$/));
+}
+function proxy(request) {
+	const { pathname } = request.nextUrl;
+	if (isPublicPath(pathname)) return NextResponse.next();
+	if (request.cookies.get(ACCESS_COOKIE$1)?.value === ACCESS_TOKEN$1) return NextResponse.next();
+	if (pathname.startsWith("/api/")) return NextResponse.json({ error: "Accès protégé" }, { status: 401 });
+	const url = request.nextUrl.clone();
+	url.pathname = "/access";
+	url.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
+	return NextResponse.redirect(url);
+}
+var config = { matcher: ["/((?!_next/static|_next/image).*)"] };
+//#endregion
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/utils/encode-cache-tag.js
 /**
 * Cache-tag canonicalisation.
 *
@@ -6530,7 +7161,7 @@ function encodeCacheTags(tags) {
 	return tags.map(encodeCacheTag);
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/shims/internal/work-unit-async-storage.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/shims/internal/work-unit-async-storage.js
 /**
 * Shim for next/dist/server/app-render/work-unit-async-storage.external
 * and next/dist/client/components/request-async-storage.external
@@ -6544,7 +7175,7 @@ function encodeCacheTags(tags) {
 */
 var workUnitAsyncStorage = new AsyncLocalStorage$1();
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/utils/cache-control-metadata.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/utils/cache-control-metadata.js
 function isUnknownRecord(value) {
 	return value !== null && typeof value === "object" && !Array.isArray(value);
 }
@@ -6557,7 +7188,7 @@ function readCacheControlNumberField(ctx, field) {
 	return typeof value === "number" ? value : void 0;
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/shims/cache.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/shims/cache.js
 function readStringArrayField(ctx, field) {
 	const value = ctx?.[field];
 	if (!Array.isArray(value)) return [];
@@ -6692,7 +7323,7 @@ function _consumeRequestScopedCacheLife() {
 }
 getOrCreateAls("vinext.unstableCache.als");
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/shims/fetch-cache.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/shims/fetch-cache.js
 /**
 * Extended fetch() with Next.js caching semantics.
 *
@@ -7293,7 +7924,7 @@ function ensureFetchPatch() {
 	_ensurePatchInstalled();
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/csp.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/csp.js
 var ESCAPE_REGEX = /[&><\u2028\u2029]/;
 function matchesDirectiveName(directive, name) {
 	return directive === name || directive.startsWith(`${name} `);
@@ -7319,7 +7950,7 @@ function getScriptNonceFromHeaderSources(...headersList) {
 	}
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/middleware-response-headers.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/middleware-response-headers.js
 var ADDITIVE_RESPONSE_HEADER_NAMES = new Set(["set-cookie", "vary"]);
 function mergeVaryHeader(target, value) {
 	const existing = target.get("Vary");
@@ -7360,7 +7991,7 @@ function mergeMiddlewareResponseHeaders(target, middlewareHeaders) {
 	}
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/routing/utils.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/routing/utils.js
 var PATH_DELIMITER_REGEX = /([/#?\\]|%(2f|23|3f|5c))/gi;
 function encodePathDelimiters(segment) {
 	return segment.replace(PATH_DELIMITER_REGEX, (char) => encodeURIComponent(char));
@@ -7417,365 +8048,7 @@ function decodeMatchedParams(params) {
 	}
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/shims/server.js
-var NextRequest = class extends Request {
-	_nextUrl;
-	_url;
-	_cookies;
-	constructor(input, init) {
-		const { nextConfig: _nextConfig, ...requestInit } = init ?? {};
-		if (input instanceof Request) {
-			const requestInput = requestInit.body === void 0 && input.body && !input.bodyUsed ? input.clone() : input;
-			super(requestInput, requestInit);
-		} else super(input, requestInit);
-		const url = typeof input === "string" ? new URL(input, "http://localhost") : input instanceof URL ? input : new URL(input.url, "http://localhost");
-		const urlConfig = _nextConfig ? {
-			basePath: _nextConfig.basePath,
-			nextConfig: { i18n: _nextConfig.i18n }
-		} : void 0;
-		this._nextUrl = new NextURL(url, void 0, urlConfig);
-		this._url = process.env.__NEXT_NO_MIDDLEWARE_URL_NORMALIZE ? url.toString() : this._nextUrl.toString();
-		this._cookies = new RequestCookies(this.headers);
-	}
-	get nextUrl() {
-		return this._nextUrl;
-	}
-	get url() {
-		return this._url;
-	}
-	get cookies() {
-		return this._cookies;
-	}
-	/**
-	* Client IP address. Prefers Cloudflare's trusted CF-Connecting-IP header
-	* over the spoofable X-Forwarded-For. Returns undefined if unavailable.
-	*/
-	get ip() {
-		return this.headers.get("cf-connecting-ip") ?? this.headers.get("x-real-ip") ?? this.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? void 0;
-	}
-	/**
-	* Geolocation data. Platform-dependent (e.g., Cloudflare, Vercel).
-	* Returns undefined if not available.
-	*/
-	get geo() {
-		const country = this.headers.get("cf-ipcountry") ?? this.headers.get("x-vercel-ip-country") ?? void 0;
-		if (!country) return void 0;
-		return {
-			country,
-			city: this.headers.get("cf-ipcity") ?? this.headers.get("x-vercel-ip-city") ?? void 0,
-			region: this.headers.get("cf-region") ?? this.headers.get("x-vercel-ip-country-region") ?? void 0,
-			latitude: this.headers.get("cf-iplatitude") ?? this.headers.get("x-vercel-ip-latitude") ?? void 0,
-			longitude: this.headers.get("cf-iplongitude") ?? this.headers.get("x-vercel-ip-longitude") ?? void 0
-		};
-	}
-	/**
-	* The build ID of the Next.js application.
-	* Delegates to `nextUrl.buildId` to match Next.js API surface.
-	* Can be used in middleware to detect deployment skew between client and server.
-	*/
-	get buildId() {
-		return this._nextUrl.buildId;
-	}
-};
-var NextURL = class NextURL {
-	/** Internal URL stores the pathname WITHOUT basePath or locale prefix. */
-	_url;
-	_basePath;
-	_locale;
-	_defaultLocale;
-	_locales;
-	constructor(input, base, config) {
-		this._url = new URL(input.toString(), base);
-		this._basePath = config?.basePath ?? "";
-		this._stripBasePath();
-		const i18n = config?.nextConfig?.i18n;
-		if (i18n) {
-			this._locales = [...i18n.locales];
-			this._defaultLocale = i18n.defaultLocale;
-			this._analyzeLocale(this._locales);
-		}
-	}
-	/** Strip basePath prefix from the internal pathname. */
-	_stripBasePath() {
-		if (!this._basePath) return;
-		this._url.pathname = stripBasePath(this._url.pathname, this._basePath);
-	}
-	/** Extract locale from pathname, stripping it from the internal URL. */
-	_analyzeLocale(locales) {
-		const segments = this._url.pathname.split("/");
-		const candidate = segments[1]?.toLowerCase();
-		const match = locales.find((l) => l.toLowerCase() === candidate);
-		if (match) {
-			this._locale = match;
-			this._url.pathname = "/" + segments.slice(2).join("/");
-		} else this._locale = this._defaultLocale;
-	}
-	/**
-	* Reconstruct the full pathname with basePath + locale prefix.
-	* Mirrors Next.js's internal formatPathname().
-	*/
-	_formatPathname() {
-		let prefix = this._basePath;
-		if (this._locale && this._locale !== this._defaultLocale) prefix += "/" + this._locale;
-		if (!prefix) return this._url.pathname;
-		const inner = this._url.pathname;
-		return inner === "/" ? prefix : prefix + inner;
-	}
-	get href() {
-		const formatted = this._formatPathname();
-		if (formatted === this._url.pathname) return this._url.href;
-		const { href, pathname, search, hash } = this._url;
-		const baseEnd = href.length - pathname.length - search.length - hash.length;
-		return href.slice(0, baseEnd) + formatted + search + hash;
-	}
-	set href(value) {
-		this._url.href = value;
-		this._stripBasePath();
-		if (this._locales) this._analyzeLocale(this._locales);
-	}
-	get origin() {
-		return this._url.origin;
-	}
-	get protocol() {
-		return this._url.protocol;
-	}
-	set protocol(value) {
-		this._url.protocol = value;
-	}
-	get username() {
-		return this._url.username;
-	}
-	set username(value) {
-		this._url.username = value;
-	}
-	get password() {
-		return this._url.password;
-	}
-	set password(value) {
-		this._url.password = value;
-	}
-	get host() {
-		return this._url.host;
-	}
-	set host(value) {
-		this._url.host = value;
-	}
-	get hostname() {
-		return this._url.hostname;
-	}
-	set hostname(value) {
-		this._url.hostname = value;
-	}
-	get port() {
-		return this._url.port;
-	}
-	set port(value) {
-		this._url.port = value;
-	}
-	/** Returns the pathname WITHOUT basePath or locale prefix. */
-	get pathname() {
-		return this._url.pathname;
-	}
-	set pathname(value) {
-		this._url.pathname = value;
-	}
-	get search() {
-		return this._url.search;
-	}
-	set search(value) {
-		this._url.search = value;
-	}
-	get searchParams() {
-		return this._url.searchParams;
-	}
-	get hash() {
-		return this._url.hash;
-	}
-	set hash(value) {
-		this._url.hash = value;
-	}
-	get basePath() {
-		return this._basePath;
-	}
-	set basePath(value) {
-		this._basePath = value === "" ? "" : value.startsWith("/") ? value : "/" + value;
-	}
-	get locale() {
-		return this._locale ?? "";
-	}
-	set locale(value) {
-		if (this._locales) {
-			if (!value) {
-				this._locale = this._defaultLocale;
-				return;
-			}
-			if (!this._locales.includes(value)) throw new TypeError(`The locale "${value}" is not in the configured locales: ${this._locales.join(", ")}`);
-		}
-		this._locale = this._locales ? value : this._locale;
-	}
-	get defaultLocale() {
-		return this._defaultLocale;
-	}
-	get locales() {
-		return this._locales ? [...this._locales] : void 0;
-	}
-	clone() {
-		const config = {
-			basePath: this._basePath,
-			nextConfig: this._locales ? { i18n: {
-				locales: [...this._locales],
-				defaultLocale: this._defaultLocale
-			} } : void 0
-		};
-		return new NextURL(this.href, void 0, config);
-	}
-	toString() {
-		return this.href;
-	}
-	/**
-	* The build ID of the Next.js application.
-	* Set from `generateBuildId` in next.config.js, or a random UUID if not configured.
-	* Can be used in middleware to detect deployment skew between client and server.
-	* Matches the Next.js API: `request.nextUrl.buildId`.
-	*/
-	get buildId() {
-		return "64736455-de3a-4e35-9e9e-416c0caf168d";
-	}
-};
-var RequestCookies = class {
-	_headers;
-	_parsed;
-	constructor(headers) {
-		this._headers = headers;
-		this._parsed = parseCookieHeader(headers.get("cookie") ?? "");
-	}
-	get(name) {
-		const value = this._parsed.get(name);
-		return value !== void 0 ? {
-			name,
-			value
-		} : void 0;
-	}
-	getAll(nameOrOptions) {
-		const name = typeof nameOrOptions === "string" ? nameOrOptions : nameOrOptions?.name;
-		return [...this._parsed.entries()].filter(([cookieName]) => name === void 0 || cookieName === name).map(([cookieName, value]) => ({
-			name: cookieName,
-			value
-		}));
-	}
-	has(name) {
-		return this._parsed.has(name);
-	}
-	set(nameOrOptions, value) {
-		let cookieName;
-		let cookieValue;
-		if (typeof nameOrOptions === "string") {
-			cookieName = nameOrOptions;
-			cookieValue = value ?? "";
-		} else {
-			cookieName = nameOrOptions.name;
-			cookieValue = nameOrOptions.value;
-		}
-		validateCookieName(cookieName);
-		this._parsed.set(cookieName, cookieValue);
-		this._syncHeader();
-		return this;
-	}
-	delete(names) {
-		if (Array.isArray(names)) {
-			const results = names.map((name) => {
-				validateCookieName(name);
-				return this._parsed.delete(name);
-			});
-			this._syncHeader();
-			return results;
-		}
-		validateCookieName(names);
-		const result = this._parsed.delete(names);
-		this._syncHeader();
-		return result;
-	}
-	clear() {
-		this._parsed.clear();
-		this._syncHeader();
-		return this;
-	}
-	get size() {
-		return this._parsed.size;
-	}
-	toString() {
-		return this._serialize();
-	}
-	_serialize() {
-		return [...this._parsed.entries()].map(([n, v]) => `${n}=${encodeURIComponent(v)}`).join("; ");
-	}
-	_syncHeader() {
-		if (this._parsed.size === 0) this._headers.delete("cookie");
-		else this._headers.set("cookie", this._serialize());
-	}
-	[Symbol.iterator]() {
-		return this.getAll().map((c) => [c.name, c])[Symbol.iterator]();
-	}
-};
-var ReadonlyRequestCookiesError = class ReadonlyRequestCookiesError extends Error {
-	constructor() {
-		super("Cookies can only be modified in a Server Action or Route Handler. Read more: https://nextjs.org/docs/app/api-reference/functions/cookies#options");
-	}
-	static callable() {
-		throw new ReadonlyRequestCookiesError();
-	}
-};
-var REQUEST_HEADERS_MUTATING_METHODS = new Set([
-	"set",
-	"delete",
-	"append"
-]);
-var ReadonlyRequestHeadersError = class ReadonlyRequestHeadersError extends Error {
-	constructor() {
-		super("Headers cannot be modified. Read more: https://nextjs.org/docs/app/api-reference/functions/headers");
-	}
-	static callable() {
-		throw new ReadonlyRequestHeadersError();
-	}
-};
-function sealRequestHeaders(headers) {
-	return new Proxy(headers, { get(target, prop) {
-		if (typeof prop === "string" && REQUEST_HEADERS_MUTATING_METHODS.has(prop)) return ReadonlyRequestHeadersError.callable;
-		const value = Reflect.get(target, prop, target);
-		return typeof value === "function" ? value.bind(target) : value;
-	} });
-}
-function sealRequestCookies(cookies) {
-	return new Proxy(cookies, { get(target, prop) {
-		if (prop === "set" || prop === "delete" || prop === "clear") return ReadonlyRequestCookiesError.callable;
-		const value = Reflect.get(target, prop, target);
-		return typeof value === "function" ? value.bind(target) : value;
-	} });
-}
-/**
-* Minimal NextFetchEvent — extends FetchEvent where available,
-* otherwise provides the waitUntil pattern standalone.
-*/
-var NextFetchEvent = class {
-	sourcePage;
-	_waitUntilPromises = [];
-	constructor(params) {
-		this.sourcePage = params.page;
-	}
-	waitUntil(promise) {
-		this._waitUntilPromises.push(promise);
-	}
-	get waitUntilPromises() {
-		return this._waitUntilPromises;
-	}
-	/** Drain all waitUntil promises. Returns a single promise that settles when all are done. */
-	drainWaitUntil() {
-		return Promise.allSettled(this._waitUntilPromises);
-	}
-};
-globalThis.URLPattern;
-//#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/normalize-path.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/normalize-path.js
 /**
 * Path normalization utility for request handling.
 *
@@ -7808,7 +8081,7 @@ function normalizePath(pathname) {
 	return "/" + resolved.join("/");
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/middleware-matcher.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/middleware-matcher.js
 var EMPTY_MIDDLEWARE_REQUEST_CONTEXT = {
 	headers: new Headers(),
 	cookies: {},
@@ -7905,7 +8178,7 @@ function compileMatcherPattern(pattern) {
 	return safeRegExp("^" + regexStr + "$");
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/middleware-runtime.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/middleware-runtime.js
 function isMiddlewareHandler(value) {
 	return typeof value === "function";
 }
@@ -8051,7 +8324,7 @@ async function executeMiddleware(options) {
 	};
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-middleware.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-middleware.js
 var FLIGHT_HEADER_SET = new Set(FLIGHT_HEADERS);
 function requestWithoutFlightHeaders(request) {
 	let hasFlightHeader = false;
@@ -8176,7 +8449,7 @@ async function applyAppMiddleware(options) {
 	};
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/cache-control.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/cache-control.js
 var NEVER_CACHE_CONTROL = "private, no-cache, no-store, max-age=0, must-revalidate";
 var STATIC_CACHE_CONTROL = "s-maxage=31536000, stale-while-revalidate";
 var STALE_REVALIDATE_CACHE_CONTROL = "s-maxage=0, stale-while-revalidate";
@@ -8207,7 +8480,7 @@ function buildCachedRevalidateCacheControl(cacheState, revalidateSeconds, expire
 	return buildRevalidateCacheControl(revalidateSeconds, expireSeconds);
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-page-response.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-page-response.js
 function applyTimingHeader(headers, timing) {
 	if (!timing) return;
 	const handlerStart = Math.round(timing.handlerStart);
@@ -8304,7 +8577,7 @@ function buildAppPageHtmlResponse(body, options) {
 	});
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/implicit-tags.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/implicit-tags.js
 var NEXT_CACHE_IMPLICIT_TAG_ID = "_N_T_";
 function appendUnique(tags, tag) {
 	if (!tags.includes(tag)) tags.push(tag);
@@ -8343,7 +8616,7 @@ function buildPageCacheTags(pathname, extraTags, routeSegments, leafKind) {
 	return tags.map(encodeCacheTag);
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-post-middleware-context.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-post-middleware-context.js
 /**
 * Build a request context from the live ALS HeadersContext, which reflects
 * any x-middleware-request-* header mutations applied by middleware.
@@ -8366,7 +8639,7 @@ function buildPostMwRequestContext(request) {
 	};
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/shims/root-params.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/shims/root-params.js
 var _FALLBACK_KEY$1 = Symbol.for("vinext.rootParams.fallback");
 var _g$3 = globalThis;
 var _fallbackState$1 = _g$3[_FALLBACK_KEY$1] ??= { rootParams: null };
@@ -8383,7 +8656,7 @@ function setRootParams(params) {
 	getState().rootParams = params;
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-prerender-static-params.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-prerender-static-params.js
 async function callAppPrerenderStaticParams(options) {
 	setRootParams(pickRootParams(options.params, options.rootParamNamesByPattern[options.pattern]));
 	try {
@@ -8393,7 +8666,7 @@ async function callAppPrerenderStaticParams(options) {
 	}
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-prerender-endpoints.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-prerender-endpoints.js
 var STATIC_PARAMS_ENDPOINT = "/__vinext/prerender/static-params";
 var PAGES_STATIC_PATHS_ENDPOINT = "/__vinext/prerender/pages-static-paths";
 var JSON_HEADERS = { "content-type": "application/json" };
@@ -8485,7 +8758,7 @@ function isStringArray(value) {
 	return Array.isArray(value) && value.every((item) => typeof item === "string");
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-rsc-response-finalizer.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-rsc-response-finalizer.js
 /**
 * Apply App Router response finalization that must happen outside individual
 * route dispatchers.
@@ -8518,7 +8791,7 @@ function finalizeAppRscResponse(response, request, options) {
 	return response;
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-rsc-request-normalization.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-rsc-request-normalization.js
 /**
 * Normalize an App Router RSC request.
 *
@@ -8578,7 +8851,7 @@ function normalizeRscRequest(request, basePath) {
 	};
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/routing/route-pattern.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/routing/route-pattern.js
 function routePatternPart(segment) {
 	if (segment.startsWith("[[...") && segment.endsWith("]]")) return `:${segment.slice(5, -2)}*`;
 	if (segment.startsWith("[...") && segment.endsWith("]")) return `:${segment.slice(4, -1)}+`;
@@ -8667,7 +8940,7 @@ function matchRoutePattern(urlParts, patternParts) {
 	return params;
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/metadata-routes.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/metadata-routes.js
 /** Escape the five XML special characters in text content and attribute values. */
 function escapeXml(s) {
 	return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
@@ -8788,7 +9061,7 @@ function matchMetadataRoutePattern(urlParts, patternParts) {
 	return matchRoutePattern(urlParts, patternParts);
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/metadata-route-response.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/metadata-route-response.js
 var routeFunctionCache = /* @__PURE__ */ new WeakMap();
 function isObject(value) {
 	return typeof value === "object" && value !== null;
@@ -8971,7 +9244,7 @@ async function handleMetadataRouteRequest(options) {
 	return null;
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/prerender-work-unit-setup.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/prerender-work-unit-setup.js
 /**
 * Sets up the work unit async storage for prerendering.
 *
@@ -8997,7 +9270,7 @@ function runWithPrerenderWorkUnit(fn, options) {
 	return fn();
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-rsc-handler.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-rsc-handler.js
 function hasProperty(value, key) {
 	return key in value;
 }
@@ -9271,7 +9544,7 @@ function createAppRscHandler(options) {
 	};
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/instrumentation.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/instrumentation.js
 /**
 * Get the registered onRequestError handler (if any).
 *
@@ -9302,7 +9575,7 @@ function reportRequestError(error, request, context) {
 	return promise;
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-route-handler-runtime.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-route-handler-runtime.js
 var ROUTE_HANDLER_HTTP_METHODS = [
 	"GET",
 	"HEAD",
@@ -9537,7 +9810,7 @@ function createTrackedAppRouteRequest(request, options = {}) {
 	};
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/next-error-digest.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/next-error-digest.js
 /**
 * Pulls a stringified `digest` off an unknown thrown value, or returns null
 * when the value is not a digest-bearing error.
@@ -9576,7 +9849,7 @@ function parseNextHttpErrorDigest(digest) {
 	return null;
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-route-handler-policy.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-route-handler-policy.js
 function isPossibleAppRouteActionRequest(request) {
 	if (request.method.toUpperCase() !== "POST") return false;
 	const contentType = request.headers.get("content-type");
@@ -9635,7 +9908,7 @@ function resolveAppRouteHandlerSpecialError(error, requestUrl, options) {
 	return null;
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-static-generation.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-static-generation.js
 function getAppPageStaticGenerationErrorMessage() {
 	return "Page with `dynamic = \"error\"` used a dynamic API. This page was expected to be fully static, but headers(), cookies(), or searchParams was accessed. Remove the dynamic API usage or change the dynamic config to \"auto\" or \"force-dynamic\".";
 }
@@ -9652,7 +9925,7 @@ function createStaticGenerationHeadersContext(options) {
 	return context;
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-route-handler-response.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-route-handler-response.js
 var APP_ROUTE_REWRITE_ERROR = "NextResponse.rewrite() was used in a app route handler, this is not currently supported. Please remove the invocation to continue.";
 var APP_ROUTE_NEXT_ERROR = "NextResponse.next() was used in a app route handler, this is not supported. See here for more info: https://nextjs.org/docs/messages/next-response-next-in-app-route-handler";
 function hasMiddlewareHeader(headers) {
@@ -9755,7 +10028,7 @@ function finalizeRouteHandlerResponse(response, options) {
 	});
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-route-handler-execution.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-route-handler-execution.js
 function configureAppRouteStaticGenerationContext(options) {
 	if (options.dynamicConfig === "force-static" || options.dynamicConfig === "error") {
 		setHeadersContext(createStaticGenerationHeadersContext({
@@ -9874,7 +10147,7 @@ async function executeAppRouteHandler(options) {
 	}
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-route-handler-cache.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-route-handler-cache.js
 function getCachedAppRouteValue(entry) {
 	return entry?.value.value && entry.value.value.kind === "APP_ROUTE" ? entry.value.value : null;
 }
@@ -9945,7 +10218,7 @@ async function readAppRouteHandlerCacheResponse(options) {
 	return null;
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-route-handler-dispatch.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-route-handler-dispatch.js
 function isAppRouteHandlerFunction(value) {
 	return typeof value === "function";
 }
@@ -10080,7 +10353,7 @@ async function dispatchAppRouteHandler(options) {
 	return applyRouteHandlerMiddlewareContext(new Response(null, { status: 405 }), options.middlewareContext);
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/utils/text-stream.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/utils/text-stream.js
 /**
 * Helpers for the repeated `new TextDecoder()` + `ReadableStream` chunk-loop
 * pattern used across the server. Each helper handles the streaming-decode
@@ -10143,7 +10416,7 @@ async function readStreamAsTextWithLimit(stream, maxBytes, onLimitExceeded) {
 	}
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/server-action-not-found.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/server-action-not-found.js
 var SERVER_ACTION_NOT_FOUND_DOCS = "https://nextjs.org/docs/messages/failed-to-find-server-action";
 var SERVER_ACTION_NOT_FOUND_BODY = "Server action not found.";
 function getServerActionNotFoundPrefix(actionId) {
@@ -10173,7 +10446,7 @@ function createServerActionNotFoundResponse() {
 	});
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-page-params.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-page-params.js
 function getAppPageSegmentParamName(segment) {
 	if (segment.startsWith("[[...") && segment.endsWith("]]") && segment.length > 7) return segment.slice(5, -2);
 	if (segment.startsWith("[...") && segment.endsWith("]") && segment.length > 5) return segment.slice(4, -1);
@@ -10198,7 +10471,7 @@ function resolveAppPageSegmentParams(routeSegments, treePosition, matchedParams)
 	return segmentParams;
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-page-request.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-page-request.js
 function pickRouteParams(matchedParams, routeParamNames) {
 	const params = {};
 	for (const paramName of routeParamNames) {
@@ -10358,7 +10631,7 @@ async function buildAppPageElement(options) {
 	}
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-server-action-execution.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-server-action-execution.js
 /**
 * Matches Next.js' server action argument cap to prevent stack overflow in
 * Function.prototype.apply when decoding hostile action payloads.
@@ -10745,7 +11018,7 @@ async function handleServerActionRscRequest(options) {
 	}
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-page-execution.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-page-execution.js
 function isPromiseLike(value) {
 	return Boolean(value && (typeof value === "object" || typeof value === "function") && "then" in value && typeof value.then === "function");
 }
@@ -10914,7 +11187,7 @@ function buildAppPageFontLinkHeader(preloads) {
 	return preloads.map((preload) => `<${preload.href}>; rel=preload; as=font; type=${preload.type}; crossorigin`).join(", ");
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-rsc-errors.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-rsc-errors.js
 function hasDigest(error) {
 	return Boolean(error && typeof error === "object" && "digest" in error);
 }
@@ -10952,7 +11225,7 @@ function createRscOnErrorHandler$1(options) {
 	};
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-rsc-error-handler.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-rsc-error-handler.js
 /**
 * Build a per-request RSC error handler that extracts request metadata from
 * the incoming Web `Request`, wires it into a `createRscOnErrorHandler` call,
@@ -10978,24 +11251,24 @@ function createAppRscOnErrorHandler(reportRequestError, request, pathname, route
 	});
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/shims/error-boundary.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/shims/error-boundary.js
 var ErrorBoundary = /* @__PURE__ */ registerClientReference(() => {
 	throw new Error("Unexpectedly client reference export 'ErrorBoundary' is called on server");
-}, "ffa4af8fdc37", "ErrorBoundary");
+}, "b41f51b793fc", "ErrorBoundary");
 var ForbiddenBoundary = /* @__PURE__ */ registerClientReference(() => {
 	throw new Error("Unexpectedly client reference export 'ForbiddenBoundary' is called on server");
-}, "ffa4af8fdc37", "ForbiddenBoundary");
+}, "b41f51b793fc", "ForbiddenBoundary");
 var NotFoundBoundary = /* @__PURE__ */ registerClientReference(() => {
 	throw new Error("Unexpectedly client reference export 'NotFoundBoundary' is called on server");
-}, "ffa4af8fdc37", "NotFoundBoundary");
+}, "b41f51b793fc", "NotFoundBoundary");
 var RedirectBoundary = /* @__PURE__ */ registerClientReference(() => {
 	throw new Error("Unexpectedly client reference export 'RedirectBoundary' is called on server");
-}, "ffa4af8fdc37", "RedirectBoundary");
+}, "b41f51b793fc", "RedirectBoundary");
 var UnauthorizedBoundary = /* @__PURE__ */ registerClientReference(() => {
 	throw new Error("Unexpectedly client reference export 'UnauthorizedBoundary' is called on server");
-}, "ffa4af8fdc37", "UnauthorizedBoundary");
+}, "b41f51b793fc", "UnauthorizedBoundary");
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/shims/layout-segment-context.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/shims/layout-segment-context.js
 /**
 * Layout segment context provider.
 *
@@ -11025,9 +11298,9 @@ var UnauthorizedBoundary = /* @__PURE__ */ registerClientReference(() => {
 */
 var LayoutSegmentProvider = /* @__PURE__ */ registerClientReference(() => {
 	throw new Error("Unexpectedly client reference export 'LayoutSegmentProvider' is called on server");
-}, "e791668edc18", "LayoutSegmentProvider");
+}, "de0b278e36f9", "LayoutSegmentProvider");
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/shims/slot.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/shims/slot.js
 /**
 * Holds resolved AppElements (not a Promise). React 19's use(Promise) during
 * hydration triggers "async Client Component" for native Promises that lack
@@ -11035,15 +11308,15 @@ var LayoutSegmentProvider = /* @__PURE__ */ registerClientReference(() => {
 */
 var Children = /* @__PURE__ */ registerClientReference(() => {
 	throw new Error("Unexpectedly client reference export 'Children' is called on server");
-}, "b843a7408a43", "Children");
+}, "595c47e84db4", "Children");
 var ParallelSlot = /* @__PURE__ */ registerClientReference(() => {
 	throw new Error("Unexpectedly client reference export 'ParallelSlot' is called on server");
-}, "b843a7408a43", "ParallelSlot");
+}, "595c47e84db4", "ParallelSlot");
 var Slot = /* @__PURE__ */ registerClientReference(() => {
 	throw new Error("Unexpectedly client reference export 'Slot' is called on server");
-}, "b843a7408a43", "Slot");
+}, "595c47e84db4", "Slot");
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-render-dependency.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-render-dependency.js
 function createAppRenderDependency() {
 	let released = false;
 	let resolve;
@@ -11074,7 +11347,7 @@ function renderWithAppDependencyBarrier(children, dependency) {
 	return /* @__PURE__ */ (0, import_jsx_runtime_react_server.jsxs)(import_jsx_runtime_react_server.Fragment, { children: [children, /* @__PURE__ */ (0, import_jsx_runtime_react_server.jsx)(ReleaseAppRenderDependency, {})] });
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-page-segment-state.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-page-segment-state.js
 function isOptionalCatchAllSegment(segment) {
 	return segment.startsWith("[[...") && segment.endsWith("]]") && segment.length > 7;
 }
@@ -11151,7 +11424,7 @@ function resolveAppPageRouteStateKey(routeSegments, params) {
 	return statePath.length > 0 ? JSON.stringify(statePath) : "";
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-page-route-wiring.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-page-route-wiring.js
 function getDefaultExport$1(module) {
 	return module?.default ?? null;
 }
@@ -11475,7 +11748,7 @@ function buildAppPageElements(options) {
 	return elements;
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/file-based-metadata.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/file-based-metadata.js
 function routeApplies(routePath, routePrefix) {
 	if (!routePrefix) return true;
 	return routePath === routePrefix || routePath.startsWith(`${routePrefix}/`);
@@ -11825,7 +12098,7 @@ async function applyFileBasedMetadata(metadata, routePath, params, metadataRoute
 	return nextMetadata;
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-page-head.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-page-head.js
 function resolveActiveParallelRouteHeadInputs(options) {
 	return Object.entries(options.slots ?? {}).map(([slotKey, slot]) => {
 		if (options.interceptSlotKey === slotKey && options.interceptPage) return {
@@ -12019,7 +12292,7 @@ async function resolveAppPageHeadInner(options) {
 	};
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-page-boundary.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-page-boundary.js
 function resolveAppPageHttpAccessBoundaryComponent(options) {
 	let boundaryModule;
 	if (options.statusCode === 403) boundaryModule = options.routeForbiddenModule ?? options.rootForbiddenModule;
@@ -12095,7 +12368,7 @@ async function renderAppPageBoundaryResponse(options) {
 	return options.createHtmlResponse(rscStream, options.status);
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-page-stream.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-page-stream.js
 function createAppPageFontData(options) {
 	return {
 		links: options.getLinks(),
@@ -12207,7 +12480,7 @@ function shouldRerenderAppPageWithGlobalError(options) {
 	return Boolean(options.capturedError) && !options.hasLocalBoundary;
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-page-boundary-render.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-page-boundary-render.js
 function getDefaultExport(module) {
 	return module?.default ?? null;
 }
@@ -12441,7 +12714,7 @@ function rewriteClientHookError(error) {
 	if (match) error.message = buildClientHookErrorMessage(`${match[1]}()`);
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-fallback-renderer.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-fallback-renderer.js
 var EMPTY_MW_CTX = {
 	headers: null,
 	status: null
@@ -12516,7 +12789,7 @@ function createAppFallbackRenderer(options) {
 	};
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-page-element-builder.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-page-element-builder.js
 /**
 * Build the App Router element tree for a matched route.
 *
@@ -12650,7 +12923,7 @@ function collectParamNameSet(params) {
 	return set;
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/isr-cache.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/isr-cache.js
 /**
 * ISR (Incremental Static Regeneration) cache layer.
 *
@@ -12761,7 +13034,7 @@ function buildCacheKey(prefix, pathname, suffix) {
 * The suffix mirrors Next.js's separate on-disk app artifacts while keeping the
 * Cloudflare KV key under its 512-byte limit for long pathnames.
 */
-function appIsrCacheKey(pathname, suffix, buildId = "64736455-de3a-4e35-9e9e-416c0caf168d") {
+function appIsrCacheKey(pathname, suffix, buildId = "398d0a0d-0356-4371-b55b-58927a68fa1c") {
 	return buildCacheKey(buildId ? `app:${buildId}` : "app", pathname, suffix);
 }
 function appIsrHtmlKey(pathname) {
@@ -12786,7 +13059,7 @@ function appIsrRouteKey(pathname) {
 var _REVALIDATE_KEY = Symbol.for("vinext.isrCache.revalidateDurations");
 _g$1[_REVALIDATE_KEY] ??= /* @__PURE__ */ new Map();
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-page-cache.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-page-cache.js
 var NO_STORE_CACHE_CONTROL = "no-store, must-revalidate";
 function buildAppPageCacheControl(cacheState, revalidateSeconds, expireSeconds) {
 	return buildCachedRevalidateCacheControl(cacheState, revalidateSeconds, expireSeconds);
@@ -12989,7 +13262,7 @@ function scheduleAppPageRscCacheWrite(options) {
 	return true;
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-page-method.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-page-method.js
 function isNonGetOrHead(method) {
 	const normalizedMethod = method.toUpperCase();
 	return normalizedMethod !== "GET" && normalizedMethod !== "HEAD";
@@ -13010,7 +13283,7 @@ function resolveAppPageMethodResponse(options) {
 	return methodNotAllowedResponse("GET, HEAD", { headers });
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-page-probe.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-page-probe.js
 async function probeAppPageBeforeRender(options) {
 	let layoutFlags = {};
 	if (options.layoutCount > 0) {
@@ -13054,7 +13327,7 @@ async function probeAppPageBeforeRender(options) {
 	};
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-page-render.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-page-render.js
 function buildResponseTiming(options) {
 	if (options.isProduction) return;
 	return {
@@ -13090,7 +13363,7 @@ function createAppPageArtifactCompatibility(element, routePattern) {
 			routePattern,
 			rootBoundaryId
 		}),
-		deploymentVersion: "64736455-de3a-4e35-9e9e-416c0caf168d",
+		deploymentVersion: "398d0a0d-0356-4371-b55b-58927a68fa1c",
 		rootBoundaryId
 	});
 }
@@ -13370,7 +13643,7 @@ async function settleCapturedRscRenderForCacheMetadata(capturedRscDataPromise) {
 	} catch {}
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-page-dispatch.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-page-dispatch.js
 function shouldReadAppPageCache(options) {
 	return options.isProduction && !options.isProgressiveActionRender && !options.isDraftMode && !options.isForceDynamic && (options.isRscRequest || !options.scriptNonce) && (options.revalidateSeconds === null || options.revalidateSeconds > 0);
 }
@@ -13716,7 +13989,7 @@ async function renderPageSpecialError(options, specialError) {
 	});
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-segment-config.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-segment-config.js
 var DYNAMIC_VALUES = new Set([
 	"auto",
 	"error",
@@ -13803,7 +14076,7 @@ function resolveAppPageFetchCacheMode(options) {
 	return resolveAppPageSegmentConfig(options).fetchCache ?? null;
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/routing/route-trie.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/routing/route-trie.js
 function createNode() {
 	return {
 		staticChildren: /* @__PURE__ */ new Map(),
@@ -13949,7 +14222,7 @@ function match(node, urlParts, index) {
 	return null;
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-rsc-route-matching.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-rsc-route-matching.js
 function createRouteParams() {
 	return Object.create(null);
 }
@@ -14013,7 +14286,7 @@ function mergeMatchedParams(sourceParams, targetParams) {
 	return Object.assign(createRouteParams(), sourceParams, targetParams);
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/shims/navigation-state.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/shims/navigation-state.js
 /**
 * Server-only navigation state backed by AsyncLocalStorage.
 *
@@ -14054,7 +14327,7 @@ var _accessors = {
 _registerStateAccessors(_accessors);
 globalThis[GLOBAL_ACCESSORS_KEY] = _accessors;
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/build/google-fonts/sort-variants.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/build/google-fonts/sort-variants.js
 function sortFontsVariantValues(valA, valB) {
 	if (valA.includes(",") && valB.includes(",")) {
 		const [aPrefix, aSuffix] = valA.split(",", 2);
@@ -14065,7 +14338,7 @@ function sortFontsVariantValues(valA, valB) {
 	return parseInt(valA) - parseInt(valB);
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/build/google-fonts/build-url.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/build/google-fonts/build-url.js
 function buildGoogleFontsUrl$1(fontFamily, axes, display) {
 	const variants = [];
 	if (axes.wght) for (const wght of axes.wght) if (!axes.ital) variants.push([["wght", wght], ...axes.variableAxes ?? []]);
@@ -14091,7 +14364,7 @@ function buildGoogleFontsUrl$1(fontFamily, axes, display) {
 	return `${url}&display=${display}`;
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/shims/font-google-base.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/shims/font-google-base.js
 /**
 * next/font/google shim
 *
@@ -14434,7 +14707,7 @@ var googleFonts = new Proxy({}, { get(_target, prop) {
 	return createFontLoader(prop.replace(/_/g, " ").replace(/([a-z])([A-Z])/g, "$1 $2"));
 } });
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/shims/font-local.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/shims/font-local.js
 var ssrFontStyles = [];
 var ssrFontPreloads = [];
 /**
@@ -14454,7 +14727,7 @@ function getSSRFontPreloads() {
 	return [...ssrFontPreloads];
 }
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-hook-warning-suppression.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-hook-warning-suppression.js
 var suppressHookWarningAls = new AsyncLocalStorage$1();
 var _origConsoleError = console.error;
 console.error = (...args) => {
@@ -14462,7 +14735,7 @@ console.error = (...args) => {
 	_origConsoleError.apply(console, args);
 };
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-request-context.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-request-context.js
 /**
 * Set navigation context in the ALS-backed store. "use client" components
 * rendered during SSR need the pathname/searchParams/params but the SSR
@@ -14486,11 +14759,8164 @@ function clearAppRequestContext() {
 	setAppNavigationContext(null);
 }
 //#endregion
-//#region app/page.tsx
-var page_exports = /* @__PURE__ */ __exportAll({ default: () => page_default });
-var page_default = /* @__PURE__ */ registerClientReference(() => {
-	throw new Error("Unexpectedly client reference export 'default' is called on server");
-}, "6efdf509a785", "default");
+//#region node_modules/.pnpm/@netlify+runtime-utils@2.3.0/node_modules/@netlify/runtime-utils/dist/main.js
+var getString = (input) => typeof input === "string" ? input : JSON.stringify(input);
+var base64Decode = globalThis.Buffer ? (input) => Buffer.from(input, "base64").toString() : (input) => atob(input);
+var base64Encode = globalThis.Buffer ? (input) => Buffer.from(getString(input)).toString("base64") : (input) => btoa(getString(input));
+var getEnvironment = () => {
+	const { Deno, Netlify, process } = globalThis;
+	return Netlify?.env ?? Deno?.env ?? {
+		delete: (key) => delete process?.env[key],
+		get: (key) => process?.env[key],
+		has: (key) => Boolean(process?.env[key]),
+		set: (key, value) => {
+			if (process?.env) process.env[key] = value;
+		},
+		toObject: () => process?.env ?? {}
+	};
+};
+//#endregion
+//#region node_modules/.pnpm/@netlify+otel@6.0.3/node_modules/@netlify/otel/dist/main.js
+var GET_TRACER = "__netlify__getTracer";
+var getTracer = (name, version) => {
+	return globalThis[GET_TRACER]?.(name, version);
+};
+function withActiveSpan(tracer, name, optionsOrFn, contextOrFn, fn) {
+	const func = typeof contextOrFn === "function" ? contextOrFn : typeof optionsOrFn === "function" ? optionsOrFn : fn;
+	if (!func) throw new Error("function to execute with active span is missing");
+	if (!tracer) return func();
+	return tracer.withActiveSpan(name, optionsOrFn, contextOrFn, func);
+}
+//#endregion
+//#region node_modules/.pnpm/@netlify+blobs@10.7.9/node_modules/@netlify/blobs/dist/chunk-YAGWSQMB.js
+var getEnvironmentContext = () => {
+	const context = globalThis.netlifyBlobsContext || getEnvironment().get("NETLIFY_BLOBS_CONTEXT");
+	if (typeof context !== "string" || !context) return {};
+	const data = base64Decode(context);
+	try {
+		return JSON.parse(data);
+	} catch {}
+	return {};
+};
+var MissingBlobsEnvironmentError = class extends Error {
+	constructor(requiredProperties) {
+		super(`The environment has not been configured to use Netlify Blobs. To use it manually, supply the following properties when creating a store: ${requiredProperties.join(", ")}`);
+		this.name = "MissingBlobsEnvironmentError";
+	}
+};
+var BASE64_PREFIX = "b64;";
+var METADATA_HEADER_INTERNAL = "x-amz-meta-user";
+var METADATA_HEADER_EXTERNAL = "netlify-blobs-metadata";
+var METADATA_MAX_SIZE = 2 * 1024;
+var encodeMetadata = (metadata) => {
+	if (!metadata) return null;
+	const payload = `b64;${base64Encode(JSON.stringify(metadata))}`;
+	if (METADATA_HEADER_EXTERNAL.length + payload.length > METADATA_MAX_SIZE) throw new Error("Metadata object exceeds the maximum size");
+	return payload;
+};
+var decodeMetadata = (header) => {
+	if (!header?.startsWith(BASE64_PREFIX)) return {};
+	const decodedData = base64Decode(header.slice(BASE64_PREFIX.length));
+	return JSON.parse(decodedData);
+};
+var getMetadataFromResponse = (response) => {
+	if (!response.headers) return {};
+	const value = response.headers.get(METADATA_HEADER_EXTERNAL) || response.headers.get("x-amz-meta-user");
+	try {
+		return decodeMetadata(value);
+	} catch {
+		throw new Error("An internal error occurred while trying to retrieve the metadata for an entry. Please try updating to the latest version of the Netlify Blobs client.");
+	}
+};
+var NF_ERROR = "x-nf-error";
+var NF_REQUEST_ID = "x-nf-request-id";
+var BlobsInternalError = class extends Error {
+	constructor(res) {
+		let details = res.headers.get(NF_ERROR) || `${res.status} status code`;
+		if (res.headers.has(NF_REQUEST_ID)) details += `, ID: ${res.headers.get(NF_REQUEST_ID)}`;
+		super(`Netlify Blobs has generated an internal error (${details})`);
+		this.name = "BlobsInternalError";
+	}
+};
+var collectIterator = async (iterator) => {
+	const result = [];
+	for await (const item of iterator) result.push(item);
+	return result;
+};
+function withSpan(span, name, fn) {
+	if (span) return fn(span);
+	return withActiveSpan(getTracer(), name, (span2) => {
+		return fn(span2);
+	});
+}
+var BlobsConsistencyError = class extends Error {
+	constructor() {
+		super(`Netlify Blobs has failed to perform a read using strong consistency because the environment has not been configured with a 'uncachedEdgeURL' property`);
+		this.name = "BlobsConsistencyError";
+	}
+};
+var regions = {
+	"us-east-1": true,
+	"us-east-2": true,
+	"eu-central-1": true,
+	"ap-southeast-1": true,
+	"ap-southeast-2": true
+};
+var isValidRegion = (input) => Object.keys(regions).includes(input);
+var InvalidBlobsRegionError = class extends Error {
+	constructor(region) {
+		super(`${region} is not a supported Netlify Blobs region. Supported values are: ${Object.keys(regions).join(", ")}.`);
+		this.name = "InvalidBlobsRegionError";
+	}
+};
+var DEFAULT_RETRY_DELAY = getEnvironment().get("NODE_ENV") === "test" ? 1 : 5e3;
+var MIN_RETRY_DELAY = 1e3;
+var MAX_RETRY = 5;
+var RATE_LIMIT_HEADER = "X-RateLimit-Reset";
+var fetchAndRetry = async (fetch, url, options, attemptsLeft = MAX_RETRY) => {
+	try {
+		const res = await fetch(url, options);
+		if (attemptsLeft > 0 && (res.status === 429 || res.status >= 500)) {
+			await sleep(getDelay(res.headers.get(RATE_LIMIT_HEADER)));
+			return fetchAndRetry(fetch, url, options, attemptsLeft - 1);
+		}
+		return res;
+	} catch (error) {
+		if (attemptsLeft === 0) throw error;
+		await sleep(getDelay());
+		return fetchAndRetry(fetch, url, options, attemptsLeft - 1);
+	}
+};
+var getDelay = (rateLimitReset) => {
+	if (!rateLimitReset) return DEFAULT_RETRY_DELAY;
+	return Math.max(Number(rateLimitReset) * 1e3 - Date.now(), MIN_RETRY_DELAY);
+};
+var sleep = (ms) => new Promise((resolve) => {
+	setTimeout(resolve, ms);
+});
+var SIGNED_URL_ACCEPT_HEADER = "application/json;type=signed-url";
+var Client = class {
+	constructor({ apiURL, consistency, edgeURL, fetch, region, siteID, token, uncachedEdgeURL }) {
+		this.apiURL = apiURL;
+		this.consistency = consistency ?? "eventual";
+		this.edgeURL = edgeURL;
+		this.fetch = fetch ?? globalThis.fetch;
+		this.region = region;
+		this.siteID = siteID;
+		this.token = token;
+		this.uncachedEdgeURL = uncachedEdgeURL;
+		if (!this.fetch) throw new Error("Netlify Blobs could not find a `fetch` client in the global scope. You can either update your runtime to a version that includes `fetch` (like Node.js 18.0.0 or above), or you can supply your own implementation using the `fetch` property.");
+	}
+	async getFinalRequest({ consistency: opConsistency, key, metadata, method, parameters = {}, storeName }) {
+		const encodedMetadata = encodeMetadata(metadata);
+		const consistency = opConsistency ?? this.consistency;
+		let urlPath = `/${this.siteID}`;
+		if (storeName) urlPath += `/${storeName}`;
+		if (key) urlPath += `/${key}`;
+		if (this.edgeURL) {
+			if (consistency === "strong" && !this.uncachedEdgeURL) throw new BlobsConsistencyError();
+			const headers = { authorization: `Bearer ${this.token}` };
+			if (encodedMetadata) headers[METADATA_HEADER_INTERNAL] = encodedMetadata;
+			if (this.region) urlPath = `/region:${this.region}${urlPath}`;
+			const url2 = new URL(urlPath, consistency === "strong" ? this.uncachedEdgeURL : this.edgeURL);
+			for (const key2 in parameters) url2.searchParams.set(key2, parameters[key2]);
+			return {
+				headers,
+				url: url2.toString()
+			};
+		}
+		const apiHeaders = { authorization: `Bearer ${this.token}` };
+		const url = new URL(`/api/v1/blobs${urlPath}`, this.apiURL ?? "https://api.netlify.com");
+		for (const key2 in parameters) url.searchParams.set(key2, parameters[key2]);
+		if (this.region) url.searchParams.set("region", this.region);
+		if (storeName === void 0 || key === void 0) return {
+			headers: apiHeaders,
+			url: url.toString()
+		};
+		if (encodedMetadata) apiHeaders[METADATA_HEADER_EXTERNAL] = encodedMetadata;
+		if (method === "head" || method === "delete") return {
+			headers: apiHeaders,
+			url: url.toString()
+		};
+		const res = await this.fetch(url.toString(), {
+			headers: {
+				...apiHeaders,
+				accept: SIGNED_URL_ACCEPT_HEADER
+			},
+			method
+		});
+		if (res.status !== 200) throw new BlobsInternalError(res);
+		const { url: signedURL } = await res.json();
+		return {
+			headers: encodedMetadata ? { [METADATA_HEADER_INTERNAL]: encodedMetadata } : void 0,
+			url: signedURL
+		};
+	}
+	async makeRequest({ body, conditions = {}, consistency, headers: extraHeaders, key, metadata, method, parameters, storeName }) {
+		const { headers: baseHeaders = {}, url } = await this.getFinalRequest({
+			consistency,
+			key,
+			metadata,
+			method,
+			parameters,
+			storeName
+		});
+		const headers = {
+			...baseHeaders,
+			...extraHeaders
+		};
+		if (method === "put") headers["cache-control"] = "max-age=0, stale-while-revalidate=60";
+		if ("onlyIfMatch" in conditions && conditions.onlyIfMatch) headers["if-match"] = conditions.onlyIfMatch;
+		else if ("onlyIfNew" in conditions && conditions.onlyIfNew) headers["if-none-match"] = "*";
+		const options = {
+			body,
+			headers,
+			method
+		};
+		if (body instanceof ReadableStream) options.duplex = "half";
+		return fetchAndRetry(this.fetch, url, options);
+	}
+};
+var getClientOptions = (options, contextOverride) => {
+	const context = contextOverride ?? getEnvironmentContext();
+	const siteID = context.siteID ?? options.siteID;
+	const token = context.token ?? options.token;
+	if (!siteID || !token) throw new MissingBlobsEnvironmentError(["siteID", "token"]);
+	if (options.region !== void 0 && !isValidRegion(options.region)) throw new InvalidBlobsRegionError(options.region);
+	return {
+		apiURL: context.apiURL ?? options.apiURL,
+		consistency: options.consistency,
+		edgeURL: context.edgeURL ?? options.edgeURL,
+		fetch: options.fetch,
+		region: options.region,
+		siteID,
+		token,
+		uncachedEdgeURL: context.uncachedEdgeURL ?? options.uncachedEdgeURL
+	};
+};
+//#endregion
+//#region node_modules/.pnpm/@netlify+blobs@10.7.9/node_modules/@netlify/blobs/dist/main.js
+var DEPLOY_STORE_PREFIX = "deploy:";
+var LEGACY_STORE_INTERNAL_PREFIX = "netlify-internal/legacy-namespace/";
+var SITE_STORE_PREFIX = "site:";
+var STATUS_OK = 200;
+var STATUS_PRE_CONDITION_FAILED = 412;
+var Store = class _Store {
+	constructor(options) {
+		this.client = options.client;
+		if ("deployID" in options) {
+			_Store.validateDeployID(options.deployID);
+			let name = DEPLOY_STORE_PREFIX + options.deployID;
+			if (options.name) name += `:${options.name}`;
+			this.name = name;
+		} else if (options.name.startsWith(LEGACY_STORE_INTERNAL_PREFIX)) {
+			const storeName = options.name.slice(LEGACY_STORE_INTERNAL_PREFIX.length);
+			_Store.validateStoreName(storeName);
+			this.name = storeName;
+		} else {
+			_Store.validateStoreName(options.name);
+			this.name = SITE_STORE_PREFIX + options.name;
+		}
+	}
+	async delete(key) {
+		const res = await this.client.makeRequest({
+			key,
+			method: "delete",
+			storeName: this.name
+		});
+		if (![
+			200,
+			204,
+			404
+		].includes(res.status)) throw new BlobsInternalError(res);
+	}
+	async deleteAll() {
+		let totalDeletedBlobs = 0;
+		let hasMore = true;
+		while (hasMore) {
+			const res = await this.client.makeRequest({
+				method: "delete",
+				storeName: this.name
+			});
+			if (res.status !== 200) throw new BlobsInternalError(res);
+			const data = await res.json();
+			if (typeof data.blobs_deleted !== "number") throw new BlobsInternalError(res);
+			totalDeletedBlobs += data.blobs_deleted;
+			hasMore = typeof data.has_more === "boolean" && data.has_more;
+		}
+		return { deletedBlobs: totalDeletedBlobs };
+	}
+	async get(key, options) {
+		return withSpan(options?.span, "blobs.get", async (span) => {
+			const { consistency, type } = options ?? {};
+			span?.setAttributes({
+				"blobs.store": this.name,
+				"blobs.key": key,
+				"blobs.type": type,
+				"blobs.method": "GET",
+				"blobs.consistency": consistency
+			});
+			const res = await this.client.makeRequest({
+				consistency,
+				key,
+				method: "get",
+				storeName: this.name
+			});
+			span?.setAttributes({
+				"blobs.response.body.size": res.headers.get("content-length") ?? void 0,
+				"blobs.response.status": res.status
+			});
+			if (res.status === 404) return null;
+			if (res.status !== 200) throw new BlobsInternalError(res);
+			if (type === void 0 || type === "text") return res.text();
+			if (type === "arrayBuffer") return res.arrayBuffer();
+			if (type === "blob") return res.blob();
+			if (type === "json") return res.json();
+			if (type === "stream") return res.body;
+			throw new BlobsInternalError(res);
+		});
+	}
+	async getMetadata(key, options = {}) {
+		return withSpan(options?.span, "blobs.getMetadata", async (span) => {
+			span?.setAttributes({
+				"blobs.store": this.name,
+				"blobs.key": key,
+				"blobs.method": "HEAD",
+				"blobs.consistency": options.consistency
+			});
+			const res = await this.client.makeRequest({
+				consistency: options.consistency,
+				key,
+				method: "head",
+				storeName: this.name
+			});
+			span?.setAttributes({ "blobs.response.status": res.status });
+			if (res.status === 404) return null;
+			if (res.status !== 200 && res.status !== 304) throw new BlobsInternalError(res);
+			return {
+				etag: res?.headers.get("etag") ?? void 0,
+				metadata: getMetadataFromResponse(res)
+			};
+		});
+	}
+	async getWithMetadata(key, options) {
+		return withSpan(options?.span, "blobs.getWithMetadata", async (span) => {
+			const { consistency, etag: requestETag, type } = options ?? {};
+			const headers = requestETag ? { "if-none-match": requestETag } : void 0;
+			span?.setAttributes({
+				"blobs.store": this.name,
+				"blobs.key": key,
+				"blobs.method": "GET",
+				"blobs.consistency": options?.consistency,
+				"blobs.type": type,
+				"blobs.request.etag": requestETag
+			});
+			const res = await this.client.makeRequest({
+				consistency,
+				headers,
+				key,
+				method: "get",
+				storeName: this.name
+			});
+			const responseETag = res?.headers.get("etag") ?? void 0;
+			span?.setAttributes({
+				"blobs.response.body.size": res.headers.get("content-length") ?? void 0,
+				"blobs.response.etag": responseETag,
+				"blobs.response.status": res.status
+			});
+			if (res.status === 404) return null;
+			if (res.status !== 200 && res.status !== 304) throw new BlobsInternalError(res);
+			const result = {
+				etag: responseETag,
+				metadata: getMetadataFromResponse(res)
+			};
+			if (res.status === 304 && requestETag) return {
+				data: null,
+				...result
+			};
+			if (type === void 0 || type === "text") return {
+				data: await res.text(),
+				...result
+			};
+			if (type === "arrayBuffer") return {
+				data: await res.arrayBuffer(),
+				...result
+			};
+			if (type === "blob") return {
+				data: await res.blob(),
+				...result
+			};
+			if (type === "json") return {
+				data: await res.json(),
+				...result
+			};
+			if (type === "stream") return {
+				data: res.body,
+				...result
+			};
+			throw new Error(`Invalid 'type' property: ${type}. Expected: arrayBuffer, blob, json, stream, or text.`);
+		});
+	}
+	list(options = {}) {
+		return withSpan(options.span, "blobs.list", (span) => {
+			span?.setAttributes({
+				"blobs.store": this.name,
+				"blobs.method": "GET",
+				"blobs.list.paginate": options.paginate ?? false
+			});
+			const iterator = this.getListIterator(options);
+			if (options.paginate) return iterator;
+			return collectIterator(iterator).then((items) => items.reduce((acc, item) => ({
+				blobs: [...acc.blobs, ...item.blobs],
+				directories: [...acc.directories, ...item.directories]
+			}), {
+				blobs: [],
+				directories: []
+			}));
+		});
+	}
+	async set(key, data, options = {}) {
+		return withSpan(options.span, "blobs.set", async (span) => {
+			span?.setAttributes({
+				"blobs.store": this.name,
+				"blobs.key": key,
+				"blobs.method": "PUT",
+				"blobs.data.size": typeof data == "string" ? data.length : data instanceof Blob ? data.size : data.byteLength,
+				"blobs.data.type": typeof data == "string" ? "string" : data instanceof Blob ? "blob" : "arrayBuffer",
+				"blobs.atomic": Boolean(options.onlyIfMatch ?? options.onlyIfNew)
+			});
+			_Store.validateKey(key);
+			const conditions = _Store.getConditions(options);
+			const res = await this.client.makeRequest({
+				conditions,
+				body: data,
+				key,
+				metadata: options.metadata,
+				method: "put",
+				storeName: this.name
+			});
+			const etag = res.headers.get("etag") ?? "";
+			span?.setAttributes({
+				"blobs.response.etag": etag,
+				"blobs.response.status": res.status
+			});
+			if (conditions) return res.status === STATUS_PRE_CONDITION_FAILED ? { modified: false } : {
+				etag,
+				modified: true
+			};
+			if (res.status === STATUS_OK) return {
+				etag,
+				modified: true
+			};
+			throw new BlobsInternalError(res);
+		});
+	}
+	async setJSON(key, data, options = {}) {
+		return withSpan(options.span, "blobs.setJSON", async (span) => {
+			span?.setAttributes({
+				"blobs.store": this.name,
+				"blobs.key": key,
+				"blobs.method": "PUT",
+				"blobs.data.type": "json"
+			});
+			_Store.validateKey(key);
+			const conditions = _Store.getConditions(options);
+			const payload = JSON.stringify(data);
+			const headers = { "content-type": "application/json" };
+			const res = await this.client.makeRequest({
+				...conditions,
+				body: payload,
+				headers,
+				key,
+				metadata: options.metadata,
+				method: "put",
+				storeName: this.name
+			});
+			const etag = res.headers.get("etag") ?? "";
+			span?.setAttributes({
+				"blobs.response.etag": etag,
+				"blobs.response.status": res.status
+			});
+			if (conditions) return res.status === STATUS_PRE_CONDITION_FAILED ? { modified: false } : {
+				etag,
+				modified: true
+			};
+			if (res.status === STATUS_OK) return {
+				etag,
+				modified: true
+			};
+			throw new BlobsInternalError(res);
+		});
+	}
+	static formatListResultBlob(result) {
+		if (!result.key) return null;
+		return {
+			etag: result.etag,
+			key: result.key
+		};
+	}
+	static getConditions(options) {
+		if ("onlyIfMatch" in options && "onlyIfNew" in options) throw new Error(`The 'onlyIfMatch' and 'onlyIfNew' options are mutually exclusive. Using 'onlyIfMatch' will make the write succeed only if there is an entry for the key with the given content, while 'onlyIfNew' will make the write succeed only if there is no entry for the key.`);
+		if ("onlyIfMatch" in options && options.onlyIfMatch) {
+			if (typeof options.onlyIfMatch !== "string") throw new Error(`The 'onlyIfMatch' property expects a string representing an ETag.`);
+			return { onlyIfMatch: options.onlyIfMatch };
+		}
+		if ("onlyIfNew" in options && options.onlyIfNew) {
+			if (typeof options.onlyIfNew !== "boolean") throw new Error(`The 'onlyIfNew' property expects a boolean indicating whether the write should fail if an entry for the key already exists.`);
+			return { onlyIfNew: true };
+		}
+	}
+	static validateKey(key) {
+		if (key === "") throw new Error("Blob key must not be empty.");
+		if (key.startsWith("/") || key.startsWith("%2F")) throw new Error("Blob key must not start with forward slash (/).");
+		if (new TextEncoder().encode(key).length > 600) throw new Error("Blob key must be a sequence of Unicode characters whose UTF-8 encoding is at most 600 bytes long.");
+	}
+	static validateDeployID(deployID) {
+		if (!/^\w{1,24}$/.test(deployID)) throw new Error(`'${deployID}' is not a valid Netlify deploy ID.`);
+	}
+	static validateStoreName(name) {
+		if (name.includes("/") || name.includes("%2F")) throw new Error("Store name must not contain forward slashes (/).");
+		if (new TextEncoder().encode(name).length > 64) throw new Error("Store name must be a sequence of Unicode characters whose UTF-8 encoding is at most 64 bytes long.");
+	}
+	getListIterator(options) {
+		const { client, name: storeName } = this;
+		const parameters = {};
+		if (options?.prefix) parameters.prefix = options.prefix;
+		if (options?.directories) parameters.directories = "true";
+		return { [Symbol.asyncIterator]() {
+			let currentCursor = null;
+			let done = false;
+			return { async next() {
+				return withSpan(options?.span, "blobs.list.next", async (span) => {
+					span?.setAttributes({
+						"blobs.store": storeName,
+						"blobs.method": "GET",
+						"blobs.list.paginate": options?.paginate ?? false,
+						"blobs.list.done": done,
+						"blobs.list.cursor": currentCursor ?? void 0
+					});
+					if (done) return {
+						done: true,
+						value: void 0
+					};
+					const nextParameters = { ...parameters };
+					if (currentCursor !== null) nextParameters.cursor = currentCursor;
+					const res = await client.makeRequest({
+						method: "get",
+						parameters: nextParameters,
+						storeName
+					});
+					span?.setAttributes({ "blobs.response.status": res.status });
+					let blobs = [];
+					let directories = [];
+					if (![
+						200,
+						204,
+						404
+					].includes(res.status)) throw new BlobsInternalError(res);
+					if (res.status === 404) done = true;
+					else {
+						const page = await res.json();
+						if (page.next_cursor) currentCursor = page.next_cursor;
+						else done = true;
+						blobs = (page.blobs ?? []).map(_Store.formatListResultBlob).filter(Boolean);
+						directories = page.directories ?? [];
+					}
+					return {
+						done: false,
+						value: {
+							blobs,
+							directories
+						}
+					};
+				});
+			} };
+		} };
+	}
+};
+var getStore = (input, options) => {
+	if (typeof input === "string") {
+		const contextOverride = options?.siteID && options?.token ? {
+			siteID: options?.siteID,
+			token: options?.token
+		} : void 0;
+		return new Store({
+			client: new Client(getClientOptions(options ?? {}, contextOverride)),
+			name: input
+		});
+	}
+	if (typeof input?.name === "string") {
+		const { name } = input;
+		const clientOptions = getClientOptions(input, input?.siteID && input?.token ? {
+			siteID: input?.siteID,
+			token: input?.token
+		} : void 0);
+		if (!name) throw new MissingBlobsEnvironmentError(["name"]);
+		return new Store({
+			client: new Client(clientOptions),
+			name
+		});
+	}
+	if (typeof input?.deployID === "string") {
+		const clientOptions = getClientOptions(input);
+		const { deployID } = input;
+		if (!deployID) throw new MissingBlobsEnvironmentError(["deployID"]);
+		return new Store({
+			client: new Client(clientOptions),
+			deployID
+		});
+	}
+	throw new Error("The `getStore` method requires the name of the store as a string or as the `name` property of an options object");
+};
+//#endregion
+//#region app/lib/imported-schools.ts
+var importedSchools = [
+	{
+		"externalId": "1",
+		"name": "Aix - La Nativité Ecole -",
+		"category": "Étude Alpha",
+		"zone": "Zone B",
+		"coordinator": "BIZOT-ESPIARD MARIE FRANCOISE",
+		"registeredCount": 0,
+		"city": "Aix en Provence",
+		"address": "8 rue Jean Andreani",
+		"department": "13 : Bouches-du-Rhône; 13000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "2",
+		"name": "Aix - Collège du Sacré Coeur - Collège",
+		"category": "Étude Alpha",
+		"zone": "Zone B",
+		"coordinator": "Sordi Christiane",
+		"registeredCount": 2,
+		"city": "Aix en Provence",
+		"address": "29 cours des Arts et Métiers",
+		"department": "13 : Bouches-du-Rhône; 13000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "8",
+		"name": "Asnières - Ecole Sainte Geneviève -",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 14,
+		"city": "Asnières",
+		"address": "50 avenue de la Marne",
+		"department": "92 : Hauts-de-Seine; 92600; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "10",
+		"name": "Bordeaux - Saint Genès La Salle - Collège",
+		"category": "Étude Alpha",
+		"zone": "Zone A",
+		"coordinator": "CHARVET EMMANUELLE",
+		"registeredCount": 0,
+		"city": "Bordeaux",
+		"address": "160 rue de Saint-Genès",
+		"department": "33 : Gironde; 33000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "11",
+		"name": "Bordeaux - Saint Joseph de Tivoli - De la 5ème à la 3ème",
+		"category": "Étude Alpha",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 4,
+		"city": "Bordeaux",
+		"address": "40 Avenue d'Eysines",
+		"department": "33 : Gironde; 33000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "12",
+		"name": "Boulogne - Notre Dame de Boulogne - Lycée",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "PICOT Benoit",
+		"registeredCount": 0,
+		"city": "Boulogne-Billancourt",
+		"address": "8 rue du Parchamp, 92100",
+		"department": "92 : Hauts-de-Seine; 92000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "15",
+		"name": "Chaville - Saint Thomas de Villeneuve - Collège Lycée",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "LATOUR Amélie",
+		"registeredCount": 0,
+		"city": "Chaville",
+		"address": "1646 avenue Roger Salengro",
+		"department": "92 : Hauts-de-Seine; 92370; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "18",
+		"name": "Loches - Saint Denis International School - Lycée",
+		"category": "Étude Alpha",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Loches",
+		"address": "19 Avenue du Général de Gaulle",
+		"department": "37 : Indre-et-Loire; 37600; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "21",
+		"name": "Le Vésinet - Ecole Le Bon Sauveur - Ecole",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "Chenneviere Arlette",
+		"registeredCount": 95,
+		"city": "Le Vésinet",
+		"address": "6 Rue Henri Cloppet",
+		"department": "78 : Yvelines; 78110; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "22",
+		"name": "Lyon - Charles de Foucauld - Collège",
+		"category": "Étude Alpha",
+		"zone": "Zone A",
+		"coordinator": "Touil Sabrina",
+		"registeredCount": 3,
+		"city": "Lyon",
+		"address": "9 rue de l'Est",
+		"department": "69 : Rhône; 69003; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "23",
+		"name": "Lyon - Saint Marc - Lycée",
+		"category": "Étude Alpha",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Lyon",
+		"address": "10 rue Sainte Hélène",
+		"department": "69 : Rhône; 69002; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "24",
+		"name": "Marseille - Saint Joseph de la Madeleine - Collège Lycée",
+		"category": "Étude Alpha",
+		"zone": "Zone B",
+		"coordinator": "LAMI Oussama",
+		"registeredCount": 0,
+		"city": "Marseille",
+		"address": "172 Bis Boulevard de la Libération",
+		"department": "13 : Bouches-du-Rhône; 13004; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "26",
+		"name": "Montreuil - Henri Matisse - Collège Lycée",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "Asri Mustapha",
+		"registeredCount": 4,
+		"city": "Montreuil",
+		"address": "88 bis Rue Jules Guesde",
+		"department": "93 : Seine-Saint-Denis; 93100; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "27",
+		"name": "Rennes - Notre Dame du Vieux Cours - Collège",
+		"category": "Étude Alpha",
+		"zone": "Zone B",
+		"coordinator": "Sarazin Thomas",
+		"registeredCount": 1,
+		"city": "Rennes",
+		"address": "11 rue de Plélo, 35000 Rennes",
+		"department": "35 : Ille-et-Vilaine; 35000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "28",
+		"name": "Rennes - Notre Dame du Vieux Cours - Ecole",
+		"category": "Étude Alpha",
+		"zone": "Zone B",
+		"coordinator": "Sarazin Thomas",
+		"registeredCount": 6,
+		"city": "Rennes",
+		"address": "11 rue de Plélo, 35000 Rennes",
+		"department": "35 : Ille-et-Vilaine; 35000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "29",
+		"name": "Paris - Charles de Foucauld - Ecole",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "CHIBANI Sihem",
+		"registeredCount": 22,
+		"city": "Paris",
+		"address": "12 rue des Jonquilles 75014",
+		"department": "75 : Paris; 75014; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "30",
+		"name": "Paris - Institut de la Tour - Collège",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "de Condé Philippe",
+		"registeredCount": 6,
+		"city": "Paris",
+		"address": "86 rue de la Tour 75016",
+		"department": "75 : Paris; 75016; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "31",
+		"name": "Paris - Institut de la Tour - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Paris",
+		"address": "86 rue de la Tour",
+		"department": "75 : Paris; 75016; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "34",
+		"name": "Paris - Institut Sainte Geneviève - 4ème 2nde",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "CHEVRIER Noah",
+		"registeredCount": 1,
+		"city": "Paris",
+		"address": "64 rue d'Assas, 75006",
+		"department": "75 : Paris; 75006; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "35",
+		"name": "Paris - Institut Sainte Geneviève - 6ème 5ème",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "CHEVRIER Noah",
+		"registeredCount": 2,
+		"city": "Paris",
+		"address": "64 rue d'Assas 75006",
+		"department": "75 : Paris; 75006; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "38",
+		"name": "Paris - Rocroy Saint Vincent de Paul - Ecole",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 9,
+		"city": "Paris",
+		"address": "6 rue de Rocroy 75010",
+		"department": "75 : Paris; 75010; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "41",
+		"name": "Rueil - Collège Saint Charles Notre Dame -",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "LOGEAIS BLANDINE",
+		"registeredCount": 1,
+		"city": "Rueil Malmaison",
+		"address": "15 Rue René Cassin, 92500",
+		"department": "92 : Hauts-de-Seine; 92500; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "45",
+		"name": "Toulouse - Ensemble scolaire les Maristes - Collège - Lycée",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 2,
+		"city": "Toulouse",
+		"address": "134-136 Avenue de Lespinet",
+		"department": "31 : Haute-Garonne; 31000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "49",
+		"name": "Tours - Notre Dame La Riche - 2nde 3ème",
+		"category": "Étude Alpha",
+		"zone": "Zone B",
+		"coordinator": "LENGAGNE Céline",
+		"registeredCount": 1,
+		"city": "Tours",
+		"address": "42 rue Delpérier",
+		"department": "37 : Indre-et-Loire; 37000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "51",
+		"name": "Tours - Notre Dame La Riche - 6ème 5ème 4ème",
+		"category": "Étude Alpha",
+		"zone": "Zone B",
+		"coordinator": "LENGAGNE Céline",
+		"registeredCount": 2,
+		"city": "Tours",
+		"address": "42 rue Delpérier",
+		"department": "37 : Indre-et-Loire; 37000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "54",
+		"name": "Valence - Saint Victor - Collège Lycée",
+		"category": "Étude Alpha",
+		"zone": "Zone A",
+		"coordinator": "CRETON Brigitte",
+		"registeredCount": 0,
+		"city": "Valence",
+		"address": "3 Rue de la Cécile",
+		"department": "26 : Drôme; 26000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "61",
+		"name": "Dijon - Collège Saint Bénigne -",
+		"category": "Étude Alpha",
+		"zone": "Zone A",
+		"coordinator": "CLAVIER Thristan",
+		"registeredCount": 0,
+		"city": "Dijon",
+		"address": "7 rue du Pommard",
+		"department": "21 : Côte-d'Or; 21231; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "62",
+		"name": "Tassin - Institution Saint Joseph - De la 5ème à la Terminale",
+		"category": "Étude Alpha",
+		"zone": "Zone A",
+		"coordinator": "HILAIRE CATHERINE",
+		"registeredCount": 1,
+		"city": "Tassin la Demi Lune",
+		"address": "7 Rue du Lieutenant Henri Audras",
+		"department": "69 : Rhône; 69160; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "66",
+		"name": "Gex - Collège Jeanne d'Arc - Collège",
+		"category": "Étude Alpha",
+		"zone": "Zone A",
+		"coordinator": "Taoubi Ilias",
+		"registeredCount": 7,
+		"city": "Gex",
+		"address": "273 Rue de Genève",
+		"department": "01 : Ain; 01170; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "70",
+		"name": "Meudon - Institut Notre Dame - 6ème 5ème",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "Sibous Farid",
+		"registeredCount": 0,
+		"city": "Meudon",
+		"address": "18 rue de la République, 92190 Meudon",
+		"department": "92 : Hauts-de-Seine; 92190; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "74",
+		"name": "Mulhouse - Institut Jeanne d'Arc - Collège",
+		"category": "Étude Alpha",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Mulhouse",
+		"address": "15 rue Chanoine Brun",
+		"department": "68 : Haut-Rhin; 68100; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "75",
+		"name": "Mulhouse - Institut Jeanne d'Arc - Ecole",
+		"category": "Étude Alpha",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 17,
+		"city": "Mulhouse",
+		"address": "3 rue Chanoine Winterer",
+		"department": "68 : Haut-Rhin; 68100; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "78",
+		"name": "Le Mesnil Esnard - La Providence Nicolas Barré - 6&5",
+		"category": "Étude Alpha",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Le Mesnil-Esnard",
+		"address": "6 Rue de Neuvillette",
+		"department": "76 : Seine-Maritime; 76000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "83",
+		"name": "Toulon - Cours Fénelon Ecole - Etude Alpha au primaire",
+		"category": "Étude Alpha",
+		"zone": "Zone B",
+		"coordinator": "Pisaneschi Alysson Stéphanie Raymonde",
+		"registeredCount": 26,
+		"city": "Toulon",
+		"address": "251 Rue Pourquoi Pas, 83000 Toulon",
+		"department": "83 : Var; 83000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "85",
+		"name": "Toulon - Cours Fénelon Ecole - Etude Surveillée",
+		"category": "Prestation de service",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Toulon",
+		"address": "251 Rue Pourquoi Pas, 83000 Toulon",
+		"department": "83 : Var; 83000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "87",
+		"name": "Rennes - Collège Saint Hélier -",
+		"category": "Étude Alpha",
+		"zone": "Zone B",
+		"coordinator": "RIOUAL Nathalie",
+		"registeredCount": 2,
+		"city": "Rennes",
+		"address": "7 Rue Frère Salomon",
+		"department": "35 : Ille-et-Vilaine; 35000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "93",
+		"name": "Tassin - Institution Saint Joseph - Primaire et 6ème",
+		"category": "Étude Alpha",
+		"zone": "Zone A",
+		"coordinator": "HILAIRE CATHERINE",
+		"registeredCount": 6,
+		"city": "Tassin la Demi Lune",
+		"address": "7 Rue du Lieutenant Henri Audras",
+		"department": "69 : Rhône; 69160; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "96",
+		"name": "Lyon - Belmont - Lycée",
+		"category": "Étude Alpha",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Lyon",
+		"address": "43 rue Pasteur",
+		"department": "69 : Rhône; 75007; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "99",
+		"name": "Beaune - Collège Saint Coeur -",
+		"category": "Étude Alpha",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Beaune",
+		"address": "3 rue du faubourg saint Nicolas, 21200 Beaune",
+		"department": "21 : Côte-d'Or; 21200; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "109",
+		"name": "Aix - La Nativité Collège La Beauvalle -",
+		"category": "Étude Alpha",
+		"zone": "Zone B",
+		"coordinator": "Paquola Christine",
+		"registeredCount": 0,
+		"city": "Aix en Provence",
+		"address": "8 Rue Jean Andreani",
+		"department": "13 : Bouches-du-Rhône; 13080; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "121",
+		"name": "Bayonne - Collège La Salle Saint Bernard -",
+		"category": "Étude Alpha",
+		"zone": "Zone A",
+		"coordinator": "Estique Maïténa",
+		"registeredCount": 13,
+		"city": "Bayonne",
+		"address": "16 Rue Antoine Labarthe, 64100 Bayonne",
+		"department": "64 : Pyrénées-Atlantiques; 64100; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "126",
+		"name": "Bayonne - Ecole La Salle Saint Bernard -",
+		"category": "Étude Alpha",
+		"zone": "Zone A",
+		"coordinator": "Estique Maïténa",
+		"registeredCount": 9,
+		"city": "Bayonne",
+		"address": "16 rue Antoine Labarthe 64100 Bayonne",
+		"department": "64 : Pyrénées-Atlantiques; 64100; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "129",
+		"name": "Courbevoie - Lycée Montalembert -",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Courbevoie",
+		"address": "238 Boulevard Saint-Denis",
+		"department": "92 : Hauts-de-Seine; 92026; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "130",
+		"name": "Courbevoie - Groupe Scolaire Sainte Geneviève - Ecole",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "Barkate Badiâ",
+		"registeredCount": 27,
+		"city": "Courbevoie",
+		"address": "6 Rue Jean Pierre Timbaud",
+		"department": "92 : Hauts-de-Seine; 92026; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "131",
+		"name": "Pontoise - Notre Dame de la Compassion - Collège Lycée",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "HENON HELENE",
+		"registeredCount": 14,
+		"city": "Pontoise",
+		"address": "8 Place Nicolas Flamel, 95300 Pontoise",
+		"department": "95 : Val-d'Oise; 95300; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "134",
+		"name": "Fontainebleau - Jeanne d'Arc Saint Aspais - Collège Lycée",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "Leclair François Xavier",
+		"registeredCount": 11,
+		"city": "Fontainebleau",
+		"address": "1 rue Saint Merry",
+		"department": "77 : Seine-et-Marne; 77300; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "144",
+		"name": "La Celle Saint Cloud - Sainte Marie -",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "KOUAME PULCHERIE",
+		"registeredCount": 34,
+		"city": "La Celle Saint-Cloud",
+		"address": "15 rue Béranger ; 78170 La Celle Saint Cloud",
+		"department": "78 : Yvelines; 78170; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "146",
+		"name": "Angers - Ecole Sainte Bernadette - Etude Surveillée",
+		"category": "Étude Alpha",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 2,
+		"city": "Angers",
+		"address": "15 rue Nicolas Bataille, 49000 Angers",
+		"department": "49 : Maine-et-Loire; 49000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "147",
+		"name": "Angers - Ecole Sainte Bernadette - Etude Alpha",
+		"category": "Étude Alpha",
+		"zone": "Zone B",
+		"coordinator": "Elliot-Saudrais Maudwenn",
+		"registeredCount": 6,
+		"city": "Angers",
+		"address": "15 rue Nicolas Bataille, 49000 Angers",
+		"department": "49 : Maine-et-Loire; 49000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "149",
+		"name": "Rennes - Assomption - Collège Lycée",
+		"category": "Étude Alpha",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Rennes",
+		"address": "18 Bd Paul Painlevé Rennes",
+		"department": "35 : Ille-et-Vilaine; 35000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "151",
+		"name": "Saint Gaudens - Ensemble Scolaire Sainte Thérèse -",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "Auxemery Niamh",
+		"registeredCount": 6,
+		"city": "Saint Gaudens",
+		"address": "16 Rue du Bugatet",
+		"department": "31 : Haute-Garonne; 31800; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "152",
+		"name": "Marseille - Ecole catholique Endoume -",
+		"category": "Étude Alpha",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Marseille",
+		"address": "20 Bd Bensa 13007 MARSEILLE",
+		"department": "13 : Bouches-du-Rhône; 13007; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "155",
+		"name": "Asnières - Institution Sainte Geneviève - Collège et 2nd",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "LAMY BRUNO",
+		"registeredCount": 10,
+		"city": "Asnières sur Seine",
+		"address": "48 Av. de la Marne, 92600 Asnières-sur-Seine",
+		"department": "92 : Hauts-de-Seine; 92600; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "158",
+		"name": "Rouffach - Saint Joseph - Ecole",
+		"category": "Étude Alpha",
+		"zone": "Zone B",
+		"coordinator": "Bouarioua Adel",
+		"registeredCount": 12,
+		"city": "Rouffach",
+		"address": "Institution Saint-Joseph 11 rue Poincaré 68250 Rouffach",
+		"department": "68 : Haut-Rhin; 68250; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "162",
+		"name": "Le Vésinet - Sainte Jeanne d'Arc - Primaire",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "Piens Valérie",
+		"registeredCount": 61,
+		"city": "Le Vésinet",
+		"address": "2-6 rue Armand-Chardron 78110 Le Vésinet",
+		"department": "78 : Yvelines; 78110; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "163",
+		"name": "Paris - Ecole Nouvelle Saint Thomas d'Aquin - Etude Alpha",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 10,
+		"city": "Paris",
+		"address": "7 Rue Perronet, 75007 Paris",
+		"department": "75 : Paris; 75007; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "167",
+		"name": "Uzès - Ecole Sainte Anne -",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 6,
+		"city": "Uzès",
+		"address": "7 Rue Boucairie, 30700 Uzès",
+		"department": "30 : Gard; 30700; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "171",
+		"name": "Saint Germain en Laye - Institut Notre Dame - Ecole",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "Henique Fabienne",
+		"registeredCount": 55,
+		"city": "Saint Germain en Laye",
+		"address": "22 ter, rue Alexandre Dumas 78100 Saint-Germain-en-Laye",
+		"department": "78 : Yvelines; 79100; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "173",
+		"name": "Lyon - Ecole du Saint Sacrement - Etude Surveillée",
+		"category": "Étude Alpha",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 16,
+		"city": "Lyon",
+		"address": "15 Rue Etienne Dolet, 69003 Lyon",
+		"department": "69 : Rhône; 69003; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "174",
+		"name": "Tours - Institution Saint Martin - CM1 Collège",
+		"category": "Étude Alpha",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 12,
+		"city": "Tours",
+		"address": "47 Rue Néricault Destouches, 37000 Tours",
+		"department": "37 : Indre-et-Loire; 37000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "178",
+		"name": "Voiron - Notre Dame des Victoires -",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Voiron",
+		"address": "1 Rue de la Terrasse, 38500 Voiron",
+		"department": "38 : Isère; 38500; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "179",
+		"name": "Nancy - Notre Dame Saint Sigisbert - Ecole",
+		"category": "Étude Alpha",
+		"zone": "Zone B",
+		"coordinator": "SCADUTO Marie",
+		"registeredCount": 9,
+		"city": "Nancy",
+		"address": "40 quai Claude Le Lorrain",
+		"department": "54 : Meurthe-et-Moselle; 54000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "182",
+		"name": "Le Mesnil Esnard - La Providence Nicolas Barré - 4&3",
+		"category": "Étude Alpha",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Le Mesnil-Esnard",
+		"address": "6 Rue de Neuvillette",
+		"department": "76 : Seine-Maritime; 76000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "187",
+		"name": "Paris - Ecole ENC Blomet - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 4,
+		"city": "Paris",
+		"address": "5 rue Blomet",
+		"department": "75 : Paris; 75015; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "188",
+		"name": "Pertuis - Ensemble Scolaire Notre Dame - Ecole",
+		"category": "Prestation de service",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Pertuis",
+		"address": "150 Chem. de Val Joanis, 84120 Pertuis",
+		"department": "84 : Vaucluse; 84120; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "193",
+		"name": "Sèvres - Groupe Scolaire Jeanne d'Arc - Ecole",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 15,
+		"city": "Sèvres",
+		"address": "7 rue de Rueil, 92310 Sèvres",
+		"department": "92 : Hauts-de-Seine; 92310; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "197",
+		"name": "Asnières - Saint Joseph - Ecole",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 41,
+		"city": "Asnières",
+		"address": "1, rue du Bac, 92600 Asnières",
+		"department": "92 : Hauts-de-Seine; 92600; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "198",
+		"name": "Lyon - Providence Trinitaires - Ecole",
+		"category": "Étude Alpha",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 5,
+		"city": "Lyon",
+		"address": "13 Rue Bony, 69004 Lyon",
+		"department": "69 : Rhône; 69004; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "199",
+		"name": "Paris - Collège Charles Péguy - 6ème 5ème",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Paris",
+		"address": "64 Rue Saint,Maur Paris 11",
+		"department": "75 : Paris; 75011; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "200",
+		"name": "Paris - Collège Lycée Charles Péguy - 4ème 3ème",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Paris",
+		"address": "80 avenue Parmentier, Paris 11",
+		"department": "75 : Paris; 75011; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "205",
+		"name": "Saint Grégoire - Ecole Notre Dame -",
+		"category": "Étude Alpha",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 8,
+		"city": "Saint Grégoire",
+		"address": "12 rue Abbé Pierre 35760 Saint Grégoire",
+		"department": "35 : Ille-et-Vilaine; 35760; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "206",
+		"name": "Paris - Sainte Catherine Labouré - Ecole",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 7,
+		"city": "Paris",
+		"address": "29 Rue Gassendi, 75014 Paris",
+		"department": "75 : Paris; 75014; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "209",
+		"name": "Saint Cloud - Ecole Saint Joseph - Etude Surveillée",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 8,
+		"city": "Saint Cloud",
+		"address": "8 Rue Emile Verhaeren, 92210 Saint-Cloud",
+		"department": "92 : Hauts-de-Seine; 92210; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "212",
+		"name": "Chelles - Gasnier Guy Sainte Bathilde - Etude Surveillée",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Chelles",
+		"address": "1 rue Jean Véron 77500 CHELLES",
+		"department": "77 : Seine-et-Marne; 77500; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "215",
+		"name": "Paris - Sainte Elisabeth - Maternelle Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Paris",
+		"address": "112 rue de Lourmel 75015 Paris",
+		"department": "75 : Paris; 75015; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "216",
+		"name": "Paris - Institution Saint Joseph de Grenelle - Etude Surveillée",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 5,
+		"city": "Paris",
+		"address": "13 Pl. Etienne Pernet, 75015 Paris",
+		"department": "75 : Paris; 75015; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "221",
+		"name": "Nîmes - Ecole Saint Vincent - Surveillance primaire",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Nîmes",
+		"address": "32 rue des mûriers d'Espagne",
+		"department": "30 : Gard; 30000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "224",
+		"name": "Louveciennes - Ecole Sainte Jeanne d'Arc - Etude Alpha",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "Migati Nadia",
+		"registeredCount": 52,
+		"city": "Louveciennes",
+		"address": "22 rue du Général Leclerc, 78430 Louveciennes",
+		"department": "78 : Yvelines; 78430; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "225",
+		"name": "Paris - Ecole Saint Laurent -",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 7,
+		"city": "Paris",
+		"address": "184 rue Lafayette 75010 Paris",
+		"department": "75 : Paris; 75010; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "226",
+		"name": "Paris - Collège Sainte Elisabeth - Etude Alpha",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 10,
+		"city": "Paris",
+		"address": "112 rue de Lourmel 75015 Paris",
+		"department": "75 : Paris; 75015; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "227",
+		"name": "Marly le Roi - Blanche de Louvencourt - Ecole",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "Sabbague Agnes",
+		"registeredCount": 47,
+		"city": "Marly-le-Roi",
+		"address": "1 rue de Louvencourt Marly le Roi 78160",
+		"department": "78 : Yvelines; 78160; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "230",
+		"name": "Toulouse - Collège Sainte Marie des Ursulines -",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "Oleiwan Dany",
+		"registeredCount": 2,
+		"city": "Toulouse",
+		"address": "34 avenue de la Colonne 31500 Toulouse",
+		"department": "31 : Haute-Garonne; 31500; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "231",
+		"name": "Toulouse - Sainte Marie de Nevers - Lycée",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 2,
+		"city": "Toulouse",
+		"address": "10 rue du Périgord 31000 Toulouse",
+		"department": "31 : Haute-Garonne; 31000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "232",
+		"name": "Bois Colombes - Ecole Saint François d'Assise -",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 7,
+		"city": "Bois Colombes",
+		"address": "67 rue Paul Déroulède 92270 Bois-Colombes",
+		"department": "92 : Hauts-de-Seine; 92270; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "235",
+		"name": "Brest - Ecole La Croix Rouge -",
+		"category": "Étude Alpha",
+		"zone": "Zone B",
+		"coordinator": "CLOUX Manon Carole Kelly Sarah",
+		"registeredCount": 3,
+		"city": "Brest",
+		"address": "2 rue Mirabeau 29200 Brest",
+		"department": "29 : Finistère; 29200; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "238",
+		"name": "Chambéry - Collège Saint François de Sales -",
+		"category": "Étude Alpha",
+		"zone": "Zone A",
+		"coordinator": "Asbai daoudi Wassim",
+		"registeredCount": 1,
+		"city": "Chambéry",
+		"address": "6 place Cardinal Garonne 73000 Chambéry",
+		"department": "73 : Savoie; 73000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "239",
+		"name": "Paris - Ecole La Rochefoucauld - Etude Alpha",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "THONNAT Raphaëlle",
+		"registeredCount": 22,
+		"city": "Paris",
+		"address": "11, rue Cler 75007 Paris",
+		"department": "75 : Paris; 75007; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "240",
+		"name": "Saint Germain en Laye - Institut Saint Thomas de Villeneuve - Primaire",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "Garcia Fanny",
+		"registeredCount": 55,
+		"city": "Saint Germain en Laye",
+		"address": "15, rue des Louviers 78100 Saint-Germain-en-Laye",
+		"department": "78 : Yvelines; 78100; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "241",
+		"name": "Villeurbanne - Ecole Sainte Thérèse l'Espérance - Surveillance cantine",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 2,
+		"city": "Villeurbanne",
+		"address": "229 rue Francis du Pressencé 69100 Villeurbanne",
+		"department": "69 : Rhône; 69100; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "243",
+		"name": "Lyon - Ecole Saint Nom de Jésus - Surveillance cantine",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Lyon",
+		"address": "95 rue Tête d’or 69006 Lyon",
+		"department": "69 : Rhône; 69006; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "244",
+		"name": "Corbeil Essonnes - Sainte Marie - Ecole",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Corbeil Essonnes",
+		"address": "39 Rue Champlouis, 91100 Corbeil-Essonnes",
+		"department": "91 : Essonne; 91100; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "245",
+		"name": "Paris - Collège et Lycée La Rochefoucauld - Etude Alpha",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "gobinet suzy",
+		"registeredCount": 7,
+		"city": "Paris",
+		"address": "22 rue Malar, 75007 Paris",
+		"department": "75 : Paris; 75007; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "246",
+		"name": "Montreuil - Ecole Henri Matisse - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 2,
+		"city": "Montreuil",
+		"address": "88 bis Rue Jules Guesde, 93100 Montreuil",
+		"department": "93 : Seine-Saint-Denis; 93100; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "247",
+		"name": "Montpellier - Saint François d'Assise - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 3,
+		"city": "Montpellier",
+		"address": "24, boulevard de Strasbourg",
+		"department": "34 : Hérault; 67000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "248",
+		"name": "Boulogne - Saint Alexandre - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 2,
+		"city": "Boulogne-Billancourt",
+		"address": "23 Bd Jean Jaurès, 92100 Boulogne-Billancourt",
+		"department": "92 : Hauts-de-Seine; 92100; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "250",
+		"name": "Avignon - Lycée Louis Pasteur - Etude Alpha",
+		"category": "Étude Alpha",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Avignon",
+		"address": "13 rue du Pont Trouca 84011 Avignon",
+		"department": "84 : Vaucluse; 84011; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "251",
+		"name": "Villeurbanne - Ecole Sainte Thérèse l'Espérance - Etude Alpha",
+		"category": "Étude Alpha",
+		"zone": "Zone A",
+		"coordinator": "SEVENIER Alexandra",
+		"registeredCount": 6,
+		"city": "Villeurbanne",
+		"address": "229 rue François de Pressencé 69100 Villeurbanne",
+		"department": "69 : Rhône; 69100; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "254",
+		"name": "Ecully - Ecole Sainte Blandine - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "Bridon Domitille",
+		"registeredCount": 5,
+		"city": "Ecully",
+		"address": "4 Place de la Libération",
+		"department": "69 : Rhône; 69081; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "255",
+		"name": "Paris - Ecole La Rochefoucauld Surveillance -",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "Barkate Badiâ",
+		"registeredCount": 9,
+		"city": "Paris",
+		"address": "11, rue Cler 75007 Paris",
+		"department": "75 : Paris; 75007; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "256",
+		"name": "Sèvres - Groupe Scolaire Jeanne d'Arc - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 2,
+		"city": "Sèvres",
+		"address": "7 rue de Rueil, 92310 Sèvres",
+		"department": "92 : Hauts-de-Seine; 92310; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "257",
+		"name": "Nîmes - Institution Saint Stanislas - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 2,
+		"city": "Nîmes",
+		"address": "16 Rue Chassaintes 30000 Nîmes",
+		"department": "30 : Gard; 30000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "258",
+		"name": "Louveciennes - Ecole Sainte Jeanne d'Arc - Récré",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Louveciennes",
+		"address": "22 rue du Général Leclerc, 78430 Louveciennes",
+		"department": "78 : Yvelines; 78430; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "259",
+		"name": "Paris - Ecole Sévigné - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 4,
+		"city": "Paris",
+		"address": "95 boulevard Arago",
+		"department": "75 : Paris; 75014; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "262",
+		"name": "Paris - Ecole du Saint Esprit - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 4,
+		"city": "Paris",
+		"address": "56 rue des Meuniers",
+		"department": "75 : Paris; 75012; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "264",
+		"name": "Nantes - Saint Félix - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Nantes",
+		"address": "2 rue Soubzmain",
+		"department": "44 : Loire-Atlantique; 44000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "267",
+		"name": "Montmagny - Notre Dame de la Providence - Etude Surveillée",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Montmagny",
+		"address": "10 rue du Château",
+		"department": "95 : Val-d'Oise; 95427; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "269",
+		"name": "Asnières - Institution Saint Joseph - Surveillance cantine",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Asnières sur Seine",
+		"address": "1, rue du Bac, 92600 Asnières",
+		"department": "92 : Hauts-de-Seine; 92600; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "270",
+		"name": "Cachan - Ecole Saint Joseph - Surveillance cantine",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Cachan",
+		"address": "2 ter rue de la Citadelle 94230 Cachan",
+		"department": "94 : Val-de-Marne; 94230; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "272",
+		"name": "Le Vésinet - Sainte Jeanne d'Arc - Surveillance cantine",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 3,
+		"city": "Le Vésinet",
+		"address": "6 Rue Armand Chardron 78110 Le Vésinet",
+		"department": "78 : Yvelines; 78110; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "273",
+		"name": "Valence - Campus Montplaisir - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Valence",
+		"address": "14, rue Barthélémy Laffemas, Valence",
+		"department": "26 : Drôme; 26000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "274",
+		"name": "Valence - Lycée Montplaisir - Accueil",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Valence",
+		"address": "75 rue Montplaisir, 26000 Valence",
+		"department": "26 : Drôme; 26000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "276",
+		"name": "Chambéry - Collège Notre Dame de la Villette -",
+		"category": "Étude Alpha",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Chambéry",
+		"address": "200 avenue du Collège",
+		"department": "73 : Savoie; 73000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "277",
+		"name": "Lyon - Saint Pothin Ozanam - Etude Surveillée",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Lyon",
+		"address": "35 rue Bugeaud",
+		"department": "69 : Rhône; 69006; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "278",
+		"name": "Nantes - Collège Saint Jacques de Compostelle - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 3,
+		"city": "Nantes",
+		"address": "11 rue Gabriel Goudy",
+		"department": "44 : Loire-Atlantique; 44000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "279",
+		"name": "Montrouge - Ecole Jeanne d'Arc - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Montrouge",
+		"address": "Place Emile Cresp",
+		"department": "92 : Hauts-de-Seine; 92120; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "280",
+		"name": "Sevran - École Sainte Agnès - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 2,
+		"city": "Sevran",
+		"address": "25 avenue du Général Leclerc 93270 Sevran",
+		"department": "93 : Seine-Saint-Denis; 93270; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "281",
+		"name": "Corenc - École et Collège Le Rondeau Montfleury - Surveillance Cantine",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 2,
+		"city": "Corenc",
+		"address": "1 Chemin de la Croix de Montfleury",
+		"department": "38 : Isère; 38700; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "283",
+		"name": "La Garenne Colombes - Ecole Sainte Geneviève - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "La Garenne Colombes",
+		"address": "23 Rue d'Estienne d'Orves, 92250 La Garenne-Colombes",
+		"department": "92 : Hauts-de-Seine; 92250; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "284",
+		"name": "Paris - Ecole Sévigné - DST",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Paris",
+		"address": "28 rue Pierre Nicole 75005 Paris",
+		"department": "75 : Paris; 75005; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "285",
+		"name": "Paris - Sainte Catherine Labouré - Récurrent DST + Cantine",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Paris",
+		"address": "29, rue Gassendi",
+		"department": "75 : Paris; 75014; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "286",
+		"name": "Paris - Sainte Catherine Labouré - Ponctuel",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Paris",
+		"address": "29, rue Gassendi",
+		"department": "75 : Paris; 75014; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "294",
+		"name": "Lyon - Notre Dame Saint Joseph - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Lyon",
+		"address": "Primaire :103 rue de la Guillotière 69007 Lyon // Maternelle : 95 rue Montesquieu",
+		"department": "69 : Rhône; 69007; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "296",
+		"name": "Arpajon - Ecole Sainte Jeanne d'Arc - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 2,
+		"city": "Arpajon",
+		"address": "2 rue l'Aître 91290 Arpajon",
+		"department": "91 : Essonne; 91290; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "297",
+		"name": "Sucy en Brie - Collège Petit Val - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 2,
+		"city": "Sucy en Brie",
+		"address": "12 Av. Albert Pleuvry 94370 Sucy-en-Brie",
+		"department": "94 : Val-de-Marne; 94370; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "299",
+		"name": "Poitiers - Saint Jacques de Compostelle - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Poitiers",
+		"address": "2 Av. de la Révolution 86000 Poitiers",
+		"department": "86 : Vienne; 86000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "300",
+		"name": "Asnières - Ecole Saint Joseph - Surveillance cantine",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Asnières",
+		"address": "1, rue du Bac, 92600 Asnières",
+		"department": "92 : Hauts-de-Seine; 92600; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "306",
+		"name": "Fontainebleau - Jeanne d'Arc Saint Aspais - Internat",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "Leclair François Xavier",
+		"registeredCount": 0,
+		"city": "Fontainebleau",
+		"address": "1 rue Saint Merry Fontainebleau",
+		"department": "77 : Seine-et-Marne; 77920; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "308",
+		"name": "Rueil - Collège Saint Charles Notre Dame - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Rueil Malmaison",
+		"address": "15 Rue René Cassin, 92500",
+		"department": "92 : Hauts-de-Seine; 92500; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "309",
+		"name": "Montpellier - Ecole Saint François Regis - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Montpellier",
+		"address": "4 enclos Tissié Sarrus 34 000 Montpellier",
+		"department": "34 : Hérault; 34000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "315",
+		"name": "Pérenchies - Collège Sainte Marie - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 2,
+		"city": "Pérenchies",
+		"address": "4 rue Gambetta 59840 Pérenchies",
+		"department": "59 : Nord; 59840; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "318",
+		"name": "Paris - Ecole Saint François d'Eylau - Surveillance cantine",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 3,
+		"city": "Paris",
+		"address": "20 Avenue Bugeaud 75116 Paris",
+		"department": "75 : Paris; 75116; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "320",
+		"name": "Orléans - Ecole Notre Dame de la Consolation - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Orléans",
+		"address": "323 rue du Faubourg Bannier",
+		"department": "45 : Loiret; 45000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "324",
+		"name": "Saint Martin de Crau - Ecole Sacré Coeur - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Saint Martin de Crau",
+		"address": "15 rue Logisson 13310 Saint Martin de Crau",
+		"department": "13 : Bouches-du-Rhône; 13310; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "325",
+		"name": "Tours - Collège Sainte Jeanne d'Arc - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Tours",
+		"address": "50 Rue du Sergent Bobillot, 37000 Tours",
+		"department": "37 : Indre-et-Loire; 37000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "327",
+		"name": "Paris - La Preschool des Batignolles - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Paris",
+		"address": "49 rue Lemercier 75017 Paris",
+		"department": "75 : Paris; 75017; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "328",
+		"name": "Paris - Ecole Lamazou - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 5,
+		"city": "Paris",
+		"address": "80 rue Boileau 75016 Paris",
+		"department": "75 : Paris; 75016; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "329",
+		"name": "Senlis - Collège Anne Marie Javouhey - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Senlis",
+		"address": "6 rue Anne-Marie Javouhey 60300 Senlis",
+		"department": "60 : Oise; 60300; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "330",
+		"name": "Paris - Ursule et Zoé - Halte Garderie",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Paris",
+		"address": "14 rue des Renaudes 75017 Paris",
+		"department": "75 : Paris; 75017; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "331",
+		"name": "Rognonas - Ecole Alpilles Durance - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 3,
+		"city": "Rognonas",
+		"address": "2 boulevard de Verdun",
+		"department": "13 : Bouches-du-Rhône; 13870; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "332",
+		"name": "Argenteuil - Ecole Notre Dame - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 3,
+		"city": "Argenteuil",
+		"address": "4 rue de Somme Py 95100 Argenteuil",
+		"department": "95 : Val-d'Oise; 95100; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "334",
+		"name": "Verneuil sur Seine - Ecole Notre Dame les Oiseaux - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 2,
+		"city": "Verneuil sur Seine",
+		"address": "106 Grande Rue, 78480 Verneuil-sur-Seine",
+		"department": "78 : Yvelines; 78480; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "336",
+		"name": "Poissy - Institution Notre Dame - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 6,
+		"city": "Poissy",
+		"address": "14 avenue Blanche de Castille 78300 Poissy",
+		"department": "78 : Yvelines; 78300; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "337",
+		"name": "Paris - Ecole Saint Honoré d'Eylau - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 3,
+		"city": "Paris",
+		"address": "66 avenue Raymond Poincaré 75116 Paris",
+		"department": "75 : Paris; 75116; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "338",
+		"name": "Pont Sainte Maxence - Institut Saint Joseph du Moncel - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Pont Sainte Maxence",
+		"address": "8 Pl. de l'Église, 60700 Pont-Sainte-Maxence",
+		"department": "60 : Oise; 60700; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "339",
+		"name": "Strasbourg - Ecole Sainte Anne - Etude Alpha",
+		"category": "Étude Alpha",
+		"zone": "Zone B",
+		"coordinator": "Gattelet Rémi",
+		"registeredCount": 4,
+		"city": "Strasbourg",
+		"address": "128 Route du Polygone, 67100 Strasbourg",
+		"department": "67 : Bas-Rhin; 67100; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "342",
+		"name": "Marseille - Ecole Jeanne d'Arc - Etude Alpha",
+		"category": "Étude Alpha",
+		"zone": "Zone B",
+		"coordinator": "Barry Mody Hady",
+		"registeredCount": 5,
+		"city": "Marseille",
+		"address": "43 rue Jean Mermoz 13008 Marseille",
+		"department": "13 : Bouches-du-Rhône; 13008; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "344",
+		"name": "Grenoble - Institution Saint Bruno - Ecole",
+		"category": "Étude Alpha",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 5,
+		"city": "Grenoble",
+		"address": "27 Av. de Vizille, 38000 Grenoble",
+		"department": "38 : Isère; 38000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "345",
+		"name": "Vourles - Ecole Louis Querbes - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 3,
+		"city": "Vourles",
+		"address": "10 rue Louis Querbes 69390 VOURLES",
+		"department": "69 : Rhône; 69390; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "347",
+		"name": "Saint Jean de Luz - Saint Thomas d'Aquin - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Saint Jean de Luz",
+		"address": "2 Rue Biscarbidea 64500 Saint-Jean-de-Luz",
+		"department": "64 : Pyrénées-Atlantiques; 64500; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "348",
+		"name": "Bordeaux - Ecole du Bon Pasteur - Aide aux devoirs",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 2,
+		"city": "Bordeaux",
+		"address": "5 Rue de l'École Normale, 33200 Bordeaux Caudéran",
+		"department": "33 : Gironde; 33200; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "349",
+		"name": "Brignais - Ecole Saint Clair - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Brignais",
+		"address": "6 Rue Paul Bovier Lapierre, 69530 Brignais",
+		"department": "69 : Rhône; 69530; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "351",
+		"name": "Paris - La Salle Notre Dame de la Gare - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Paris",
+		"address": "20 Rue de Domrémy, 75013 Paris",
+		"department": "75 : Paris; 75013; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "354",
+		"name": "Oullins - Collège Lycée Saint Thomas d'Aquin - Etude Alpha",
+		"category": "Étude Alpha",
+		"zone": "Zone A",
+		"coordinator": "Carlin Claire",
+		"registeredCount": 0,
+		"city": "Oullins",
+		"address": "56/70 rue du Perron 69600 Oullins",
+		"department": "69 : Rhône; 69600; 1.0; 1.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "355",
+		"name": "Montigny le Bretonneux - Ecole les Sources - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Montigny le Bretonneux",
+		"address": "13 All. des Romarins, 78180 Montigny-le-Bretonneux",
+		"department": "78 : Yvelines; 78180; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "356",
+		"name": "Vorey - Ecole Sainte Thérèse - Etude surveillée",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Vorey",
+		"address": "Rue Sainte-Thérèse, 43800 Vorey",
+		"department": "43 : Haute-Loire; 43800; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "357",
+		"name": "Paris - La Providence Passy - Etude Surveillée",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Paris",
+		"address": "52 Rue de la Pompe, 75116 Paris",
+		"department": "75 : Paris; 75116; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "359",
+		"name": "Neuilly sur Seine - Sainte Croix de Neuilly - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Neuilly",
+		"address": "30 Av. du Roule, 92200 Neuilly-sur-Seine",
+		"department": "92 : Hauts-de-Seine; 92200; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "361",
+		"name": "Paris - Ecole Notre Dame de la Gare - Etude CP CE1",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 10,
+		"city": "Paris",
+		"address": "24b rue Charcot, 75013 Paris",
+		"department": "75 : Paris; 75013; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "362",
+		"name": "Paris - Ecole Notre Dame de la Gare - Etude CE2 CM1 CM2",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 13,
+		"city": "Paris",
+		"address": "20 Rue de Domrémy, 75013 Paris",
+		"department": "75 : Paris; 75013; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "363",
+		"name": "Chevry - Ecole Sainte Marie - Etude surveillée",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Chevry",
+		"address": "584 rue Saint Maurice 01170 Chevry",
+		"department": "01 : Ain; 01170; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "364",
+		"name": "Cannes - Assomption Lochabair - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 4,
+		"city": "Cannes",
+		"address": "24 Boulevard Oxford",
+		"department": "06 : Alpes-Maritimes; 06400; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "365",
+		"name": "Lyon - Ecole La Rédemption - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 2,
+		"city": "Lyon",
+		"address": "35 Rue Lieutenant Colonel Prévost, 69006 Lyon",
+		"department": "69 : Rhône; 69006; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "366",
+		"name": "Grenoble - Ecole ELAG - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Grenoble",
+		"address": "31 Rue de la Bajatière, 38100 Grenoble",
+		"department": "38 : Isère; 38100; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "367",
+		"name": "Caluire - Ecole Sainte Marie - Etude Surveillée",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Caluire et Cuire",
+		"address": "10 Av. Pierre Terrasse, 69300 Caluire-et-Cuire",
+		"department": "69 : Rhône; 69300; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "368",
+		"name": "Lyon - Lycée Charles de Foucauld - Stage",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Lyon",
+		"address": "6 Rue Bara, 69003 Lyon",
+		"department": "69 : Rhône; 69003; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "369",
+		"name": "Saint Denis - La Salle Notre Dame de la Compassion - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 3,
+		"city": "Saint Denis",
+		"address": "6-8 Place de La Résistance et de La Déportation 93200 Saint-Denis",
+		"department": "93 : Seine-Saint-Denis; 93200; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "370",
+		"name": "Paris - Collège Saint Louis de Gonzague - Etude surveillée",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Paris",
+		"address": "12 rue Benjamin Franklin, 75016 Paris",
+		"department": "75 : Paris; 75016; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "371",
+		"name": "Annecy - Ecole Saint Joseph - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Annecy",
+		"address": "14 Av. Berthollet, 74000 Annecy",
+		"department": "74 : Haute-Savoie; 74000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "372",
+		"name": "Saint Germain en Laye - Institut Notre Dame - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 4,
+		"city": "Saint Germain en Laye",
+		"address": "22 ter, rue Alexandre Dumas 78100 Saint-Germain-en-Laye",
+		"department": "78 : Yvelines; 78100; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "373",
+		"name": "Decines - Ecole Jeanne d'Arc - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Decines",
+		"address": "189 Rue Emile Zola, 69150 Décines-Charpieu",
+		"department": "69 : Rhône; 69150; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "374",
+		"name": "Lyon - Ecole Saint Andre - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Lyon",
+		"address": "66 Rue Pasteur, 69007 Lyon",
+		"department": "69 : Rhône; 69007; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "375",
+		"name": "Paris - Ecole Sévigné - Surveillance Barbusse",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Paris",
+		"address": "39 rue Henri Barbusse 75005 Paris",
+		"department": "75 : Paris; 75005; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "376",
+		"name": "Lyon - Ecole du Saint Sacrement - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Lyon",
+		"address": "15 Rue Etienne Dolet, 69003 Lyon",
+		"department": "69 : Rhône; 69003; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "377",
+		"name": "Saint Remy de Provence - Ecole Saint Martin - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Saint Rémy de Provence",
+		"address": "2 Av. Louis Mistral, 13210 Saint-Rémy-de-Provence",
+		"department": "13 : Bouches-du-Rhône; 13210; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "379",
+		"name": "Orléans - Collège Cours Saint Charles -",
+		"category": "Étude Alpha",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Orléans",
+		"address": "25 rue des Grands Champs",
+		"department": "45 : Loiret; 45000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "380",
+		"name": "Paris - Ecole Saint Laurent - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 2,
+		"city": "Paris",
+		"address": "184 rue Lafayette 75010 Paris",
+		"department": "75 : Paris; 75010; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "381",
+		"name": "Palaiseau - Institution Saint Martin - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Palaiseau",
+		"address": "36 avenue du 8 mai 1945 91120 Palaiseau",
+		"department": "91 : Essonne; 91120; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "382",
+		"name": "Carhaix Plouguer - Collège Saint Trémeur - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Carhaix Plouguer",
+		"address": "1 rue Cazuguel, 29833 Carhaix-Plouguer",
+		"department": "29 : Finistère; 29833; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "383",
+		"name": "Bethune - Ecole Saint Vaast - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Bethune",
+		"address": "141 Rue Paul Doumer 62400 Béthune",
+		"department": "62 : Pas-de-Calais; 62400; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "384",
+		"name": "Bethune - Ecole Notre Dame de Lourdes - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Bethune",
+		"address": "58, rue du Tir 62400 BETHUNE",
+		"department": "62 : Pas-de-Calais; 62400; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "386",
+		"name": "Saint Jean de Vedas - Ecole Saint Jean Baptiste - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Saint Jean de Vedas",
+		"address": "10 rue des Escholiers 34430 Saint Jean de Vedas",
+		"department": "34 : Hérault; 33430; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "387",
+		"name": "Villeurbanne - Lycée Immaculée Conception - Surveillance DST",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Villeurbanne",
+		"address": "74 Place Grandclément 69100 Villeurbanne",
+		"department": "69 : Rhône; 69100; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "388",
+		"name": "Rezé - Ecole Notre Dame - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 3,
+		"city": "Rezé",
+		"address": "29 rue Font Launay 44401 Rezé",
+		"department": "44 : Loire-Atlantique; 44401; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "391",
+		"name": "Paris - La Salle Notre Dame de la Gare - Surveillance Charcot",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Paris",
+		"address": "24b rue Charcot, 75013 Paris",
+		"department": "75 : Paris; 75013; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "393",
+		"name": "Chalon sur Saône - Ensemble Scolaire Saint Charles - Site Saint Dominique",
+		"category": "Étude Alpha",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 3,
+		"city": "Chalon sur Saône",
+		"address": "20 avenue de Paris - 71100 Chalon-sur-Saône",
+		"department": "71 : Saône-et-Loire; 71100; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "394",
+		"name": "Chalon sur Saône - Ensemble Scolaire Saint Charles - Site Le Devoir",
+		"category": "Étude Alpha",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 2,
+		"city": "Chalon sur Saône",
+		"address": "Chemin du Pensionnat - 71100 Chalon-sur-Saône",
+		"department": "71 : Saône-et-Loire; 71100; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "395",
+		"name": "Maisons Laffite - Ecole Sainte Marie - Etude Surveillée",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 3,
+		"city": "Maisons Laffite",
+		"address": "8 rue du Fossé 78600 Maisons Laffite",
+		"department": "78 : Yvelines; 78600; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "396",
+		"name": "Paris - Groupe Scolaire Fénelon Sainte Marie - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 2,
+		"city": "Paris",
+		"address": "17 bis rue de Tocqueville 75017 Paris",
+		"department": "75 : Paris; 75017; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "398",
+		"name": "Notre Dame - Établissement test -",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Chamalières",
+		"address": "1 rue du test",
+		"department": "63 : Puy-de-Dôme; 63400; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "400",
+		"name": "Paris - Groupe Scolaire Fénelon Sainte Marie - Coordination cantine",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Paris",
+		"address": "95 bis rue de Monceau 75008 Paris",
+		"department": "75 : Paris; 75008; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "401",
+		"name": "Lyon - Ecole Immaculée Conception - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Lyon",
+		"address": "187 rue Vendôme 69003 Lyon",
+		"department": "69 : Rhône; 69003; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "402",
+		"name": "Chinon - Collège Saint Joseph - Etude dirigée",
+		"category": "Prestation de service",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Chinon",
+		"address": "1 rue Buffon 37500 Chinon",
+		"department": "37 : Indre-et-Loire; 37500; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "404",
+		"name": "Boulogne - Notre Dame de Boulogne - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Boulogne Billancourt",
+		"address": "8 rue du Parchamp",
+		"department": "92 : Hauts-de-Seine; 92100; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "405",
+		"name": "Annecy - Les Tilleuls - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 2,
+		"city": "Annecy",
+		"address": "60 avenue Gambetta 74000 Annecy",
+		"department": "74 : Haute-Savoie; 74000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "406",
+		"name": "Annecy - Les Tilleuls - Etude",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 2,
+		"city": "Annecy",
+		"address": "60 avenue Gambetta 74000 Annecy",
+		"department": "74 : Haute-Savoie; 74000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "407",
+		"name": "Le Vésinet - Collège Le Bon Sauveur - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Le Vésinet",
+		"address": "6 Rue Henri Cloppet, 78110",
+		"department": "78 : Yvelines; 78110; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "408",
+		"name": "Chatou - Ecole Jeanne d'Arc Notre Dame - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Chatou",
+		"address": "6 rue du général Colin",
+		"department": "78 : Yvelines; 78400; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "409",
+		"name": "Cannes - Assomption Lochabair - Etude",
+		"category": "Prestation de service",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 2,
+		"city": "Cannes",
+		"address": "24 Boulevard Oxford",
+		"department": "06 : Alpes-Maritimes; 06400; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "410",
+		"name": "Bayonne - Ecole La Salle Saint Bernard - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Bayonne",
+		"address": "16 Rue Antoine Labarthe, 64100 Bayonne",
+		"department": "64 : Pyrénées-Atlantiques; 64100; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "411",
+		"name": "Poissy - Institution Notre Dame - Garderie",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Poissy",
+		"address": "14 avenue Blanche de Castille 78300 Poissy",
+		"department": "78 : Yvelines; 78300; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "412",
+		"name": "Valence - Sainte Anne - Collège",
+		"category": "Étude Alpha",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Valence",
+		"address": "14-20 Rue Henry Chalement, Valence",
+		"department": "26 : Drôme; 26000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "414",
+		"name": "Gières - Don Bosco - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Gières",
+		"address": "19 rue de la Plaine",
+		"department": "38 : Isère; 38610; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "415",
+		"name": "Melun - Institution Sainte Marie - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Melun",
+		"address": "10 boulevard Gambetta",
+		"department": "77 : Seine-et-Marne; 77000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "416",
+		"name": "Strasbourg - Ecole Sainte Anne - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 2,
+		"city": "Strasbourg",
+		"address": "128 Route du Polygone, 67100 Strasbourg",
+		"department": "67 : Bas-Rhin; 67100; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "417",
+		"name": "Dammarie Les Lys - Ecole Sainte Marie - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Dammarie Les Lys",
+		"address": "223 rue Pierre Curie",
+		"department": "71 : Saône-et-Loire; 77190; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "418",
+		"name": "Aix - La Nativité Ecole - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Aix En Provence",
+		"address": "8 rue Jean Andreani",
+		"department": "13 : Bouches-du-Rhône; 13097; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "419",
+		"name": "Paris - Collège et Lycée La Rochefoucauld - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Paris",
+		"address": "22 rue Malar",
+		"department": "75 : Paris; 75007; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "421",
+		"name": "Paris - Ecole Sainte Catherine - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Paris",
+		"address": "15 rue des Bernardins",
+		"department": "75 : Paris; 75005; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "422",
+		"name": "La Celle Saint Cloud - Sainte Marie - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "La Celle Saint-Cloud",
+		"address": "15 rue Béranger",
+		"department": "78 : Yvelines; 78170; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "423",
+		"name": "Orléans - Ecole Sainte Croix Saint Euverte - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Orléans",
+		"address": "116 rue de Coulmiers",
+		"department": "45 : Loiret; 45000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "424",
+		"name": "Paris - Ecole Notre Dame Saint Roch - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 4,
+		"city": "Paris",
+		"address": "37 rue Saint Roch",
+		"department": "75 : Paris; 75001; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "425",
+		"name": "Le Perreux sur Marne - Notre Dame de Toutes Grâces - Etude",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Le Perreux sur Marne",
+		"address": "14 rue de la Cascade",
+		"department": "94 : Val-de-Marne; 94170; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "426",
+		"name": "Le Perreux sur Marne - Notre Dame de Toutes Grâces - Garderie",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Le Perreux sur Marne",
+		"address": "14 rue de la Cascade",
+		"department": "94 : Val-de-Marne; 94170; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "427",
+		"name": "Bouillargues - Ecole Charles Péguy - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Bouillargues",
+		"address": "2 parking Charles Péguy - rue du Pont de la République",
+		"department": "30 : Gard; 30230; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "428",
+		"name": "Orgères - Ecole Sacré Coeur - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Orgères",
+		"address": "4 rue de Coteaux",
+		"department": "35 : Ille-et-Vilaine; 35230; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "429",
+		"name": "Franconville - Institution Jeanne d'Arc - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Franconville",
+		"address": "2 bis Boulevard Toussaint Lucas",
+		"department": "95 : Val-d'Oise; 95130; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "430",
+		"name": "Lyon - Saint Louis Saint Bruno - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Lyon",
+		"address": "16 rue des Chartreux",
+		"department": "69 : Rhône; 69001; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "431",
+		"name": "Lagny sur Marne - Ecole Saint Joseph de Cluny - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 2,
+		"city": "Lagny sur Marne",
+		"address": "15 Boulevard Charpentier",
+		"department": "71 : Saône-et-Loire; 77400; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "432",
+		"name": "Paris - Collège Lycée Charles Péguy - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Paris",
+		"address": "80 avenue Parmentier",
+		"department": "75 : Paris; 75011; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "433",
+		"name": "Valence - Campus ISTM Montplaisir -",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Valence",
+		"address": "14 rue Barthélemy de Laffemas",
+		"department": "26 : Drôme; 26000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "434",
+		"name": "Alpha Education - DEMO",
+		"category": "Prestation de service",
+		"zone": "Aucune zone",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Clermont-Ferrand",
+		"address": "1 place Claude Wolff",
+		"department": "63 : Puy-de-Dôme; 63400; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "435",
+		"name": "Toulon - Bon Accueil - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Toulon",
+		"address": "455 Boulevard Jules Michelet",
+		"department": "83 : Var; 8300; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "436",
+		"name": "Anse - Ecole Saint François - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Anse",
+		"address": "14 Ancienne Grande Rue",
+		"department": "69 : Rhône; 69480; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "437",
+		"name": "Marseille - Notre Dame de Sion - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Marseille",
+		"address": "231 rue du Paradis",
+		"department": "13 : Bouches-du-Rhône; 13006; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "438",
+		"name": "Valence - Ecole Saint Joseph - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Valence",
+		"address": "137 Avenue Victor Hugo",
+		"department": "26 : Drôme; 26000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "439",
+		"name": "Lyon - Ecole Notre Dame des Anges Assomption - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Lyon",
+		"address": "5 rue Clément Marota",
+		"department": "69 : Rhône; 69007; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "440",
+		"name": "Tarascon - Ecole du Petit Castelet - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Tarascon",
+		"address": "Petite route d'Arles 467 chemin du Petit Castelet",
+		"department": "13 : Bouches-du-Rhône; 13150; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "441",
+		"name": "Tarascon - Ecole du Petit Castelet - Etude",
+		"category": "Prestation de service",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Tarascon",
+		"address": "Petite route d'Arles 467 chemin du Petit Castelet",
+		"department": "13 : Bouches-du-Rhône; 13150; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "442",
+		"name": "Tours - Institution Marmoutier - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Tours",
+		"address": "17 quai Marmoutier",
+		"department": "37 : Indre-et-Loire; 37100; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "443",
+		"name": "Marseille - Collège Sacré Coeur - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Marseille",
+		"address": "22 Rue Barthélemy",
+		"department": "13 : Bouches-du-Rhône; 13001; 5.38645; 43.2973",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "444",
+		"name": "Paris - Ecole ENC Saint Jean - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 3,
+		"city": "Paris",
+		"address": "89 rue Olivier de Serres",
+		"department": "75 : Paris; 75015; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "445",
+		"name": "Paris - Ecole Saint Honoré d'Eylau - Ponctuel",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Paris",
+		"address": "66 avenue Raymond Poincaré",
+		"department": "75 : Paris; 75116; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "446",
+		"name": "Marseille - Perrimond -",
+		"category": "Prestation de service",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Marseille",
+		"address": "244 chemin du Roucas Blanc",
+		"department": "13 : Bouches-du-Rhône; 13007; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "447",
+		"name": "Meaux - Collège Sainte Marie - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Meaux",
+		"address": "40 rue Alfred Maury",
+		"department": "71 : Saône-et-Loire; 77100; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "448",
+		"name": "Paris - Ecole Saint Joseph - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 3,
+		"city": "Paris",
+		"address": "154 Rue Saint-Maur",
+		"department": "75 : Paris; 75011; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "449",
+		"name": "Ambares - Ecole Saint Michel Saint Pierre - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Ambares",
+		"address": "5 rue du Président Coty",
+		"department": "33 : Gironde; 33440; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "450",
+		"name": "Lyon - Ecole Chevreul Sainte Croix - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 2,
+		"city": "Lyon",
+		"address": "62bis Rue de la Charité",
+		"department": "69 : Rhône; 69002; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "451",
+		"name": "Le Chesnay - Blanche de Castille - Etude Alpha",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 21,
+		"city": "Le Chesnay Rocquencourt",
+		"address": "19 rue Pasteur",
+		"department": "78 : Yvelines; 78150; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "452",
+		"name": "Charenton le Pont - Notre Dame des Missions - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Charenton le Pont",
+		"address": "4 Rue du Président Kennedy",
+		"department": "94 : Val-de-Marne; 94220; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "453",
+		"name": "Montreuil le Gast - Ecole Notre Dame - Surveillance",
+		"category": "Prestation de service",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Montreuil-le-Gast",
+		"address": "12 Rue des Genêts",
+		"department": "35 : Ille-et-Vilaine; 35520; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "454",
+		"name": "Bordeaux - Saint Joseph de Tivoli - Lycée",
+		"category": "Étude Alpha",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Bordeaux",
+		"address": "40 Avenue d'Eysines",
+		"department": "33 : Gironde; 33; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "455",
+		"name": "Clermont Ferrand - Ensemble Scolaire Massillon -",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 3,
+		"city": "Clermont-Ferrand",
+		"address": "5 rue Bansac",
+		"department": "63 : Puy-de-Dôme; 63037; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "456",
+		"name": "Olivet - Cours Henri Guillaumet -",
+		"category": "Prestation de service",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Olivet",
+		"address": "336 rue d'Alsace",
+		"department": "45 : Loiret; 45160; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "457",
+		"name": "Paris - Groupe Scolaire Fénelon Sainte Marie - DST",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Paris",
+		"address": "24 rue du Général Foy",
+		"department": "75 : Paris; 75008; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "458",
+		"name": "Perpignan - Institution Saint Louis de Gonzague -",
+		"category": "Étude Alpha",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 16,
+		"city": "Perpignan",
+		"address": "71 Avenue Dr Albert Schweitzer",
+		"department": "66 : Pyrénées-Orientales; 66000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "alpha"
+	},
+	{
+		"externalId": "459",
+		"name": "Versailles - Ensemble Scolaire Saint Jean Hulst -",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Versailles",
+		"address": "26 rue du Maréchal de Lattre de Tassigny",
+		"department": "78 : Yvelines; 78000; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "460",
+		"name": "Senlis - Ecole Notre Dame du Sacré Coeur -",
+		"category": "Prestation de service",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Senlis",
+		"address": "10 rue du Cimetière Saint-Rieul",
+		"department": "60 : Oise; 60300; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "461",
+		"name": "Craponne - Ecole Jeanne d'Arc -",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 2,
+		"city": "Craponne",
+		"address": "15 rue Centrale",
+		"department": "69 : Rhône; 69290; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "462",
+		"name": "Annecy (Seynod) - Les Cordeliers Saint François Saint Pierre -",
+		"category": "Prestation de service",
+		"zone": "Zone A",
+		"coordinator": "",
+		"registeredCount": 2,
+		"city": "Seynod (Annecy)",
+		"address": "Avenue de Cran",
+		"department": "74 : Haute-Savoie; 74600; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "463",
+		"name": "Meaux - Ecole Sainte Geneviève -",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 6,
+		"city": "Meaux",
+		"address": "12 rue de la Visitation",
+		"department": "77 : Seine-et-Marne; 77100; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "464",
+		"name": "Vincennes - Ecole Saint Joseph -",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 1,
+		"city": "Vincennes",
+		"address": "13 Rue Daumesnil, 94300 Vincennes",
+		"department": "94 : Val-de-Marne; 94300; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "465",
+		"name": "Bethune - Lycée Saint Dominique -",
+		"category": "Prestation de service",
+		"zone": "Zone B",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Bethune",
+		"address": "92 rue de l'Université",
+		"department": "62 : Pas-de-Calais; 62400; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "466",
+		"name": "Paris - Ecole Saint Georges -",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "Paris",
+		"address": "17 rue Bouret",
+		"department": "75 : Paris; 75019; 0.0; 0.0",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	},
+	{
+		"externalId": "467",
+		"name": "Paris - Ecole Sainte Louise -",
+		"category": "Prestation de service",
+		"zone": "Zone C",
+		"coordinator": "",
+		"registeredCount": 0,
+		"city": "",
+		"address": "",
+		"department": "",
+		"upcomingWeek": "",
+		"pastSessions": "",
+		"typicalWeek": "",
+		"contractSigned": "",
+		"actions": "",
+		"schoolType": "mise-a-dispo"
+	}
+];
+//#endregion
+//#region app/lib/shared-data.ts
+var STORE_NAME = "task-tracker";
+var TASKS_KEY = "tasks.json";
+var PEOPLE_KEY = "people.json";
+var RECURRING_TASKS_KEY = "recurring-tasks.json";
+var OBJECTIVES_KEY = "objectives.json";
+var LINKS_KEY = "links.json";
+var JOURNAL_POSTS_KEY = "journal-posts.json";
+var MASS_COMMUNICATIONS_KEY = "mass-communications.json";
+var STAFFING_SESSIONS_KEY = "staffing-sessions.json";
+var TUTOR_REPORTS_KEY = "tutor-reports.json";
+var TUTOR_REPORT_COMMENTS_KEY = "tutor-report-comments.json";
+var TUTOR_TRACKING_KEY = "tutor-tracking.json";
+var AVAILABILITY_IMPORTS_KEY = "availability-imports.json";
+var TUTOR_ASSIGNMENT_IMPORTS_KEY = "tutor-assignment-imports.json";
+var UPCOMING_SESSION_IMPORTS_KEY = "upcoming-session-imports.json";
+var ACTUAL_SESSION_IMPORTS_KEY = "actual-session-imports.json";
+var STAFFING_AUDITS_KEY = "staffing-audits.json";
+var TUTOR_INTEREST_IMPORTS_KEY = "tutor-interest-imports.json";
+var TUTOR_COVERAGE_NOTES_KEY = "tutor-coverage-notes.json";
+var UNSTAFFED_EXCLUSIONS_KEY = "unstaffed-exclusions.json";
+var ENROLLMENT_IMPORTS_KEY = "enrollment-imports.json";
+var SCHOOL_WATCHLIST_KEY = "school-watchlist.json";
+var SCHOOLS_KEY = "schools.json";
+var STUDENT_HISTORY_KEY = "student-history.json";
+var FILE_IMPORT_TRASH_KEY = "file-import-trash.json";
+var memory = globalThis;
+var defaultObjectives = [{
+	id: "objective-september-2600",
+	kind: "counter",
+	title: "Objectif septembre",
+	description: "Mobiliser l'equipe Alpha Education autour de la rentree et garder le cap chaque semaine.",
+	targetLabel: "eleves",
+	currentValue: 160,
+	targetValue: 2600,
+	startDate: "",
+	endDate: "",
+	status: "progress",
+	progressNote: "",
+	personIds: [],
+	createdAt: "2026-09-01T00:00:00.000Z"
+}, {
+	id: "objective-weekly-supervision-1300",
+	kind: "counter",
+	title: "Seances de surveillance par semaine",
+	description: "Transformer l'organisation de l'equipe en volume de seances concret chaque semaine.",
+	targetLabel: "seances",
+	currentValue: 130,
+	targetValue: 1300,
+	startDate: "",
+	endDate: "",
+	status: "progress",
+	progressNote: "",
+	personIds: [],
+	createdAt: "2026-09-01T00:00:00.000Z"
+}];
+function taskStore() {
+	return getStore({
+		name: STORE_NAME,
+		consistency: "strong"
+	});
+}
+function canUseMemoryFallback() {
+	return false;
+}
+function publicPerson(person) {
+	const { email: _email, ...rest } = person;
+	return {
+		...rest,
+		hasEmail: Boolean(_email)
+	};
+}
+function cleanText(value) {
+	return typeof value === "string" ? value.trim() : "";
+}
+function numberFromText(value) {
+	const match = value.replace(",", ".").match(/\d+(?:\.\d+)?/);
+	if (!match) return null;
+	const parsed = Number(match[0]);
+	return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+function cleanPositiveNumber(value, allowZero = false) {
+	const parsed = typeof value === "number" ? value : typeof value === "string" && value.trim() ? Number(value.replace(",", ".")) : null;
+	if (parsed === null || !Number.isFinite(parsed)) return null;
+	if (allowZero && parsed === 0) return 0;
+	return parsed > 0 ? parsed : null;
+}
+function dateValueForSort(value) {
+	const parsed = value ? new Date(value).getTime() : 0;
+	return Number.isFinite(parsed) ? parsed : 0;
+}
+function cleanYear(value) {
+	const parsed = typeof value === "number" ? value : typeof value === "string" && value.trim() ? Number(value) : null;
+	if (parsed === null || !Number.isInteger(parsed)) return (/* @__PURE__ */ new Date()).getFullYear();
+	return parsed >= 2e3 && parsed <= 2100 ? parsed : (/* @__PURE__ */ new Date()).getFullYear();
+}
+function campaignDates(year) {
+	const dates = [];
+	const cursor = new Date(Date.UTC(year, 7, 25));
+	const end = new Date(Date.UTC(year, 8, 30));
+	while (cursor <= end) {
+		dates.push(cursor.toISOString().slice(0, 10));
+		cursor.setUTCDate(cursor.getUTCDate() + 1);
+	}
+	return dates;
+}
+function isStatus(value) {
+	return value === "todo" || value === "progress" || value === "done";
+}
+function isPriority(value) {
+	return value === "low" || value === "medium" || value === "high";
+}
+function isObjectiveKind(value) {
+	return value === "counter" || value === "qualitative";
+}
+function isObjectiveStatus(value) {
+	return value === "todo" || value === "progress" || value === "done";
+}
+function isEmail(value) {
+	return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+function sanitizePerson(raw, existing) {
+	const typedEmail = cleanText(raw.email).toLowerCase();
+	return {
+		id: cleanText(raw.id) || existing?.id || crypto.randomUUID(),
+		name: cleanText(raw.name) || existing?.name || "",
+		email: typedEmail ? isEmail(typedEmail) ? typedEmail : "" : existing?.email || "",
+		active: typeof raw.active === "boolean" ? raw.active : existing?.active ?? true,
+		createdAt: cleanText(raw.createdAt) || existing?.createdAt || (/* @__PURE__ */ new Date()).toISOString()
+	};
+}
+function sanitizeTask(raw) {
+	const now = (/* @__PURE__ */ new Date()).toISOString();
+	const rawEstimatedHours = typeof raw.estimatedHours === "number" ? raw.estimatedHours : typeof raw.estimatedHours === "string" && raw.estimatedHours.trim() ? Number(raw.estimatedHours) : null;
+	return {
+		id: cleanText(raw.id) || crypto.randomUUID(),
+		title: cleanText(raw.title),
+		description: cleanText(raw.description),
+		owner: cleanText(raw.owner),
+		assigneeId: cleanText(raw.assigneeId) || null,
+		startDate: cleanText(raw.startDate) || (/* @__PURE__ */ new Date()).toISOString().slice(0, 10),
+		endDate: cleanText(raw.endDate),
+		estimatedHours: typeof rawEstimatedHours === "number" && Number.isFinite(rawEstimatedHours) && rawEstimatedHours > 0 ? rawEstimatedHours : null,
+		status: isStatus(raw.status) ? raw.status : "todo",
+		priority: isPriority(raw.priority) ? raw.priority : "medium",
+		verified: raw.verified === true,
+		verificationOwner: cleanText(raw.verificationOwner),
+		verificationComment: cleanText(raw.verificationComment),
+		comments: Array.isArray(raw.comments) ? raw.comments.filter((comment) => Boolean(comment && typeof comment === "object")).map((comment) => ({
+			id: cleanText(comment.id) || crypto.randomUUID(),
+			text: cleanText(comment.text),
+			author: cleanText(comment.author) || "Anonyme",
+			createdAt: cleanText(comment.createdAt) || now
+		})).filter((comment) => comment.text) : [],
+		completionNotifications: Array.isArray(raw.completionNotifications) ? raw.completionNotifications.filter((item) => Boolean(item && typeof item === "object")).map((item) => ({
+			personId: cleanText(item.personId),
+			sentAt: cleanText(item.sentAt) || now
+		})).filter((item) => item.personId) : [],
+		createdAt: cleanText(raw.createdAt) || now
+	};
+}
+function sanitizeRecurringTask(raw) {
+	const rawEstimatedHours = typeof raw.estimatedHours === "number" ? raw.estimatedHours : typeof raw.estimatedHours === "string" && raw.estimatedHours.trim() ? Number(raw.estimatedHours) : null;
+	return {
+		id: cleanText(raw.id) || crypto.randomUUID(),
+		title: cleanText(raw.title),
+		description: cleanText(raw.description),
+		owner: cleanText(raw.owner),
+		assigneeId: cleanText(raw.assigneeId) || null,
+		estimatedHours: typeof rawEstimatedHours === "number" && Number.isFinite(rawEstimatedHours) && rawEstimatedHours > 0 ? rawEstimatedHours : null,
+		priority: isPriority(raw.priority) ? raw.priority : "medium",
+		createdAt: cleanText(raw.createdAt) || (/* @__PURE__ */ new Date()).toISOString()
+	};
+}
+function sanitizeObjective(raw) {
+	const legacyTarget = numberFromText(cleanText(raw.targetLabel));
+	const targetLabel = cleanText(raw.targetLabel).replace(/\d+/g, "").trim().replace(/^\/+/, "").trim();
+	return {
+		id: cleanText(raw.id) || crypto.randomUUID(),
+		kind: isObjectiveKind(raw.kind) ? raw.kind : cleanPositiveNumber(raw.targetValue, false) || legacyTarget ? "counter" : "qualitative",
+		title: cleanText(raw.title),
+		description: cleanText(raw.description),
+		targetLabel: targetLabel || "eleves",
+		currentValue: cleanPositiveNumber(raw.currentValue, true),
+		targetValue: cleanPositiveNumber(raw.targetValue, false) ?? legacyTarget,
+		startDate: cleanText(raw.startDate),
+		endDate: cleanText(raw.endDate),
+		status: isObjectiveStatus(raw.status) ? raw.status : "progress",
+		progressNote: cleanText(raw.progressNote),
+		personIds: Array.isArray(raw.personIds) ? raw.personIds.map(cleanText).filter(Boolean) : [],
+		createdAt: cleanText(raw.createdAt) || (/* @__PURE__ */ new Date()).toISOString()
+	};
+}
+function sanitizeSharedLink(raw) {
+	const url = cleanText(raw.url);
+	return {
+		id: cleanText(raw.id) || crypto.randomUUID(),
+		title: cleanText(raw.title),
+		description: cleanText(raw.description),
+		url: url.startsWith("http://") || url.startsWith("https://") ? url : url ? `https://${url}` : "",
+		createdAt: cleanText(raw.createdAt) || (/* @__PURE__ */ new Date()).toISOString()
+	};
+}
+function sanitizeSocialLike(raw) {
+	const now = (/* @__PURE__ */ new Date()).toISOString();
+	return {
+		id: cleanText(raw.id) || crypto.randomUUID(),
+		author: cleanText(raw.author) || "Anonyme",
+		createdAt: cleanText(raw.createdAt) || now
+	};
+}
+function sanitizeSocialComment(raw) {
+	const now = (/* @__PURE__ */ new Date()).toISOString();
+	return {
+		id: cleanText(raw.id) || crypto.randomUUID(),
+		text: cleanText(raw.text),
+		author: cleanText(raw.author) || "Anonyme",
+		createdAt: cleanText(raw.createdAt) || now
+	};
+}
+function sanitizeJournalPost(raw) {
+	const now = (/* @__PURE__ */ new Date()).toISOString();
+	return {
+		id: cleanText(raw.id) || crypto.randomUUID(),
+		title: cleanText(raw.title),
+		content: cleanText(raw.content),
+		author: cleanText(raw.author) || "Equipe Alpha",
+		tags: Array.isArray(raw.tags) ? raw.tags.map(cleanText).filter(Boolean) : cleanText(raw.tags).split(",").map((tag) => tag.trim()).filter(Boolean),
+		personIds: Array.isArray(raw.personIds) ? raw.personIds.map(cleanText).filter(Boolean) : [],
+		likes: Array.isArray(raw.likes) ? raw.likes.filter((like) => Boolean(like && typeof like === "object")).map(sanitizeSocialLike) : [],
+		comments: Array.isArray(raw.comments) ? raw.comments.filter((comment) => Boolean(comment && typeof comment === "object")).map(sanitizeSocialComment).filter((comment) => comment.text) : [],
+		publishedAt: cleanText(raw.publishedAt) || now,
+		createdAt: cleanText(raw.createdAt) || now,
+		updatedAt: cleanText(raw.updatedAt) || cleanText(raw.createdAt) || now
+	};
+}
+function isCommunicationAudience(value) {
+	return value === "tuteurs" || value === "candidats" || value === "etablissements" || value === "parents" || value === "coordinateurs";
+}
+function isCommunicationStatus(value) {
+	return value === "draft" || value === "sent" || value === "to-follow-up" || value === "cancelled";
+}
+function sanitizeMassCommunication(raw) {
+	const now = (/* @__PURE__ */ new Date()).toISOString();
+	const tags = Array.isArray(raw.tags) ? raw.tags.map(cleanText).filter(Boolean) : cleanText(raw.tags).split(",").map((tag) => tag.trim()).filter(Boolean);
+	const audiences = Array.isArray(raw.audiences) ? raw.audiences.filter(isCommunicationAudience) : [];
+	const recipients = Array.isArray(raw.recipients) ? raw.recipients.map(cleanText).filter(Boolean) : cleanText(raw.recipients).split(/\r?\n/).map((item) => item.trim()).filter(Boolean);
+	return {
+		id: cleanText(raw.id) || crypto.randomUUID(),
+		title: cleanText(raw.title),
+		messageSummary: cleanText(raw.messageSummary),
+		audiences,
+		recipients: Array.from(new Set(recipients)),
+		channel: cleanText(raw.channel) || "Email",
+		status: isCommunicationStatus(raw.status) ? raw.status : "sent",
+		sentAt: cleanText(raw.sentAt),
+		followUpDate: cleanText(raw.followUpDate),
+		author: cleanText(raw.author) || "Equipe Alpha",
+		notes: cleanText(raw.notes),
+		tags: Array.from(new Set(tags)),
+		createdAt: cleanText(raw.createdAt) || now,
+		updatedAt: cleanText(raw.updatedAt) || cleanText(raw.createdAt) || now
+	};
+}
+function cleanSessionCount(value) {
+	const parsed = typeof value === "number" ? value : typeof value === "string" && value.trim() ? Number(value) : 0;
+	return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 0;
+}
+function sanitizeStaffingPerson(raw) {
+	const record = raw && typeof raw === "object" ? raw : {};
+	return {
+		staffedSessions: cleanSessionCount(record.staffedSessions),
+		unstaffedSessions: cleanSessionCount(record.unstaffedSessions)
+	};
+}
+function sanitizeStaffingDay(raw) {
+	const now = (/* @__PURE__ */ new Date()).toISOString();
+	const people = raw.people && typeof raw.people === "object" ? raw.people : {};
+	const date = cleanText(raw.date) || now.slice(0, 10);
+	const sanitizedPeople = {
+		pierre: sanitizeStaffingPerson(people.pierre),
+		julie: sanitizeStaffingPerson(people.julie),
+		kelly: sanitizeStaffingPerson(people.kelly)
+	};
+	const peopleTotals = Object.values(sanitizedPeople).reduce((totals, person) => {
+		totals.staffed += person.staffedSessions;
+		totals.unstaffed += person.unstaffedSessions;
+		return totals;
+	}, {
+		staffed: 0,
+		unstaffed: 0
+	});
+	return {
+		id: cleanText(raw.id) || `staffing-${date}`,
+		date,
+		people: sanitizedPeople,
+		totalStaffedSessions: raw.totalStaffedSessions === void 0 || raw.totalStaffedSessions === null ? peopleTotals.staffed : cleanSessionCount(raw.totalStaffedSessions),
+		totalUnstaffedSessions: raw.totalUnstaffedSessions === void 0 || raw.totalUnstaffedSessions === null ? peopleTotals.unstaffed : cleanSessionCount(raw.totalUnstaffedSessions),
+		createdAt: cleanText(raw.createdAt) || now,
+		updatedAt: cleanText(raw.updatedAt) || cleanText(raw.createdAt) || now
+	};
+}
+function sanitizeTutorReportEntry(raw) {
+	return {
+		id: cleanText(raw.id) || crypto.randomUUID(),
+		tutorId: cleanText(raw.tutorId),
+		lastName: cleanText(raw.lastName),
+		firstName: cleanText(raw.firstName),
+		phone: cleanText(raw.phone),
+		school: cleanText(raw.school),
+		studentCount: cleanSessionCount(raw.studentCount),
+		missingReportCount: cleanSessionCount(raw.missingReportCount),
+		comment: cleanText(raw.comment)
+	};
+}
+function sanitizeTutorReportSnapshot(raw) {
+	const now = (/* @__PURE__ */ new Date()).toISOString();
+	const date = cleanText(raw.date) || now.slice(0, 10);
+	return {
+		id: cleanText(raw.id) || `tutor-reports-${date}`,
+		date,
+		comment: cleanText(raw.comment),
+		entries: Array.isArray(raw.entries) ? raw.entries.filter((entry) => Boolean(entry && typeof entry === "object")).map(sanitizeTutorReportEntry).filter((entry) => entry.tutorId || entry.lastName || entry.firstName || entry.phone || entry.school) : [],
+		createdAt: cleanText(raw.createdAt) || now,
+		updatedAt: cleanText(raw.updatedAt) || cleanText(raw.createdAt) || now
+	};
+}
+function sanitizeTutorReportComment(raw) {
+	const legacyKey = cleanText(raw.tutorKey);
+	return {
+		tutorId: cleanText(raw.tutorId) || (/^id:(.+)$/i.exec(legacyKey)?.[1] ?? ""),
+		comment: cleanText(raw.comment),
+		updatedAt: cleanText(raw.updatedAt) || (/* @__PURE__ */ new Date()).toISOString()
+	};
+}
+function sanitizeTutorTrackingRecord(raw) {
+	const tutorId = cleanText(raw.tutorId);
+	const lastName = cleanText(raw.lastName);
+	const firstName = cleanText(raw.firstName);
+	const phone = cleanText(raw.phone);
+	return {
+		key: tutorId ? `id:${tutorId.toLocaleLowerCase("fr")}` : "",
+		tutorId,
+		lastName,
+		firstName,
+		phone,
+		email: cleanText(raw.email),
+		school: cleanText(raw.school),
+		wantedCity: cleanText(raw.wantedCity),
+		level: cleanText(raw.level)
+	};
+}
+function sanitizeTutorTrackingSnapshot(raw) {
+	const now = (/* @__PURE__ */ new Date()).toISOString();
+	const date = cleanText(raw.date) || now.slice(0, 10);
+	return {
+		id: cleanText(raw.id) || `tutor-tracking-${date}`,
+		date,
+		displayName: cleanText(raw.displayName) || cleanText(raw.fileName) || `Liste tuteurs du ${date}`,
+		fileName: cleanText(raw.fileName) || "liste-tuteurs.csv",
+		sourceRowCount: Math.max(0, Math.round(Number(raw.sourceRowCount) || (Array.isArray(raw.records) ? raw.records.length : 0))),
+		records: Array.isArray(raw.records) ? raw.records.filter((record) => Boolean(record && typeof record === "object")).map(sanitizeTutorTrackingRecord).filter((record) => record.tutorId) : [],
+		createdAt: cleanText(raw.createdAt) || now,
+		updatedAt: cleanText(raw.updatedAt) || cleanText(raw.createdAt) || now
+	};
+}
+function parseTutorTrackingCsv(value) {
+	const csvRows = parseCsvRows(value).filter((row) => row.some(Boolean));
+	if (!csvRows.length) return {
+		records: [],
+		sourceRowCount: 0
+	};
+	const firstRow = csvRows[0].map(normalizedHeader);
+	const hasHeader = firstRow.some((cell) => [
+		"id",
+		"idtuteur",
+		"nom",
+		"nomtuteur",
+		"nomdusage",
+		"prenom",
+		"prenomtuteur",
+		"telephone",
+		"numerodetelephone",
+		"email",
+		"villesouhaitee",
+		"villesouhaitees",
+		"niveau"
+	].includes(cell));
+	const headers = hasHeader ? firstRow : [
+		"id",
+		"nom",
+		"prenom",
+		"telephone",
+		"etablissement",
+		"email",
+		"villesouhaitee"
+	];
+	const dataRows = hasHeader ? csvRows.slice(1) : csvRows;
+	const indexFor = (aliases) => {
+		for (const alias of aliases) {
+			const index = headers.findIndex((header) => header === alias);
+			if (index >= 0) return index;
+		}
+		return -1;
+	};
+	const valueAt = (row, index) => index >= 0 ? row[index] || "" : "";
+	const idIndex = indexFor([
+		"id",
+		"idtuteur",
+		"tutorid",
+		"identifiant"
+	]);
+	const lastNameIndex = indexFor([
+		"nomtuteur",
+		"nomdusage",
+		"nom",
+		"lastname",
+		"name"
+	]);
+	const firstNameIndex = indexFor([
+		"prenom",
+		"prenomtuteur",
+		"firstname"
+	]);
+	const phoneIndex = indexFor([
+		"telephone",
+		"numerodetelephone",
+		"tel",
+		"phone",
+		"mobile"
+	]);
+	const emailIndex = indexFor([
+		"email",
+		"mail",
+		"courriel"
+	]);
+	const schoolIndex = indexFor([
+		"etablissement",
+		"etablissements",
+		"school",
+		"ecole"
+	]);
+	const wantedCityIndex = indexFor([
+		"villesouhaitees",
+		"villesouhaitee",
+		"villesouhaites",
+		"villesouhaite",
+		"ville"
+	]);
+	const levelIndex = indexFor(["niveau"]);
+	const byKey = /* @__PURE__ */ new Map();
+	dataRows.forEach((row) => {
+		const record = sanitizeTutorTrackingRecord({
+			tutorId: valueAt(row, idIndex),
+			lastName: valueAt(row, lastNameIndex),
+			firstName: valueAt(row, firstNameIndex),
+			phone: valueAt(row, phoneIndex),
+			email: valueAt(row, emailIndex),
+			school: valueAt(row, schoolIndex),
+			wantedCity: valueAt(row, wantedCityIndex),
+			level: valueAt(row, levelIndex)
+		});
+		if (record.tutorId) byKey.set(record.key, record);
+	});
+	return {
+		records: Array.from(byKey.values()).sort((a, b) => `${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`, "fr")),
+		sourceRowCount: dataRows.length
+	};
+}
+function sanitizeTutorTrackingComment(raw) {
+	const legacyKey = cleanText(raw.tutorKey);
+	return {
+		tutorId: cleanText(raw.tutorId) || (/^id:(.+)$/i.exec(legacyKey)?.[1] ?? ""),
+		comment: cleanText(raw.comment),
+		updatedAt: cleanText(raw.updatedAt) || (/* @__PURE__ */ new Date()).toISOString()
+	};
+}
+function sanitizeTutorTrackingData(raw) {
+	return {
+		snapshots: Array.isArray(raw.snapshots) ? raw.snapshots.filter((snapshot) => Boolean(snapshot && typeof snapshot === "object")).map(sanitizeTutorTrackingSnapshot).sort((a, b) => dateValueForSort(b.date) - dateValueForSort(a.date) || dateValueForSort(b.createdAt) - dateValueForSort(a.createdAt)) : [],
+		comments: Array.isArray(raw.comments) ? raw.comments.filter((comment) => Boolean(comment && typeof comment === "object")).map(sanitizeTutorTrackingComment).filter((comment) => comment.tutorId) : []
+	};
+}
+function tutorTrackingLegacyKey(record) {
+	return `name:${`${record.lastName} ${record.firstName} ${record.phone || record.email}`.trim().toLocaleLowerCase("fr").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`;
+}
+function migrateTutorTrackingData(raw) {
+	const sourceSnapshots = Array.isArray(raw.snapshots) ? raw.snapshots.filter((snapshot) => Boolean(snapshot && typeof snapshot === "object")) : [];
+	const resolve = createTutorRecordResolver(sourceSnapshots.flatMap((snapshot) => Array.isArray(snapshot.records) ? snapshot.records.filter((record) => Boolean(record && typeof record === "object")).map(sanitizeTutorTrackingRecord) : []));
+	const resolvedSnapshots = sourceSnapshots.map((snapshot) => ({
+		...snapshot,
+		records: Array.isArray(snapshot.records) ? snapshot.records.filter((record) => Boolean(record && typeof record === "object")).map((rawRecord) => {
+			const record = sanitizeTutorTrackingRecord(rawRecord);
+			const tutor = resolve({
+				tutorId: record.tutorId,
+				phone: record.phone,
+				name: `${record.firstName} ${record.lastName}`
+			});
+			return {
+				...rawRecord,
+				tutorId: record.tutorId || tutor?.tutorId || ""
+			};
+		}) : []
+	}));
+	const resolvedRecords = resolvedSnapshots.flatMap((snapshot) => Array.isArray(snapshot.records) ? snapshot.records.map((record) => sanitizeTutorTrackingRecord(record)) : []);
+	const idsByLegacyKey = /* @__PURE__ */ new Map();
+	resolvedRecords.forEach((record) => {
+		if (!record.tutorId) return;
+		const key = tutorTrackingLegacyKey(record);
+		const ids = idsByLegacyKey.get(key) ?? /* @__PURE__ */ new Set();
+		ids.add(record.tutorId);
+		idsByLegacyKey.set(key, ids);
+	});
+	const comments = Array.isArray(raw.comments) ? raw.comments.filter((comment) => Boolean(comment && typeof comment === "object")).map((comment) => {
+		const legacyKey = cleanText(comment.tutorKey);
+		const legacyId = /^id:(.+)$/i.exec(legacyKey)?.[1] ?? "";
+		const ids = idsByLegacyKey.get(legacyKey);
+		return {
+			...comment,
+			tutorId: cleanText(comment.tutorId) || legacyId || (ids?.size === 1 ? Array.from(ids)[0] : "")
+		};
+	}) : [];
+	return sanitizeTutorTrackingData({
+		...raw,
+		snapshots: resolvedSnapshots,
+		comments
+	});
+}
+function sanitizeUnstaffedExclusions(raw) {
+	return {
+		sessionIds: Array.isArray(raw.sessionIds) ? Array.from(new Set(raw.sessionIds.map(cleanText).filter(Boolean))) : [],
+		sourceKeys: Array.isArray(raw.sourceKeys) ? Array.from(new Set(raw.sourceKeys.map(cleanText).filter(Boolean))) : [],
+		updatedAt: cleanText(raw.updatedAt) || (/* @__PURE__ */ new Date()).toISOString()
+	};
+}
+function sanitizeAvailabilityRow(raw) {
+	return {
+		tutorId: cleanText(raw.tutorId),
+		lastName: cleanText(raw.lastName),
+		firstName: cleanText(raw.firstName),
+		grade: cleanText(raw.grade),
+		phone: cleanText(raw.phone),
+		date: cleanText(raw.date),
+		school: cleanText(raw.school),
+		className: cleanText(raw.className),
+		timeSlot: cleanText(raw.timeSlot),
+		sessionId: cleanText(raw.sessionId),
+		visitCount: cleanText(raw.visitCount),
+		group: cleanText(raw.group),
+		studentCount: cleanText(raw.studentCount),
+		groupScore: cleanText(raw.groupScore)
+	};
+}
+function parseCsvLine(line, delimiter) {
+	const cells = [];
+	let current = "";
+	let quoted = false;
+	for (let index = 0; index < line.length; index += 1) {
+		const char = line[index];
+		const next = line[index + 1];
+		if (char === "\"" && quoted && next === "\"") {
+			current += "\"";
+			index += 1;
+		} else if (char === "\"") quoted = !quoted;
+		else if ((delimiter ? char === delimiter : char === "," || char === ";" || char === "	") && !quoted) {
+			cells.push(current.trim());
+			current = "";
+		} else current += char;
+	}
+	cells.push(current.trim());
+	return cells;
+}
+function detectCsvDelimiter(value) {
+	const firstLine = value.split(/\r?\n/).find((line) => line.trim()) || "";
+	return [
+		";",
+		"	",
+		","
+	].map((delimiter) => ({
+		delimiter,
+		count: parseCsvLine(firstLine, delimiter).length
+	})).sort((a, b) => b.count - a.count)[0]?.delimiter || ";";
+}
+function parseCsvRows(value) {
+	const delimiter = detectCsvDelimiter(value);
+	const rows = [];
+	let row = [];
+	let current = "";
+	let quoted = false;
+	for (let index = 0; index < value.length; index += 1) {
+		const char = value[index];
+		const next = value[index + 1];
+		if (char === "\"" && quoted && next === "\"") {
+			current += "\"";
+			index += 1;
+		} else if (char === "\"") quoted = !quoted;
+		else if (char === delimiter && !quoted) {
+			row.push(current.trim());
+			current = "";
+		} else if ((char === "\n" || char === "\r") && !quoted) {
+			if (char === "\r" && next === "\n") index += 1;
+			row.push(current.trim());
+			if (row.some(Boolean)) rows.push(row);
+			row = [];
+			current = "";
+		} else current += char;
+	}
+	row.push(current.trim());
+	if (row.some(Boolean)) rows.push(row);
+	return rows;
+}
+function normalizedHeader(value) {
+	return value.trim().toLocaleLowerCase("fr").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "");
+}
+function parseAvailabilityCsv(value) {
+	const rows = parseCsvRows(value).filter((row) => row.some(Boolean));
+	if (!rows.length) return [];
+	const firstRow = rows[0].map(normalizedHeader);
+	const hasHeader = firstRow.some((cell) => [
+		"id",
+		"nomtuteur",
+		"prenomtuteur",
+		"date",
+		"heureducreneau",
+		"iddelaseance"
+	].includes(cell));
+	const headers = hasHeader ? firstRow : [
+		"id",
+		"nomtuteur",
+		"prenomtuteur",
+		"grade",
+		"telephone",
+		"date",
+		"etablissement",
+		"classe",
+		"heureducreneau",
+		"iddelaseance",
+		"nombredevisites",
+		"groupe",
+		"nbreleves",
+		"scorepourlegroupe"
+	];
+	const dataRows = hasHeader ? rows.slice(1) : rows;
+	const indexFor = (aliases) => {
+		for (const alias of aliases) {
+			const index = headers.findIndex((header) => header === alias);
+			if (index >= 0) return index;
+		}
+		return -1;
+	};
+	const valueAt = (row, index) => index >= 0 ? row[index] || "" : "";
+	const idIndex = indexFor([
+		"id",
+		"idtuteur",
+		"tutorid"
+	]);
+	const lastNameIndex = indexFor([
+		"nomtuteur",
+		"nom",
+		"lastname"
+	]);
+	const firstNameIndex = indexFor([
+		"prenomtuteur",
+		"prenom",
+		"firstname"
+	]);
+	const gradeIndex = indexFor(["grade"]);
+	const phoneIndex = indexFor([
+		"telephone",
+		"tel",
+		"phone"
+	]);
+	const dateIndex = indexFor(["date"]);
+	const schoolIndex = indexFor([
+		"etablissement",
+		"etablissements",
+		"school"
+	]);
+	const classIndex = indexFor(["classe", "class"]);
+	const timeSlotIndex = indexFor([
+		"heureducreneau",
+		"heurecreneau",
+		"creneau",
+		"horaire"
+	]);
+	const sessionIdIndex = indexFor([
+		"iddelaseance",
+		"idseance",
+		"sessionid"
+	]);
+	const visitCountIndex = indexFor([
+		"nombredevisites",
+		"visites",
+		"nbvisites"
+	]);
+	const groupIndex = indexFor(["groupe", "group"]);
+	const studentCountIndex = indexFor([
+		"nbreleves",
+		"nbeleves",
+		"nombreeleves"
+	]);
+	const groupScoreIndex = indexFor(["scorepourlegroupe", "scoregroupe"]);
+	return dataRows.map((row) => sanitizeAvailabilityRow({
+		tutorId: valueAt(row, idIndex),
+		lastName: valueAt(row, lastNameIndex),
+		firstName: valueAt(row, firstNameIndex),
+		grade: valueAt(row, gradeIndex),
+		phone: valueAt(row, phoneIndex),
+		date: valueAt(row, dateIndex),
+		school: valueAt(row, schoolIndex),
+		className: valueAt(row, classIndex),
+		timeSlot: valueAt(row, timeSlotIndex),
+		sessionId: valueAt(row, sessionIdIndex),
+		visitCount: valueAt(row, visitCountIndex),
+		group: valueAt(row, groupIndex),
+		studentCount: valueAt(row, studentCountIndex),
+		groupScore: valueAt(row, groupScoreIndex)
+	})).filter((row) => row.tutorId && row.date);
+}
+function sanitizeAvailabilityImport(raw) {
+	const now = (/* @__PURE__ */ new Date()).toISOString();
+	return {
+		id: cleanText(raw.id) || crypto.randomUUID(),
+		importedAt: cleanText(raw.importedAt) || now,
+		displayName: cleanText(raw.displayName) || cleanText(raw.fileName) || "Import de disponibilités",
+		fileName: cleanText(raw.fileName) || "disponibilites.csv",
+		rows: Array.isArray(raw.rows) ? raw.rows.filter((row) => Boolean(row && typeof row === "object")).map(sanitizeAvailabilityRow).filter((row) => row.tutorId && row.date) : [],
+		rawCsv: typeof raw.rawCsv === "string" ? raw.rawCsv : "",
+		hasRawCsv: raw.hasRawCsv === true || typeof raw.rawCsv === "string" && raw.rawCsv.length > 0,
+		createdAt: cleanText(raw.createdAt) || now
+	};
+}
+function sanitizeTutorAssignmentRow(raw) {
+	return {
+		tutorId: cleanText(raw.tutorId),
+		firstName: cleanText(raw.firstName),
+		lastName: cleanText(raw.lastName),
+		grade: cleanText(raw.grade),
+		phone: cleanText(raw.phone),
+		school: cleanText(raw.school),
+		category: cleanText(raw.category),
+		date: cleanText(raw.date),
+		timeSlot: cleanText(raw.timeSlot),
+		level: cleanText(raw.level),
+		absent: raw.absent === true || [
+			"oui",
+			"yes",
+			"true",
+			"1"
+		].includes(cleanText(raw.absent).toLocaleLowerCase("fr"))
+	};
+}
+function parseTutorAssignmentCsv(value) {
+	const csvRows = parseCsvRows(value).filter((row) => row.some(Boolean));
+	if (!csvRows.length) return {
+		rows: [],
+		sourceRowCount: 0
+	};
+	const headers = csvRows[0].map(normalizedHeader);
+	const indexFor = (aliases) => {
+		for (const alias of aliases) {
+			const index = headers.findIndex((header) => header === alias);
+			if (index >= 0) return index;
+		}
+		return -1;
+	};
+	const valueAt = (row, index) => index >= 0 ? row[index] || "" : "";
+	const tutorIdIndex = indexFor([
+		"iddututeur",
+		"idtuteur",
+		"id"
+	]);
+	const lastNameIndex = indexFor([
+		"nomdututeur",
+		"nomtuteur",
+		"nom"
+	]);
+	const firstNameIndex = indexFor([
+		"prenomdututeur",
+		"prenomtuteur",
+		"prenom"
+	]);
+	const gradeIndex = indexFor(["gradedututeur", "grade"]);
+	const phoneIndex = indexFor([
+		"numerodetelephone",
+		"telephone",
+		"telephoneportable"
+	]);
+	const schoolIndex = indexFor(["etablissement", "ecole"]);
+	const categoryIndex = indexFor(["categorie"]);
+	const dateIndex = indexFor(["datedelaprestation", "date"]);
+	const timeSlotIndex = indexFor([
+		"horairesducreneau",
+		"heureducreneau",
+		"creneau"
+	]);
+	const levelIndex = indexFor(["niveau", "classe"]);
+	const absentIndex = indexFor(["absent", "absence"]);
+	if (tutorIdIndex < 0 || dateIndex < 0 || timeSlotIndex < 0) throw new Error("Colonnes tuteur, date ou horaires introuvables dans le CSV des séances affectées");
+	const dataRows = csvRows.slice(1);
+	return {
+		sourceRowCount: dataRows.length,
+		rows: dataRows.map((row) => sanitizeTutorAssignmentRow({
+			tutorId: valueAt(row, tutorIdIndex),
+			lastName: valueAt(row, lastNameIndex),
+			firstName: valueAt(row, firstNameIndex),
+			grade: valueAt(row, gradeIndex),
+			phone: valueAt(row, phoneIndex),
+			school: valueAt(row, schoolIndex),
+			category: valueAt(row, categoryIndex),
+			date: valueAt(row, dateIndex),
+			timeSlot: valueAt(row, timeSlotIndex),
+			level: valueAt(row, levelIndex),
+			absent: valueAt(row, absentIndex)
+		})).filter((row) => row.tutorId && row.date && row.timeSlot)
+	};
+}
+function sanitizeTutorAssignmentImport(raw) {
+	const now = (/* @__PURE__ */ new Date()).toISOString();
+	return {
+		id: cleanText(raw.id) || crypto.randomUUID(),
+		importedAt: cleanText(raw.importedAt) || now,
+		displayName: cleanText(raw.displayName) || cleanText(raw.fileName) || "Séances affectées",
+		fileName: cleanText(raw.fileName) || "seances-affectees.csv",
+		sourceRowCount: Math.max(0, Math.round(Number(raw.sourceRowCount) || 0)),
+		rows: Array.isArray(raw.rows) ? raw.rows.filter((row) => Boolean(row && typeof row === "object")).map(sanitizeTutorAssignmentRow).filter((row) => row.tutorId && row.date && row.timeSlot) : [],
+		createdAt: cleanText(raw.createdAt) || now
+	};
+}
+function sanitizeUpcomingSessionRow(raw) {
+	return {
+		sessionId: cleanText(raw.sessionId),
+		schoolId: cleanText(raw.schoolId),
+		school: cleanText(raw.school),
+		category: cleanText(raw.category),
+		date: cleanText(raw.date),
+		startTime: cleanText(raw.startTime),
+		endTime: cleanText(raw.endTime),
+		durationHours: cleanText(raw.durationHours),
+		group: cleanText(raw.group),
+		studentCount: Math.max(0, Math.round(Number(raw.studentCount) || 0)),
+		classes: Array.isArray(raw.classes) ? Array.from(new Set(raw.classes.map(cleanText).filter(Boolean))) : [],
+		room: cleanText(raw.room)
+	};
+}
+function sanitizeUpcomingSessionSchool(raw) {
+	return {
+		schoolId: cleanText(raw.schoolId),
+		name: cleanText(raw.name),
+		categories: Array.isArray(raw.categories) ? Array.from(new Set(raw.categories.map(cleanText).filter(Boolean))) : []
+	};
+}
+function sanitizeUpcomingSessionSchoolStaffing(raw) {
+	return {
+		schoolId: cleanText(raw.schoolId),
+		name: cleanText(raw.name),
+		date: cleanText(raw.date),
+		staffedSessions: Math.max(0, Math.round(Number(raw.staffedSessions) || 0)),
+		unstaffedSessions: Math.max(0, Math.round(Number(raw.unstaffedSessions) || 0))
+	};
+}
+function sanitizeUpcomingSessionTutor(raw) {
+	return {
+		tutorId: cleanText(raw.tutorId),
+		firstName: cleanText(raw.firstName),
+		lastName: cleanText(raw.lastName),
+		phone: cleanText(raw.phone)
+	};
+}
+function sanitizeUpcomingStaffingSession(raw) {
+	return {
+		sessionId: cleanText(raw.sessionId),
+		sourceRowCount: Math.max(0, Math.round(Number(raw.sourceRowCount) || 0)),
+		schoolId: cleanText(raw.schoolId),
+		school: cleanText(raw.school),
+		category: cleanText(raw.category),
+		date: cleanText(raw.date),
+		startTime: cleanText(raw.startTime),
+		endTime: cleanText(raw.endTime),
+		group: cleanText(raw.group),
+		tutors: Array.isArray(raw.tutors) ? raw.tutors.filter((item) => Boolean(item && typeof item === "object")).map(sanitizeUpcomingSessionTutor).filter((item) => item.tutorId) : []
+	};
+}
+function parseUpcomingSessionsCsv(value) {
+	const csvRows = parseCsvRows(value).filter((row) => row.some(Boolean));
+	if (!csvRows.length) return {
+		rows: [],
+		schools: [],
+		schoolStaffing: [],
+		staffingSessions: [],
+		sourceRowCount: 0,
+		sourceSessionCount: 0
+	};
+	const headers = csvRows[0].map(normalizedHeader);
+	const indexFor = (aliases) => {
+		for (const alias of aliases) {
+			const index = headers.findIndex((header) => header === alias);
+			if (index >= 0) return index;
+		}
+		return -1;
+	};
+	const valueAt = (row, index) => index >= 0 ? row[index] || "" : "";
+	const schoolIdIndex = indexFor(["idecole", "idetablissement"]);
+	const schoolIndex = indexFor(["ecole", "etablissement"]);
+	const categoryIndex = indexFor(["categorie", "type"]);
+	const dateIndex = indexFor(["date"]);
+	const startIndex = indexFor([
+		"heureducreneau",
+		"heuredebut",
+		"debut"
+	]);
+	const endIndex = indexFor([
+		"heurefin",
+		"heuredefin",
+		"fin"
+	]);
+	const durationIndex = indexFor(["heures", "duree"]);
+	const sessionIdIndex = indexFor(["idseance", "iddelaseance"]);
+	const groupIndex = indexFor(["groupe"]);
+	const declaredStudentCountIndex = indexFor(["nbreleves", "nombreeleves"]);
+	const roomIndex = indexFor(["salle"]);
+	const tutorIdIndex = indexFor(["idtuteur", "iddututeur"]);
+	const tutorFirstNameIndex = indexFor(["prenomtuteur", "prenomdututeur"]);
+	const tutorLastNameIndex = indexFor(["nomtuteur", "nomdututeur"]);
+	const tutorPhoneIndex = indexFor([
+		"numerodutelephonedetuteur",
+		"numerotuteur",
+		"telephone",
+		"numerodetelephone"
+	]);
+	const studentIdIndex = indexFor(["ideleve", "iddeleve"]);
+	const classIndex = indexFor(["classe"]);
+	if (sessionIdIndex < 0 || schoolIndex < 0 || dateIndex < 0 || tutorIdIndex < 0) throw new Error("Colonnes ID séance, établissement, date ou ID tuteur introuvables dans le CSV");
+	const sessions = /* @__PURE__ */ new Map();
+	const schools = /* @__PURE__ */ new Map();
+	const dataRows = csvRows.slice(1);
+	dataRows.forEach((row) => {
+		const schoolId = valueAt(row, schoolIdIndex).trim();
+		const schoolName = valueAt(row, schoolIndex).trim();
+		const category = valueAt(row, categoryIndex).trim();
+		if (schoolName) {
+			const schoolKey = schoolId || `missing:${normalizeSchoolName(schoolName)}`;
+			const school = schools.get(schoolKey) ?? {
+				schoolId,
+				name: schoolName,
+				categories: [],
+				categorySet: /* @__PURE__ */ new Set()
+			};
+			if (category) school.categorySet.add(category);
+			schools.set(schoolKey, school);
+		}
+		const sessionId = valueAt(row, sessionIdIndex).trim();
+		if (!sessionId) return;
+		const existing = sessions.get(sessionId) ?? {
+			sessionId,
+			sourceRowCount: 0,
+			schoolId,
+			school: schoolName,
+			category,
+			date: valueAt(row, dateIndex),
+			startTime: valueAt(row, startIndex),
+			endTime: valueAt(row, endIndex),
+			durationHours: valueAt(row, durationIndex),
+			group: valueAt(row, groupIndex),
+			studentCount: 0,
+			classes: [],
+			room: valueAt(row, roomIndex),
+			tutors: /* @__PURE__ */ new Map(),
+			studentIds: /* @__PURE__ */ new Set(),
+			classSet: /* @__PURE__ */ new Set(),
+			declaredStudentCount: 0
+		};
+		const tutorId = valueAt(row, tutorIdIndex).trim();
+		existing.sourceRowCount += 1;
+		const studentId = valueAt(row, studentIdIndex).trim();
+		const className = valueAt(row, classIndex).trim();
+		if (tutorId) {
+			const previous = existing.tutors.get(tutorId);
+			existing.tutors.set(tutorId, {
+				tutorId,
+				firstName: previous?.firstName || valueAt(row, tutorFirstNameIndex).trim(),
+				lastName: previous?.lastName || valueAt(row, tutorLastNameIndex).trim(),
+				phone: previous?.phone || valueAt(row, tutorPhoneIndex).trim()
+			});
+		}
+		if (studentId) existing.studentIds.add(studentId);
+		if (className) existing.classSet.add(className);
+		existing.declaredStudentCount = Math.max(existing.declaredStudentCount, Math.round(Number(valueAt(row, declaredStudentCountIndex).replace(",", ".")) || 0));
+		sessions.set(sessionId, existing);
+	});
+	const rows = Array.from(sessions.values()).filter((session) => session.date && session.school && session.tutors.size === 0).map((session) => sanitizeUpcomingSessionRow({
+		...session,
+		classes: Array.from(session.classSet).sort((a, b) => a.localeCompare(b, "fr")),
+		studentCount: session.studentIds.size || session.declaredStudentCount
+	})).sort((a, b) => `${a.date}-${a.startTime}-${a.school}`.localeCompare(`${b.date}-${b.startTime}-${b.school}`, "fr"));
+	const schoolCatalog = Array.from(schools.values()).map((school) => sanitizeUpcomingSessionSchool({
+		...school,
+		categories: Array.from(school.categorySet).sort((a, b) => a.localeCompare(b, "fr"))
+	})).sort((a, b) => a.name.localeCompare(b.name, "fr"));
+	const staffingSessions = Array.from(sessions.values()).filter((session) => session.sessionId && session.date && session.school).map((session) => sanitizeUpcomingStaffingSession({
+		...session,
+		tutors: Array.from(session.tutors.values())
+	})).sort((a, b) => `${a.date}-${a.startTime}-${a.school}-${a.sessionId}`.localeCompare(`${b.date}-${b.startTime}-${b.school}-${b.sessionId}`, "fr"));
+	const staffingBySchool = /* @__PURE__ */ new Map();
+	sessions.forEach((session) => {
+		if (!session.school) return;
+		const schoolKey = `${session.schoolId || `missing:${normalizeSchoolName(session.school)}`}:${session.date}`;
+		const staffing = staffingBySchool.get(schoolKey) ?? {
+			schoolId: session.schoolId,
+			name: session.school,
+			date: session.date,
+			staffedSessions: 0,
+			unstaffedSessions: 0
+		};
+		if (session.tutors.size > 0) staffing.staffedSessions += 1;
+		else staffing.unstaffedSessions += 1;
+		staffingBySchool.set(schoolKey, staffing);
+	});
+	return {
+		rows,
+		schools: schoolCatalog,
+		schoolStaffing: Array.from(staffingBySchool.values()).sort((a, b) => a.name.localeCompare(b.name, "fr")),
+		staffingSessions,
+		sourceRowCount: dataRows.length,
+		sourceSessionCount: sessions.size
+	};
+}
+function sanitizeUpcomingSessionImport(raw) {
+	const now = (/* @__PURE__ */ new Date()).toISOString();
+	return {
+		id: cleanText(raw.id) || crypto.randomUUID(),
+		importedAt: cleanText(raw.importedAt) || now,
+		displayName: cleanText(raw.displayName) || cleanText(raw.fileName) || "Séances à venir",
+		fileName: cleanText(raw.fileName) || "semaines-a-venir.csv",
+		sourceRowCount: Math.max(0, Math.round(Number(raw.sourceRowCount) || 0)),
+		sourceSessionCount: Math.max(0, Math.round(Number(raw.sourceSessionCount) || 0)),
+		schools: Array.isArray(raw.schools) ? raw.schools.filter((school) => Boolean(school && typeof school === "object")).map(sanitizeUpcomingSessionSchool).filter((school) => school.name) : [],
+		schoolStaffing: Array.isArray(raw.schoolStaffing) ? raw.schoolStaffing.filter((school) => Boolean(school && typeof school === "object")).map(sanitizeUpcomingSessionSchoolStaffing).filter((school) => school.name) : [],
+		staffingSessions: Array.isArray(raw.staffingSessions) ? raw.staffingSessions.filter((session) => Boolean(session && typeof session === "object")).map(sanitizeUpcomingStaffingSession).filter((session) => session.sessionId && session.date && session.school) : [],
+		rows: Array.isArray(raw.rows) ? raw.rows.filter((row) => Boolean(row && typeof row === "object")).map(sanitizeUpcomingSessionRow).filter((row) => row.sessionId && row.date && row.school) : [],
+		createdAt: cleanText(raw.createdAt) || now
+	};
+}
+function sanitizeActualSessionRow(raw) {
+	return {
+		sessionId: cleanText(raw.sessionId),
+		date: cleanText(raw.date),
+		school: cleanText(raw.school)
+	};
+}
+function parseActualSessionsCsv(value) {
+	const csvRows = parseCsvRows(value).filter((row) => row.some(Boolean));
+	if (!csvRows.length) return {
+		rows: [],
+		sourceRowCount: 0
+	};
+	const headers = csvRows[0].map(normalizedHeader);
+	const indexFor = (aliases) => {
+		for (const alias of aliases) {
+			const index = headers.findIndex((header) => header === alias);
+			if (index >= 0) return index;
+		}
+		return -1;
+	};
+	const dateIndex = indexFor(["date", "datedelaprestation"]);
+	const sessionIdIndex = indexFor([
+		"semainereelle",
+		"idseance",
+		"iddelaseance"
+	]);
+	const schoolIndex = indexFor(["etablissement", "ecole"]);
+	if (dateIndex < 0 || sessionIdIndex < 0 || schoolIndex < 0) throw new Error("Colonnes Date, Semaine réelle ou Établissement introuvables dans le CSV");
+	const unique = /* @__PURE__ */ new Map();
+	const dataRows = csvRows.slice(1);
+	dataRows.forEach((row) => {
+		const parsed = sanitizeActualSessionRow({
+			date: row[dateIndex] || "",
+			sessionId: row[sessionIdIndex] || "",
+			school: row[schoolIndex] || ""
+		});
+		if (!parsed.date || !parsed.sessionId) return;
+		unique.set(`${parsed.date}:${parsed.sessionId}`, parsed);
+	});
+	return {
+		rows: Array.from(unique.values()).sort((a, b) => `${a.date}-${a.school}-${a.sessionId}`.localeCompare(`${b.date}-${b.school}-${b.sessionId}`, "fr")),
+		sourceRowCount: dataRows.length
+	};
+}
+function sanitizeActualSessionImport(raw) {
+	const now = (/* @__PURE__ */ new Date()).toISOString();
+	const rows = Array.isArray(raw.rows) ? raw.rows.filter((row) => Boolean(row && typeof row === "object")).map(sanitizeActualSessionRow).filter((row) => row.sessionId && row.date) : [];
+	return {
+		id: cleanText(raw.id) || crypto.randomUUID(),
+		importedAt: cleanText(raw.importedAt) || now,
+		displayName: cleanText(raw.displayName) || cleanText(raw.fileName) || "Semaine réelle",
+		fileName: cleanText(raw.fileName) || "semaine-reelle.csv",
+		sourceRowCount: Math.max(0, Math.round(Number(raw.sourceRowCount) || 0)),
+		dates: Array.from(new Set(rows.map((row) => row.date))).sort(),
+		rows,
+		createdAt: cleanText(raw.createdAt) || now
+	};
+}
+function isStaffingAuditOwner(value) {
+	return value === "" || value === "kelly" || value === "pierre" || value === "julie";
+}
+function isStaffingAuditClassification(value) {
+	return value === "staffed" || value === "unstaffed" || value === "ambiguous";
+}
+function isStaffingAuditResolution(value) {
+	return value === "" || value === "staffed" || value === "unstaffed";
+}
+function isStaffingAuditSessionCategory(value) {
+	return value === "alpha" || value === "surveillance" || value === "service";
+}
+function staffingAuditSessionCategory(schoolName, school, storedCategory) {
+	const normalizedName = normalizeSchoolName(schoolName);
+	const normalizedCategory = normalizeSchoolName(school?.category || "");
+	if (normalizedName.includes("alpha")) return "alpha";
+	if (normalizedName.includes("surveill")) return "surveillance";
+	if (normalizedCategory.includes("alpha") || school?.schoolType === "alpha") return "alpha";
+	if (normalizedCategory.includes("surveill")) return "surveillance";
+	return isStaffingAuditSessionCategory(storedCategory) ? storedCategory : "service";
+}
+function normalizeStaffingAuditDate(value) {
+	const raw = cleanText(value);
+	if (!raw) return "";
+	const isoMatch = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T\s].*)?$/);
+	const frenchMatch = raw.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})(?:[T\s].*)?$/);
+	const parts = isoMatch ? {
+		year: Number(isoMatch[1]),
+		month: Number(isoMatch[2]),
+		day: Number(isoMatch[3])
+	} : frenchMatch ? {
+		year: Number(frenchMatch[3]),
+		month: Number(frenchMatch[2]),
+		day: Number(frenchMatch[1])
+	} : null;
+	if (!parts) return "";
+	const candidate = new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
+	if (candidate.getUTCFullYear() !== parts.year || candidate.getUTCMonth() !== parts.month - 1 || candidate.getUTCDate() !== parts.day) return "";
+	return `${String(parts.year).padStart(4, "0")}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}`;
+}
+function sanitizeStaffingAuditSession(raw) {
+	const rawDate = cleanText(raw.date);
+	const school = cleanText(raw.school);
+	const tutors = Array.isArray(raw.tutors) ? raw.tutors.filter((item) => Boolean(item && typeof item === "object")).map((item) => ({
+		tutorId: cleanText(item.tutorId),
+		name: cleanText(item.name || item.displayName)
+	})).filter((item) => item.tutorId || item.name) : Array.isArray(raw.tutorNames) ? raw.tutorNames.map((name) => ({
+		tutorId: "",
+		name: cleanText(name)
+	})).filter((item) => item.name) : [];
+	return {
+		sessionId: cleanText(raw.sessionId),
+		date: normalizeStaffingAuditDate(rawDate) || rawDate,
+		school,
+		schoolId: cleanText(raw.schoolId),
+		category: staffingAuditSessionCategory(school, void 0, raw.category),
+		sourceRowCount: raw.sourceRowCount === void 0 || raw.sourceRowCount === null || raw.sourceRowCount === "" ? null : Math.max(0, Math.round(Number(raw.sourceRowCount) || 0)),
+		portfolioOwner: isStaffingAuditOwner(raw.portfolioOwner) ? raw.portfolioOwner : "",
+		detectedStatus: isStaffingAuditClassification(raw.detectedStatus) ? raw.detectedStatus : "ambiguous",
+		resolution: isStaffingAuditResolution(raw.resolution) ? raw.resolution : "",
+		treated: raw.treated === true,
+		tutors: (() => {
+			const identified = /* @__PURE__ */ new Map();
+			const unidentified = [];
+			tutors.forEach((item) => {
+				if (item.tutorId) identified.set(item.tutorId, item);
+				else unidentified.push(item);
+			});
+			return [...identified.values(), ...unidentified];
+		})()
+	};
+}
+function sanitizeStaffingAuditDay(raw) {
+	const now = (/* @__PURE__ */ new Date()).toISOString();
+	const rawDate = cleanText(raw.date);
+	return {
+		date: normalizeStaffingAuditDate(rawDate) || rawDate,
+		sourceFileName: cleanText(raw.sourceFileName) || "rapports.csv",
+		sourceRowCount: Math.max(0, Math.round(Number(raw.sourceRowCount) || 0)),
+		sessions: Array.isArray(raw.sessions) ? raw.sessions.filter((item) => Boolean(item && typeof item === "object")).map(sanitizeStaffingAuditSession).filter((item) => item.sessionId && item.date) : [],
+		createdAt: cleanText(raw.createdAt) || now,
+		updatedAt: cleanText(raw.updatedAt) || now
+	};
+}
+function tutorPhoneKey(value) {
+	return value.replace(/\D/g, "");
+}
+function createTutorRecordResolver(records) {
+	const byId = new Map(records.filter((record) => record.tutorId).map((record) => [record.tutorId.trim(), record]));
+	const index = (keyFor) => {
+		const idsByKey = /* @__PURE__ */ new Map();
+		records.forEach((record) => {
+			const key = keyFor(record);
+			if (!key || !record.tutorId.trim()) return;
+			const ids = idsByKey.get(key) ?? /* @__PURE__ */ new Set();
+			ids.add(record.tutorId.trim());
+			idsByKey.set(key, ids);
+		});
+		return new Map(Array.from(idsByKey.entries()).filter(([, ids]) => ids.size === 1).map(([key, ids]) => [key, Array.from(ids)[0]]));
+	};
+	const idByPhone = index((record) => tutorPhoneKey(record.phone));
+	const idByName = index((record) => normalizeSchoolName(`${record.firstName} ${record.lastName}`));
+	return (input) => {
+		const directId = input.tutorId?.trim() || "";
+		if (directId) return byId.get(directId) ?? {
+			tutorId: directId,
+			firstName: "",
+			lastName: ""
+		};
+		const phoneId = idByPhone.get(tutorPhoneKey(input.phone || ""));
+		if (phoneId) return byId.get(phoneId);
+		const nameId = idByName.get(normalizeSchoolName(input.name || ""));
+		return nameId ? byId.get(nameId) : void 0;
+	};
+}
+function resolveStaffingAuditTutorIds(days, records) {
+	const resolve = createTutorRecordResolver(records);
+	let changed = false;
+	return {
+		days: days.map((day) => ({
+			...day,
+			sessions: day.sessions.map((session) => {
+				const tutors = session.tutors.map((tutor) => {
+					if (tutor.tutorId) return tutor;
+					const record = resolve({ name: tutor.name });
+					if (!record?.tutorId) return tutor;
+					changed = true;
+					return {
+						...tutor,
+						tutorId: record.tutorId
+					};
+				});
+				const byId = /* @__PURE__ */ new Map();
+				const unidentified = [];
+				tutors.forEach((tutor) => {
+					if (tutor.tutorId) byId.set(tutor.tutorId, tutor);
+					else unidentified.push(tutor);
+				});
+				return {
+					...session,
+					tutors: [...byId.values(), ...unidentified]
+				};
+			})
+		})),
+		changed
+	};
+}
+function resolveTutorReportTutorIds(reports, records) {
+	const resolve = createTutorRecordResolver(records);
+	let changed = false;
+	return {
+		reports: reports.map((report) => ({
+			...report,
+			entries: report.entries.map((entry) => {
+				if (entry.tutorId) return entry;
+				const tutor = resolve({
+					tutorId: entry.tutorId,
+					phone: entry.phone,
+					name: `${entry.firstName} ${entry.lastName}`
+				});
+				if (!tutor?.tutorId) return entry;
+				changed = true;
+				return {
+					...entry,
+					tutorId: tutor.tutorId
+				};
+			})
+		})),
+		changed
+	};
+}
+function parseStaffingAuditCsv(value, fileName, schools, tutorRecords = []) {
+	const csvRows = parseCsvRows(value).filter((row) => row.some(Boolean));
+	if (!csvRows.length) return {
+		days: [],
+		invalidDateRowCount: 0
+	};
+	const headers = csvRows[0].map(normalizedHeader);
+	const indexFor = (aliases) => {
+		for (const alias of aliases) {
+			const index = headers.findIndex((header) => header === alias);
+			if (index >= 0) return index;
+		}
+		return -1;
+	};
+	const dateIndex = indexFor(["date", "datedelaprestation"]);
+	const sessionIdIndex = indexFor([
+		"semainereelle",
+		"idseance",
+		"iddelaseance"
+	]);
+	const schoolIndex = indexFor(["etablissement", "ecole"]);
+	const tutorFirstNameIndex = indexFor(["prenomtuteur", "prenomdututeur"]);
+	const tutorLastNameIndex = indexFor(["nomtuteur", "nomdututeur"]);
+	const tutorPhoneIndex = indexFor([
+		"numerotuteur",
+		"numerodututeur",
+		"telephone",
+		"numerodetelephone"
+	]);
+	const tutorIdIndex = indexFor([
+		"id",
+		"idtuteur",
+		"iddututeur",
+		"tutorid",
+		"idpersonne"
+	]);
+	if (dateIndex < 0 || sessionIdIndex < 0 || schoolIndex < 0) throw new Error("Colonnes Date, Semaine réelle ou Établissement introuvables dans le CSV");
+	const schoolByName = new Map(schools.map((school) => [normalizeSchoolName(school.name), school]));
+	const sessions = /* @__PURE__ */ new Map();
+	const resolveTutor = createTutorRecordResolver(tutorRecords);
+	const rows = csvRows.slice(1);
+	const rowCountByDate = /* @__PURE__ */ new Map();
+	let invalidDateRowCount = 0;
+	rows.forEach((row, rowIndex) => {
+		const date = normalizeStaffingAuditDate(row[dateIndex]);
+		const sessionId = cleanText(row[sessionIdIndex]);
+		if (!date) {
+			invalidDateRowCount += 1;
+			return;
+		}
+		rowCountByDate.set(date, (rowCountByDate.get(date) || 0) + 1);
+		if (!sessionId) return;
+		const key = `${date}:${sessionId}`;
+		const school = cleanText(row[schoolIndex]);
+		const firstName = tutorFirstNameIndex >= 0 ? cleanText(row[tutorFirstNameIndex]) : "";
+		const lastName = tutorLastNameIndex >= 0 ? cleanText(row[tutorLastNameIndex]) : "";
+		const phone = tutorPhoneIndex >= 0 ? cleanText(row[tutorPhoneIndex]) : "";
+		const tutorId = tutorIdIndex >= 0 ? cleanText(row[tutorIdIndex]) : "";
+		const tutorName = `${firstName} ${lastName}`.trim();
+		const item = sessions.get(key) ?? {
+			sessionId,
+			date,
+			school,
+			sourceRowCount: 0,
+			tutors: /* @__PURE__ */ new Map(),
+			tutorKeyByPhone: /* @__PURE__ */ new Map()
+		};
+		item.sourceRowCount += 1;
+		if (phone || tutorName) {
+			const matchedTutor = resolveTutor({
+				tutorId,
+				phone,
+				name: tutorName
+			});
+			const normalizedPhone = tutorPhoneKey(phone);
+			const phoneKey = phone ? `phone:${normalizedPhone || phone.toLocaleLowerCase("fr")}` : "";
+			const previousPhoneKey = normalizedPhone ? item.tutorKeyByPhone.get(normalizedPhone) : "";
+			const previousTutorId = previousPhoneKey ? item.tutors.get(previousPhoneKey)?.tutorId : "";
+			const resolvedId = matchedTutor?.tutorId || tutorId || previousTutorId || "";
+			const tutorKey = resolvedId ? `id:${resolvedId}` : phoneKey || `unresolved-row:${rowIndex}`;
+			if (resolvedId && previousPhoneKey && previousPhoneKey !== tutorKey) item.tutors.delete(previousPhoneKey);
+			item.tutors.set(tutorKey, {
+				tutorId: resolvedId,
+				name: tutorName || `${matchedTutor?.firstName || ""} ${matchedTutor?.lastName || ""}`.trim() || phone
+			});
+			if (normalizedPhone) item.tutorKeyByPhone.set(normalizedPhone, tutorKey);
+		}
+		if (!item.school && school) item.school = school;
+		sessions.set(key, item);
+	});
+	const now = (/* @__PURE__ */ new Date()).toISOString();
+	const byDate = /* @__PURE__ */ new Map();
+	sessions.forEach((item) => {
+		const school = schoolByName.get(normalizeSchoolName(item.school));
+		const identifiedTutorIds = new Set(Array.from(item.tutors.values()).map((tutor) => tutor.tutorId).filter(Boolean));
+		const detectedStatus = item.tutors.size > 1 || identifiedTutorIds.size > 0 && identifiedTutorIds.size !== item.tutors.size ? "ambiguous" : item.tutors.size === 1 ? "staffed" : "unstaffed";
+		const session = sanitizeStaffingAuditSession({
+			sessionId: item.sessionId,
+			date: item.date,
+			school: item.school,
+			schoolId: school?.externalId ?? "",
+			category: staffingAuditSessionCategory(item.school, school),
+			sourceRowCount: item.sourceRowCount,
+			portfolioOwner: school?.portfolioOwner ?? "",
+			detectedStatus,
+			resolution: "",
+			treated: false,
+			tutors: Array.from(item.tutors.values())
+		});
+		byDate.set(item.date, [...byDate.get(item.date) ?? [], session]);
+	});
+	return {
+		days: Array.from(byDate.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([date, daySessions]) => sanitizeStaffingAuditDay({
+			date,
+			sourceFileName: fileName,
+			sourceRowCount: rowCountByDate.get(date) || 0,
+			sessions: daySessions.sort((a, b) => a.school.localeCompare(b.school, "fr") || a.sessionId.localeCompare(b.sessionId)),
+			createdAt: now,
+			updatedAt: now
+		})),
+		invalidDateRowCount
+	};
+}
+function enrichStaffingAuditDaysWithSchools(days, schools) {
+	const schoolByName = new Map(schools.map((school) => [normalizeSchoolName(school.name), school]));
+	return days.map((day) => ({
+		...day,
+		sessions: day.sessions.map((session) => {
+			const school = schoolByName.get(normalizeSchoolName(session.school));
+			return {
+				...session,
+				schoolId: session.schoolId || school?.externalId || "",
+				category: staffingAuditSessionCategory(session.school, school, session.category)
+			};
+		})
+	}));
+}
+function sanitizeTutorInterestRow(raw) {
+	return {
+		personId: cleanText(raw.personId),
+		firstName: cleanText(raw.firstName),
+		lastName: cleanText(raw.lastName),
+		phone: cleanText(raw.phone),
+		sessionId: cleanText(raw.sessionId),
+		date: cleanText(raw.date),
+		school: cleanText(raw.school),
+		className: cleanText(raw.className),
+		timeSlot: cleanText(raw.timeSlot),
+		group: cleanText(raw.group),
+		studentCount: cleanText(raw.studentCount),
+		validated: raw.validated === true || [
+			"oui",
+			"yes",
+			"true",
+			"1",
+			"valide",
+			"validé"
+		].includes(cleanText(raw.validated).toLocaleLowerCase("fr")),
+		declaredAt: cleanText(raw.declaredAt)
+	};
+}
+function parseTutorInterestsCsv(value) {
+	const csvRows = parseCsvRows(value).filter((row) => row.some(Boolean));
+	if (!csvRows.length) return {
+		rows: [],
+		sourceRowCount: 0
+	};
+	const headers = csvRows[0].map(normalizedHeader);
+	const indexFor = (aliases) => {
+		for (const alias of aliases) {
+			const index = headers.findIndex((header) => header === alias);
+			if (index >= 0) return index;
+		}
+		return -1;
+	};
+	const valueAt = (row, index) => index >= 0 ? row[index] || "" : "";
+	const personIdIndex = indexFor([
+		"idtuteurcandidat",
+		"idcandidat",
+		"idtuteur",
+		"id"
+	]);
+	const lastNameIndex = indexFor(["nom", "nomtuteur"]);
+	const firstNameIndex = indexFor(["prenom", "prenomtuteur"]);
+	const phoneIndex = indexFor(["telephone", "numerodetelephone"]);
+	const sessionIdIndex = indexFor([
+		"seanceid",
+		"idseance",
+		"iddelaseance"
+	]);
+	const dateIndex = indexFor(["dateseance", "date"]);
+	const schoolIndex = indexFor(["etablissement", "ecole"]);
+	const classIndex = indexFor(["classe"]);
+	const timeSlotIndex = indexFor([
+		"heureducreneau",
+		"horaire",
+		"creneau"
+	]);
+	const groupIndex = indexFor(["groupe"]);
+	const studentCountIndex = indexFor(["nombreeleves", "nbreleves"]);
+	const validatedIndex = indexFor(["valide", "validation"]);
+	const createdAtIndex = indexFor(["datedecreation", "creation"]);
+	if (personIdIndex < 0 || sessionIdIndex < 0 || dateIndex < 0) throw new Error("Colonnes ID tuteur/candidat, Séance ID ou Date séance introuvables dans le CSV d’intérêts");
+	const dataRows = csvRows.slice(1);
+	return {
+		sourceRowCount: dataRows.length,
+		rows: dataRows.map((row) => sanitizeTutorInterestRow({
+			personId: valueAt(row, personIdIndex),
+			lastName: valueAt(row, lastNameIndex),
+			firstName: valueAt(row, firstNameIndex),
+			phone: valueAt(row, phoneIndex),
+			sessionId: valueAt(row, sessionIdIndex),
+			date: valueAt(row, dateIndex),
+			school: valueAt(row, schoolIndex),
+			className: valueAt(row, classIndex),
+			timeSlot: valueAt(row, timeSlotIndex),
+			group: valueAt(row, groupIndex),
+			studentCount: valueAt(row, studentCountIndex),
+			validated: valueAt(row, validatedIndex),
+			declaredAt: valueAt(row, createdAtIndex)
+		})).filter((row) => row.personId && row.sessionId && row.date)
+	};
+}
+function sanitizeTutorInterestImport(raw) {
+	const now = (/* @__PURE__ */ new Date()).toISOString();
+	return {
+		id: cleanText(raw.id) || crypto.randomUUID(),
+		importedAt: cleanText(raw.importedAt) || now,
+		displayName: cleanText(raw.displayName) || cleanText(raw.fileName) || "Intérêts tuteurs et candidats",
+		fileName: cleanText(raw.fileName) || "interets-tuteurs-candidats.csv",
+		sourceRowCount: Math.max(0, Math.round(Number(raw.sourceRowCount) || 0)),
+		rows: Array.isArray(raw.rows) ? raw.rows.filter((row) => Boolean(row && typeof row === "object")).map(sanitizeTutorInterestRow).filter((row) => row.personId && row.sessionId && row.date) : [],
+		createdAt: cleanText(raw.createdAt) || now
+	};
+}
+function sanitizeTutorCoverageNote(raw) {
+	const status = raw.status === "unavailable" || raw.status === "confirmed" || raw.status === "contacted" ? raw.status : "to-check";
+	return {
+		id: cleanText(raw.id) || crypto.randomUUID(),
+		tutorId: cleanText(raw.tutorId),
+		date: cleanText(raw.date),
+		status,
+		note: cleanText(raw.note),
+		updatedAt: cleanText(raw.updatedAt) || (/* @__PURE__ */ new Date()).toISOString()
+	};
+}
+function sanitizeEnrollmentRow(raw) {
+	return {
+		studentId: cleanText(raw.studentId),
+		firstName: cleanText(raw.firstName),
+		lastName: cleanText(raw.lastName),
+		className: cleanText(raw.className),
+		school: cleanText(raw.school),
+		slots: cleanText(raw.slots)
+	};
+}
+function parseEnrollmentCsv(value) {
+	const csvRows = parseCsvRows(value).filter((row) => row.some(Boolean));
+	if (!csvRows.length) return {
+		rows: [],
+		sourceRowCount: 0
+	};
+	const headers = csvRows[0].map(normalizedHeader);
+	const indexFor = (aliases) => {
+		for (const alias of aliases) {
+			const index = headers.findIndex((header) => header === alias);
+			if (index >= 0) return index;
+		}
+		return -1;
+	};
+	const valueAt = (row, index) => index >= 0 ? row[index] || "" : "";
+	const studentIdIndex = indexFor([
+		"iddelenfant",
+		"iddelefant",
+		"idenfant",
+		"studentid"
+	]);
+	const firstNameIndex = indexFor([
+		"prenomdelenfant",
+		"prenomenfant",
+		"firstname"
+	]);
+	const lastNameIndex = indexFor([
+		"nomdelenfant",
+		"nomenfant",
+		"lastname"
+	]);
+	const classIndex = indexFor(["classe", "class"]);
+	const schoolIndex = indexFor([
+		"ecole",
+		"etablissement",
+		"school"
+	]);
+	const slotsIndex = indexFor([
+		"creneaux",
+		"creneau",
+		"slots"
+	]);
+	if (studentIdIndex < 0 || slotsIndex < 0) throw new Error("Colonnes « Id de l’enfant » ou « Creneaux » introuvables");
+	const dataRows = csvRows.slice(1);
+	return {
+		rows: dataRows.map((row) => sanitizeEnrollmentRow({
+			studentId: valueAt(row, studentIdIndex),
+			firstName: valueAt(row, firstNameIndex),
+			lastName: valueAt(row, lastNameIndex),
+			className: valueAt(row, classIndex),
+			school: valueAt(row, schoolIndex),
+			slots: valueAt(row, slotsIndex)
+		})).filter((row) => row.studentId && row.slots),
+		sourceRowCount: dataRows.length
+	};
+}
+function sanitizeEnrollmentImport(raw) {
+	const now = (/* @__PURE__ */ new Date()).toISOString();
+	return {
+		id: cleanText(raw.id) || crypto.randomUUID(),
+		importedAt: cleanText(raw.importedAt) || now,
+		displayName: cleanText(raw.displayName) || cleanText(raw.fileName) || "Export inscriptions",
+		fileName: cleanText(raw.fileName) || "parents.csv",
+		sourceRowCount: Math.max(0, Math.round(Number(raw.sourceRowCount) || 0)),
+		rows: Array.isArray(raw.rows) ? raw.rows.filter((row) => Boolean(row && typeof row === "object")).map(sanitizeEnrollmentRow).filter((row) => row.studentId && row.slots) : [],
+		createdAt: cleanText(raw.createdAt) || now
+	};
+}
+function isSchoolWatchTag(value) {
+	return value === "Nouvel établissement" || value === "Nouveau besoin" || value === "Suivi particulier";
+}
+function isSchoolWatchStatus(value) {
+	return value === "active" || value === "resolved";
+}
+function sanitizeSchoolWatchItem(raw) {
+	const now = (/* @__PURE__ */ new Date()).toISOString();
+	return {
+		id: cleanText(raw.id) || crypto.randomUUID(),
+		schoolId: cleanText(raw.schoolId),
+		reason: cleanText(raw.reason),
+		tags: Array.isArray(raw.tags) ? Array.from(new Set(raw.tags.filter(isSchoolWatchTag))) : [],
+		status: isSchoolWatchStatus(raw.status) ? raw.status : "active",
+		comments: Array.isArray(raw.comments) ? raw.comments.filter((comment) => Boolean(comment && typeof comment === "object")).map((comment) => ({
+			id: cleanText(comment.id) || crypto.randomUUID(),
+			text: cleanText(comment.text),
+			author: cleanText(comment.author) || "Equipe Alpha",
+			createdAt: cleanText(comment.createdAt) || now
+		})).filter((comment) => comment.text) : [],
+		createdAt: cleanText(raw.createdAt) || now,
+		updatedAt: cleanText(raw.updatedAt) || cleanText(raw.createdAt) || now,
+		resolvedAt: cleanText(raw.resolvedAt)
+	};
+}
+function isSchoolEventKind(value) {
+	return value === "event" || value === "comment" || value === "action";
+}
+function isSchoolType(value) {
+	return value === "alpha" || value === "mise-a-dispo" || value === "mixed";
+}
+function normalizeSchoolName(value) {
+	return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr").replace(/[^a-z0-9]+/g, " ").trim();
+}
+function schoolFromImport(item) {
+	const now = "2026-08-31T00:00:00.000Z";
+	return {
+		id: item.externalId ? `school-${item.externalId}` : crypto.randomUUID(),
+		externalId: item.externalId,
+		name: item.name,
+		category: item.category,
+		schoolType: item.schoolType,
+		portfolioOwner: "",
+		zone: item.zone,
+		coordinator: item.coordinator,
+		registeredCount: item.registeredCount,
+		city: item.city,
+		address: item.address,
+		department: item.department,
+		upcomingWeek: item.upcomingWeek,
+		pastSessions: item.pastSessions,
+		typicalWeek: item.typicalWeek,
+		contractSigned: item.contractSigned,
+		actions: item.actions,
+		contact: item.coordinator,
+		nextAction: item.actions,
+		notes: "",
+		events: [],
+		createdAt: now,
+		updatedAt: now
+	};
+}
+function mergeImportedSchools(schools) {
+	const importedByExternalId = new Map(importedSchools.map((item) => [item.externalId, schoolFromImport(item)]));
+	const importedByName = new Map(importedSchools.map((item) => [normalizeSchoolName(item.name), schoolFromImport(item)]));
+	const matchedExternalIds = /* @__PURE__ */ new Set();
+	const matchedNames = /* @__PURE__ */ new Set();
+	const enrichedSchools = schools.map((school) => {
+		const imported = (school.externalId ? importedByExternalId.get(school.externalId) : null) ?? importedByName.get(normalizeSchoolName(school.name));
+		if (!imported) return school;
+		if (imported.externalId) matchedExternalIds.add(imported.externalId);
+		matchedNames.add(normalizeSchoolName(imported.name));
+		return {
+			...imported,
+			...school,
+			externalId: school.externalId || imported.externalId,
+			category: school.category || imported.category,
+			schoolType: !school.category && school.schoolType === "mixed" ? imported.schoolType : school.schoolType,
+			portfolioOwner: school.portfolioOwner,
+			zone: school.zone || imported.zone,
+			coordinator: school.coordinator || imported.coordinator,
+			registeredCount: school.registeredCount ?? imported.registeredCount,
+			city: school.city || imported.city,
+			address: school.address || imported.address,
+			department: school.department || imported.department,
+			upcomingWeek: school.upcomingWeek || imported.upcomingWeek,
+			pastSessions: school.pastSessions || imported.pastSessions,
+			typicalWeek: school.typicalWeek || imported.typicalWeek,
+			contractSigned: school.contractSigned || imported.contractSigned,
+			actions: school.actions || imported.actions,
+			contact: school.contact || imported.contact,
+			nextAction: school.nextAction || imported.nextAction,
+			notes: school.notes,
+			events: school.events,
+			createdAt: school.createdAt,
+			updatedAt: school.updatedAt
+		};
+	});
+	const knownNames = new Set(enrichedSchools.map((school) => normalizeSchoolName(school.name)).filter(Boolean));
+	const missingImportedSchools = importedSchools.filter((item) => {
+		const externalMatch = item.externalId && matchedExternalIds.has(item.externalId);
+		const name = normalizeSchoolName(item.name);
+		return !externalMatch && !matchedNames.has(name) && !knownNames.has(name);
+	}).map(schoolFromImport);
+	return [...enrichedSchools, ...missingImportedSchools].sort((a, b) => a.name.localeCompare(b.name, "fr"));
+}
+function sanitizeSchool(raw) {
+	const now = (/* @__PURE__ */ new Date()).toISOString();
+	const category = cleanText(raw.category);
+	return {
+		id: cleanText(raw.id) || crypto.randomUUID(),
+		externalId: cleanText(raw.externalId),
+		name: cleanText(raw.name),
+		category,
+		schoolType: isSchoolType(raw.schoolType) ? raw.schoolType : category.toLocaleLowerCase("fr").includes("prestation") ? "mise-a-dispo" : category.toLocaleLowerCase("fr").includes("alpha") ? "alpha" : "mixed",
+		portfolioOwner: raw.portfolioOwner === "kelly" || raw.portfolioOwner === "pierre" || raw.portfolioOwner === "julie" ? raw.portfolioOwner : "",
+		zone: cleanText(raw.zone),
+		coordinator: cleanText(raw.coordinator),
+		registeredCount: cleanPositiveNumber(raw.registeredCount, true),
+		city: cleanText(raw.city),
+		address: cleanText(raw.address),
+		department: cleanText(raw.department),
+		upcomingWeek: cleanText(raw.upcomingWeek),
+		pastSessions: cleanText(raw.pastSessions),
+		typicalWeek: cleanText(raw.typicalWeek),
+		contractSigned: cleanText(raw.contractSigned),
+		actions: cleanText(raw.actions),
+		contact: cleanText(raw.contact),
+		nextAction: cleanText(raw.nextAction),
+		notes: cleanText(raw.notes),
+		events: Array.isArray(raw.events) ? raw.events.filter((event) => Boolean(event && typeof event === "object")).map((event) => ({
+			id: cleanText(event.id) || crypto.randomUUID(),
+			kind: isSchoolEventKind(event.kind) ? event.kind : "event",
+			title: cleanText(event.title),
+			note: cleanText(event.note),
+			author: cleanText(event.author) || "Equipe Alpha",
+			tags: Array.isArray(event.tags) ? event.tags.map(cleanText).filter(Boolean) : cleanText(event.tags).split(",").map((tag) => tag.trim()).filter(Boolean),
+			likes: Array.isArray(event.likes) ? event.likes.filter((like) => Boolean(like && typeof like === "object")).map(sanitizeSocialLike) : [],
+			comments: Array.isArray(event.comments) ? event.comments.filter((comment) => Boolean(comment && typeof comment === "object")).map(sanitizeSocialComment).filter((comment) => comment.text) : [],
+			date: cleanText(event.date) || cleanText(event.createdAt) || now,
+			createdAt: cleanText(event.createdAt) || now
+		})).filter((event) => event.title || event.note).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) : [],
+		createdAt: cleanText(raw.createdAt) || now,
+		updatedAt: cleanText(raw.updatedAt) || cleanText(raw.createdAt) || now
+	};
+}
+function sanitizeStudentHistoryYear(raw) {
+	const year = cleanYear(raw.year);
+	const entriesByDate = new Map(Array.isArray(raw.entries) ? raw.entries.filter((entry) => Boolean(entry && typeof entry === "object")).map((entry) => {
+		const value = cleanPositiveNumber(entry.value, true);
+		return [cleanText(entry.date), value];
+	}).filter(([date]) => date) : []);
+	return {
+		year,
+		entries: campaignDates(year).map((date) => ({
+			date,
+			value: entriesByDate.get(date) ?? null
+		})),
+		createdAt: cleanText(raw.createdAt) || (/* @__PURE__ */ new Date()).toISOString()
+	};
+}
+async function readTasks() {
+	try {
+		const tasks = await taskStore().get(TASKS_KEY, {
+			type: "json",
+			consistency: "strong"
+		});
+		return Array.isArray(tasks) ? tasks.filter((task) => Boolean(task && typeof task === "object")).map(sanitizeTask) : [];
+	} catch {
+		return memory.__petitSuiviTasks ?? [];
+	}
+}
+async function writeTasks(tasks) {
+	try {
+		await taskStore().setJSON(TASKS_KEY, tasks);
+	} catch {
+		memory.__petitSuiviTasks = tasks;
+	}
+}
+async function readPeople() {
+	try {
+		const people = await taskStore().get(PEOPLE_KEY, {
+			type: "json",
+			consistency: "strong"
+		});
+		return Array.isArray(people) ? people.filter((person) => Boolean(person && typeof person === "object")).map((person) => sanitizePerson(person)).filter((person) => person.name) : [];
+	} catch {
+		return memory.__petitSuiviPeople ?? [];
+	}
+}
+async function readRecurringTasks() {
+	try {
+		const recurringTasks = await taskStore().get(RECURRING_TASKS_KEY, {
+			type: "json",
+			consistency: "strong"
+		});
+		return Array.isArray(recurringTasks) ? recurringTasks.filter((task) => Boolean(task && typeof task === "object")).map(sanitizeRecurringTask).filter((task) => task.title && task.owner) : [];
+	} catch {
+		return memory.__petitSuiviRecurringTasks ?? [];
+	}
+}
+async function writeRecurringTasks(recurringTasks) {
+	try {
+		await taskStore().setJSON(RECURRING_TASKS_KEY, recurringTasks);
+	} catch {
+		memory.__petitSuiviRecurringTasks = recurringTasks;
+	}
+}
+async function readObjectives() {
+	try {
+		const objectives = await taskStore().get(OBJECTIVES_KEY, {
+			type: "json",
+			consistency: "strong"
+		});
+		const savedObjectives = Array.isArray(objectives) ? objectives.filter((objective) => Boolean(objective && typeof objective === "object")).map(sanitizeObjective).filter((objective) => objective.title) : defaultObjectives;
+		const savedIds = new Set(savedObjectives.map((objective) => objective.id));
+		return [...defaultObjectives.filter((objective) => !savedIds.has(objective.id)), ...savedObjectives];
+	} catch {
+		return memory.__petitSuiviObjectives ?? defaultObjectives;
+	}
+}
+async function writeObjectives(objectives) {
+	try {
+		await taskStore().setJSON(OBJECTIVES_KEY, objectives);
+	} catch {
+		memory.__petitSuiviObjectives = objectives;
+	}
+}
+async function readLinks() {
+	try {
+		const links = await taskStore().get(LINKS_KEY, {
+			type: "json",
+			consistency: "strong"
+		});
+		return Array.isArray(links) ? links.filter((link) => Boolean(link && typeof link === "object")).map(sanitizeSharedLink).filter((link) => link.title && link.url) : [];
+	} catch {
+		return memory.__petitSuiviLinks ?? [];
+	}
+}
+async function writeLinks(links) {
+	try {
+		await taskStore().setJSON(LINKS_KEY, links);
+	} catch {
+		memory.__petitSuiviLinks = links;
+	}
+}
+async function readJournalPosts() {
+	try {
+		const posts = await taskStore().get(JOURNAL_POSTS_KEY, {
+			type: "json",
+			consistency: "strong"
+		});
+		return Array.isArray(posts) ? posts.filter((post) => Boolean(post && typeof post === "object")).map(sanitizeJournalPost).filter((post) => post.title && post.content).sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()) : [];
+	} catch {
+		return memory.__petitSuiviJournalPosts ?? [];
+	}
+}
+async function writeJournalPosts(posts) {
+	try {
+		await taskStore().setJSON(JOURNAL_POSTS_KEY, posts);
+	} catch {
+		memory.__petitSuiviJournalPosts = posts;
+	}
+}
+async function readMassCommunications() {
+	try {
+		const communications = await taskStore().get(MASS_COMMUNICATIONS_KEY, {
+			type: "json",
+			consistency: "strong"
+		});
+		return Array.isArray(communications) ? communications.filter((communication) => Boolean(communication && typeof communication === "object")).map(sanitizeMassCommunication).filter((communication) => communication.title).sort((a, b) => dateValueForSort(b.sentAt || b.followUpDate || b.createdAt) - dateValueForSort(a.sentAt || a.followUpDate || a.createdAt)) : [];
+	} catch {
+		return memory.__petitSuiviMassCommunications ?? [];
+	}
+}
+async function writeMassCommunications(communications) {
+	try {
+		await taskStore().setJSON(MASS_COMMUNICATIONS_KEY, communications);
+	} catch {
+		memory.__petitSuiviMassCommunications = communications;
+	}
+}
+async function readStaffingSessions() {
+	try {
+		const staffing = await taskStore().get(STAFFING_SESSIONS_KEY, {
+			type: "json",
+			consistency: "strong"
+		});
+		return Array.isArray(staffing) ? staffing.filter((day) => Boolean(day && typeof day === "object")).map(sanitizeStaffingDay).sort((a, b) => dateValueForSort(b.date) - dateValueForSort(a.date)) : [];
+	} catch {
+		return memory.__petitSuiviStaffingSessions ?? [];
+	}
+}
+async function writeStaffingSessions(staffing) {
+	try {
+		await taskStore().setJSON(STAFFING_SESSIONS_KEY, staffing);
+	} catch {
+		memory.__petitSuiviStaffingSessions = staffing;
+	}
+}
+async function readTutorReports() {
+	try {
+		const reports = await taskStore().get(TUTOR_REPORTS_KEY, {
+			type: "json",
+			consistency: "strong"
+		});
+		return Array.isArray(reports) ? reports.filter((snapshot) => Boolean(snapshot && typeof snapshot === "object")).map(sanitizeTutorReportSnapshot).sort((a, b) => dateValueForSort(b.date) - dateValueForSort(a.date)) : [];
+	} catch {
+		return memory.__petitSuiviTutorReports ?? [];
+	}
+}
+async function writeTutorReports(reports) {
+	try {
+		await taskStore().setJSON(TUTOR_REPORTS_KEY, reports);
+	} catch {
+		memory.__petitSuiviTutorReports = reports;
+	}
+}
+async function readTutorReportComments() {
+	let rawComments = [];
+	try {
+		const comments = await taskStore().get(TUTOR_REPORT_COMMENTS_KEY, {
+			type: "json",
+			consistency: "strong"
+		});
+		rawComments = Array.isArray(comments) ? comments.filter((comment) => Boolean(comment && typeof comment === "object")) : [];
+	} catch {
+		rawComments = memory.__petitSuiviTutorReportComments ?? [];
+	}
+	const [reports, tracking] = await Promise.all([readTutorReports(), readTutorTracking()]);
+	const resolvedReports = resolveTutorReportTutorIds(reports, tracking.snapshots.flatMap((snapshot) => snapshot.records)).reports;
+	const idsByLegacyKey = /* @__PURE__ */ new Map();
+	resolvedReports.forEach((report) => report.entries.forEach((entry) => {
+		if (!entry.tutorId) return;
+		const legacyKey = `name:${`${entry.lastName} ${entry.firstName} ${entry.phone}`.trim().toLocaleLowerCase("fr").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`;
+		const ids = idsByLegacyKey.get(legacyKey) ?? /* @__PURE__ */ new Set();
+		ids.add(entry.tutorId);
+		idsByLegacyKey.set(legacyKey, ids);
+	}));
+	return rawComments.map((raw) => {
+		const oldKey = cleanText(raw.tutorKey);
+		const legacyId = /^id:(.+)$/i.exec(oldKey)?.[1] ?? "";
+		const mappedIds = idsByLegacyKey.get(oldKey);
+		const tutorId = cleanText(raw.tutorId) || legacyId || (mappedIds?.size === 1 ? Array.from(mappedIds)[0] : "");
+		return sanitizeTutorReportComment({
+			...raw,
+			tutorId
+		});
+	}).filter((comment) => comment.tutorId);
+}
+async function writeTutorReportComments(comments) {
+	try {
+		await taskStore().setJSON(TUTOR_REPORT_COMMENTS_KEY, comments);
+	} catch {
+		memory.__petitSuiviTutorReportComments = comments;
+	}
+}
+async function readTutorTracking() {
+	try {
+		const store = taskStore();
+		const tracking = await store.get(TUTOR_TRACKING_KEY, {
+			type: "json",
+			consistency: "strong"
+		});
+		if (!tracking || typeof tracking !== "object") return {
+			snapshots: [],
+			comments: []
+		};
+		const migrated = migrateTutorTrackingData(tracking);
+		if (JSON.stringify(migrated) !== JSON.stringify(tracking)) await store.setJSON(TUTOR_TRACKING_KEY, migrated);
+		return migrated;
+	} catch {
+		return memory.__petitSuiviTutorTracking ?? {
+			snapshots: [],
+			comments: []
+		};
+	}
+}
+async function writeTutorTracking(tracking) {
+	const sanitizedTracking = sanitizeTutorTrackingData(tracking);
+	try {
+		await taskStore().setJSON(TUTOR_TRACKING_KEY, sanitizedTracking);
+	} catch {
+		memory.__petitSuiviTutorTracking = sanitizedTracking;
+	}
+}
+async function createTutorTrackingSnapshotFromCsv(input) {
+	const date = cleanText(input.date);
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("La date liée à l’import est invalide");
+	const { records, sourceRowCount } = parseTutorTrackingCsv(input.rawCsv);
+	if (!records.length) throw new Error("Aucun tuteur valide trouvé dans ce CSV");
+	const now = (/* @__PURE__ */ new Date()).toISOString();
+	const tracking = await readTutorTracking();
+	const fileName = cleanText(input.fileName) || "liste-tuteurs.csv";
+	const snapshot = sanitizeTutorTrackingSnapshot({
+		id: crypto.randomUUID(),
+		date,
+		displayName: fileName.replace(/\.[^.]+$/, "") || `Liste tuteurs du ${date}`,
+		fileName,
+		sourceRowCount,
+		records,
+		createdAt: now,
+		updatedAt: now
+	});
+	const nextTracking = sanitizeTutorTrackingData({
+		...tracking,
+		snapshots: [snapshot, ...tracking.snapshots]
+	});
+	await writeTutorTracking(nextTracking);
+	return {
+		snapshot,
+		tracking: nextTracking
+	};
+}
+async function updateTutorTrackingSnapshotName(id, displayName) {
+	const cleanedName = cleanText(displayName);
+	if (!cleanedName) throw new Error("Le nom de l’import est obligatoire");
+	const tracking = await readTutorTracking();
+	if (!tracking.snapshots.some((snapshot) => snapshot.id === id)) throw new Error("Import introuvable");
+	const nextTracking = sanitizeTutorTrackingData({
+		...tracking,
+		snapshots: tracking.snapshots.map((snapshot) => snapshot.id === id ? {
+			...snapshot,
+			displayName: cleanedName
+		} : snapshot)
+	});
+	await writeTutorTracking(nextTracking);
+	return nextTracking;
+}
+async function readUnstaffedExclusions() {
+	try {
+		const exclusions = await taskStore().get(UNSTAFFED_EXCLUSIONS_KEY, {
+			type: "json",
+			consistency: "strong"
+		});
+		return exclusions && typeof exclusions === "object" ? sanitizeUnstaffedExclusions(exclusions) : {
+			sessionIds: [],
+			sourceKeys: [],
+			updatedAt: ""
+		};
+	} catch {
+		return memory.__petitSuiviUnstaffedExclusions ?? {
+			sessionIds: [],
+			sourceKeys: [],
+			updatedAt: ""
+		};
+	}
+}
+async function writeUnstaffedExclusions(exclusions) {
+	const sanitized = sanitizeUnstaffedExclusions(exclusions);
+	try {
+		await taskStore().setJSON(UNSTAFFED_EXCLUSIONS_KEY, sanitized);
+	} catch {
+		memory.__petitSuiviUnstaffedExclusions = sanitized;
+	}
+	return sanitized;
+}
+async function readAvailabilityImports() {
+	try {
+		const store = taskStore();
+		const imports = await store.get(AVAILABILITY_IMPORTS_KEY, {
+			type: "json",
+			consistency: "strong"
+		});
+		if (!Array.isArray(imports)) return [];
+		const sanitizedImports = imports.filter((item) => Boolean(item && typeof item === "object")).map(sanitizeAvailabilityImport);
+		return (await Promise.all(sanitizedImports.map(async (item) => {
+			if (item.rows.length > 0) return {
+				...item,
+				rawCsv: "",
+				hasRawCsv: item.hasRawCsv || Boolean(item.rawCsv)
+			};
+			const rows = await store.get(availabilityRowsKey(item.id), {
+				type: "json",
+				consistency: "strong"
+			});
+			return {
+				...item,
+				rows: Array.isArray(rows) ? rows.filter((row) => Boolean(row && typeof row === "object")).map(sanitizeAvailabilityRow).filter((row) => row.tutorId && row.date) : [],
+				rawCsv: ""
+			};
+		}))).sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt));
+	} catch (error) {
+		if (!canUseMemoryFallback()) throw error;
+		return memory.__petitSuiviAvailabilityImports ?? [];
+	}
+}
+async function writeAvailabilityImports(imports) {
+	const sanitizedImports = imports.map((item) => sanitizeAvailabilityImport(item));
+	try {
+		const store = taskStore();
+		await Promise.all(sanitizedImports.map((item) => Promise.all([item.rawCsv ? store.set(availabilityRawKey(item.id), item.rawCsv) : Promise.resolve(), store.setJSON(availabilityRowsKey(item.id), item.rows)])));
+		await store.setJSON(AVAILABILITY_IMPORTS_KEY, sanitizedImports.map((item) => ({
+			...item,
+			rows: [],
+			rawCsv: "",
+			hasRawCsv: item.hasRawCsv || Boolean(item.rawCsv)
+		})));
+	} catch (error) {
+		if (!canUseMemoryFallback()) throw error;
+		memory.__petitSuiviAvailabilityImports = sanitizedImports;
+	}
+}
+function availabilityRawKey(id) {
+	return `availability-imports/${id}.csv`;
+}
+function availabilityRowsKey(id) {
+	return `availability-imports/${id}.rows.json`;
+}
+async function readAvailabilityIndex() {
+	const imports = await taskStore().get(AVAILABILITY_IMPORTS_KEY, {
+		type: "json",
+		consistency: "strong"
+	});
+	return Array.isArray(imports) ? imports.filter((item) => Boolean(item && typeof item === "object")).map(sanitizeAvailabilityImport).sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt)) : [];
+}
+async function readAvailabilityImportSummaries() {
+	return (await readAvailabilityIndex()).map((item) => ({
+		...item,
+		rows: [],
+		rawCsv: ""
+	}));
+}
+async function readAvailabilityImportById(id) {
+	const cleanedId = cleanText(id);
+	if (!cleanedId) return null;
+	try {
+		const store = taskStore();
+		const selected = (await readAvailabilityIndex()).find((item) => item.id === cleanedId);
+		if (!selected) return null;
+		if (selected.rows.length) return selected;
+		const rows = await store.get(availabilityRowsKey(selected.id), {
+			type: "json",
+			consistency: "strong"
+		});
+		return {
+			...selected,
+			rows: Array.isArray(rows) ? rows.filter((row) => Boolean(row && typeof row === "object")).map(sanitizeAvailabilityRow).filter((row) => row.tutorId && row.date) : [],
+			rawCsv: ""
+		};
+	} catch (error) {
+		if (!canUseMemoryFallback()) throw error;
+		return (memory.__petitSuiviAvailabilityImports ?? []).find((item) => item.id === cleanedId) ?? null;
+	}
+}
+async function createAvailabilityImportFromCsv(input) {
+	const now = (/* @__PURE__ */ new Date()).toISOString();
+	const rows = parseAvailabilityCsv(input.rawCsv);
+	if (!rows.length) throw new Error("Aucune disponibilité valide dans ce CSV");
+	const nextImport = sanitizeAvailabilityImport({
+		id: crypto.randomUUID(),
+		importedAt: now,
+		displayName: input.fileName.replace(/\.[^.]+$/, "") || "Import de disponibilités",
+		fileName: input.fileName || "disponibilites.csv",
+		rows,
+		rawCsv: input.rawCsv,
+		hasRawCsv: true,
+		createdAt: now
+	});
+	const store = taskStore();
+	await store.set(availabilityRawKey(nextImport.id), input.rawCsv);
+	await store.setJSON(availabilityRowsKey(nextImport.id), rows);
+	const existingImports = await readAvailabilityIndex();
+	const nextIndex = [{
+		...nextImport,
+		rows: [],
+		rawCsv: "",
+		hasRawCsv: true
+	}, ...existingImports.filter((item) => item.id !== nextImport.id).map((item) => ({
+		...item,
+		rows: [],
+		rawCsv: ""
+	}))].sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt));
+	await store.setJSON(AVAILABILITY_IMPORTS_KEY, nextIndex);
+	return {
+		...nextImport,
+		rawCsv: ""
+	};
+}
+async function updateAvailabilityImportName(id, displayName) {
+	const store = taskStore();
+	const existingImports = await readAvailabilityIndex();
+	const matchingImport = existingImports.find((item) => item.id === id);
+	if (!matchingImport) throw new Error("Import introuvable");
+	const cleanedName = cleanText(displayName);
+	if (!cleanedName) throw new Error("Le nom de l’import est obligatoire");
+	const nextImports = existingImports.map((item) => item.id === id ? {
+		...item,
+		displayName: cleanedName,
+		rows: [],
+		rawCsv: ""
+	} : {
+		...item,
+		rows: [],
+		rawCsv: ""
+	});
+	await store.setJSON(AVAILABILITY_IMPORTS_KEY, nextImports);
+	return {
+		...matchingImport,
+		displayName: cleanedName
+	};
+}
+async function deleteAvailabilityImportById(id) {
+	await moveFileImportToTrash("availability", id);
+}
+async function readAvailabilityRawCsv(id) {
+	const rawCsv = await taskStore().get(availabilityRawKey(id), {
+		type: "text",
+		consistency: "strong"
+	});
+	if (rawCsv) return rawCsv;
+	return (await readAvailabilityIndex()).find((item) => item.id === id)?.rawCsv || "";
+}
+function tutorAssignmentRowsKey(id) {
+	return `tutor-assignment-imports/${id}.rows.json`;
+}
+async function readTutorAssignmentIndex() {
+	const imports = await taskStore().get(TUTOR_ASSIGNMENT_IMPORTS_KEY, {
+		type: "json",
+		consistency: "strong"
+	});
+	return Array.isArray(imports) ? imports.filter((item) => Boolean(item && typeof item === "object")).map(sanitizeTutorAssignmentImport).sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt)) : [];
+}
+async function readTutorAssignmentImportSummaries() {
+	return (await readTutorAssignmentIndex()).map((item) => ({
+		...item,
+		rows: []
+	}));
+}
+async function readTutorAssignmentImportById(id) {
+	const cleanedId = cleanText(id);
+	if (!cleanedId) return null;
+	try {
+		const store = taskStore();
+		const selected = (await readTutorAssignmentIndex()).find((item) => item.id === cleanedId);
+		if (!selected) return null;
+		if (selected.rows.length) return selected;
+		const rows = await store.get(tutorAssignmentRowsKey(selected.id), {
+			type: "json",
+			consistency: "strong"
+		});
+		return {
+			...selected,
+			rows: Array.isArray(rows) ? rows.filter((row) => Boolean(row && typeof row === "object")).map(sanitizeTutorAssignmentRow).filter((row) => row.tutorId && row.date && row.timeSlot) : []
+		};
+	} catch (error) {
+		if (!canUseMemoryFallback()) throw error;
+		return (memory.__petitSuiviTutorAssignmentImports ?? []).find((item) => item.id === cleanedId) ?? null;
+	}
+}
+async function readTutorAssignmentImports() {
+	try {
+		const store = taskStore();
+		const imports = await readTutorAssignmentIndex();
+		return (await Promise.all(imports.map(async (item) => {
+			if (item.rows.length) return item;
+			const rows = await store.get(tutorAssignmentRowsKey(item.id), {
+				type: "json",
+				consistency: "strong"
+			});
+			return {
+				...item,
+				rows: Array.isArray(rows) ? rows.filter((row) => Boolean(row && typeof row === "object")).map(sanitizeTutorAssignmentRow).filter((row) => row.tutorId && row.date && row.timeSlot) : []
+			};
+		}))).sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt));
+	} catch (error) {
+		if (!canUseMemoryFallback()) throw error;
+		return memory.__petitSuiviTutorAssignmentImports ?? [];
+	}
+}
+async function readLatestTutorAssignmentImport() {
+	try {
+		const store = taskStore();
+		const latest = (await readTutorAssignmentIndex())[0];
+		if (!latest) return null;
+		if (latest.rows.length) return latest;
+		const rows = await store.get(tutorAssignmentRowsKey(latest.id), {
+			type: "json",
+			consistency: "strong"
+		});
+		return {
+			...latest,
+			rows: Array.isArray(rows) ? rows.filter((row) => Boolean(row && typeof row === "object")).map(sanitizeTutorAssignmentRow).filter((row) => row.tutorId && row.date && row.timeSlot) : []
+		};
+	} catch (error) {
+		if (!canUseMemoryFallback()) throw error;
+		return (memory.__petitSuiviTutorAssignmentImports ?? [])[0] ?? null;
+	}
+}
+async function createTutorAssignmentImportFromCsv(input) {
+	const now = (/* @__PURE__ */ new Date()).toISOString();
+	const parsed = parseTutorAssignmentCsv(input.rawCsv);
+	if (!parsed.rows.length) throw new Error("Aucune séance affectée valide dans ce CSV");
+	const nextImport = sanitizeTutorAssignmentImport({
+		id: crypto.randomUUID(),
+		importedAt: now,
+		displayName: input.fileName.replace(/\.[^.]+$/, "") || "Séances affectées",
+		fileName: input.fileName || "seances-affectees.csv",
+		sourceRowCount: parsed.sourceRowCount,
+		rows: parsed.rows,
+		createdAt: now
+	});
+	try {
+		const store = taskStore();
+		await store.setJSON(tutorAssignmentRowsKey(nextImport.id), nextImport.rows);
+		const existing = await readTutorAssignmentIndex();
+		await store.setJSON(TUTOR_ASSIGNMENT_IMPORTS_KEY, [{
+			...nextImport,
+			rows: []
+		}, ...existing.filter((item) => item.id !== nextImport.id).map((item) => ({
+			...item,
+			rows: []
+		}))]);
+	} catch (error) {
+		if (!canUseMemoryFallback()) throw error;
+		memory.__petitSuiviTutorAssignmentImports = [nextImport, ...memory.__petitSuiviTutorAssignmentImports ?? []];
+	}
+	return nextImport;
+}
+async function updateTutorAssignmentImportName(id, displayName) {
+	const store = taskStore();
+	const existing = await readTutorAssignmentIndex();
+	if (!existing.some((item) => item.id === id)) throw new Error("Import introuvable");
+	const cleanedName = cleanText(displayName);
+	if (!cleanedName) throw new Error("Le nom de l’import est obligatoire");
+	await store.setJSON(TUTOR_ASSIGNMENT_IMPORTS_KEY, existing.map((item) => item.id === id ? {
+		...item,
+		displayName: cleanedName,
+		rows: []
+	} : {
+		...item,
+		rows: []
+	}));
+}
+async function deleteTutorAssignmentImportById(id) {
+	await moveFileImportToTrash("assignments", id);
+}
+function upcomingSessionRowsKey(id) {
+	return `upcoming-session-imports/${id}.rows.json`;
+}
+function upcomingStaffingSessionsKey(id) {
+	return `upcoming-session-imports/${id}.staffing.json`;
+}
+async function readUpcomingSessionIndex() {
+	const imports = await taskStore().get(UPCOMING_SESSION_IMPORTS_KEY, {
+		type: "json",
+		consistency: "strong"
+	});
+	return Array.isArray(imports) ? imports.filter((item) => Boolean(item && typeof item === "object")).map(sanitizeUpcomingSessionImport).sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt)) : [];
+}
+async function readUpcomingSessionImportSummaries() {
+	try {
+		return (await readUpcomingSessionIndex()).map((item) => ({
+			...item,
+			rows: [],
+			staffingSessions: []
+		}));
+	} catch (error) {
+		if (!canUseMemoryFallback()) throw error;
+		return (memory.__petitSuiviUpcomingSessionImports ?? []).map((item) => ({
+			...item,
+			rows: [],
+			staffingSessions: []
+		}));
+	}
+}
+async function readUpcomingSessionImports() {
+	try {
+		const store = taskStore();
+		const imports = await readUpcomingSessionIndex();
+		return (await Promise.all(imports.map(async (item) => {
+			if (item.rows.length && item.staffingSessions.length) return item;
+			const [rows, staffingSessions] = await Promise.all([store.get(upcomingSessionRowsKey(item.id), {
+				type: "json",
+				consistency: "strong"
+			}), store.get(upcomingStaffingSessionsKey(item.id), {
+				type: "json",
+				consistency: "strong"
+			})]);
+			return {
+				...item,
+				rows: Array.isArray(rows) ? rows.filter((row) => Boolean(row && typeof row === "object")).map(sanitizeUpcomingSessionRow).filter((row) => row.sessionId && row.date && row.school) : [],
+				staffingSessions: Array.isArray(staffingSessions) ? staffingSessions.filter((row) => Boolean(row && typeof row === "object")).map(sanitizeUpcomingStaffingSession).filter((row) => row.sessionId && row.date && row.school) : []
+			};
+		}))).sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt));
+	} catch (error) {
+		if (!canUseMemoryFallback()) throw error;
+		return memory.__petitSuiviUpcomingSessionImports ?? [];
+	}
+}
+async function readUpcomingSessionImportById(id) {
+	const cleanedId = cleanText(id);
+	if (!cleanedId) return null;
+	try {
+		const store = taskStore();
+		const selected = (await readUpcomingSessionIndex()).find((item) => item.id === cleanedId);
+		if (!selected) return null;
+		if (selected.rows.length && selected.staffingSessions.length) return selected;
+		const [rows, staffingSessions] = await Promise.all([store.get(upcomingSessionRowsKey(selected.id), {
+			type: "json",
+			consistency: "strong"
+		}), store.get(upcomingStaffingSessionsKey(selected.id), {
+			type: "json",
+			consistency: "strong"
+		})]);
+		return {
+			...selected,
+			rows: Array.isArray(rows) ? rows.filter((row) => Boolean(row && typeof row === "object")).map(sanitizeUpcomingSessionRow).filter((row) => row.sessionId && row.date && row.school) : [],
+			staffingSessions: Array.isArray(staffingSessions) ? staffingSessions.filter((row) => Boolean(row && typeof row === "object")).map(sanitizeUpcomingStaffingSession).filter((row) => row.sessionId && row.date && row.school) : []
+		};
+	} catch (error) {
+		if (!canUseMemoryFallback()) throw error;
+		return (memory.__petitSuiviUpcomingSessionImports ?? []).find((item) => item.id === cleanedId) ?? null;
+	}
+}
+async function createUpcomingSessionImportFromCsv(input) {
+	const now = (/* @__PURE__ */ new Date()).toISOString();
+	const parsed = parseUpcomingSessionsCsv(input.rawCsv);
+	if (!parsed.rows.length && !parsed.schools.length) throw new Error("Aucune séance ni aucun établissement valide trouvé dans ce CSV");
+	const nextImport = sanitizeUpcomingSessionImport({
+		id: crypto.randomUUID(),
+		importedAt: now,
+		displayName: input.fileName.replace(/\.[^.]+$/, "") || "Séances à venir",
+		fileName: input.fileName || "semaines-a-venir.csv",
+		sourceRowCount: parsed.sourceRowCount,
+		sourceSessionCount: parsed.sourceSessionCount,
+		schools: parsed.schools,
+		schoolStaffing: parsed.schoolStaffing,
+		staffingSessions: parsed.staffingSessions,
+		rows: parsed.rows,
+		createdAt: now
+	});
+	try {
+		const store = taskStore();
+		await Promise.all([store.setJSON(upcomingSessionRowsKey(nextImport.id), nextImport.rows), store.setJSON(upcomingStaffingSessionsKey(nextImport.id), nextImport.staffingSessions)]);
+		const existing = await readUpcomingSessionIndex();
+		await store.setJSON(UPCOMING_SESSION_IMPORTS_KEY, [{
+			...nextImport,
+			rows: [],
+			staffingSessions: []
+		}, ...existing.filter((item) => item.id !== nextImport.id).map((item) => ({
+			...item,
+			rows: [],
+			staffingSessions: []
+		}))]);
+	} catch (error) {
+		if (!canUseMemoryFallback()) throw error;
+		memory.__petitSuiviUpcomingSessionImports = [nextImport, ...memory.__petitSuiviUpcomingSessionImports ?? []];
+	}
+	return nextImport;
+}
+async function updateUpcomingSessionImportName(id, displayName) {
+	const store = taskStore();
+	const existing = await readUpcomingSessionIndex();
+	if (!existing.some((item) => item.id === id)) throw new Error("Import introuvable");
+	const cleanedName = cleanText(displayName);
+	if (!cleanedName) throw new Error("Le nom de l’import est obligatoire");
+	await store.setJSON(UPCOMING_SESSION_IMPORTS_KEY, existing.map((item) => item.id === id ? {
+		...item,
+		displayName: cleanedName,
+		rows: [],
+		staffingSessions: []
+	} : {
+		...item,
+		rows: [],
+		staffingSessions: []
+	}));
+}
+async function deleteUpcomingSessionImportById(id) {
+	await moveFileImportToTrash("upcomingSessions", id);
+}
+async function readActualSessionImports() {
+	try {
+		const imports = await taskStore().get(ACTUAL_SESSION_IMPORTS_KEY, {
+			type: "json",
+			consistency: "strong"
+		});
+		return Array.isArray(imports) ? imports.filter((item) => Boolean(item && typeof item === "object")).map(sanitizeActualSessionImport).sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt)) : [];
+	} catch (error) {
+		if (!canUseMemoryFallback()) throw error;
+		return memory.__petitSuiviActualSessionImports ?? [];
+	}
+}
+async function readActualSessionImportSummaries() {
+	return (await readActualSessionImports()).map((item) => ({
+		...item,
+		rows: []
+	}));
+}
+async function createActualSessionImportFromCsv(input) {
+	const now = (/* @__PURE__ */ new Date()).toISOString();
+	const parsed = parseActualSessionsCsv(input.rawCsv);
+	if (!parsed.rows.length) throw new Error("Aucun ID valide trouvé dans la colonne Semaine réelle");
+	const nextImport = sanitizeActualSessionImport({
+		id: crypto.randomUUID(),
+		importedAt: now,
+		displayName: input.fileName.replace(/\.[^.]+$/, "") || "Semaine réelle",
+		fileName: input.fileName || "semaine-reelle.csv",
+		sourceRowCount: parsed.sourceRowCount,
+		rows: parsed.rows,
+		createdAt: now
+	});
+	try {
+		const store = taskStore();
+		const existing = await readActualSessionImports();
+		await store.setJSON(ACTUAL_SESSION_IMPORTS_KEY, [nextImport, ...existing.filter((item) => item.id !== nextImport.id)]);
+	} catch (error) {
+		if (!canUseMemoryFallback()) throw error;
+		memory.__petitSuiviActualSessionImports = [nextImport, ...memory.__petitSuiviActualSessionImports ?? []];
+	}
+	return nextImport;
+}
+async function updateActualSessionImportName(id, displayName) {
+	const existing = await readActualSessionImports();
+	if (!existing.some((item) => item.id === id)) throw new Error("Import introuvable");
+	const cleanedName = cleanText(displayName);
+	if (!cleanedName) throw new Error("Le nom de l’import est obligatoire");
+	await taskStore().setJSON(ACTUAL_SESSION_IMPORTS_KEY, existing.map((item) => item.id === id ? {
+		...item,
+		displayName: cleanedName
+	} : item));
+}
+async function deleteActualSessionImportById(id) {
+	const existing = await readActualSessionImports();
+	await taskStore().setJSON(ACTUAL_SESSION_IMPORTS_KEY, existing.filter((item) => item.id !== id));
+}
+async function readStaffingAudits() {
+	try {
+		const data = await taskStore().get(STAFFING_AUDITS_KEY, {
+			type: "json",
+			consistency: "strong"
+		});
+		return Array.isArray(data) ? data.filter((item) => Boolean(item && typeof item === "object")).map(sanitizeStaffingAuditDay).filter((item) => item.date).sort((a, b) => b.date.localeCompare(a.date)) : [];
+	} catch (error) {
+		if (!canUseMemoryFallback()) throw error;
+		return memory.__petitSuiviStaffingAudits ?? [];
+	}
+}
+async function writeStaffingAudits(days) {
+	const normalizedDays = days.map((day) => sanitizeStaffingAuditDay(day)).filter((day) => day.date).sort((a, b) => b.date.localeCompare(a.date));
+	try {
+		await taskStore().setJSON(STAFFING_AUDITS_KEY, normalizedDays);
+	} catch (error) {
+		if (!canUseMemoryFallback()) throw error;
+		memory.__petitSuiviStaffingAudits = normalizedDays;
+	}
+}
+async function saveStaffingAudit(day, overwrite) {
+	const prepared = sanitizeStaffingAuditDay(day);
+	if (!prepared.date || !prepared.sessions.length) throw new Error("Journée de staffing invalide");
+	const existing = await readStaffingAudits();
+	const previous = existing.find((item) => item.date === prepared.date);
+	if (previous && !overwrite) return {
+		conflict: true,
+		days: existing
+	};
+	const now = (/* @__PURE__ */ new Date()).toISOString();
+	const saved = {
+		...prepared,
+		createdAt: previous?.createdAt || now,
+		updatedAt: now
+	};
+	const next = [saved, ...existing.filter((item) => item.date !== saved.date)].sort((a, b) => b.date.localeCompare(a.date));
+	try {
+		await taskStore().setJSON(STAFFING_AUDITS_KEY, next);
+	} catch (error) {
+		if (!canUseMemoryFallback()) throw error;
+		memory.__petitSuiviStaffingAudits = next;
+	}
+	return {
+		conflict: false,
+		day: saved,
+		days: next
+	};
+}
+async function updateStaffingAuditSession(input) {
+	const day = (await readStaffingAudits()).find((item) => item.date === input.date);
+	if (!day) throw new Error("Bilan introuvable");
+	if (!day.sessions.some((item) => item.sessionId === input.sessionId)) throw new Error("Séance introuvable");
+	const sessions = day.sessions.map((session) => session.sessionId === input.sessionId ? {
+		...session,
+		portfolioOwner: input.portfolioOwner === void 0 ? session.portfolioOwner : isStaffingAuditOwner(input.portfolioOwner) ? input.portfolioOwner : session.portfolioOwner,
+		resolution: input.resolution === void 0 ? session.resolution : isStaffingAuditResolution(input.resolution) ? input.resolution : session.resolution,
+		treated: input.treated === void 0 ? session.treated : input.treated === true
+	} : session);
+	return saveStaffingAudit({
+		...day,
+		sessions,
+		updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+	}, true);
+}
+function tutorInterestRowsKey(id) {
+	return `tutor-interest-imports/${id}.rows.json`;
+}
+async function readTutorInterestIndex() {
+	const imports = await taskStore().get(TUTOR_INTEREST_IMPORTS_KEY, {
+		type: "json",
+		consistency: "strong"
+	});
+	return Array.isArray(imports) ? imports.filter((item) => Boolean(item && typeof item === "object")).map(sanitizeTutorInterestImport).sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt)) : [];
+}
+async function readTutorInterestImportSummaries() {
+	try {
+		return (await readTutorInterestIndex()).map((item) => ({
+			...item,
+			rows: []
+		}));
+	} catch (error) {
+		if (!canUseMemoryFallback()) throw error;
+		return (memory.__petitSuiviTutorInterestImports ?? []).map((item) => ({
+			...item,
+			rows: []
+		}));
+	}
+}
+async function readTutorInterestImportById(id) {
+	const cleanedId = cleanText(id);
+	if (!cleanedId) return null;
+	try {
+		const store = taskStore();
+		const selected = (await readTutorInterestIndex()).find((item) => item.id === cleanedId);
+		if (!selected) return null;
+		if (selected.rows.length) return selected;
+		const rows = await store.get(tutorInterestRowsKey(selected.id), {
+			type: "json",
+			consistency: "strong"
+		});
+		return {
+			...selected,
+			rows: Array.isArray(rows) ? rows.filter((row) => Boolean(row && typeof row === "object")).map(sanitizeTutorInterestRow).filter((row) => row.personId && row.sessionId && row.date) : []
+		};
+	} catch (error) {
+		if (!canUseMemoryFallback()) throw error;
+		return (memory.__petitSuiviTutorInterestImports ?? []).find((item) => item.id === cleanedId) ?? null;
+	}
+}
+async function readTutorInterestImports() {
+	try {
+		const store = taskStore();
+		const imports = await readTutorInterestIndex();
+		return (await Promise.all(imports.map(async (item) => {
+			if (item.rows.length) return item;
+			const rows = await store.get(tutorInterestRowsKey(item.id), {
+				type: "json",
+				consistency: "strong"
+			});
+			return {
+				...item,
+				rows: Array.isArray(rows) ? rows.filter((row) => Boolean(row && typeof row === "object")).map(sanitizeTutorInterestRow).filter((row) => row.personId && row.sessionId && row.date) : []
+			};
+		}))).sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt));
+	} catch (error) {
+		if (!canUseMemoryFallback()) throw error;
+		return memory.__petitSuiviTutorInterestImports ?? [];
+	}
+}
+async function createTutorInterestImportFromCsv(input) {
+	const now = (/* @__PURE__ */ new Date()).toISOString();
+	const parsed = parseTutorInterestsCsv(input.rawCsv);
+	if (!parsed.rows.length) throw new Error("Aucune déclaration d’intérêt valide dans ce CSV");
+	const nextImport = sanitizeTutorInterestImport({
+		id: crypto.randomUUID(),
+		importedAt: now,
+		displayName: input.fileName.replace(/\.[^.]+$/, "") || "Intérêts tuteurs et candidats",
+		fileName: input.fileName || "interets-tuteurs-candidats.csv",
+		sourceRowCount: parsed.sourceRowCount,
+		rows: parsed.rows,
+		createdAt: now
+	});
+	try {
+		const store = taskStore();
+		await store.setJSON(tutorInterestRowsKey(nextImport.id), nextImport.rows);
+		const existing = await readTutorInterestIndex();
+		await store.setJSON(TUTOR_INTEREST_IMPORTS_KEY, [{
+			...nextImport,
+			rows: []
+		}, ...existing.filter((item) => item.id !== nextImport.id).map((item) => ({
+			...item,
+			rows: []
+		}))]);
+	} catch (error) {
+		if (!canUseMemoryFallback()) throw error;
+		memory.__petitSuiviTutorInterestImports = [nextImport, ...memory.__petitSuiviTutorInterestImports ?? []];
+	}
+	return nextImport;
+}
+async function updateTutorInterestImportName(id, displayName) {
+	const store = taskStore();
+	const existing = await readTutorInterestIndex();
+	if (!existing.some((item) => item.id === id)) throw new Error("Import introuvable");
+	const cleanedName = cleanText(displayName);
+	if (!cleanedName) throw new Error("Le nom de l’import est obligatoire");
+	await store.setJSON(TUTOR_INTEREST_IMPORTS_KEY, existing.map((item) => item.id === id ? {
+		...item,
+		displayName: cleanedName,
+		rows: []
+	} : {
+		...item,
+		rows: []
+	}));
+}
+async function deleteTutorInterestImportById(id) {
+	await moveFileImportToTrash("interests", id);
+}
+async function readTutorCoverageNotes() {
+	try {
+		const notes = await taskStore().get(TUTOR_COVERAGE_NOTES_KEY, {
+			type: "json",
+			consistency: "strong"
+		});
+		return Array.isArray(notes) ? notes.filter((item) => Boolean(item && typeof item === "object")).map(sanitizeTutorCoverageNote).filter((item) => item.tutorId && item.date) : [];
+	} catch (error) {
+		if (!canUseMemoryFallback()) throw error;
+		return memory.__petitSuiviTutorCoverageNotes ?? [];
+	}
+}
+async function upsertTutorCoverageNote(input) {
+	const nextNote = sanitizeTutorCoverageNote({
+		...input,
+		updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+	});
+	if (!nextNote.tutorId || !nextNote.date) throw new Error("Tuteur ou date manquant");
+	const nextNotes = [nextNote, ...(await readTutorCoverageNotes()).filter((item) => !(item.tutorId === nextNote.tutorId && item.date === nextNote.date))];
+	try {
+		await taskStore().setJSON(TUTOR_COVERAGE_NOTES_KEY, nextNotes);
+	} catch (error) {
+		if (!canUseMemoryFallback()) throw error;
+		memory.__petitSuiviTutorCoverageNotes = nextNotes;
+	}
+	return nextNote;
+}
+function enrollmentRowsKey(id) {
+	return `enrollment-imports/${id}.rows.json`;
+}
+async function readEnrollmentIndex() {
+	const imports = await taskStore().get(ENROLLMENT_IMPORTS_KEY, {
+		type: "json",
+		consistency: "strong"
+	});
+	return Array.isArray(imports) ? imports.filter((item) => Boolean(item && typeof item === "object")).map(sanitizeEnrollmentImport).sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt)) : [];
+}
+async function readEnrollmentImportSummaries() {
+	return (await readEnrollmentIndex()).map((item) => ({
+		...item,
+		rows: []
+	}));
+}
+async function readEnrollmentImportById(id) {
+	const cleanedId = cleanText(id);
+	if (!cleanedId) return null;
+	try {
+		const store = taskStore();
+		const selected = (await readEnrollmentIndex()).find((item) => item.id === cleanedId);
+		if (!selected) return null;
+		if (selected.rows.length) return selected;
+		const rows = await store.get(enrollmentRowsKey(selected.id), {
+			type: "json",
+			consistency: "strong"
+		});
+		return {
+			...selected,
+			rows: Array.isArray(rows) ? rows.filter((row) => Boolean(row && typeof row === "object")).map(sanitizeEnrollmentRow).filter((row) => row.studentId && row.slots) : []
+		};
+	} catch (error) {
+		if (!canUseMemoryFallback()) throw error;
+		return (memory.__petitSuiviEnrollmentImports ?? []).find((item) => item.id === cleanedId) ?? null;
+	}
+}
+async function readEnrollmentImports() {
+	try {
+		const store = taskStore();
+		const imports = await readEnrollmentIndex();
+		return (await Promise.all(imports.map(async (item) => {
+			if (item.rows.length) return item;
+			const rows = await store.get(enrollmentRowsKey(item.id), {
+				type: "json",
+				consistency: "strong"
+			});
+			return {
+				...item,
+				rows: Array.isArray(rows) ? rows.filter((row) => Boolean(row && typeof row === "object")).map(sanitizeEnrollmentRow).filter((row) => row.studentId && row.slots) : []
+			};
+		}))).sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt));
+	} catch (error) {
+		if (!canUseMemoryFallback()) throw error;
+		return memory.__petitSuiviEnrollmentImports ?? [];
+	}
+}
+async function createEnrollmentImportFromCsv(input) {
+	const now = (/* @__PURE__ */ new Date()).toISOString();
+	const parsed = parseEnrollmentCsv(input.rawCsv);
+	if (!parsed.rows.length) throw new Error("Aucun élève avec des créneaux dans ce CSV");
+	const nextImport = sanitizeEnrollmentImport({
+		id: crypto.randomUUID(),
+		importedAt: now,
+		displayName: input.fileName.replace(/\.[^.]+$/, "") || "Export inscriptions",
+		fileName: input.fileName || "parents.csv",
+		sourceRowCount: parsed.sourceRowCount,
+		rows: parsed.rows,
+		createdAt: now
+	});
+	try {
+		const store = taskStore();
+		await store.setJSON(enrollmentRowsKey(nextImport.id), nextImport.rows);
+		const existing = await readEnrollmentIndex();
+		const nextIndex = [{
+			...nextImport,
+			rows: []
+		}, ...existing.filter((item) => item.id !== nextImport.id).map((item) => ({
+			...item,
+			rows: []
+		}))].sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt));
+		await store.setJSON(ENROLLMENT_IMPORTS_KEY, nextIndex);
+	} catch (error) {
+		if (!canUseMemoryFallback()) throw error;
+		memory.__petitSuiviEnrollmentImports = [nextImport, ...memory.__petitSuiviEnrollmentImports ?? []];
+	}
+	return nextImport;
+}
+async function updateEnrollmentImportName(id, displayName) {
+	const store = taskStore();
+	const existing = await readEnrollmentIndex();
+	if (!existing.find((item) => item.id === id)) throw new Error("Import introuvable");
+	const cleanedName = cleanText(displayName);
+	if (!cleanedName) throw new Error("Le nom de l’import est obligatoire");
+	await store.setJSON(ENROLLMENT_IMPORTS_KEY, existing.map((item) => item.id === id ? {
+		...item,
+		displayName: cleanedName,
+		rows: []
+	} : {
+		...item,
+		rows: []
+	}));
+}
+async function deleteEnrollmentImportById(id) {
+	await moveFileImportToTrash("enrollments", id);
+}
+function trashPayloadKey(kind, id) {
+	return `file-import-trash/${kind}/${id}.json`;
+}
+function sanitizeTrashedFileImport(raw) {
+	const kind = [
+		"availability",
+		"assignments",
+		"interests",
+		"upcomingSessions",
+		"enrollments",
+		"tutors"
+	].includes(raw.kind) ? raw.kind : "availability";
+	const sourceRowCount = Math.max(0, Math.round(Number(raw.sourceRowCount) || 0));
+	return {
+		kind,
+		id: cleanText(raw.id),
+		importedAt: cleanText(raw.importedAt),
+		displayName: cleanText(raw.displayName) || cleanText(raw.fileName) || "Import sans nom",
+		fileName: cleanText(raw.fileName),
+		...sourceRowCount ? { sourceRowCount } : {},
+		...cleanText(raw.date) ? { date: cleanText(raw.date) } : {},
+		deletedAt: cleanText(raw.deletedAt) || (/* @__PURE__ */ new Date()).toISOString()
+	};
+}
+async function readFileImportTrashPayloads() {
+	try {
+		const index = await taskStore().get(FILE_IMPORT_TRASH_KEY, {
+			type: "json",
+			consistency: "strong"
+		});
+		return (Array.isArray(index) ? index.filter((item) => Boolean(item && typeof item === "object")).map(sanitizeTrashedFileImport).filter((item) => item.id) : []).sort((a, b) => dateValueForSort(b.deletedAt) - dateValueForSort(a.deletedAt));
+	} catch (error) {
+		if (!canUseMemoryFallback()) throw error;
+		return (memory.__petitSuiviFileImportTrash ?? []).map((item) => item.summary);
+	}
+}
+async function readFileImportTrash() {
+	return readFileImportTrashPayloads();
+}
+async function saveTrashEntry(summary, record) {
+	try {
+		const store = taskStore();
+		const current = await readFileImportTrashPayloads();
+		await store.setJSON(trashPayloadKey(summary.kind, summary.id), {
+			summary,
+			record
+		});
+		await store.setJSON(FILE_IMPORT_TRASH_KEY, [summary, ...current.filter((item) => !(item.kind === summary.kind && item.id === summary.id))]);
+	} catch (error) {
+		if (!canUseMemoryFallback()) throw error;
+		memory.__petitSuiviFileImportTrash = [{
+			summary,
+			record
+		}, ...(memory.__petitSuiviFileImportTrash ?? []).filter((item) => !(item.summary.kind === summary.kind && item.summary.id === summary.id))];
+	}
+}
+async function moveFileImportToTrash(kind, id) {
+	const cleanedId = cleanText(id);
+	if (!cleanedId) throw new Error("Identifiant manquant");
+	const store = taskStore();
+	let record;
+	if (kind === "availability") record = (await readAvailabilityIndex()).find((item) => item.id === cleanedId);
+	else if (kind === "assignments") record = (await readTutorAssignmentIndex()).find((item) => item.id === cleanedId);
+	else if (kind === "interests") record = (await readTutorInterestIndex()).find((item) => item.id === cleanedId);
+	else if (kind === "upcomingSessions") record = (await readUpcomingSessionIndex()).find((item) => item.id === cleanedId);
+	else if (kind === "enrollments") record = (await readEnrollmentIndex()).find((item) => item.id === cleanedId);
+	else record = (await readTutorTracking()).snapshots.find((item) => item.id === cleanedId);
+	if (!record) throw new Error("Import introuvable");
+	const deletedAt = (/* @__PURE__ */ new Date()).toISOString();
+	const summary = sanitizeTrashedFileImport({
+		kind,
+		id: record.id,
+		importedAt: "date" in record ? record.updatedAt || record.createdAt || record.date : record.importedAt,
+		displayName: record.displayName,
+		fileName: record.fileName,
+		sourceRowCount: "sourceRowCount" in record ? record.sourceRowCount : void 0,
+		date: "date" in record ? record.date : "",
+		deletedAt
+	});
+	await saveTrashEntry(summary, record);
+	if (kind === "availability") {
+		const existing = await readAvailabilityIndex();
+		await store.setJSON(AVAILABILITY_IMPORTS_KEY, existing.filter((item) => item.id !== cleanedId).map((item) => ({
+			...item,
+			rows: [],
+			rawCsv: ""
+		})));
+	} else if (kind === "assignments") {
+		const existing = await readTutorAssignmentIndex();
+		await store.setJSON(TUTOR_ASSIGNMENT_IMPORTS_KEY, existing.filter((item) => item.id !== cleanedId).map((item) => ({
+			...item,
+			rows: []
+		})));
+	} else if (kind === "interests") {
+		const existing = await readTutorInterestIndex();
+		await store.setJSON(TUTOR_INTEREST_IMPORTS_KEY, existing.filter((item) => item.id !== cleanedId).map((item) => ({
+			...item,
+			rows: []
+		})));
+	} else if (kind === "upcomingSessions") {
+		const existing = await readUpcomingSessionIndex();
+		await store.setJSON(UPCOMING_SESSION_IMPORTS_KEY, existing.filter((item) => item.id !== cleanedId).map((item) => ({
+			...item,
+			rows: [],
+			staffingSessions: []
+		})));
+	} else if (kind === "enrollments") {
+		const existing = await readEnrollmentIndex();
+		await store.setJSON(ENROLLMENT_IMPORTS_KEY, existing.filter((item) => item.id !== cleanedId).map((item) => ({
+			...item,
+			rows: []
+		})));
+	} else {
+		const tracking = await readTutorTracking();
+		await writeTutorTracking({
+			...tracking,
+			snapshots: tracking.snapshots.filter((item) => item.id !== cleanedId)
+		});
+	}
+	return summary;
+}
+async function restoreFileImportFromTrash(kind, id) {
+	const cleanedId = cleanText(id);
+	if (!cleanedId) throw new Error("Identifiant manquant");
+	let summary;
+	let record;
+	try {
+		const payload = await taskStore().get(trashPayloadKey(kind, cleanedId), {
+			type: "json",
+			consistency: "strong"
+		});
+		if (payload && typeof payload === "object") {
+			const rawPayload = payload;
+			summary = rawPayload.summary && typeof rawPayload.summary === "object" ? sanitizeTrashedFileImport(rawPayload.summary) : void 0;
+			record = rawPayload.record;
+		}
+	} catch (error) {
+		if (!canUseMemoryFallback()) throw error;
+		const payload = (memory.__petitSuiviFileImportTrash ?? []).find((item) => item.summary.kind === kind && item.summary.id === cleanedId);
+		summary = payload?.summary;
+		record = payload?.record;
+	}
+	if (!summary || !record || typeof record !== "object") throw new Error("Fichier introuvable dans la corbeille");
+	const store = taskStore();
+	if (kind === "availability") {
+		const restored = sanitizeAvailabilityImport(record);
+		const existing = await readAvailabilityIndex();
+		if (restored.rows.length) await store.setJSON(availabilityRowsKey(restored.id), restored.rows);
+		if (restored.rawCsv) await store.set(availabilityRawKey(restored.id), restored.rawCsv);
+		await store.setJSON(AVAILABILITY_IMPORTS_KEY, [restored, ...existing.filter((item) => item.id !== cleanedId)].map((item) => ({
+			...item,
+			rows: [],
+			rawCsv: ""
+		})).sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt)));
+	} else if (kind === "assignments") {
+		const restored = sanitizeTutorAssignmentImport(record);
+		const existing = await readTutorAssignmentIndex();
+		if (restored.rows.length) await store.setJSON(tutorAssignmentRowsKey(restored.id), restored.rows);
+		await store.setJSON(TUTOR_ASSIGNMENT_IMPORTS_KEY, [restored, ...existing.filter((item) => item.id !== cleanedId)].map((item) => ({
+			...item,
+			rows: []
+		})).sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt)));
+	} else if (kind === "interests") {
+		const restored = sanitizeTutorInterestImport(record);
+		const existing = await readTutorInterestIndex();
+		if (restored.rows.length) await store.setJSON(tutorInterestRowsKey(restored.id), restored.rows);
+		await store.setJSON(TUTOR_INTEREST_IMPORTS_KEY, [restored, ...existing.filter((item) => item.id !== cleanedId)].map((item) => ({
+			...item,
+			rows: []
+		})).sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt)));
+	} else if (kind === "upcomingSessions") {
+		const restored = sanitizeUpcomingSessionImport(record);
+		const existing = await readUpcomingSessionIndex();
+		if (restored.rows.length) await store.setJSON(upcomingSessionRowsKey(restored.id), restored.rows);
+		if (restored.staffingSessions.length) await store.setJSON(upcomingStaffingSessionsKey(restored.id), restored.staffingSessions);
+		await store.setJSON(UPCOMING_SESSION_IMPORTS_KEY, [restored, ...existing.filter((item) => item.id !== cleanedId)].map((item) => ({
+			...item,
+			rows: [],
+			staffingSessions: []
+		})).sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt)));
+	} else if (kind === "enrollments") {
+		const restored = sanitizeEnrollmentImport(record);
+		const existing = await readEnrollmentIndex();
+		if (restored.rows.length) await store.setJSON(enrollmentRowsKey(restored.id), restored.rows);
+		await store.setJSON(ENROLLMENT_IMPORTS_KEY, [restored, ...existing.filter((item) => item.id !== cleanedId)].map((item) => ({
+			...item,
+			rows: []
+		})).sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt)));
+	} else {
+		const restored = sanitizeTutorTrackingSnapshot(record);
+		const tracking = await readTutorTracking();
+		await writeTutorTracking({
+			...tracking,
+			snapshots: [restored, ...tracking.snapshots.filter((item) => item.id !== cleanedId)]
+		});
+	}
+	try {
+		const current = await readFileImportTrashPayloads();
+		await store.setJSON(FILE_IMPORT_TRASH_KEY, current.filter((item) => !(item.kind === kind && item.id === cleanedId)));
+		await store.delete(trashPayloadKey(kind, cleanedId));
+	} catch (error) {
+		if (!canUseMemoryFallback()) throw error;
+		memory.__petitSuiviFileImportTrash = (memory.__petitSuiviFileImportTrash ?? []).filter((item) => !(item.summary.kind === kind && item.summary.id === cleanedId));
+	}
+	return summary;
+}
+async function readSchoolWatchlist() {
+	try {
+		const watchlist = await taskStore().get(SCHOOL_WATCHLIST_KEY, {
+			type: "json",
+			consistency: "strong"
+		});
+		return Array.isArray(watchlist) ? watchlist.filter((item) => Boolean(item && typeof item === "object")).map(sanitizeSchoolWatchItem).filter((item) => item.schoolId && item.reason).sort((a, b) => dateValueForSort(b.updatedAt || b.createdAt) - dateValueForSort(a.updatedAt || a.createdAt)) : [];
+	} catch {
+		return memory.__petitSuiviSchoolWatchlist ?? [];
+	}
+}
+async function writeSchoolWatchlist(watchlist) {
+	try {
+		await taskStore().setJSON(SCHOOL_WATCHLIST_KEY, watchlist);
+	} catch {
+		memory.__petitSuiviSchoolWatchlist = watchlist;
+	}
+}
+async function readSchools() {
+	try {
+		const schools = await taskStore().get(SCHOOLS_KEY, {
+			type: "json",
+			consistency: "strong"
+		});
+		return mergeImportedSchools(Array.isArray(schools) ? schools.filter((school) => Boolean(school && typeof school === "object")).map(sanitizeSchool).filter((school) => school.name).sort((a, b) => a.name.localeCompare(b.name, "fr")) : []);
+	} catch {
+		return mergeImportedSchools(memory.__petitSuiviSchools ?? []);
+	}
+}
+async function writeSchools(schools) {
+	try {
+		await taskStore().setJSON(SCHOOLS_KEY, schools);
+	} catch {
+		memory.__petitSuiviSchools = schools;
+	}
+}
+async function readStudentHistory() {
+	try {
+		const history = await taskStore().get(STUDENT_HISTORY_KEY, {
+			type: "json",
+			consistency: "strong"
+		});
+		return Array.isArray(history) ? history.filter((year) => Boolean(year && typeof year === "object")).map(sanitizeStudentHistoryYear).sort((a, b) => b.year - a.year) : [];
+	} catch {
+		return memory.__petitSuiviStudentHistory ?? [];
+	}
+}
+async function writeStudentHistory(history) {
+	try {
+		await taskStore().setJSON(STUDENT_HISTORY_KEY, history);
+	} catch {
+		memory.__petitSuiviStudentHistory = history;
+	}
+}
+async function writePeople(people) {
+	try {
+		await taskStore().setJSON(PEOPLE_KEY, people);
+	} catch {
+		memory.__petitSuiviPeople = people;
+	}
+}
+function escapeHtml(value) {
+	return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("\"", "&quot;");
+}
+function formatDuration(hours) {
+	if (!hours) return "non renseignee";
+	const totalMinutes = Math.round(hours * 60);
+	if (totalMinutes < 60) return `${totalMinutes} min`;
+	const wholeHours = Math.floor(totalMinutes / 60);
+	const minutes = totalMinutes % 60;
+	return minutes ? `${wholeHours} h ${minutes} min` : `${wholeHours} h`;
+}
+async function sendEmail(to, subject, html) {
+	const apiKey = process.env.RESEND_API_KEY;
+	const from = process.env.ASSIGNMENT_FROM_EMAIL;
+	if (!apiKey || !from) return {
+		sent: false,
+		reason: "missing-config"
+	};
+	const response = await fetch("https://api.resend.com/emails", {
+		method: "POST",
+		headers: {
+			Authorization: `Bearer ${apiKey}`,
+			"Content-Type": "application/json"
+		},
+		body: JSON.stringify({
+			from,
+			to,
+			subject,
+			html,
+			...process.env.ASSIGNMENT_REPLY_TO_EMAIL ? { reply_to: process.env.ASSIGNMENT_REPLY_TO_EMAIL } : {}
+		})
+	});
+	return {
+		sent: response.ok,
+		reason: response.ok ? "sent" : "send-failed"
+	};
+}
+function taskUrl() {
+	return process.env.URL || "";
+}
+async function notifyAssignment(task, person, openTasks) {
+	if (!person.email) return {
+		sent: false,
+		reason: "missing-email"
+	};
+	const otherTasks = openTasks.filter((item) => item.status !== "done" && item.id !== task.id && item.assigneeId === person.id);
+	const reminders = otherTasks.length ? `<h3>Vos autres taches non terminees</h3><ul>${otherTasks.map((item) => `<li>${escapeHtml(item.title)}</li>`).join("")}</ul>` : "";
+	const link = taskUrl() ? `<p><a href="${escapeHtml(taskUrl())}">Ouvrir le suivi des taches</a></p>` : "";
+	return sendEmail(person.email, `Nouvelle tache assignee : ${task.title}`, `<h2>${escapeHtml(task.title)}</h2>
+     <p>${escapeHtml(task.description || "Aucune description.")}</p>
+     <p><strong>Responsable :</strong> ${escapeHtml(task.owner)}</p>
+     <p><strong>Duree estimee :</strong> ${escapeHtml(formatDuration(task.estimatedHours))}</p>
+     <p><strong>Priorite :</strong> ${escapeHtml(task.priority)}</p>
+     ${reminders}
+     ${link}`);
+}
+async function notifyCompletion(task, people) {
+	const link = taskUrl() ? `<p><a href="${escapeHtml(taskUrl())}">Ouvrir le suivi des taches</a></p>` : "";
+	const html = `<h1>La tache est terminee</h1>
+    <p>Bonjour,</p>
+    <p>La tache suivante vient d'etre marquee comme terminee :</p>
+    <h2>${escapeHtml(task.title)}</h2>
+    <p>${escapeHtml(task.description || "Aucune description.")}</p>
+    <p><strong>Statut :</strong> terminee</p>
+    <p><strong>Responsable :</strong> ${escapeHtml(task.owner)}</p>
+    <p><strong>Duree estimee :</strong> ${escapeHtml(formatDuration(task.estimatedHours))}</p>
+    <p><strong>Periode :</strong> ${escapeHtml(task.endDate || task.startDate)}</p>
+    <p><strong>Priorite :</strong> ${escapeHtml(task.priority)}</p>
+    ${link}`;
+	return await Promise.all(people.map(async (person) => ({
+		personId: person.id,
+		...await sendEmail(person.email, `La tache est terminee : ${task.title}`, html)
+	})));
+}
+//#endregion
+//#region app/api/tasks/[taskId]/notify-completion/route.ts
+var route_exports$27 = /* @__PURE__ */ __exportAll({
+	POST: () => POST$12,
+	dynamic: () => dynamic$26,
+	runtime: () => runtime$26
+});
+var dynamic$26 = "force-dynamic";
+var runtime$26 = "nodejs";
+function json$26(data, status = 200) {
+	return NextResponse.json(data, {
+		status,
+		headers: { "Cache-Control": "no-store" }
+	});
+}
+async function POST$12(request, context) {
+	const { taskId } = await context.params;
+	try {
+		const body = await request.json();
+		if (!Array.isArray(body.personIds)) return json$26({ error: "Invalid recipient list" }, 400);
+		const requestedIds = body.personIds.filter((id) => typeof id === "string");
+		const tasks = await readTasks();
+		const taskIndex = tasks.findIndex((task) => task.id === taskId);
+		const task = tasks[taskIndex];
+		if (!task) return json$26({ error: "Task not found" }, 404);
+		if (task.status !== "done") return json$26({ error: "Task is not done" }, 409);
+		const people = await readPeople();
+		const peopleById = new Map(people.map((person) => [person.id, person]));
+		const validPeople = requestedIds.map((id) => peopleById.get(id)).filter((person) => Boolean(person?.active && person.email));
+		const notifiedIds = validPeople.map((person) => person.id);
+		const ignoredIds = requestedIds.filter((id) => !notifiedIds.includes(id));
+		const sentIds = (await notifyCompletion(task, validPeople)).filter((result) => result.sent).map((result) => result.personId);
+		const now = (/* @__PURE__ */ new Date()).toISOString();
+		tasks[taskIndex] = {
+			...task,
+			completionNotifications: [...task.completionNotifications, ...sentIds.map((personId) => ({
+				personId,
+				sentAt: now
+			}))]
+		};
+		await writeTasks(tasks);
+		return json$26({
+			sent: sentIds.length,
+			notifiedIds: sentIds,
+			ignoredIds: [...ignoredIds, ...notifiedIds.filter((id) => !sentIds.includes(id))],
+			tasks
+		});
+	} catch {
+		return json$26({ error: "Unable to notify completion" }, 500);
+	}
+}
 var Resources = ((React, deps, RemoveDuplicateServerCss, precedence) => {
 	return function Resources() {
 		return React.createElement(React.Fragment, null, [...deps.css.map((href) => React.createElement("link", {
@@ -14503,22 +22929,14 @@ var Resources = ((React, deps, RemoveDuplicateServerCss, precedence) => {
 	};
 })(import_react_react_server.default, assetsManifest.serverResources["app/layout.tsx"], void 0, "vite-rsc/importer-resources");
 //#endregion
-//#region \0virtual:vinext-google-fonts?fonts=Geist
-var Geist = /* @__PURE__ */ createFontLoader("Geist");
-//#endregion
 //#region app/layout.tsx
 var layout_exports = /* @__PURE__ */ __exportAll({
 	default: () => $$wrap_RootLayout,
 	metadata: () => metadata
 });
-var geist = Geist({
-	variable: "--font-geist",
-	subsets: ["latin"],
-	_selfHostedCSS: "/* cyrillic-ext */\n@font-face {\n  font-family: 'Geist';\n  font-style: normal;\n  font-weight: 100 900;\n  font-display: swap;\n  src: url(/assets/_vinext_fonts/geist-8ac0455e797f/geist-ff2310f5.woff2) format('woff2');\n  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;\n}\n/* cyrillic */\n@font-face {\n  font-family: 'Geist';\n  font-style: normal;\n  font-weight: 100 900;\n  font-display: swap;\n  src: url(/assets/_vinext_fonts/geist-8ac0455e797f/geist-875ccdd4.woff2) format('woff2');\n  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;\n}\n/* vietnamese */\n@font-face {\n  font-family: 'Geist';\n  font-style: normal;\n  font-weight: 100 900;\n  font-display: swap;\n  src: url(/assets/_vinext_fonts/geist-8ac0455e797f/geist-52306abf.woff2) format('woff2');\n  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;\n}\n/* latin-ext */\n@font-face {\n  font-family: 'Geist';\n  font-style: normal;\n  font-weight: 100 900;\n  font-display: swap;\n  src: url(/assets/_vinext_fonts/geist-8ac0455e797f/geist-001175b1.woff2) format('woff2');\n  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;\n}\n/* latin */\n@font-face {\n  font-family: 'Geist';\n  font-style: normal;\n  font-weight: 100 900;\n  font-display: swap;\n  src: url(/assets/_vinext_fonts/geist-8ac0455e797f/geist-98bbbccb.woff2) format('woff2');\n  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;\n}\n"
-});
 var metadata = {
-	title: "Petit suivi — Mes tâches, simplement",
-	description: "Un outil simple et sans connexion pour suivre vos tâches, responsables, dates, statuts et commentaires.",
+	title: "Alpha Education — Todo équipes",
+	description: "Le suivi partagé des équipes Alpha Education pour organiser les priorités, les objectifs et les tâches de rentrée.",
 	icons: {
 		icon: "/favicon.svg",
 		shortcut: "/favicon.svg"
@@ -14527,10 +22945,7 @@ var metadata = {
 function RootLayout({ children }) {
 	return /* @__PURE__ */ (0, import_jsx_runtime_react_server.jsx)("html", {
 		lang: "fr",
-		children: /* @__PURE__ */ (0, import_jsx_runtime_react_server.jsx)("body", {
-			className: geist.variable,
-			children
-		})
+		children: /* @__PURE__ */ (0, import_jsx_runtime_react_server.jsx)("body", { children })
 	});
 }
 var $$wrap_RootLayout = /* @__PURE__ */ __vite_rsc_wrap_css__(RootLayout, "default");
@@ -14541,6 +22956,1536 @@ function __vite_rsc_wrap_css__(value, name) {
 	}
 	Object.defineProperty(__wrapper, "name", { value: name });
 	return __wrapper;
+}
+//#endregion
+//#region app/page.tsx
+var page_exports$1 = /* @__PURE__ */ __exportAll({ default: () => page_default$1 });
+var page_default$1 = /* @__PURE__ */ registerClientReference(() => {
+	throw new Error("Unexpectedly client reference export 'default' is called on server");
+}, "6efdf509a785", "default");
+//#endregion
+//#region app/access/page.tsx
+var page_exports = /* @__PURE__ */ __exportAll({ default: () => page_default });
+var page_default = /* @__PURE__ */ registerClientReference(() => {
+	throw new Error("Unexpectedly client reference export 'default' is called on server");
+}, "40c69a55bf09", "default");
+//#endregion
+//#region app/api/access/route.ts
+var route_exports$26 = /* @__PURE__ */ __exportAll({ POST: () => POST$11 });
+var ACCESS_CODE = "Alpha_The_Best";
+var ACCESS_COOKIE = "alpha_access";
+var ACCESS_TOKEN = "alpha-unlocked-v1";
+function json$25(data, status = 200) {
+	return NextResponse.json(data, {
+		status,
+		headers: { "Cache-Control": "no-store" }
+	});
+}
+async function POST$11(request) {
+	try {
+		const body = await request.json();
+		if ((typeof body.code === "string" ? body.code.trim() : "") !== ACCESS_CODE) return json$25({
+			ok: false,
+			error: "Code incorrect"
+		}, 401);
+		const response = json$25({ ok: true });
+		response.cookies.set({
+			name: ACCESS_COOKIE,
+			value: ACCESS_TOKEN,
+			httpOnly: true,
+			sameSite: "lax",
+			secure: true,
+			path: "/",
+			maxAge: 3600 * 24 * 60
+		});
+		return response;
+	} catch {
+		return json$25({
+			ok: false,
+			error: "Demande invalide"
+		}, 400);
+	}
+}
+//#endregion
+//#region app/api/actual-session-imports/route.ts
+var route_exports$25 = /* @__PURE__ */ __exportAll({
+	DELETE: () => DELETE$6,
+	GET: () => GET$25,
+	PATCH: () => PATCH$7,
+	POST: () => POST$10,
+	dynamic: () => dynamic$25,
+	runtime: () => runtime$25
+});
+var dynamic$25 = "force-dynamic";
+var runtime$25 = "nodejs";
+function json$24(data, status = 200) {
+	return NextResponse.json(data, {
+		status,
+		headers: { "Cache-Control": "no-store" }
+	});
+}
+async function GET$25(request) {
+	try {
+		return json$24({ imports: new URL(request.url).searchParams.get("summary") === "1" ? await readActualSessionImportSummaries() : await readActualSessionImports() });
+	} catch (error) {
+		return json$24({
+			error: "Impossible de charger les semaines réelles",
+			detail: error instanceof Error ? error.message : "Impossible de charger les semaines réelles"
+		}, 500);
+	}
+}
+async function POST$10(request) {
+	try {
+		const url = new URL(request.url);
+		const rawCsv = await request.text();
+		if (!rawCsv.trim()) return json$24({ error: "Fichier CSV vide" }, 400);
+		return json$24({ import: await createActualSessionImportFromCsv({
+			fileName: url.searchParams.get("fileName") || "semaine-reelle.csv",
+			rawCsv
+		}) }, 201);
+	} catch (error) {
+		return json$24({
+			error: "Impossible d’importer la semaine réelle",
+			detail: error instanceof Error ? error.message : "Impossible d’importer la semaine réelle"
+		}, 500);
+	}
+}
+async function PATCH$7(request) {
+	try {
+		const body = await request.json();
+		if (typeof body.id !== "string" || typeof body.displayName !== "string") return json$24({ error: "Nom invalide" }, 400);
+		await updateActualSessionImportName(body.id, body.displayName);
+		return json$24({ imports: await readActualSessionImportSummaries() });
+	} catch (error) {
+		return json$24({
+			error: "Impossible de renommer l’import",
+			detail: error instanceof Error ? error.message : "Impossible de renommer l’import"
+		}, 500);
+	}
+}
+async function DELETE$6(request) {
+	try {
+		const id = new URL(request.url).searchParams.get("id");
+		if (!id) return json$24({ error: "Identifiant manquant" }, 400);
+		await deleteActualSessionImportById(id);
+		return json$24({ imports: await readActualSessionImportSummaries() });
+	} catch (error) {
+		return json$24({
+			error: "Impossible de supprimer l’import",
+			detail: error instanceof Error ? error.message : "Impossible de supprimer l’import"
+		}, 500);
+	}
+}
+//#endregion
+//#region app/api/availability-imports/route.ts
+var route_exports$24 = /* @__PURE__ */ __exportAll({
+	DELETE: () => DELETE$5,
+	GET: () => GET$24,
+	PATCH: () => PATCH$6,
+	POST: () => POST$9,
+	PUT: () => PUT$16,
+	dynamic: () => dynamic$24,
+	runtime: () => runtime$24
+});
+var dynamic$24 = "force-dynamic";
+var runtime$24 = "nodejs";
+function json$23(data, status = 200) {
+	return NextResponse.json(data, {
+		status,
+		headers: { "Cache-Control": "no-store" }
+	});
+}
+async function GET$24(request) {
+	try {
+		const url = new URL(request.url);
+		const rawImportId = url.searchParams.get("id");
+		if (rawImportId && url.searchParams.get("raw") === "1") {
+			const rawCsv = await readAvailabilityRawCsv(rawImportId);
+			if (!rawCsv) return json$23({ error: "Raw CSV not found" }, 404);
+			return new NextResponse(rawCsv, {
+				status: 200,
+				headers: {
+					"Cache-Control": "no-store",
+					"Content-Type": "text/csv; charset=utf-8"
+				}
+			});
+		}
+		if (rawImportId) {
+			const selectedImport = await readAvailabilityImportById(rawImportId);
+			return selectedImport ? json$23({ import: selectedImport }) : json$23({ error: "Import introuvable" }, 404);
+		}
+		if (url.searchParams.get("summary") === "1") return json$23({ imports: await readAvailabilityImportSummaries() });
+		return json$23({ imports: await readAvailabilityImports() });
+	} catch (error) {
+		return json$23({
+			error: "Unable to load availability imports",
+			detail: error instanceof Error ? error.message : "Unable to load availability imports"
+		}, 500);
+	}
+}
+async function POST$9(request) {
+	try {
+		const body = await request.json();
+		if (typeof body.rawCsv !== "string" || !body.rawCsv.trim()) return json$23({ error: "Invalid CSV" }, 400);
+		return json$23({
+			import: await createAvailabilityImportFromCsv({
+				fileName: typeof body.fileName === "string" ? body.fileName : "disponibilites.csv",
+				rawCsv: body.rawCsv
+			}),
+			imports: await readAvailabilityImportSummaries()
+		}, 201);
+	} catch (error) {
+		return json$23({
+			error: "Unable to import availability CSV",
+			detail: error instanceof Error ? error.message : "Unable to import availability CSV"
+		}, 500);
+	}
+}
+async function PUT$16(request) {
+	try {
+		const body = await request.json();
+		if (!Array.isArray(body.imports)) return json$23({ error: "Invalid availability imports" }, 400);
+		await writeAvailabilityImports(body.imports.filter((item) => Boolean(item && typeof item === "object")).map(sanitizeAvailabilityImport).sort((a, b) => new Date(b.importedAt).getTime() - new Date(a.importedAt).getTime()));
+		return json$23({ imports: await readAvailabilityImports() });
+	} catch (error) {
+		return json$23({
+			error: "Unable to save availability imports",
+			detail: error instanceof Error ? error.message : "Unable to save availability imports"
+		}, 500);
+	}
+}
+async function PATCH$6(request) {
+	try {
+		const body = await request.json();
+		if (typeof body.id !== "string" || typeof body.displayName !== "string") return json$23({ error: "Invalid import name" }, 400);
+		await updateAvailabilityImportName(body.id, body.displayName);
+		return json$23({ imports: await readAvailabilityImportSummaries() });
+	} catch (error) {
+		return json$23({
+			error: "Unable to rename availability import",
+			detail: error instanceof Error ? error.message : "Unable to rename availability import"
+		}, 500);
+	}
+}
+async function DELETE$5(request) {
+	try {
+		const id = new URL(request.url).searchParams.get("id");
+		if (!id) return json$23({ error: "Missing import id" }, 400);
+		await deleteAvailabilityImportById(id);
+		return json$23({ imports: await readAvailabilityImportSummaries() });
+	} catch (error) {
+		return json$23({
+			error: "Unable to delete availability import",
+			detail: error instanceof Error ? error.message : "Unable to delete availability import"
+		}, 500);
+	}
+}
+//#endregion
+//#region app/api/dashboard/route.ts
+var route_exports$23 = /* @__PURE__ */ __exportAll({
+	GET: () => GET$23,
+	dynamic: () => dynamic$23,
+	runtime: () => runtime$23
+});
+var dynamic$23 = "force-dynamic";
+var runtime$23 = "nodejs";
+async function GET$23() {
+	try {
+		const [schools, tasks, links, journalPosts, communications, staffingDays, watchlist, objectives, history, availabilityImports] = await Promise.all([
+			readSchools(),
+			readTasks(),
+			readLinks(),
+			readJournalPosts(),
+			readMassCommunications(),
+			readStaffingSessions(),
+			readSchoolWatchlist(),
+			readObjectives(),
+			readStudentHistory(),
+			readAvailabilityImportSummaries()
+		]);
+		const latestStaffingDay = staffingDays.slice().sort((a, b) => b.date.localeCompare(a.date))[0];
+		const latestUnstaffed = latestStaffingDay ? latestStaffingDay.totalUnstaffedSessions ?? Object.values(latestStaffingDay.people).reduce((sum, person) => sum + person.unstaffedSessions, 0) : 0;
+		return NextResponse.json({
+			objectives: objectives.filter((objective) => objective.kind === "counter"),
+			counts: {
+				tasks: tasks.filter((task) => task.status !== "done").length,
+				links: links.length,
+				watchlist: watchlist.filter((item) => item.status === "active").length,
+				schools: schools.length,
+				communications: communications.length,
+				staffing: latestUnstaffed,
+				availability: availabilityImports.length,
+				objectives: objectives.filter((objective) => objective.kind === "qualitative").length,
+				history: history.length,
+				journal: journalPosts.length
+			}
+		}, { headers: { "Cache-Control": "no-store" } });
+	} catch (error) {
+		const detail = error instanceof Error ? error.message : "Dashboard indisponible";
+		return NextResponse.json({
+			error: "Dashboard indisponible",
+			detail
+		}, {
+			status: 500,
+			headers: { "Cache-Control": "no-store" }
+		});
+	}
+}
+//#endregion
+//#region app/api/enrollment-imports/route.ts
+var route_exports$22 = /* @__PURE__ */ __exportAll({
+	DELETE: () => DELETE$4,
+	GET: () => GET$22,
+	PATCH: () => PATCH$5,
+	POST: () => POST$8,
+	dynamic: () => dynamic$22,
+	runtime: () => runtime$22
+});
+var dynamic$22 = "force-dynamic";
+var runtime$22 = "nodejs";
+function json$22(data, status = 200) {
+	return NextResponse.json(data, {
+		status,
+		headers: { "Cache-Control": "no-store" }
+	});
+}
+async function GET$22(request) {
+	try {
+		const searchParams = new URL(request.url).searchParams;
+		const id = searchParams.get("id");
+		if (id) {
+			const selectedImport = await readEnrollmentImportById(id);
+			return selectedImport ? json$22({ import: selectedImport }) : json$22({ error: "Import introuvable" }, 404);
+		}
+		if (searchParams.get("summary") === "1") return json$22({ imports: await readEnrollmentImportSummaries() });
+		return json$22({ imports: await readEnrollmentImports() });
+	} catch (error) {
+		return json$22({
+			error: "Impossible de charger les imports",
+			detail: error instanceof Error ? error.message : "Impossible de charger les imports"
+		}, 500);
+	}
+}
+async function POST$8(request) {
+	try {
+		const url = new URL(request.url);
+		const rawCsv = await request.text();
+		if (!rawCsv.trim()) return json$22({ error: "Fichier CSV vide" }, 400);
+		return json$22({
+			import: await createEnrollmentImportFromCsv({
+				fileName: url.searchParams.get("fileName") || "parents.csv",
+				rawCsv
+			}),
+			imports: await readEnrollmentImportSummaries()
+		}, 201);
+	} catch (error) {
+		return json$22({
+			error: "Impossible d’importer le CSV",
+			detail: error instanceof Error ? error.message : "Impossible d’importer le CSV"
+		}, 500);
+	}
+}
+async function PATCH$5(request) {
+	try {
+		const body = await request.json();
+		if (typeof body.id !== "string" || typeof body.displayName !== "string") return json$22({ error: "Nom d’import invalide" }, 400);
+		await updateEnrollmentImportName(body.id, body.displayName);
+		return json$22({ imports: await readEnrollmentImportSummaries() });
+	} catch (error) {
+		return json$22({
+			error: "Impossible de renommer l’import",
+			detail: error instanceof Error ? error.message : "Impossible de renommer l’import"
+		}, 500);
+	}
+}
+async function DELETE$4(request) {
+	try {
+		const id = new URL(request.url).searchParams.get("id");
+		if (!id) return json$22({ error: "Identifiant manquant" }, 400);
+		await deleteEnrollmentImportById(id);
+		return json$22({ imports: await readEnrollmentImportSummaries() });
+	} catch (error) {
+		return json$22({
+			error: "Impossible de supprimer l’import",
+			detail: error instanceof Error ? error.message : "Impossible de supprimer l’import"
+		}, 500);
+	}
+}
+//#endregion
+//#region app/api/file-trash/route.ts
+var route_exports$21 = /* @__PURE__ */ __exportAll({
+	GET: () => GET$21,
+	POST: () => POST$7,
+	dynamic: () => dynamic$21,
+	runtime: () => runtime$21
+});
+var dynamic$21 = "force-dynamic";
+var runtime$21 = "nodejs";
+function json$21(data, status = 200) {
+	return NextResponse.json(data, {
+		status,
+		headers: { "Cache-Control": "no-store" }
+	});
+}
+async function GET$21() {
+	try {
+		return json$21({ imports: await readFileImportTrash() });
+	} catch (error) {
+		return json$21({
+			error: "Corbeille indisponible",
+			detail: error instanceof Error ? error.message : "Corbeille indisponible"
+		}, 500);
+	}
+}
+async function POST$7(request) {
+	try {
+		const body = await request.json();
+		if (!body.kind || !body.id) return json$21({ error: "Fichier à restaurer invalide" }, 400);
+		await restoreFileImportFromTrash(body.kind, body.id);
+		return json$21({ imports: await readFileImportTrash() });
+	} catch (error) {
+		return json$21({
+			error: "Restauration impossible",
+			detail: error instanceof Error ? error.message : "Restauration impossible"
+		}, 500);
+	}
+}
+//#endregion
+//#region app/api/journal-posts/route.ts
+var route_exports$20 = /* @__PURE__ */ __exportAll({
+	GET: () => GET$20,
+	PUT: () => PUT$15,
+	dynamic: () => dynamic$20,
+	runtime: () => runtime$20
+});
+var dynamic$20 = "force-dynamic";
+var runtime$20 = "nodejs";
+function json$20(data, status = 200) {
+	return NextResponse.json(data, {
+		status,
+		headers: { "Cache-Control": "no-store" }
+	});
+}
+async function GET$20() {
+	return json$20({ posts: await readJournalPosts() });
+}
+async function PUT$15(request) {
+	try {
+		const body = await request.json();
+		if (!Array.isArray(body.posts)) return json$20({ error: "Invalid journal post list" }, 400);
+		const posts = body.posts.filter((post) => Boolean(post && typeof post === "object")).map(sanitizeJournalPost).filter((post) => post.title && post.content).sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+		await writeJournalPosts(posts);
+		return json$20({ posts });
+	} catch {
+		return json$20({ error: "Unable to save journal posts" }, 500);
+	}
+}
+//#endregion
+//#region app/api/links/route.ts
+var route_exports$19 = /* @__PURE__ */ __exportAll({
+	GET: () => GET$19,
+	PUT: () => PUT$14,
+	dynamic: () => dynamic$19,
+	runtime: () => runtime$19
+});
+var dynamic$19 = "force-dynamic";
+var runtime$19 = "nodejs";
+function json$19(data, status = 200) {
+	return NextResponse.json(data, {
+		status,
+		headers: { "Cache-Control": "no-store" }
+	});
+}
+async function GET$19() {
+	return json$19({ links: await readLinks() });
+}
+async function PUT$14(request) {
+	try {
+		const body = await request.json();
+		if (!Array.isArray(body.links)) return json$19({ error: "Invalid link list" }, 400);
+		const links = body.links.filter((link) => Boolean(link && typeof link === "object")).map(sanitizeSharedLink).filter((link) => link.title && link.url);
+		await writeLinks(links);
+		return json$19({ links });
+	} catch {
+		return json$19({ error: "Unable to save links" }, 500);
+	}
+}
+//#endregion
+//#region app/api/mass-communications/route.ts
+var route_exports$18 = /* @__PURE__ */ __exportAll({
+	GET: () => GET$18,
+	PUT: () => PUT$13,
+	dynamic: () => dynamic$18,
+	runtime: () => runtime$18
+});
+var dynamic$18 = "force-dynamic";
+var runtime$18 = "nodejs";
+function json$18(data, status = 200) {
+	return NextResponse.json(data, {
+		status,
+		headers: { "Cache-Control": "no-store" }
+	});
+}
+async function GET$18() {
+	return json$18({ communications: await readMassCommunications() });
+}
+async function PUT$13(request) {
+	try {
+		const body = await request.json();
+		if (!Array.isArray(body.communications)) return json$18({ error: "Invalid communication list" }, 400);
+		const communications = body.communications.filter((communication) => Boolean(communication && typeof communication === "object")).map(sanitizeMassCommunication).filter((communication) => communication.title).sort((a, b) => new Date(b.sentAt || b.followUpDate || b.createdAt).getTime() - new Date(a.sentAt || a.followUpDate || a.createdAt).getTime());
+		await writeMassCommunications(communications);
+		return json$18({ communications });
+	} catch {
+		return json$18({ error: "Unable to save communications" }, 500);
+	}
+}
+//#endregion
+//#region app/api/objectives/route.ts
+var route_exports$17 = /* @__PURE__ */ __exportAll({
+	GET: () => GET$17,
+	PUT: () => PUT$12,
+	dynamic: () => dynamic$17,
+	runtime: () => runtime$17
+});
+var dynamic$17 = "force-dynamic";
+var runtime$17 = "nodejs";
+function json$17(data, status = 200) {
+	return NextResponse.json(data, {
+		status,
+		headers: { "Cache-Control": "no-store" }
+	});
+}
+async function GET$17() {
+	return json$17({ objectives: await readObjectives() });
+}
+async function PUT$12(request) {
+	try {
+		const body = await request.json();
+		if (!Array.isArray(body.objectives)) return json$17({ error: "Invalid objective list" }, 400);
+		const objectives = body.objectives.filter((objective) => Boolean(objective && typeof objective === "object")).map(sanitizeObjective).filter((objective) => objective.title);
+		await writeObjectives(objectives);
+		return json$17({ objectives });
+	} catch {
+		return json$17({ error: "Unable to save objectives" }, 500);
+	}
+}
+//#endregion
+//#region app/api/people/route.ts
+var route_exports$16 = /* @__PURE__ */ __exportAll({
+	GET: () => GET$16,
+	PUT: () => PUT$11,
+	dynamic: () => dynamic$16,
+	runtime: () => runtime$16
+});
+var dynamic$16 = "force-dynamic";
+var runtime$16 = "nodejs";
+function json$16(data, status = 200) {
+	return NextResponse.json(data, {
+		status,
+		headers: { "Cache-Control": "no-store" }
+	});
+}
+async function GET$16() {
+	return json$16({ people: (await readPeople()).map(publicPerson) });
+}
+async function PUT$11(request) {
+	try {
+		const body = await request.json();
+		if (!Array.isArray(body.people)) return json$16({ error: "Invalid people list" }, 400);
+		const existing = await readPeople();
+		const existingById = new Map(existing.map((person) => [person.id, person]));
+		const people = body.people.filter((person) => Boolean(person && typeof person === "object")).map((person) => sanitizePerson(person, existingById.get(typeof person.id === "string" ? person.id : ""))).filter((person) => person.name);
+		await writePeople(people);
+		return json$16({ people: people.map(publicPerson) });
+	} catch {
+		return json$16({ error: "Unable to save people" }, 500);
+	}
+}
+//#endregion
+//#region app/api/recurring-tasks/route.ts
+var route_exports$15 = /* @__PURE__ */ __exportAll({
+	GET: () => GET$15,
+	PUT: () => PUT$10,
+	dynamic: () => dynamic$15,
+	runtime: () => runtime$15
+});
+var dynamic$15 = "force-dynamic";
+var runtime$15 = "nodejs";
+function json$15(data, status = 200) {
+	return NextResponse.json(data, {
+		status,
+		headers: { "Cache-Control": "no-store" }
+	});
+}
+async function GET$15() {
+	return json$15({ recurringTasks: await readRecurringTasks() });
+}
+async function PUT$10(request) {
+	try {
+		const body = await request.json();
+		if (!Array.isArray(body.recurringTasks)) return json$15({ error: "Invalid recurring task list" }, 400);
+		const recurringTasks = body.recurringTasks.filter((task) => Boolean(task && typeof task === "object")).map(sanitizeRecurringTask).filter((task) => task.title && task.owner);
+		await writeRecurringTasks(recurringTasks);
+		return json$15({ recurringTasks });
+	} catch {
+		return json$15({ error: "Unable to save recurring tasks" }, 500);
+	}
+}
+//#endregion
+//#region app/api/school-watchlist/route.ts
+var route_exports$14 = /* @__PURE__ */ __exportAll({
+	GET: () => GET$14,
+	PUT: () => PUT$9,
+	dynamic: () => dynamic$14,
+	runtime: () => runtime$14
+});
+var dynamic$14 = "force-dynamic";
+var runtime$14 = "nodejs";
+function json$14(data, status = 200) {
+	return NextResponse.json(data, {
+		status,
+		headers: { "Cache-Control": "no-store" }
+	});
+}
+async function GET$14() {
+	return json$14({ watchlist: await readSchoolWatchlist() });
+}
+async function PUT$9(request) {
+	try {
+		const body = await request.json();
+		if (!Array.isArray(body.watchlist)) return json$14({ error: "Invalid school watchlist" }, 400);
+		const watchlist = body.watchlist.filter((item) => Boolean(item && typeof item === "object")).map(sanitizeSchoolWatchItem).filter((item) => item.schoolId && item.reason).sort((a, b) => new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime());
+		await writeSchoolWatchlist(watchlist);
+		return json$14({ watchlist });
+	} catch {
+		return json$14({ error: "Unable to save school watchlist" }, 500);
+	}
+}
+//#endregion
+//#region app/api/schools/route.ts
+var route_exports$13 = /* @__PURE__ */ __exportAll({
+	GET: () => GET$13,
+	POST: () => POST$6,
+	PUT: () => PUT$8,
+	dynamic: () => dynamic$13,
+	runtime: () => runtime$13
+});
+var dynamic$13 = "force-dynamic";
+var runtime$13 = "nodejs";
+function json$13(data, status = 200) {
+	return NextResponse.json(data, {
+		status,
+		headers: { "Cache-Control": "no-store" }
+	});
+}
+async function GET$13() {
+	return json$13({ schools: await readSchools() });
+}
+function inferredSchoolType(categories) {
+	const normalized = categories.join(" ").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr");
+	const hasAlpha = normalized.includes("alpha") || normalized.includes("etude");
+	const hasService = normalized.includes("surveillance") || normalized.includes("prestation") || normalized.includes("service");
+	if (hasAlpha && hasService) return "mixed";
+	if (hasAlpha) return "alpha";
+	if (hasService) return "mise-a-dispo";
+	return "mixed";
+}
+async function POST$6(request) {
+	try {
+		const body = await request.json();
+		if (!Array.isArray(body.schools)) return json$13({ error: "Liste d’établissements invalide" }, 400);
+		const existing = await readSchools();
+		const knownIds = new Set(existing.map((school) => school.externalId).filter(Boolean));
+		const requestIds = /* @__PURE__ */ new Set();
+		const skippedIds = [];
+		const now = (/* @__PURE__ */ new Date()).toISOString();
+		const created = body.schools.flatMap((raw) => {
+			if (!raw || typeof raw !== "object") return [];
+			const item = raw;
+			const externalId = typeof item.externalId === "string" ? item.externalId.trim() : "";
+			const name = typeof item.name === "string" ? item.name.trim() : "";
+			const categories = Array.isArray(item.categories) ? Array.from(new Set(item.categories.filter((value) => typeof value === "string").map((value) => value.trim()).filter(Boolean))) : [];
+			if (!externalId || !name) return [];
+			if (knownIds.has(externalId) || requestIds.has(externalId)) {
+				skippedIds.push(externalId);
+				return [];
+			}
+			requestIds.add(externalId);
+			return [sanitizeSchool({
+				id: `school-${externalId}`,
+				externalId,
+				name,
+				category: categories.join(" · "),
+				schoolType: inferredSchoolType(categories),
+				portfolioOwner: "",
+				city: name.split(" - ")[0]?.trim() || "",
+				zone: "",
+				coordinator: "",
+				registeredCount: null,
+				address: "",
+				department: "",
+				upcomingWeek: "",
+				pastSessions: "",
+				typicalWeek: "",
+				contractSigned: "",
+				actions: "",
+				contact: "",
+				nextAction: "",
+				notes: "",
+				events: [],
+				createdAt: now,
+				updatedAt: now
+			})];
+		});
+		const schools = [...created, ...existing].sort((a, b) => a.name.localeCompare(b.name, "fr"));
+		await writeSchools(schools);
+		return json$13({
+			schools,
+			created,
+			skippedIds
+		}, 201);
+	} catch (error) {
+		return json$13({
+			error: "Impossible de créer les établissements",
+			detail: error instanceof Error ? error.message : "Impossible de créer les établissements"
+		}, 500);
+	}
+}
+async function PUT$8(request) {
+	try {
+		const body = await request.json();
+		if (!Array.isArray(body.schools)) return json$13({ error: "Invalid school list" }, 400);
+		const schools = body.schools.filter((school) => Boolean(school && typeof school === "object")).map(sanitizeSchool).filter((school) => school.name).sort((a, b) => a.name.localeCompare(b.name, "fr"));
+		const usedIds = /* @__PURE__ */ new Set();
+		const duplicateId = schools.find((school) => {
+			if (!school.externalId) return false;
+			if (usedIds.has(school.externalId)) return true;
+			usedIds.add(school.externalId);
+			return false;
+		});
+		if (duplicateId) return json$13({ error: `L’ID établissement ${duplicateId.externalId} est déjà utilisé` }, 409);
+		await writeSchools(schools);
+		return json$13({ schools });
+	} catch {
+		return json$13({ error: "Unable to save schools" }, 500);
+	}
+}
+//#endregion
+//#region app/api/staffing-audits/route.ts
+var route_exports$12 = /* @__PURE__ */ __exportAll({
+	GET: () => GET$12,
+	PATCH: () => PATCH$4,
+	POST: () => POST$5,
+	PUT: () => PUT$7,
+	dynamic: () => dynamic$12,
+	runtime: () => runtime$12
+});
+var dynamic$12 = "force-dynamic";
+var runtime$12 = "nodejs";
+function json$12(data, status = 200) {
+	return NextResponse.json(data, {
+		status,
+		headers: { "Cache-Control": "no-store" }
+	});
+}
+async function GET$12() {
+	try {
+		const [days, schools, tracking] = await Promise.all([
+			readStaffingAudits(),
+			readSchools(),
+			readTutorTracking()
+		]);
+		const resolved = resolveStaffingAuditTutorIds(days, tracking.snapshots.flatMap((snapshot) => snapshot.records));
+		if (resolved.changed) await writeStaffingAudits(resolved.days);
+		return json$12({ days: enrichStaffingAuditDaysWithSchools(resolved.days, schools) });
+	} catch (error) {
+		return json$12({
+			error: "Impossible de charger les bilans staffing",
+			detail: error instanceof Error ? error.message : "Impossible de charger les bilans staffing"
+		}, 500);
+	}
+}
+async function POST$5(request) {
+	try {
+		const url = new URL(request.url);
+		const rawCsv = await request.text();
+		if (!rawCsv.trim()) return json$12({ error: "Fichier CSV vide" }, 400);
+		const [schools, tracking] = await Promise.all([readSchools(), readTutorTracking()]);
+		const roster = tracking.snapshots.flatMap((snapshot) => snapshot.records);
+		const parsed = parseStaffingAuditCsv(rawCsv, url.searchParams.get("fileName") || "rapports.csv", schools, roster);
+		if (!parsed.days.length) return json$12({
+			error: "Aucune séance exploitable trouvée",
+			detail: parsed.invalidDateRowCount ? `${parsed.invalidDateRowCount} ligne(s) possèdent une date vide ou illisible. Formats acceptés : JJ/MM/AAAA, JJ-MM-AAAA ou AAAA-MM-JJ.` : "Vérifiez que les colonnes Date et Semaine réelle contiennent des valeurs."
+		}, 400);
+		return json$12({
+			days: parsed.days,
+			invalidDateRowCount: parsed.invalidDateRowCount
+		});
+	} catch (error) {
+		return json$12({
+			error: "Impossible d’analyser le fichier",
+			detail: error instanceof Error ? error.message : "Impossible d’analyser le fichier"
+		}, 400);
+	}
+}
+async function PUT$7(request) {
+	try {
+		const body = await request.json();
+		if (!body.day || typeof body.day !== "object") return json$12({ error: "Journée invalide" }, 400);
+		const result = await saveStaffingAudit(body.day, body.overwrite === true);
+		const schools = await readSchools();
+		const days = enrichStaffingAuditDaysWithSchools(result.days, schools);
+		if (result.conflict) return json$12({
+			error: "Un bilan existe déjà pour cette date",
+			conflict: true,
+			days
+		}, 409);
+		return json$12({
+			...result,
+			day: result.day ? enrichStaffingAuditDaysWithSchools([result.day], schools)[0] : void 0,
+			days
+		});
+	} catch (error) {
+		return json$12({
+			error: "Impossible d’enregistrer le bilan",
+			detail: error instanceof Error ? error.message : "Impossible d’enregistrer le bilan"
+		}, 500);
+	}
+}
+async function PATCH$4(request) {
+	try {
+		const body = await request.json();
+		if (typeof body.date !== "string" || typeof body.sessionId !== "string") return json$12({ error: "Séance invalide" }, 400);
+		const result = await updateStaffingAuditSession({
+			date: body.date,
+			sessionId: body.sessionId,
+			portfolioOwner: body.portfolioOwner,
+			resolution: body.resolution,
+			treated: body.treated
+		});
+		const schools = await readSchools();
+		return json$12({
+			...result,
+			day: result.day ? enrichStaffingAuditDaysWithSchools([result.day], schools)[0] : void 0,
+			days: enrichStaffingAuditDaysWithSchools(result.days, schools)
+		});
+	} catch (error) {
+		return json$12({
+			error: "Impossible de modifier la séance",
+			detail: error instanceof Error ? error.message : "Impossible de modifier la séance"
+		}, 500);
+	}
+}
+//#endregion
+//#region app/api/staffing-sessions/route.ts
+var route_exports$11 = /* @__PURE__ */ __exportAll({
+	GET: () => GET$11,
+	PUT: () => PUT$6,
+	dynamic: () => dynamic$11,
+	runtime: () => runtime$11
+});
+var dynamic$11 = "force-dynamic";
+var runtime$11 = "nodejs";
+function json$11(data, status = 200) {
+	return NextResponse.json(data, {
+		status,
+		headers: { "Cache-Control": "no-store" }
+	});
+}
+async function GET$11() {
+	return json$11({ staffing: await readStaffingSessions() });
+}
+async function PUT$6(request) {
+	try {
+		const body = await request.json();
+		if (!Array.isArray(body.staffing)) return json$11({ error: "Invalid staffing list" }, 400);
+		const daysByDate = /* @__PURE__ */ new Map();
+		body.staffing.filter((day) => Boolean(day && typeof day === "object")).map(sanitizeStaffingDay).forEach((day) => {
+			daysByDate.set(day.date, day);
+		});
+		const staffing = Array.from(daysByDate.values()).sort((a, b) => (/* @__PURE__ */ new Date(`${b.date}T12:00:00`)).getTime() - (/* @__PURE__ */ new Date(`${a.date}T12:00:00`)).getTime());
+		await writeStaffingSessions(staffing);
+		return json$11({ staffing });
+	} catch {
+		return json$11({ error: "Unable to save staffing sessions" }, 500);
+	}
+}
+//#endregion
+//#region app/api/student-history/route.ts
+var route_exports$10 = /* @__PURE__ */ __exportAll({
+	GET: () => GET$10,
+	PUT: () => PUT$5,
+	dynamic: () => dynamic$10,
+	runtime: () => runtime$10
+});
+var dynamic$10 = "force-dynamic";
+var runtime$10 = "nodejs";
+function json$10(data, status = 200) {
+	return NextResponse.json(data, {
+		status,
+		headers: { "Cache-Control": "no-store" }
+	});
+}
+async function GET$10() {
+	return json$10({ history: await readStudentHistory() });
+}
+async function PUT$5(request) {
+	try {
+		const body = await request.json();
+		if (!Array.isArray(body.history)) return json$10({ error: "Invalid student history" }, 400);
+		const yearsByValue = /* @__PURE__ */ new Map();
+		body.history.filter((year) => Boolean(year && typeof year === "object")).map(sanitizeStudentHistoryYear).forEach((year) => yearsByValue.set(year.year, year));
+		const history = Array.from(yearsByValue.values()).sort((a, b) => b.year - a.year);
+		await writeStudentHistory(history);
+		return json$10({ history });
+	} catch {
+		return json$10({ error: "Unable to save student history" }, 500);
+	}
+}
+//#endregion
+//#region app/api/tasks/route.ts
+var route_exports$9 = /* @__PURE__ */ __exportAll({
+	GET: () => GET$9,
+	PUT: () => PUT$4,
+	dynamic: () => dynamic$9,
+	runtime: () => runtime$9
+});
+var dynamic$9 = "force-dynamic";
+var runtime$9 = "nodejs";
+function json$9(data, status = 200) {
+	return NextResponse.json(data, {
+		status,
+		headers: { "Cache-Control": "no-store" }
+	});
+}
+async function GET$9() {
+	return json$9({ tasks: await readTasks() });
+}
+async function PUT$4(request) {
+	try {
+		const body = await request.json();
+		if (!Array.isArray(body.tasks)) return json$9({ error: "Invalid task list" }, 400);
+		const previousTasks = await readTasks();
+		const previousById = new Map(previousTasks.map((task) => [task.id, task]));
+		const tasks = body.tasks.filter((task) => Boolean(task && typeof task === "object")).map(sanitizeTask).filter((task) => task.title && task.owner && task.startDate);
+		await writeTasks(tasks);
+		if (body.sendAssignmentEmail ?? body.notifyAssignments ?? true) {
+			const people = await readPeople();
+			const peopleById = new Map(people.map((person) => [person.id, person]));
+			const assignedTasks = tasks.filter((task) => {
+				const previous = previousById.get(task.id);
+				return task.assigneeId && task.assigneeId !== previous?.assigneeId;
+			});
+			await Promise.all(assignedTasks.map((task) => {
+				const person = task.assigneeId ? peopleById.get(task.assigneeId) : null;
+				return person?.active && person.email ? notifyAssignment(task, person, tasks) : null;
+			}));
+		}
+		return json$9({ tasks });
+	} catch {
+		return json$9({ error: "Unable to save tasks" }, 500);
+	}
+}
+//#endregion
+//#region app/api/tutor-activity/route.ts
+var route_exports$8 = /* @__PURE__ */ __exportAll({
+	GET: () => GET$8,
+	dynamic: () => dynamic$8,
+	runtime: () => runtime$8
+});
+var dynamic$8 = "force-dynamic";
+var runtime$8 = "nodejs";
+function json$8(data, status = 200) {
+	return NextResponse.json(data, {
+		status,
+		headers: { "Cache-Control": "no-store" }
+	});
+}
+function dateValue(value) {
+	const parsed = Date.parse(value.includes("T") ? value : `${value}T12:00:00`);
+	return Number.isFinite(parsed) ? parsed : 0;
+}
+function uniqueSorted(items, direction) {
+	const unique = /* @__PURE__ */ new Map();
+	items.forEach((item) => {
+		const key = item.sessionId || `${item.date}|${item.timeSlot}|${item.school}`;
+		if (!unique.has(key)) unique.set(key, {
+			...item,
+			key
+		});
+	});
+	return Array.from(unique.values()).sort((a, b) => {
+		const difference = dateValue(a.date) - dateValue(b.date);
+		return (direction === "asc" ? difference : -difference) || a.timeSlot.localeCompare(b.timeSlot, "fr") || a.school.localeCompare(b.school, "fr");
+	});
+}
+async function GET$8(request) {
+	try {
+		const requestedIds = (new URL(request.url).searchParams.get("ids") || "").split(",").map((value) => value.trim()).filter(Boolean);
+		const tutorIds = Array.from(new Set(requestedIds)).slice(0, 30);
+		if (!tutorIds.length) return json$8({ activities: {} });
+		const wantedIds = new Set(tutorIds);
+		const today = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+		const [availabilitySummaries, interestSummaries, upcomingSummaries, assignmentSummaries] = await Promise.all([
+			readAvailabilityImportSummaries(),
+			readTutorInterestImportSummaries(),
+			readUpcomingSessionImportSummaries(),
+			readTutorAssignmentImportSummaries()
+		]);
+		const [availabilityImport, interestImport, upcomingImport, ...assignmentImports] = await Promise.all([
+			availabilitySummaries[0] ? readAvailabilityImportById(availabilitySummaries[0].id) : Promise.resolve(null),
+			interestSummaries[0] ? readTutorInterestImportById(interestSummaries[0].id) : Promise.resolve(null),
+			upcomingSummaries[0] ? readUpcomingSessionImportById(upcomingSummaries[0].id) : Promise.resolve(null),
+			...assignmentSummaries.slice(0, 12).map((summary) => readTutorAssignmentImportById(summary.id))
+		]);
+		const activities = Object.fromEntries(tutorIds.map((tutorId) => [tutorId, {
+			tutorId,
+			upcomingSessions: [],
+			pastSessions: [],
+			availabilities: [],
+			interests: []
+		}]));
+		availabilityImport?.rows.forEach((row) => {
+			if (!wantedIds.has(row.tutorId) || !activities[row.tutorId]) return;
+			activities[row.tutorId].availabilities.push({
+				key: row.sessionId || `${row.date}|${row.timeSlot}|${row.school}`,
+				date: row.date,
+				timeSlot: row.timeSlot,
+				school: row.school,
+				category: row.group,
+				sessionId: row.sessionId
+			});
+		});
+		interestImport?.rows.forEach((row) => {
+			if (!wantedIds.has(row.personId) || !activities[row.personId]) return;
+			activities[row.personId].interests.push({
+				key: row.sessionId || `${row.date}|${row.timeSlot}|${row.school}`,
+				date: row.date,
+				timeSlot: row.timeSlot,
+				school: row.school,
+				category: row.group,
+				sessionId: row.sessionId,
+				validated: row.validated
+			});
+		});
+		upcomingImport?.staffingSessions.forEach((session) => {
+			session.tutors.forEach((tutor) => {
+				if (!wantedIds.has(tutor.tutorId) || !activities[tutor.tutorId]) return;
+				activities[tutor.tutorId].upcomingSessions.push({
+					key: session.sessionId || `${session.date}|${session.startTime}-${session.endTime}|${session.school}`,
+					date: session.date,
+					timeSlot: [session.startTime, session.endTime].filter(Boolean).join(" → "),
+					school: session.school,
+					category: session.category,
+					sessionId: session.sessionId
+				});
+			});
+		});
+		assignmentImports.filter(Boolean).forEach((assignmentImport) => {
+			assignmentImport?.rows.forEach((row) => {
+				if (!wantedIds.has(row.tutorId) || !activities[row.tutorId]) return;
+				const item = {
+					key: `${row.date}|${row.timeSlot}|${row.school}`,
+					date: row.date,
+					timeSlot: row.timeSlot,
+					school: row.school,
+					category: row.category,
+					sessionId: ""
+				};
+				if (row.date >= today) activities[row.tutorId].upcomingSessions.push(item);
+				else activities[row.tutorId].pastSessions.push(item);
+			});
+		});
+		Object.values(activities).forEach((activity) => {
+			activity.upcomingSessions = uniqueSorted(activity.upcomingSessions, "asc").filter((item) => item.date >= today).slice(0, 20);
+			activity.pastSessions = uniqueSorted(activity.pastSessions, "desc").slice(0, 20);
+			activity.availabilities = uniqueSorted(activity.availabilities, "asc").slice(0, 30);
+			activity.interests = uniqueSorted(activity.interests, "asc").slice(0, 30);
+		});
+		return json$8({
+			activities,
+			sources: {
+				availability: availabilityImport?.displayName || "",
+				interests: interestImport?.displayName || "",
+				upcoming: upcomingImport?.displayName || "",
+				assignments: assignmentImports.filter(Boolean).length
+			}
+		});
+	} catch (error) {
+		return json$8({
+			error: "Impossible de charger l’activité des tuteurs",
+			detail: error instanceof Error ? error.message : "Impossible de charger l’activité des tuteurs"
+		}, 500);
+	}
+}
+//#endregion
+//#region app/api/tutor-assignment-imports/route.ts
+var route_exports$7 = /* @__PURE__ */ __exportAll({
+	DELETE: () => DELETE$3,
+	GET: () => GET$7,
+	PATCH: () => PATCH$3,
+	POST: () => POST$4,
+	dynamic: () => dynamic$7,
+	runtime: () => runtime$7
+});
+var dynamic$7 = "force-dynamic";
+var runtime$7 = "nodejs";
+function json$7(data, status = 200) {
+	return NextResponse.json(data, {
+		status,
+		headers: { "Cache-Control": "no-store" }
+	});
+}
+async function GET$7(request) {
+	try {
+		const searchParams = new URL(request.url).searchParams;
+		if (searchParams.get("latest") === "1") return json$7({ import: await readLatestTutorAssignmentImport() });
+		const id = searchParams.get("id");
+		if (id) {
+			const selectedImport = await readTutorAssignmentImportById(id);
+			return selectedImport ? json$7({ import: selectedImport }) : json$7({ error: "Import introuvable" }, 404);
+		}
+		return json$7({ imports: searchParams.get("summary") === "1" ? await readTutorAssignmentImportSummaries() : await readTutorAssignmentImports() });
+	} catch (error) {
+		return json$7({
+			error: "Impossible de charger les séances affectées",
+			detail: error instanceof Error ? error.message : "Impossible de charger les séances affectées"
+		}, 500);
+	}
+}
+async function POST$4(request) {
+	try {
+		const url = new URL(request.url);
+		const rawCsv = await request.text();
+		if (!rawCsv.trim()) return json$7({ error: "Fichier CSV vide" }, 400);
+		return json$7({
+			import: await createTutorAssignmentImportFromCsv({
+				fileName: url.searchParams.get("fileName") || "seances-affectees.csv",
+				rawCsv
+			}),
+			imports: await readTutorAssignmentImportSummaries()
+		}, 201);
+	} catch (error) {
+		return json$7({
+			error: "Impossible d’importer les séances affectées",
+			detail: error instanceof Error ? error.message : "Impossible d’importer les séances affectées"
+		}, 500);
+	}
+}
+async function PATCH$3(request) {
+	try {
+		const body = await request.json();
+		if (typeof body.id !== "string" || typeof body.displayName !== "string") return json$7({ error: "Nom invalide" }, 400);
+		await updateTutorAssignmentImportName(body.id, body.displayName);
+		return json$7({ imports: await readTutorAssignmentImportSummaries() });
+	} catch (error) {
+		return json$7({
+			error: "Impossible de renommer l’import",
+			detail: error instanceof Error ? error.message : "Impossible de renommer l’import"
+		}, 500);
+	}
+}
+async function DELETE$3(request) {
+	try {
+		const id = new URL(request.url).searchParams.get("id");
+		if (!id) return json$7({ error: "Identifiant manquant" }, 400);
+		await deleteTutorAssignmentImportById(id);
+		return json$7({ imports: await readTutorAssignmentImportSummaries() });
+	} catch (error) {
+		return json$7({
+			error: "Impossible de supprimer l’import",
+			detail: error instanceof Error ? error.message : "Impossible de supprimer l’import"
+		}, 500);
+	}
+}
+//#endregion
+//#region app/api/tutor-coverage-notes/route.ts
+var route_exports$6 = /* @__PURE__ */ __exportAll({
+	GET: () => GET$6,
+	POST: () => POST$3,
+	dynamic: () => dynamic$6,
+	runtime: () => runtime$6
+});
+var dynamic$6 = "force-dynamic";
+var runtime$6 = "nodejs";
+function json$6(data, status = 200) {
+	return NextResponse.json(data, {
+		status,
+		headers: { "Cache-Control": "no-store" }
+	});
+}
+async function GET$6() {
+	try {
+		return json$6({ notes: await readTutorCoverageNotes() });
+	} catch (error) {
+		return json$6({
+			error: "Impossible de charger les annotations",
+			detail: error instanceof Error ? error.message : "Impossible de charger les annotations"
+		}, 500);
+	}
+}
+async function POST$3(request) {
+	try {
+		return json$6({
+			note: await upsertTutorCoverageNote(await request.json()),
+			notes: await readTutorCoverageNotes()
+		});
+	} catch (error) {
+		return json$6({
+			error: "Impossible de sauvegarder l’annotation",
+			detail: error instanceof Error ? error.message : "Impossible de sauvegarder l’annotation"
+		}, 500);
+	}
+}
+//#endregion
+//#region app/api/tutor-interest-imports/route.ts
+var route_exports$5 = /* @__PURE__ */ __exportAll({
+	DELETE: () => DELETE$2,
+	GET: () => GET$5,
+	PATCH: () => PATCH$2,
+	POST: () => POST$2,
+	dynamic: () => dynamic$5,
+	runtime: () => runtime$5
+});
+var dynamic$5 = "force-dynamic";
+var runtime$5 = "nodejs";
+function json$5(data, status = 200) {
+	return NextResponse.json(data, {
+		status,
+		headers: { "Cache-Control": "no-store" }
+	});
+}
+async function GET$5(request) {
+	try {
+		const searchParams = new URL(request.url).searchParams;
+		const id = searchParams.get("id");
+		if (id) {
+			const selectedImport = await readTutorInterestImportById(id);
+			return selectedImport ? json$5({ import: selectedImport }) : json$5({ error: "Import introuvable" }, 404);
+		}
+		return json$5({ imports: searchParams.get("summary") === "1" ? await readTutorInterestImportSummaries() : await readTutorInterestImports() });
+	} catch (error) {
+		return json$5({
+			error: "Impossible de charger les intérêts",
+			detail: error instanceof Error ? error.message : "Impossible de charger les intérêts"
+		}, 500);
+	}
+}
+async function POST$2(request) {
+	try {
+		const url = new URL(request.url);
+		const rawCsv = await request.text();
+		if (!rawCsv.trim()) return json$5({ error: "Fichier CSV vide" }, 400);
+		return json$5({ import: await createTutorInterestImportFromCsv({
+			fileName: url.searchParams.get("fileName") || "interets-tuteurs-candidats.csv",
+			rawCsv
+		}) }, 201);
+	} catch (error) {
+		return json$5({
+			error: "Impossible d’importer les intérêts",
+			detail: error instanceof Error ? error.message : "Impossible d’importer les intérêts"
+		}, 500);
+	}
+}
+async function PATCH$2(request) {
+	try {
+		const body = await request.json();
+		if (typeof body.id !== "string" || typeof body.displayName !== "string") return json$5({ error: "Nom invalide" }, 400);
+		await updateTutorInterestImportName(body.id, body.displayName);
+		return json$5({ imports: await readTutorInterestImportSummaries() });
+	} catch (error) {
+		return json$5({
+			error: "Impossible de renommer l’import",
+			detail: error instanceof Error ? error.message : "Impossible de renommer l’import"
+		}, 500);
+	}
+}
+async function DELETE$2(request) {
+	try {
+		const id = new URL(request.url).searchParams.get("id");
+		if (!id) return json$5({ error: "Identifiant manquant" }, 400);
+		await deleteTutorInterestImportById(id);
+		return json$5({ imports: await readTutorInterestImportSummaries() });
+	} catch (error) {
+		return json$5({
+			error: "Impossible de supprimer l’import",
+			detail: error instanceof Error ? error.message : "Impossible de supprimer l’import"
+		}, 500);
+	}
+}
+//#endregion
+//#region app/api/tutor-report-comments/route.ts
+var route_exports$4 = /* @__PURE__ */ __exportAll({
+	GET: () => GET$4,
+	PUT: () => PUT$3,
+	dynamic: () => dynamic$4,
+	runtime: () => runtime$4
+});
+var dynamic$4 = "force-dynamic";
+var runtime$4 = "nodejs";
+function json$4(data, status = 200) {
+	return NextResponse.json(data, {
+		status,
+		headers: { "Cache-Control": "no-store" }
+	});
+}
+async function GET$4() {
+	return json$4({ comments: await readTutorReportComments() });
+}
+async function PUT$3(request) {
+	try {
+		const body = await request.json();
+		if (!Array.isArray(body.comments)) return json$4({ error: "Invalid tutor report comment list" }, 400);
+		const commentsByTutor = /* @__PURE__ */ new Map();
+		body.comments.filter((comment) => Boolean(comment && typeof comment === "object")).map(sanitizeTutorReportComment).filter((comment) => comment.tutorId).forEach((comment) => {
+			commentsByTutor.set(comment.tutorId, comment);
+		});
+		const comments = Array.from(commentsByTutor.values()).sort((a, b) => a.tutorId.localeCompare(b.tutorId, "fr"));
+		await writeTutorReportComments(comments);
+		return json$4({ comments });
+	} catch {
+		return json$4({ error: "Unable to save tutor report comments" }, 500);
+	}
+}
+//#endregion
+//#region app/api/tutor-reports/route.ts
+var route_exports$3 = /* @__PURE__ */ __exportAll({
+	GET: () => GET$3,
+	PUT: () => PUT$2,
+	dynamic: () => dynamic$3,
+	runtime: () => runtime$3
+});
+var dynamic$3 = "force-dynamic";
+var runtime$3 = "nodejs";
+function json$3(data, status = 200) {
+	return NextResponse.json(data, {
+		status,
+		headers: { "Cache-Control": "no-store" }
+	});
+}
+async function GET$3() {
+	const [reports, tracking] = await Promise.all([readTutorReports(), readTutorTracking()]);
+	const resolved = resolveTutorReportTutorIds(reports, tracking.snapshots.flatMap((snapshot) => snapshot.records));
+	if (resolved.changed) await writeTutorReports(resolved.reports);
+	return json$3({ reports: resolved.reports });
+}
+async function PUT$2(request) {
+	try {
+		const body = await request.json();
+		if (!Array.isArray(body.reports)) return json$3({ error: "Invalid tutor report list" }, 400);
+		const reportsByDate = /* @__PURE__ */ new Map();
+		body.reports.filter((report) => Boolean(report && typeof report === "object")).map(sanitizeTutorReportSnapshot).forEach((report) => {
+			reportsByDate.set(report.date, report);
+		});
+		const resolved = resolveTutorReportTutorIds(Array.from(reportsByDate.values()).sort((a, b) => (/* @__PURE__ */ new Date(`${b.date}T12:00:00`)).getTime() - (/* @__PURE__ */ new Date(`${a.date}T12:00:00`)).getTime()), (await readTutorTracking()).snapshots.flatMap((snapshot) => snapshot.records));
+		await writeTutorReports(resolved.reports);
+		return json$3({ reports: resolved.reports });
+	} catch {
+		return json$3({ error: "Unable to save tutor reports" }, 500);
+	}
+}
+//#endregion
+//#region app/api/tutor-tracking/route.ts
+var route_exports$2 = /* @__PURE__ */ __exportAll({
+	DELETE: () => DELETE$1,
+	GET: () => GET$2,
+	PATCH: () => PATCH$1,
+	POST: () => POST$1,
+	PUT: () => PUT$1,
+	dynamic: () => dynamic$2,
+	runtime: () => runtime$2
+});
+var dynamic$2 = "force-dynamic";
+var runtime$2 = "nodejs";
+function json$2(data, status = 200) {
+	return NextResponse.json(data, {
+		status,
+		headers: { "Cache-Control": "no-store" }
+	});
+}
+async function GET$2(request) {
+	const tracking = await readTutorTracking();
+	const searchParams = new URL(request.url).searchParams;
+	if (searchParams.get("latest") === "1") return json$2({ snapshot: tracking.snapshots[0] ?? null });
+	if (searchParams.get("summary") === "1") return json$2({ imports: tracking.snapshots.map((snapshot) => ({
+		id: snapshot.id,
+		importedAt: snapshot.updatedAt || snapshot.createdAt || snapshot.date,
+		displayName: snapshot.displayName,
+		fileName: snapshot.fileName,
+		sourceRowCount: snapshot.sourceRowCount || snapshot.records.length,
+		date: snapshot.date
+	})) });
+	return json$2({ tracking });
+}
+async function POST$1(request) {
+	try {
+		const body = await request.json();
+		if (typeof body.date !== "string" || typeof body.rawCsv !== "string" || !body.rawCsv.trim()) return json$2({ error: "Date ou fichier CSV invalide" }, 400);
+		return json$2(await createTutorTrackingSnapshotFromCsv({
+			date: body.date,
+			fileName: typeof body.fileName === "string" ? body.fileName : "liste-tuteurs.csv",
+			rawCsv: body.rawCsv
+		}), 201);
+	} catch (error) {
+		return json$2({
+			error: "Import tuteurs impossible",
+			detail: error instanceof Error ? error.message : "Import tuteurs impossible"
+		}, 500);
+	}
+}
+async function PUT$1(request) {
+	try {
+		const body = await request.json();
+		if (!body.tracking || typeof body.tracking !== "object") return json$2({ error: "Invalid tutor tracking" }, 400);
+		const tracking = sanitizeTutorTrackingData(body.tracking);
+		await writeTutorTracking(tracking);
+		return json$2({ tracking });
+	} catch {
+		return json$2({ error: "Unable to save tutor tracking" }, 500);
+	}
+}
+async function PATCH$1(request) {
+	try {
+		const body = await request.json();
+		if (typeof body.id !== "string" || typeof body.displayName !== "string") return json$2({ error: "Nom d’import invalide" }, 400);
+		return json$2({ tracking: await updateTutorTrackingSnapshotName(body.id, body.displayName) });
+	} catch (error) {
+		return json$2({
+			error: "Renommage impossible",
+			detail: error instanceof Error ? error.message : "Renommage impossible"
+		}, 500);
+	}
+}
+async function DELETE$1(request) {
+	try {
+		const id = new URL(request.url).searchParams.get("id");
+		if (!id) return json$2({ error: "Identifiant manquant" }, 400);
+		await moveFileImportToTrash("tutors", id);
+		return json$2({ tracking: await readTutorTracking() });
+	} catch (error) {
+		return json$2({
+			error: "Suppression impossible",
+			detail: error instanceof Error ? error.message : "Suppression impossible"
+		}, 500);
+	}
+}
+//#endregion
+//#region app/api/unstaffed-exclusions/route.ts
+var route_exports$1 = /* @__PURE__ */ __exportAll({
+	GET: () => GET$1,
+	PUT: () => PUT,
+	dynamic: () => dynamic$1,
+	runtime: () => runtime$1
+});
+var dynamic$1 = "force-dynamic";
+var runtime$1 = "nodejs";
+function json$1(data, status = 200) {
+	return NextResponse.json(data, {
+		status,
+		headers: { "Cache-Control": "no-store" }
+	});
+}
+async function GET$1() {
+	return json$1({ exclusions: await readUnstaffedExclusions() });
+}
+async function PUT(request) {
+	try {
+		const body = await request.json();
+		if (!body.exclusions || typeof body.exclusions !== "object") return json$1({ error: "Exclusions invalides" }, 400);
+		return json$1({ exclusions: await writeUnstaffedExclusions(sanitizeUnstaffedExclusions(body.exclusions)) });
+	} catch (error) {
+		return json$1({
+			error: "Sauvegarde impossible",
+			detail: error instanceof Error ? error.message : "Sauvegarde impossible"
+		}, 500);
+	}
+}
+//#endregion
+//#region app/api/upcoming-session-imports/route.ts
+var route_exports = /* @__PURE__ */ __exportAll({
+	DELETE: () => DELETE,
+	GET: () => GET,
+	PATCH: () => PATCH,
+	POST: () => POST,
+	dynamic: () => dynamic,
+	runtime: () => runtime
+});
+var dynamic = "force-dynamic";
+var runtime = "nodejs";
+function json(data, status = 200) {
+	return NextResponse.json(data, {
+		status,
+		headers: { "Cache-Control": "no-store" }
+	});
+}
+async function GET(request) {
+	try {
+		const searchParams = new URL(request.url).searchParams;
+		const id = searchParams.get("id");
+		if (id) {
+			const selectedImport = await readUpcomingSessionImportById(id);
+			return selectedImport ? json({ import: selectedImport }) : json({ error: "Import introuvable" }, 404);
+		}
+		return json({ imports: searchParams.get("summary") === "1" ? await readUpcomingSessionImportSummaries() : await readUpcomingSessionImports() });
+	} catch (error) {
+		return json({
+			error: "Impossible de charger les séances à venir",
+			detail: error instanceof Error ? error.message : "Impossible de charger les séances à venir"
+		}, 500);
+	}
+}
+async function POST(request) {
+	try {
+		const url = new URL(request.url);
+		const rawCsv = await request.text();
+		if (!rawCsv.trim()) return json({ error: "Fichier CSV vide" }, 400);
+		const createdImport = await createUpcomingSessionImportFromCsv({
+			fileName: url.searchParams.get("fileName") || "semaines-a-venir.csv",
+			rawCsv
+		});
+		const schools = await readSchools();
+		const existingIds = new Set(schools.map((school) => school.externalId).filter(Boolean));
+		return json({
+			import: createdImport,
+			schoolDetection: {
+				newCount: createdImport.schools.filter((school) => school.schoolId && !existingIds.has(school.schoolId)).length,
+				existingCount: createdImport.schools.filter((school) => school.schoolId && existingIds.has(school.schoolId)).length,
+				missingIdCount: createdImport.schools.filter((school) => !school.schoolId).length
+			}
+		}, 201);
+	} catch (error) {
+		return json({
+			error: "Impossible d’importer les séances à venir",
+			detail: error instanceof Error ? error.message : "Impossible d’importer les séances à venir"
+		}, 500);
+	}
+}
+async function PATCH(request) {
+	try {
+		const body = await request.json();
+		if (typeof body.id !== "string" || typeof body.displayName !== "string") return json({ error: "Nom invalide" }, 400);
+		await updateUpcomingSessionImportName(body.id, body.displayName);
+		return json({ imports: await readUpcomingSessionImportSummaries() });
+	} catch (error) {
+		return json({
+			error: "Impossible de renommer l’import",
+			detail: error instanceof Error ? error.message : "Impossible de renommer l’import"
+		}, 500);
+	}
+}
+async function DELETE(request) {
+	try {
+		const id = new URL(request.url).searchParams.get("id");
+		if (!id) return json({ error: "Identifiant manquant" }, 400);
+		await deleteUpcomingSessionImportById(id);
+		return json({ imports: await readUpcomingSessionImportSummaries() });
+	} catch (error) {
+		return json({
+			error: "Impossible de supprimer l’import",
+			detail: error instanceof Error ? error.message : "Impossible de supprimer l’import"
+		}, 500);
+	}
 }
 //#endregion
 //#region \0virtual:vinext-rsc-entry
@@ -14564,49 +24509,1163 @@ function __resolveRouteFetchCacheMode(route) {
 function __VINEXT_CLASS(routeIdx) { return ((routeIdx) => {
     switch (routeIdx) {
       case 0: return new Map([[0, "static"]]);
+      case 1: return new Map([[0, "static"]]);
+      case 2: return new Map([[0, "static"]]);
+      case 3: return new Map([[0, "static"]]);
+      case 4: return new Map([[0, "static"]]);
+      case 5: return new Map([[0, "static"]]);
+      case 6: return new Map([[0, "static"]]);
+      case 7: return new Map([[0, "static"]]);
+      case 8: return new Map([[0, "static"]]);
+      case 9: return new Map([[0, "static"]]);
+      case 10: return new Map([[0, "static"]]);
+      case 11: return new Map([[0, "static"]]);
+      case 12: return new Map([[0, "static"]]);
+      case 13: return new Map([[0, "static"]]);
+      case 14: return new Map([[0, "static"]]);
+      case 15: return new Map([[0, "static"]]);
+      case 16: return new Map([[0, "static"]]);
+      case 17: return new Map([[0, "static"]]);
+      case 18: return new Map([[0, "static"]]);
+      case 19: return new Map([[0, "static"]]);
+      case 20: return new Map([[0, "static"]]);
+      case 21: return new Map([[0, "static"]]);
+      case 22: return new Map([[0, "static"]]);
+      case 23: return new Map([[0, "static"]]);
+      case 24: return new Map([[0, "static"]]);
+      case 25: return new Map([[0, "static"]]);
+      case 26: return new Map([[0, "static"]]);
+      case 27: return new Map([[0, "static"]]);
+      case 28: return new Map([[0, "static"]]);
+      case 29: return new Map([[0, "static"]]);
       default: return null;
     }
   })(routeIdx); }
 function __VINEXT_CLASS_REASONS(routeIdx) {
 	return null;
 }
-var routes = [{
-	__buildTimeClassifications: __VINEXT_CLASS(0),
-	__buildTimeReasons: __classDebug ? __VINEXT_CLASS_REASONS(0) : null,
-	ids: {
-		"route": "route:/",
-		"page": "page:/",
-		"routeHandler": null,
-		"rootBoundary": "root-boundary:/",
-		"layouts": ["layout:/"],
-		"templates": [],
-		"slots": {}
+var routes = [
+	{
+		__buildTimeClassifications: __VINEXT_CLASS(0),
+		__buildTimeReasons: __classDebug ? __VINEXT_CLASS_REASONS(0) : null,
+		ids: {
+			"route": "route:/api/tasks/:taskId/notify-completion",
+			"page": null,
+			"routeHandler": "route-handler:/api/tasks/:taskId/notify-completion",
+			"rootBoundary": "root-boundary:/",
+			"layouts": ["layout:/"],
+			"templates": [],
+			"slots": {}
+		},
+		pattern: "/api/tasks/:taskId/notify-completion",
+		patternParts: [
+			"api",
+			"tasks",
+			":taskId",
+			"notify-completion"
+		],
+		isDynamic: true,
+		params: ["taskId"],
+		rootParamNames: [],
+		page: null,
+		routeHandler: route_exports$27,
+		layouts: [layout_exports],
+		routeSegments: [
+			"api",
+			"tasks",
+			"[taskId]",
+			"notify-completion"
+		],
+		templateTreePositions: [],
+		layoutTreePositions: [0],
+		templates: [],
+		errors: [null],
+		errorPaths: [],
+		errorTreePositions: [],
+		slots: {},
+		loading: null,
+		error: null,
+		notFound: null,
+		notFounds: [null],
+		forbidden: null,
+		forbiddens: [null],
+		unauthorized: null,
+		unauthorizeds: [null]
 	},
-	pattern: "/",
-	patternParts: [],
-	isDynamic: false,
-	params: [],
-	rootParamNames: [],
-	page: page_exports,
-	routeHandler: null,
-	layouts: [layout_exports],
-	routeSegments: [],
-	templateTreePositions: [],
-	layoutTreePositions: [0],
-	templates: [],
-	errors: [null],
-	errorPaths: [],
-	errorTreePositions: [],
-	slots: {},
-	loading: null,
-	error: null,
-	notFound: null,
-	notFounds: [null],
-	forbidden: null,
-	forbiddens: [null],
-	unauthorized: null,
-	unauthorizeds: [null]
-}];
+	{
+		__buildTimeClassifications: __VINEXT_CLASS(1),
+		__buildTimeReasons: __classDebug ? __VINEXT_CLASS_REASONS(1) : null,
+		ids: {
+			"route": "route:/",
+			"page": "page:/",
+			"routeHandler": null,
+			"rootBoundary": "root-boundary:/",
+			"layouts": ["layout:/"],
+			"templates": [],
+			"slots": {}
+		},
+		pattern: "/",
+		patternParts: [],
+		isDynamic: false,
+		params: [],
+		rootParamNames: [],
+		page: page_exports$1,
+		routeHandler: null,
+		layouts: [layout_exports],
+		routeSegments: [],
+		templateTreePositions: [],
+		layoutTreePositions: [0],
+		templates: [],
+		errors: [null],
+		errorPaths: [],
+		errorTreePositions: [],
+		slots: {},
+		loading: null,
+		error: null,
+		notFound: null,
+		notFounds: [null],
+		forbidden: null,
+		forbiddens: [null],
+		unauthorized: null,
+		unauthorizeds: [null]
+	},
+	{
+		__buildTimeClassifications: __VINEXT_CLASS(2),
+		__buildTimeReasons: __classDebug ? __VINEXT_CLASS_REASONS(2) : null,
+		ids: {
+			"route": "route:/access",
+			"page": "page:/access",
+			"routeHandler": null,
+			"rootBoundary": "root-boundary:/",
+			"layouts": ["layout:/"],
+			"templates": [],
+			"slots": {}
+		},
+		pattern: "/access",
+		patternParts: ["access"],
+		isDynamic: false,
+		params: [],
+		rootParamNames: [],
+		page: page_exports,
+		routeHandler: null,
+		layouts: [layout_exports],
+		routeSegments: ["access"],
+		templateTreePositions: [],
+		layoutTreePositions: [0],
+		templates: [],
+		errors: [null],
+		errorPaths: [],
+		errorTreePositions: [],
+		slots: {},
+		loading: null,
+		error: null,
+		notFound: null,
+		notFounds: [null],
+		forbidden: null,
+		forbiddens: [null],
+		unauthorized: null,
+		unauthorizeds: [null]
+	},
+	{
+		__buildTimeClassifications: __VINEXT_CLASS(3),
+		__buildTimeReasons: __classDebug ? __VINEXT_CLASS_REASONS(3) : null,
+		ids: {
+			"route": "route:/api/access",
+			"page": null,
+			"routeHandler": "route-handler:/api/access",
+			"rootBoundary": "root-boundary:/",
+			"layouts": ["layout:/"],
+			"templates": [],
+			"slots": {}
+		},
+		pattern: "/api/access",
+		patternParts: ["api", "access"],
+		isDynamic: false,
+		params: [],
+		rootParamNames: [],
+		page: null,
+		routeHandler: route_exports$26,
+		layouts: [layout_exports],
+		routeSegments: ["api", "access"],
+		templateTreePositions: [],
+		layoutTreePositions: [0],
+		templates: [],
+		errors: [null],
+		errorPaths: [],
+		errorTreePositions: [],
+		slots: {},
+		loading: null,
+		error: null,
+		notFound: null,
+		notFounds: [null],
+		forbidden: null,
+		forbiddens: [null],
+		unauthorized: null,
+		unauthorizeds: [null]
+	},
+	{
+		__buildTimeClassifications: __VINEXT_CLASS(4),
+		__buildTimeReasons: __classDebug ? __VINEXT_CLASS_REASONS(4) : null,
+		ids: {
+			"route": "route:/api/actual-session-imports",
+			"page": null,
+			"routeHandler": "route-handler:/api/actual-session-imports",
+			"rootBoundary": "root-boundary:/",
+			"layouts": ["layout:/"],
+			"templates": [],
+			"slots": {}
+		},
+		pattern: "/api/actual-session-imports",
+		patternParts: ["api", "actual-session-imports"],
+		isDynamic: false,
+		params: [],
+		rootParamNames: [],
+		page: null,
+		routeHandler: route_exports$25,
+		layouts: [layout_exports],
+		routeSegments: ["api", "actual-session-imports"],
+		templateTreePositions: [],
+		layoutTreePositions: [0],
+		templates: [],
+		errors: [null],
+		errorPaths: [],
+		errorTreePositions: [],
+		slots: {},
+		loading: null,
+		error: null,
+		notFound: null,
+		notFounds: [null],
+		forbidden: null,
+		forbiddens: [null],
+		unauthorized: null,
+		unauthorizeds: [null]
+	},
+	{
+		__buildTimeClassifications: __VINEXT_CLASS(5),
+		__buildTimeReasons: __classDebug ? __VINEXT_CLASS_REASONS(5) : null,
+		ids: {
+			"route": "route:/api/availability-imports",
+			"page": null,
+			"routeHandler": "route-handler:/api/availability-imports",
+			"rootBoundary": "root-boundary:/",
+			"layouts": ["layout:/"],
+			"templates": [],
+			"slots": {}
+		},
+		pattern: "/api/availability-imports",
+		patternParts: ["api", "availability-imports"],
+		isDynamic: false,
+		params: [],
+		rootParamNames: [],
+		page: null,
+		routeHandler: route_exports$24,
+		layouts: [layout_exports],
+		routeSegments: ["api", "availability-imports"],
+		templateTreePositions: [],
+		layoutTreePositions: [0],
+		templates: [],
+		errors: [null],
+		errorPaths: [],
+		errorTreePositions: [],
+		slots: {},
+		loading: null,
+		error: null,
+		notFound: null,
+		notFounds: [null],
+		forbidden: null,
+		forbiddens: [null],
+		unauthorized: null,
+		unauthorizeds: [null]
+	},
+	{
+		__buildTimeClassifications: __VINEXT_CLASS(6),
+		__buildTimeReasons: __classDebug ? __VINEXT_CLASS_REASONS(6) : null,
+		ids: {
+			"route": "route:/api/dashboard",
+			"page": null,
+			"routeHandler": "route-handler:/api/dashboard",
+			"rootBoundary": "root-boundary:/",
+			"layouts": ["layout:/"],
+			"templates": [],
+			"slots": {}
+		},
+		pattern: "/api/dashboard",
+		patternParts: ["api", "dashboard"],
+		isDynamic: false,
+		params: [],
+		rootParamNames: [],
+		page: null,
+		routeHandler: route_exports$23,
+		layouts: [layout_exports],
+		routeSegments: ["api", "dashboard"],
+		templateTreePositions: [],
+		layoutTreePositions: [0],
+		templates: [],
+		errors: [null],
+		errorPaths: [],
+		errorTreePositions: [],
+		slots: {},
+		loading: null,
+		error: null,
+		notFound: null,
+		notFounds: [null],
+		forbidden: null,
+		forbiddens: [null],
+		unauthorized: null,
+		unauthorizeds: [null]
+	},
+	{
+		__buildTimeClassifications: __VINEXT_CLASS(7),
+		__buildTimeReasons: __classDebug ? __VINEXT_CLASS_REASONS(7) : null,
+		ids: {
+			"route": "route:/api/enrollment-imports",
+			"page": null,
+			"routeHandler": "route-handler:/api/enrollment-imports",
+			"rootBoundary": "root-boundary:/",
+			"layouts": ["layout:/"],
+			"templates": [],
+			"slots": {}
+		},
+		pattern: "/api/enrollment-imports",
+		patternParts: ["api", "enrollment-imports"],
+		isDynamic: false,
+		params: [],
+		rootParamNames: [],
+		page: null,
+		routeHandler: route_exports$22,
+		layouts: [layout_exports],
+		routeSegments: ["api", "enrollment-imports"],
+		templateTreePositions: [],
+		layoutTreePositions: [0],
+		templates: [],
+		errors: [null],
+		errorPaths: [],
+		errorTreePositions: [],
+		slots: {},
+		loading: null,
+		error: null,
+		notFound: null,
+		notFounds: [null],
+		forbidden: null,
+		forbiddens: [null],
+		unauthorized: null,
+		unauthorizeds: [null]
+	},
+	{
+		__buildTimeClassifications: __VINEXT_CLASS(8),
+		__buildTimeReasons: __classDebug ? __VINEXT_CLASS_REASONS(8) : null,
+		ids: {
+			"route": "route:/api/file-trash",
+			"page": null,
+			"routeHandler": "route-handler:/api/file-trash",
+			"rootBoundary": "root-boundary:/",
+			"layouts": ["layout:/"],
+			"templates": [],
+			"slots": {}
+		},
+		pattern: "/api/file-trash",
+		patternParts: ["api", "file-trash"],
+		isDynamic: false,
+		params: [],
+		rootParamNames: [],
+		page: null,
+		routeHandler: route_exports$21,
+		layouts: [layout_exports],
+		routeSegments: ["api", "file-trash"],
+		templateTreePositions: [],
+		layoutTreePositions: [0],
+		templates: [],
+		errors: [null],
+		errorPaths: [],
+		errorTreePositions: [],
+		slots: {},
+		loading: null,
+		error: null,
+		notFound: null,
+		notFounds: [null],
+		forbidden: null,
+		forbiddens: [null],
+		unauthorized: null,
+		unauthorizeds: [null]
+	},
+	{
+		__buildTimeClassifications: __VINEXT_CLASS(9),
+		__buildTimeReasons: __classDebug ? __VINEXT_CLASS_REASONS(9) : null,
+		ids: {
+			"route": "route:/api/journal-posts",
+			"page": null,
+			"routeHandler": "route-handler:/api/journal-posts",
+			"rootBoundary": "root-boundary:/",
+			"layouts": ["layout:/"],
+			"templates": [],
+			"slots": {}
+		},
+		pattern: "/api/journal-posts",
+		patternParts: ["api", "journal-posts"],
+		isDynamic: false,
+		params: [],
+		rootParamNames: [],
+		page: null,
+		routeHandler: route_exports$20,
+		layouts: [layout_exports],
+		routeSegments: ["api", "journal-posts"],
+		templateTreePositions: [],
+		layoutTreePositions: [0],
+		templates: [],
+		errors: [null],
+		errorPaths: [],
+		errorTreePositions: [],
+		slots: {},
+		loading: null,
+		error: null,
+		notFound: null,
+		notFounds: [null],
+		forbidden: null,
+		forbiddens: [null],
+		unauthorized: null,
+		unauthorizeds: [null]
+	},
+	{
+		__buildTimeClassifications: __VINEXT_CLASS(10),
+		__buildTimeReasons: __classDebug ? __VINEXT_CLASS_REASONS(10) : null,
+		ids: {
+			"route": "route:/api/links",
+			"page": null,
+			"routeHandler": "route-handler:/api/links",
+			"rootBoundary": "root-boundary:/",
+			"layouts": ["layout:/"],
+			"templates": [],
+			"slots": {}
+		},
+		pattern: "/api/links",
+		patternParts: ["api", "links"],
+		isDynamic: false,
+		params: [],
+		rootParamNames: [],
+		page: null,
+		routeHandler: route_exports$19,
+		layouts: [layout_exports],
+		routeSegments: ["api", "links"],
+		templateTreePositions: [],
+		layoutTreePositions: [0],
+		templates: [],
+		errors: [null],
+		errorPaths: [],
+		errorTreePositions: [],
+		slots: {},
+		loading: null,
+		error: null,
+		notFound: null,
+		notFounds: [null],
+		forbidden: null,
+		forbiddens: [null],
+		unauthorized: null,
+		unauthorizeds: [null]
+	},
+	{
+		__buildTimeClassifications: __VINEXT_CLASS(11),
+		__buildTimeReasons: __classDebug ? __VINEXT_CLASS_REASONS(11) : null,
+		ids: {
+			"route": "route:/api/mass-communications",
+			"page": null,
+			"routeHandler": "route-handler:/api/mass-communications",
+			"rootBoundary": "root-boundary:/",
+			"layouts": ["layout:/"],
+			"templates": [],
+			"slots": {}
+		},
+		pattern: "/api/mass-communications",
+		patternParts: ["api", "mass-communications"],
+		isDynamic: false,
+		params: [],
+		rootParamNames: [],
+		page: null,
+		routeHandler: route_exports$18,
+		layouts: [layout_exports],
+		routeSegments: ["api", "mass-communications"],
+		templateTreePositions: [],
+		layoutTreePositions: [0],
+		templates: [],
+		errors: [null],
+		errorPaths: [],
+		errorTreePositions: [],
+		slots: {},
+		loading: null,
+		error: null,
+		notFound: null,
+		notFounds: [null],
+		forbidden: null,
+		forbiddens: [null],
+		unauthorized: null,
+		unauthorizeds: [null]
+	},
+	{
+		__buildTimeClassifications: __VINEXT_CLASS(12),
+		__buildTimeReasons: __classDebug ? __VINEXT_CLASS_REASONS(12) : null,
+		ids: {
+			"route": "route:/api/objectives",
+			"page": null,
+			"routeHandler": "route-handler:/api/objectives",
+			"rootBoundary": "root-boundary:/",
+			"layouts": ["layout:/"],
+			"templates": [],
+			"slots": {}
+		},
+		pattern: "/api/objectives",
+		patternParts: ["api", "objectives"],
+		isDynamic: false,
+		params: [],
+		rootParamNames: [],
+		page: null,
+		routeHandler: route_exports$17,
+		layouts: [layout_exports],
+		routeSegments: ["api", "objectives"],
+		templateTreePositions: [],
+		layoutTreePositions: [0],
+		templates: [],
+		errors: [null],
+		errorPaths: [],
+		errorTreePositions: [],
+		slots: {},
+		loading: null,
+		error: null,
+		notFound: null,
+		notFounds: [null],
+		forbidden: null,
+		forbiddens: [null],
+		unauthorized: null,
+		unauthorizeds: [null]
+	},
+	{
+		__buildTimeClassifications: __VINEXT_CLASS(13),
+		__buildTimeReasons: __classDebug ? __VINEXT_CLASS_REASONS(13) : null,
+		ids: {
+			"route": "route:/api/people",
+			"page": null,
+			"routeHandler": "route-handler:/api/people",
+			"rootBoundary": "root-boundary:/",
+			"layouts": ["layout:/"],
+			"templates": [],
+			"slots": {}
+		},
+		pattern: "/api/people",
+		patternParts: ["api", "people"],
+		isDynamic: false,
+		params: [],
+		rootParamNames: [],
+		page: null,
+		routeHandler: route_exports$16,
+		layouts: [layout_exports],
+		routeSegments: ["api", "people"],
+		templateTreePositions: [],
+		layoutTreePositions: [0],
+		templates: [],
+		errors: [null],
+		errorPaths: [],
+		errorTreePositions: [],
+		slots: {},
+		loading: null,
+		error: null,
+		notFound: null,
+		notFounds: [null],
+		forbidden: null,
+		forbiddens: [null],
+		unauthorized: null,
+		unauthorizeds: [null]
+	},
+	{
+		__buildTimeClassifications: __VINEXT_CLASS(14),
+		__buildTimeReasons: __classDebug ? __VINEXT_CLASS_REASONS(14) : null,
+		ids: {
+			"route": "route:/api/recurring-tasks",
+			"page": null,
+			"routeHandler": "route-handler:/api/recurring-tasks",
+			"rootBoundary": "root-boundary:/",
+			"layouts": ["layout:/"],
+			"templates": [],
+			"slots": {}
+		},
+		pattern: "/api/recurring-tasks",
+		patternParts: ["api", "recurring-tasks"],
+		isDynamic: false,
+		params: [],
+		rootParamNames: [],
+		page: null,
+		routeHandler: route_exports$15,
+		layouts: [layout_exports],
+		routeSegments: ["api", "recurring-tasks"],
+		templateTreePositions: [],
+		layoutTreePositions: [0],
+		templates: [],
+		errors: [null],
+		errorPaths: [],
+		errorTreePositions: [],
+		slots: {},
+		loading: null,
+		error: null,
+		notFound: null,
+		notFounds: [null],
+		forbidden: null,
+		forbiddens: [null],
+		unauthorized: null,
+		unauthorizeds: [null]
+	},
+	{
+		__buildTimeClassifications: __VINEXT_CLASS(15),
+		__buildTimeReasons: __classDebug ? __VINEXT_CLASS_REASONS(15) : null,
+		ids: {
+			"route": "route:/api/school-watchlist",
+			"page": null,
+			"routeHandler": "route-handler:/api/school-watchlist",
+			"rootBoundary": "root-boundary:/",
+			"layouts": ["layout:/"],
+			"templates": [],
+			"slots": {}
+		},
+		pattern: "/api/school-watchlist",
+		patternParts: ["api", "school-watchlist"],
+		isDynamic: false,
+		params: [],
+		rootParamNames: [],
+		page: null,
+		routeHandler: route_exports$14,
+		layouts: [layout_exports],
+		routeSegments: ["api", "school-watchlist"],
+		templateTreePositions: [],
+		layoutTreePositions: [0],
+		templates: [],
+		errors: [null],
+		errorPaths: [],
+		errorTreePositions: [],
+		slots: {},
+		loading: null,
+		error: null,
+		notFound: null,
+		notFounds: [null],
+		forbidden: null,
+		forbiddens: [null],
+		unauthorized: null,
+		unauthorizeds: [null]
+	},
+	{
+		__buildTimeClassifications: __VINEXT_CLASS(16),
+		__buildTimeReasons: __classDebug ? __VINEXT_CLASS_REASONS(16) : null,
+		ids: {
+			"route": "route:/api/schools",
+			"page": null,
+			"routeHandler": "route-handler:/api/schools",
+			"rootBoundary": "root-boundary:/",
+			"layouts": ["layout:/"],
+			"templates": [],
+			"slots": {}
+		},
+		pattern: "/api/schools",
+		patternParts: ["api", "schools"],
+		isDynamic: false,
+		params: [],
+		rootParamNames: [],
+		page: null,
+		routeHandler: route_exports$13,
+		layouts: [layout_exports],
+		routeSegments: ["api", "schools"],
+		templateTreePositions: [],
+		layoutTreePositions: [0],
+		templates: [],
+		errors: [null],
+		errorPaths: [],
+		errorTreePositions: [],
+		slots: {},
+		loading: null,
+		error: null,
+		notFound: null,
+		notFounds: [null],
+		forbidden: null,
+		forbiddens: [null],
+		unauthorized: null,
+		unauthorizeds: [null]
+	},
+	{
+		__buildTimeClassifications: __VINEXT_CLASS(17),
+		__buildTimeReasons: __classDebug ? __VINEXT_CLASS_REASONS(17) : null,
+		ids: {
+			"route": "route:/api/staffing-audits",
+			"page": null,
+			"routeHandler": "route-handler:/api/staffing-audits",
+			"rootBoundary": "root-boundary:/",
+			"layouts": ["layout:/"],
+			"templates": [],
+			"slots": {}
+		},
+		pattern: "/api/staffing-audits",
+		patternParts: ["api", "staffing-audits"],
+		isDynamic: false,
+		params: [],
+		rootParamNames: [],
+		page: null,
+		routeHandler: route_exports$12,
+		layouts: [layout_exports],
+		routeSegments: ["api", "staffing-audits"],
+		templateTreePositions: [],
+		layoutTreePositions: [0],
+		templates: [],
+		errors: [null],
+		errorPaths: [],
+		errorTreePositions: [],
+		slots: {},
+		loading: null,
+		error: null,
+		notFound: null,
+		notFounds: [null],
+		forbidden: null,
+		forbiddens: [null],
+		unauthorized: null,
+		unauthorizeds: [null]
+	},
+	{
+		__buildTimeClassifications: __VINEXT_CLASS(18),
+		__buildTimeReasons: __classDebug ? __VINEXT_CLASS_REASONS(18) : null,
+		ids: {
+			"route": "route:/api/staffing-sessions",
+			"page": null,
+			"routeHandler": "route-handler:/api/staffing-sessions",
+			"rootBoundary": "root-boundary:/",
+			"layouts": ["layout:/"],
+			"templates": [],
+			"slots": {}
+		},
+		pattern: "/api/staffing-sessions",
+		patternParts: ["api", "staffing-sessions"],
+		isDynamic: false,
+		params: [],
+		rootParamNames: [],
+		page: null,
+		routeHandler: route_exports$11,
+		layouts: [layout_exports],
+		routeSegments: ["api", "staffing-sessions"],
+		templateTreePositions: [],
+		layoutTreePositions: [0],
+		templates: [],
+		errors: [null],
+		errorPaths: [],
+		errorTreePositions: [],
+		slots: {},
+		loading: null,
+		error: null,
+		notFound: null,
+		notFounds: [null],
+		forbidden: null,
+		forbiddens: [null],
+		unauthorized: null,
+		unauthorizeds: [null]
+	},
+	{
+		__buildTimeClassifications: __VINEXT_CLASS(19),
+		__buildTimeReasons: __classDebug ? __VINEXT_CLASS_REASONS(19) : null,
+		ids: {
+			"route": "route:/api/student-history",
+			"page": null,
+			"routeHandler": "route-handler:/api/student-history",
+			"rootBoundary": "root-boundary:/",
+			"layouts": ["layout:/"],
+			"templates": [],
+			"slots": {}
+		},
+		pattern: "/api/student-history",
+		patternParts: ["api", "student-history"],
+		isDynamic: false,
+		params: [],
+		rootParamNames: [],
+		page: null,
+		routeHandler: route_exports$10,
+		layouts: [layout_exports],
+		routeSegments: ["api", "student-history"],
+		templateTreePositions: [],
+		layoutTreePositions: [0],
+		templates: [],
+		errors: [null],
+		errorPaths: [],
+		errorTreePositions: [],
+		slots: {},
+		loading: null,
+		error: null,
+		notFound: null,
+		notFounds: [null],
+		forbidden: null,
+		forbiddens: [null],
+		unauthorized: null,
+		unauthorizeds: [null]
+	},
+	{
+		__buildTimeClassifications: __VINEXT_CLASS(20),
+		__buildTimeReasons: __classDebug ? __VINEXT_CLASS_REASONS(20) : null,
+		ids: {
+			"route": "route:/api/tasks",
+			"page": null,
+			"routeHandler": "route-handler:/api/tasks",
+			"rootBoundary": "root-boundary:/",
+			"layouts": ["layout:/"],
+			"templates": [],
+			"slots": {}
+		},
+		pattern: "/api/tasks",
+		patternParts: ["api", "tasks"],
+		isDynamic: false,
+		params: [],
+		rootParamNames: [],
+		page: null,
+		routeHandler: route_exports$9,
+		layouts: [layout_exports],
+		routeSegments: ["api", "tasks"],
+		templateTreePositions: [],
+		layoutTreePositions: [0],
+		templates: [],
+		errors: [null],
+		errorPaths: [],
+		errorTreePositions: [],
+		slots: {},
+		loading: null,
+		error: null,
+		notFound: null,
+		notFounds: [null],
+		forbidden: null,
+		forbiddens: [null],
+		unauthorized: null,
+		unauthorizeds: [null]
+	},
+	{
+		__buildTimeClassifications: __VINEXT_CLASS(21),
+		__buildTimeReasons: __classDebug ? __VINEXT_CLASS_REASONS(21) : null,
+		ids: {
+			"route": "route:/api/tutor-activity",
+			"page": null,
+			"routeHandler": "route-handler:/api/tutor-activity",
+			"rootBoundary": "root-boundary:/",
+			"layouts": ["layout:/"],
+			"templates": [],
+			"slots": {}
+		},
+		pattern: "/api/tutor-activity",
+		patternParts: ["api", "tutor-activity"],
+		isDynamic: false,
+		params: [],
+		rootParamNames: [],
+		page: null,
+		routeHandler: route_exports$8,
+		layouts: [layout_exports],
+		routeSegments: ["api", "tutor-activity"],
+		templateTreePositions: [],
+		layoutTreePositions: [0],
+		templates: [],
+		errors: [null],
+		errorPaths: [],
+		errorTreePositions: [],
+		slots: {},
+		loading: null,
+		error: null,
+		notFound: null,
+		notFounds: [null],
+		forbidden: null,
+		forbiddens: [null],
+		unauthorized: null,
+		unauthorizeds: [null]
+	},
+	{
+		__buildTimeClassifications: __VINEXT_CLASS(22),
+		__buildTimeReasons: __classDebug ? __VINEXT_CLASS_REASONS(22) : null,
+		ids: {
+			"route": "route:/api/tutor-assignment-imports",
+			"page": null,
+			"routeHandler": "route-handler:/api/tutor-assignment-imports",
+			"rootBoundary": "root-boundary:/",
+			"layouts": ["layout:/"],
+			"templates": [],
+			"slots": {}
+		},
+		pattern: "/api/tutor-assignment-imports",
+		patternParts: ["api", "tutor-assignment-imports"],
+		isDynamic: false,
+		params: [],
+		rootParamNames: [],
+		page: null,
+		routeHandler: route_exports$7,
+		layouts: [layout_exports],
+		routeSegments: ["api", "tutor-assignment-imports"],
+		templateTreePositions: [],
+		layoutTreePositions: [0],
+		templates: [],
+		errors: [null],
+		errorPaths: [],
+		errorTreePositions: [],
+		slots: {},
+		loading: null,
+		error: null,
+		notFound: null,
+		notFounds: [null],
+		forbidden: null,
+		forbiddens: [null],
+		unauthorized: null,
+		unauthorizeds: [null]
+	},
+	{
+		__buildTimeClassifications: __VINEXT_CLASS(23),
+		__buildTimeReasons: __classDebug ? __VINEXT_CLASS_REASONS(23) : null,
+		ids: {
+			"route": "route:/api/tutor-coverage-notes",
+			"page": null,
+			"routeHandler": "route-handler:/api/tutor-coverage-notes",
+			"rootBoundary": "root-boundary:/",
+			"layouts": ["layout:/"],
+			"templates": [],
+			"slots": {}
+		},
+		pattern: "/api/tutor-coverage-notes",
+		patternParts: ["api", "tutor-coverage-notes"],
+		isDynamic: false,
+		params: [],
+		rootParamNames: [],
+		page: null,
+		routeHandler: route_exports$6,
+		layouts: [layout_exports],
+		routeSegments: ["api", "tutor-coverage-notes"],
+		templateTreePositions: [],
+		layoutTreePositions: [0],
+		templates: [],
+		errors: [null],
+		errorPaths: [],
+		errorTreePositions: [],
+		slots: {},
+		loading: null,
+		error: null,
+		notFound: null,
+		notFounds: [null],
+		forbidden: null,
+		forbiddens: [null],
+		unauthorized: null,
+		unauthorizeds: [null]
+	},
+	{
+		__buildTimeClassifications: __VINEXT_CLASS(24),
+		__buildTimeReasons: __classDebug ? __VINEXT_CLASS_REASONS(24) : null,
+		ids: {
+			"route": "route:/api/tutor-interest-imports",
+			"page": null,
+			"routeHandler": "route-handler:/api/tutor-interest-imports",
+			"rootBoundary": "root-boundary:/",
+			"layouts": ["layout:/"],
+			"templates": [],
+			"slots": {}
+		},
+		pattern: "/api/tutor-interest-imports",
+		patternParts: ["api", "tutor-interest-imports"],
+		isDynamic: false,
+		params: [],
+		rootParamNames: [],
+		page: null,
+		routeHandler: route_exports$5,
+		layouts: [layout_exports],
+		routeSegments: ["api", "tutor-interest-imports"],
+		templateTreePositions: [],
+		layoutTreePositions: [0],
+		templates: [],
+		errors: [null],
+		errorPaths: [],
+		errorTreePositions: [],
+		slots: {},
+		loading: null,
+		error: null,
+		notFound: null,
+		notFounds: [null],
+		forbidden: null,
+		forbiddens: [null],
+		unauthorized: null,
+		unauthorizeds: [null]
+	},
+	{
+		__buildTimeClassifications: __VINEXT_CLASS(25),
+		__buildTimeReasons: __classDebug ? __VINEXT_CLASS_REASONS(25) : null,
+		ids: {
+			"route": "route:/api/tutor-report-comments",
+			"page": null,
+			"routeHandler": "route-handler:/api/tutor-report-comments",
+			"rootBoundary": "root-boundary:/",
+			"layouts": ["layout:/"],
+			"templates": [],
+			"slots": {}
+		},
+		pattern: "/api/tutor-report-comments",
+		patternParts: ["api", "tutor-report-comments"],
+		isDynamic: false,
+		params: [],
+		rootParamNames: [],
+		page: null,
+		routeHandler: route_exports$4,
+		layouts: [layout_exports],
+		routeSegments: ["api", "tutor-report-comments"],
+		templateTreePositions: [],
+		layoutTreePositions: [0],
+		templates: [],
+		errors: [null],
+		errorPaths: [],
+		errorTreePositions: [],
+		slots: {},
+		loading: null,
+		error: null,
+		notFound: null,
+		notFounds: [null],
+		forbidden: null,
+		forbiddens: [null],
+		unauthorized: null,
+		unauthorizeds: [null]
+	},
+	{
+		__buildTimeClassifications: __VINEXT_CLASS(26),
+		__buildTimeReasons: __classDebug ? __VINEXT_CLASS_REASONS(26) : null,
+		ids: {
+			"route": "route:/api/tutor-reports",
+			"page": null,
+			"routeHandler": "route-handler:/api/tutor-reports",
+			"rootBoundary": "root-boundary:/",
+			"layouts": ["layout:/"],
+			"templates": [],
+			"slots": {}
+		},
+		pattern: "/api/tutor-reports",
+		patternParts: ["api", "tutor-reports"],
+		isDynamic: false,
+		params: [],
+		rootParamNames: [],
+		page: null,
+		routeHandler: route_exports$3,
+		layouts: [layout_exports],
+		routeSegments: ["api", "tutor-reports"],
+		templateTreePositions: [],
+		layoutTreePositions: [0],
+		templates: [],
+		errors: [null],
+		errorPaths: [],
+		errorTreePositions: [],
+		slots: {},
+		loading: null,
+		error: null,
+		notFound: null,
+		notFounds: [null],
+		forbidden: null,
+		forbiddens: [null],
+		unauthorized: null,
+		unauthorizeds: [null]
+	},
+	{
+		__buildTimeClassifications: __VINEXT_CLASS(27),
+		__buildTimeReasons: __classDebug ? __VINEXT_CLASS_REASONS(27) : null,
+		ids: {
+			"route": "route:/api/tutor-tracking",
+			"page": null,
+			"routeHandler": "route-handler:/api/tutor-tracking",
+			"rootBoundary": "root-boundary:/",
+			"layouts": ["layout:/"],
+			"templates": [],
+			"slots": {}
+		},
+		pattern: "/api/tutor-tracking",
+		patternParts: ["api", "tutor-tracking"],
+		isDynamic: false,
+		params: [],
+		rootParamNames: [],
+		page: null,
+		routeHandler: route_exports$2,
+		layouts: [layout_exports],
+		routeSegments: ["api", "tutor-tracking"],
+		templateTreePositions: [],
+		layoutTreePositions: [0],
+		templates: [],
+		errors: [null],
+		errorPaths: [],
+		errorTreePositions: [],
+		slots: {},
+		loading: null,
+		error: null,
+		notFound: null,
+		notFounds: [null],
+		forbidden: null,
+		forbiddens: [null],
+		unauthorized: null,
+		unauthorizeds: [null]
+	},
+	{
+		__buildTimeClassifications: __VINEXT_CLASS(28),
+		__buildTimeReasons: __classDebug ? __VINEXT_CLASS_REASONS(28) : null,
+		ids: {
+			"route": "route:/api/unstaffed-exclusions",
+			"page": null,
+			"routeHandler": "route-handler:/api/unstaffed-exclusions",
+			"rootBoundary": "root-boundary:/",
+			"layouts": ["layout:/"],
+			"templates": [],
+			"slots": {}
+		},
+		pattern: "/api/unstaffed-exclusions",
+		patternParts: ["api", "unstaffed-exclusions"],
+		isDynamic: false,
+		params: [],
+		rootParamNames: [],
+		page: null,
+		routeHandler: route_exports$1,
+		layouts: [layout_exports],
+		routeSegments: ["api", "unstaffed-exclusions"],
+		templateTreePositions: [],
+		layoutTreePositions: [0],
+		templates: [],
+		errors: [null],
+		errorPaths: [],
+		errorTreePositions: [],
+		slots: {},
+		loading: null,
+		error: null,
+		notFound: null,
+		notFounds: [null],
+		forbidden: null,
+		forbiddens: [null],
+		unauthorized: null,
+		unauthorizeds: [null]
+	},
+	{
+		__buildTimeClassifications: __VINEXT_CLASS(29),
+		__buildTimeReasons: __classDebug ? __VINEXT_CLASS_REASONS(29) : null,
+		ids: {
+			"route": "route:/api/upcoming-session-imports",
+			"page": null,
+			"routeHandler": "route-handler:/api/upcoming-session-imports",
+			"rootBoundary": "root-boundary:/",
+			"layouts": ["layout:/"],
+			"templates": [],
+			"slots": {}
+		},
+		pattern: "/api/upcoming-session-imports",
+		patternParts: ["api", "upcoming-session-imports"],
+		isDynamic: false,
+		params: [],
+		rootParamNames: [],
+		page: null,
+		routeHandler: route_exports,
+		layouts: [layout_exports],
+		routeSegments: ["api", "upcoming-session-imports"],
+		templateTreePositions: [],
+		layoutTreePositions: [0],
+		templates: [],
+		errors: [null],
+		errorPaths: [],
+		errorTreePositions: [],
+		slots: {},
+		loading: null,
+		error: null,
+		notFound: null,
+		notFounds: [null],
+		forbidden: null,
+		forbiddens: [null],
+		unauthorized: null,
+		unauthorizeds: [null]
+	}
+];
 var __routeMatcher = createAppRscRouteMatcher(routes);
 var metadataRoutes = [];
 var rootNotFoundModule = null;
@@ -14681,6 +25740,11 @@ var __publicFiles = new Set([
 	"/favicon.svg",
 	"/file.svg",
 	"/globe.svg",
+	"/logo-etude-alpha-carre.png",
+	"/recrutement-tuteurs-surveillants-alpha-600x360.png",
+	"/recrutement-tuteurs-surveillants-alpha-hd.png",
+	"/surveillant-cour-alpha-600x360.png",
+	"/surveillant-cour-alpha-hd.png",
 	"/window.svg"
 ]);
 var __allowedOrigins = [];
@@ -14980,11 +26044,11 @@ var _virtual_vinext_rsc_entry_default = createAppRscHandler({
 		});
 	},
 	i18nConfig: __i18nConfig,
-	isMiddlewareProxy: false,
+	isMiddlewareProxy: true,
 	makeThenableParams,
 	matchRoute,
 	metadataRoutes,
-	middlewareModule: null,
+	middlewareModule: proxy_exports,
 	publicFiles: __publicFiles,
 	renderNotFound({ isRscRequest, matchedParams, middlewareContext, request, route, scriptNonce }) {
 		return __fallbackRenderer.renderNotFound(route, isRscRequest, request, matchedParams, scriptNonce, middlewareContext);
@@ -14996,7 +26060,7 @@ var _virtual_vinext_rsc_entry_default = createAppRscHandler({
 	validateDevRequestOrigin: __validateDevRequestOrigin
 });
 //#endregion
-//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._411db1e72ff1d4e0dfb72e4a8d0c6b6d/node_modules/vinext/dist/server/app-router-entry.js
+//#region node_modules/.pnpm/vinext@0.0.50_@vitejs+plugin-react@6.0.2_vite@8.0.13_@types+node@22.19.19_esbuild@0.28._09055b837d8aa4555372357075757799/node_modules/vinext/dist/server/app-router-entry.js
 /**
 * Default Cloudflare Worker entry point for vinext App Router.
 *
