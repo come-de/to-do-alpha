@@ -172,7 +172,7 @@ type TutorReportSnapshot = {
 };
 
 type TutorReportComment = {
-  tutorKey: string;
+  tutorId: string;
   comment: string;
   updatedAt: string;
 };
@@ -186,6 +186,7 @@ type TutorTrackingRecord = {
   email: string;
   school: string;
   wantedCity: string;
+  level: string;
 };
 
 type TutorTrackingSnapshot = {
@@ -200,7 +201,7 @@ type TutorTrackingSnapshot = {
 };
 
 type TutorTrackingComment = {
-  tutorKey: string;
+  tutorId: string;
   comment: string;
   updatedAt: string;
 };
@@ -518,33 +519,40 @@ function digitsOnly(value: string) {
   return value.replace(/\D/g, "");
 }
 
-function tutorIdentityKey(entry: Pick<TutorReportEntry, "tutorId" | "lastName" | "firstName" | "phone">) {
+function tutorIdentityKey(entry: Pick<TutorReportEntry, "id" | "tutorId">) {
   const explicitId = entry.tutorId.trim();
   if (explicitId) return `id:${explicitId.toLocaleLowerCase("fr")}`;
-  return `name:${`${entry.lastName} ${entry.firstName} ${entry.phone}`
-    .trim()
-    .toLocaleLowerCase("fr")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")}`;
+  return `unresolved-entry:${entry.id}`;
 }
 
 function tutorDisplayName(entry: Pick<TutorReportEntry, "firstName" | "lastName" | "tutorId">) {
   return `${entry.firstName} ${entry.lastName}`.trim() || entry.tutorId || "Tuteur sans nom";
 }
 
-function tutorTrackingKey(record: Pick<TutorTrackingRecord, "tutorId" | "lastName" | "firstName" | "phone" | "email">) {
+function tutorTrackingKey(record: Pick<TutorTrackingRecord, "tutorId">) {
   const explicitId = record.tutorId.trim();
-  if (explicitId) return `id:${explicitId.toLocaleLowerCase("fr")}`;
-  const fallback = `${record.lastName} ${record.firstName} ${record.phone || record.email}`
-    .trim()
-    .toLocaleLowerCase("fr")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-  return `name:${fallback}`;
+  return explicitId ? `id:${explicitId.toLocaleLowerCase("fr")}` : "";
+}
+
+function tutorLookupName(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr").replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function resolveTutorReportEntries(entries: TutorReportEntry[], records: TutorTrackingRecord[]) {
+  const byPhone = new Map<string, Set<string>>();
+  const byName = new Map<string, Set<string>>();
+  records.forEach((record) => {
+    if (!record.tutorId) return;
+    const phone = digitsOnly(record.phone);
+    if (phone) byPhone.set(phone, new Set([...(byPhone.get(phone) ?? []), record.tutorId]));
+    const name = tutorLookupName(`${record.firstName} ${record.lastName}`);
+    if (name) byName.set(name, new Set([...(byName.get(name) ?? []), record.tutorId]));
+  });
+  const uniqueId = (set: Set<string> | undefined) => set?.size === 1 ? Array.from(set)[0] : "";
+  return entries.map((entry) => ({
+    ...entry,
+    tutorId: entry.tutorId || uniqueId(digitsOnly(entry.phone) ? byPhone.get(digitsOnly(entry.phone)) : undefined) || uniqueId(byName.get(tutorLookupName(`${entry.firstName} ${entry.lastName}`))),
+  }));
 }
 
 function tutorTrackingDisplayName(record: Pick<TutorTrackingRecord, "firstName" | "lastName" | "tutorId" | "email">) {
@@ -1034,8 +1042,9 @@ function normalizeTutorReportSnapshot(raw: Partial<TutorReportSnapshot>): TutorR
 }
 
 function normalizeTutorReportComment(raw: Partial<TutorReportComment>): TutorReportComment {
+  const legacyKey = (raw as Partial<TutorReportComment> & { tutorKey?: string }).tutorKey || "";
   return {
-    tutorKey: raw.tutorKey || "",
+    tutorId: raw.tutorId || (/^id:(.+)$/i.exec(legacyKey)?.[1] ?? ""),
     comment: raw.comment || "",
     updatedAt: raw.updatedAt || new Date().toISOString(),
   };
@@ -1043,7 +1052,7 @@ function normalizeTutorReportComment(raw: Partial<TutorReportComment>): TutorRep
 
 function normalizeTutorTrackingRecord(raw: Partial<TutorTrackingRecord>): TutorTrackingRecord {
   const record = {
-    key: raw.key || "",
+    key: "",
     tutorId: raw.tutorId || "",
     lastName: raw.lastName || "",
     firstName: raw.firstName || "",
@@ -1051,6 +1060,7 @@ function normalizeTutorTrackingRecord(raw: Partial<TutorTrackingRecord>): TutorT
     email: raw.email || "",
     school: raw.school || "",
     wantedCity: raw.wantedCity || "",
+    level: raw.level || "",
   };
   return {
     ...record,
@@ -1070,7 +1080,7 @@ function normalizeTutorTrackingSnapshot(raw: Partial<TutorTrackingSnapshot>): Tu
     records: Array.isArray(raw.records)
       ? raw.records
           .map(normalizeTutorTrackingRecord)
-          .filter((record) => record.key !== "name:" && (record.tutorId || record.lastName || record.firstName || record.phone || record.email))
+          .filter((record) => record.tutorId)
       : [],
     createdAt: raw.createdAt || now,
     updatedAt: raw.updatedAt || raw.createdAt || now,
@@ -1078,8 +1088,9 @@ function normalizeTutorTrackingSnapshot(raw: Partial<TutorTrackingSnapshot>): Tu
 }
 
 function normalizeTutorTrackingComment(raw: Partial<TutorTrackingComment>): TutorTrackingComment {
+  const legacyKey = (raw as Partial<TutorTrackingComment> & { tutorKey?: string }).tutorKey || "";
   return {
-    tutorKey: raw.tutorKey || "",
+    tutorId: raw.tutorId || (/^id:(.+)$/i.exec(legacyKey)?.[1] ?? ""),
     comment: raw.comment || "",
     updatedAt: raw.updatedAt || new Date().toISOString(),
   };
@@ -1091,7 +1102,7 @@ function normalizeTutorTrackingData(raw: Partial<TutorTrackingData>): TutorTrack
       ? raw.snapshots.map(normalizeTutorTrackingSnapshot).sort((a, b) => sortDateValue(b.date) - sortDateValue(a.date) || sortDateValue(b.createdAt) - sortDateValue(a.createdAt))
       : [],
     comments: Array.isArray(raw.comments)
-      ? raw.comments.map(normalizeTutorTrackingComment).filter((comment) => comment.tutorKey)
+      ? raw.comments.map(normalizeTutorTrackingComment).filter((comment) => comment.tutorId)
       : [],
   };
 }
@@ -1299,6 +1310,7 @@ function parseTutorTrackingCsv(value: string): TutorTrackingRecord[] {
       "ville",
       "villesouhaitee",
       "villesouhaitees",
+      "niveau",
     ].includes(cell),
   );
   const headers = hasHeader ? firstRow : ["id", "nom", "prenom", "telephone", "etablissement", "email", "villesouhaitee"];
@@ -1317,6 +1329,7 @@ function parseTutorTrackingCsv(value: string): TutorTrackingRecord[] {
   const emailIndex = indexFor(["email", "mail", "courriel"]);
   const schoolIndex = indexFor(["etablissement", "etablissements", "school", "ecole"]);
   const wantedCityIndex = indexFor(["villesouhaitees", "villesouhaitee", "villesouhaites", "villesouhaite", "ville"]);
+  const levelIndex = indexFor(["niveau"]);
   const valueAt = (row: string[], index: number) => (index >= 0 ? row[index] || "" : "");
   const byKey = new Map<string, TutorTrackingRecord>();
   dataRows.forEach((row) => {
@@ -1328,8 +1341,9 @@ function parseTutorTrackingCsv(value: string): TutorTrackingRecord[] {
       email: valueAt(row, emailIndex),
       school: valueAt(row, schoolIndex),
       wantedCity: valueAt(row, wantedCityIndex),
+      level: valueAt(row, levelIndex),
     });
-    if (record.key !== "name:" && (record.tutorId || record.lastName || record.firstName || record.phone || record.email)) {
+    if (record.tutorId) {
       byKey.set(record.key, record);
     }
   });
@@ -1381,7 +1395,7 @@ function aggregateTutorReports(reports: TutorReportSnapshot[]): TutorReportAggre
   reports.forEach((report) => {
     report.entries.forEach((entry) => {
       const key = tutorIdentityKey(entry);
-      if (!key || key === "name:") return;
+      if (!key) return;
       const existing =
         byTutor.get(key) ??
         {
@@ -2052,7 +2066,7 @@ export default function Home() {
       const data = (await response.json()) as { comments?: Partial<TutorReportComment>[] };
       setTutorReportComments(
         Array.isArray(data.comments)
-          ? data.comments.map(normalizeTutorReportComment).filter((comment) => comment.tutorKey)
+          ? data.comments.map(normalizeTutorReportComment).filter((comment) => comment.tutorId)
           : [],
       );
     } catch {
@@ -2463,7 +2477,7 @@ export default function Home() {
     [filteredTutorReportsForGlobal],
   );
   const tutorReportCommentByKey = useMemo(
-    () => new Map(tutorReportComments.map((comment) => [comment.tutorKey, comment.comment])),
+    () => new Map(tutorReportComments.map((comment) => [`id:${comment.tutorId.toLocaleLowerCase("fr")}`, comment.comment])),
     [tutorReportComments],
   );
   const filteredTutorReportAggregates = useMemo(() => {
@@ -2512,7 +2526,7 @@ export default function Home() {
   }, [activeTutorReport, tutorReportCommentByKey, tutorReportQuery]);
   const latestTutorTrackingSnapshot = tutorTracking.snapshots[0] ?? null;
   const tutorTrackingCommentByKey = useMemo(
-    () => new Map(tutorTracking.comments.map((commentItem) => [commentItem.tutorKey, commentItem.comment])),
+    () => new Map(tutorTracking.comments.map((commentItem) => [`id:${commentItem.tutorId.toLocaleLowerCase("fr")}`, commentItem.comment])),
     [tutorTracking.comments],
   );
   const tutorTrackingSummary = useMemo(() => {
@@ -3030,7 +3044,10 @@ export default function Home() {
     setSaving(true);
     setSyncError("");
     const normalizedReports = nextReports
-      .map(normalizeTutorReportSnapshot)
+      .map((report) => normalizeTutorReportSnapshot({
+        ...report,
+        entries: resolveTutorReportEntries(report.entries, tutorTracking.snapshots.flatMap((snapshot) => snapshot.records)),
+      }))
       .sort((a, b) => sortDateValue(b.date) - sortDateValue(a.date));
     setTutorReports(normalizedReports);
     try {
@@ -3056,7 +3073,7 @@ export default function Home() {
     setSyncError("");
     const normalizedComments = nextComments
       .map(normalizeTutorReportComment)
-      .filter((comment) => comment.tutorKey);
+      .filter((comment) => comment.tutorId);
     setTutorReportComments(normalizedComments);
     try {
       const response = await fetch("/api/tutor-report-comments", {
@@ -3068,7 +3085,7 @@ export default function Home() {
       const data = (await response.json()) as { comments?: Partial<TutorReportComment>[] };
       setTutorReportComments(
         Array.isArray(data.comments)
-          ? data.comments.map(normalizeTutorReportComment).filter((comment) => comment.tutorKey)
+          ? data.comments.map(normalizeTutorReportComment).filter((comment) => comment.tutorId)
           : [],
       );
       setToast(message);
@@ -3706,7 +3723,7 @@ export default function Home() {
 
   async function importTutorReportPaste() {
     if (!tutorReportDate || saving) return;
-    const entries = parseTutorReportPaste(tutorReportPaste);
+    const entries = resolveTutorReportEntries(parseTutorReportPaste(tutorReportPaste), tutorTracking.snapshots.flatMap((snapshot) => snapshot.records));
     if (!entries.length) {
       setToast("Aucune ligne valide à importer");
       return;
@@ -3769,12 +3786,12 @@ export default function Home() {
     );
   }
 
-  async function updateTutorReportGlobalComment(tutorKey: string, commentValue: string) {
+  async function updateTutorReportGlobalComment(tutorId: string, commentValue: string) {
     const now = new Date().toISOString();
     const trimmedComment = commentValue.trim();
-    const withoutTutor = tutorReportComments.filter((commentItem) => commentItem.tutorKey !== tutorKey);
+    const withoutTutor = tutorReportComments.filter((commentItem) => commentItem.tutorId !== tutorId);
     const nextComments = trimmedComment
-      ? [...withoutTutor, { tutorKey, comment: trimmedComment, updatedAt: now }]
+      ? [...withoutTutor, { tutorId, comment: trimmedComment, updatedAt: now }]
       : withoutTutor;
     await saveTutorReportComments(nextComments, "Commentaire global sauvegardé");
   }
@@ -3968,12 +3985,12 @@ export default function Home() {
     }
   }
 
-  async function updateTutorTrackingComment(tutorKey: string, commentValue: string) {
+  async function updateTutorTrackingComment(tutorId: string, commentValue: string) {
     const now = new Date().toISOString();
     const trimmedComment = commentValue.trim();
-    const otherComments = tutorTracking.comments.filter((commentItem) => commentItem.tutorKey !== tutorKey);
+    const otherComments = tutorTracking.comments.filter((commentItem) => commentItem.tutorId !== tutorId);
     const nextComments = trimmedComment
-      ? [...otherComments, { tutorKey, comment: trimmedComment, updatedAt: now }]
+      ? [...otherComments, { tutorId, comment: trimmedComment, updatedAt: now }]
       : otherComments;
     await saveTutorTracking({ ...tutorTracking, comments: nextComments }, "Commentaire tuteur sauvegardé");
   }
@@ -5170,7 +5187,7 @@ export default function Home() {
                 placeholder="Commentaire de suivi..."
                 onBlur={(event) => {
                   if (event.target.value.trim() !== (tutorTrackingCommentByKey.get(tutor.key) || "")) {
-                    void updateTutorTrackingComment(tutor.key, event.target.value);
+                    void updateTutorTrackingComment(tutor.tutorId, event.target.value);
                   }
                 }}
                 aria-label={`Commentaire pour ${tutorTrackingDisplayName(tutor)}`}
@@ -5446,7 +5463,7 @@ export default function Home() {
           {filteredTutorReportEntries.length ? (
             filteredTutorReportEntries.map((entry) => {
               const tutorKey = tutorIdentityKey(entry);
-              const globalComment = tutorReportCommentByKey.get(tutorKey) || "";
+              const globalComment = entry.tutorId ? tutorReportCommentByKey.get(`id:${entry.tutorId.toLocaleLowerCase("fr")}`) || "" : "";
               return (
                 <article className="tutor-report-table tutor-report-row" key={entry.id}>
                   <span>{entry.tutorId || "—"}</span>
@@ -5462,9 +5479,11 @@ export default function Home() {
                     className="tutor-row-comment global-comment"
                     defaultValue={globalComment}
                     placeholder="Commentaire global..."
+                    disabled={!entry.tutorId}
+                    title={!entry.tutorId ? "ID tuteur requis pour associer ce commentaire" : undefined}
                     onBlur={(event) => {
                       if (event.target.value.trim() !== globalComment) {
-                        void updateTutorReportGlobalComment(tutorKey, event.target.value);
+                        if (entry.tutorId) void updateTutorReportGlobalComment(entry.tutorId, event.target.value);
                       }
                     }}
                     aria-label={`Commentaire global pour ${tutorDisplayName(entry)}`}

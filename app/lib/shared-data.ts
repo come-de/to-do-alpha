@@ -154,7 +154,7 @@ export type TutorReportSnapshot = {
 };
 
 export type TutorReportComment = {
-  tutorKey: string;
+  tutorId: string;
   comment: string;
   updatedAt: string;
 };
@@ -168,6 +168,7 @@ export type TutorTrackingRecord = {
   email: string;
   school: string;
   wantedCity: string;
+  level: string;
 };
 
 export type TutorTrackingSnapshot = {
@@ -182,7 +183,7 @@ export type TutorTrackingSnapshot = {
 };
 
 export type TutorTrackingComment = {
-  tutorKey: string;
+  tutorId: string;
   comment: string;
   updatedAt: string;
 };
@@ -429,6 +430,11 @@ export type StaffingAuditClassification = "staffed" | "unstaffed" | "ambiguous";
 export type StaffingAuditResolution = "" | "staffed" | "unstaffed";
 export type StaffingAuditSessionCategory = "alpha" | "surveillance" | "service";
 
+export type StaffingAuditTutor = {
+  tutorId: string;
+  name: string;
+};
+
 export type StaffingAuditSession = {
   sessionId: string;
   date: string;
@@ -440,7 +446,7 @@ export type StaffingAuditSession = {
   detectedStatus: StaffingAuditClassification;
   resolution: StaffingAuditResolution;
   treated: boolean;
-  tutorNames: string[];
+  tutors: StaffingAuditTutor[];
 };
 
 export type StaffingAuditDay = {
@@ -978,8 +984,9 @@ export function sanitizeTutorReportSnapshot(raw: Record<string, unknown>): Tutor
 }
 
 export function sanitizeTutorReportComment(raw: Record<string, unknown>): TutorReportComment {
+  const legacyKey = cleanText(raw.tutorKey);
   return {
-    tutorKey: cleanText(raw.tutorKey),
+    tutorId: cleanText(raw.tutorId) || (/^id:(.+)$/i.exec(legacyKey)?.[1] ?? ""),
     comment: cleanText(raw.comment),
     updatedAt: cleanText(raw.updatedAt) || new Date().toISOString(),
   };
@@ -990,15 +997,8 @@ export function sanitizeTutorTrackingRecord(raw: Record<string, unknown>): Tutor
   const lastName = cleanText(raw.lastName);
   const firstName = cleanText(raw.firstName);
   const phone = cleanText(raw.phone);
-  const fallbackKey = `${lastName} ${firstName} ${phone}`
-    .trim()
-    .toLocaleLowerCase("fr")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
   return {
-    key: cleanText(raw.key) || (tutorId ? `id:${tutorId.toLocaleLowerCase("fr")}` : `name:${fallbackKey}`),
+    key: tutorId ? `id:${tutorId.toLocaleLowerCase("fr")}` : "",
     tutorId,
     lastName,
     firstName,
@@ -1006,6 +1006,7 @@ export function sanitizeTutorTrackingRecord(raw: Record<string, unknown>): Tutor
     email: cleanText(raw.email),
     school: cleanText(raw.school),
     wantedCity: cleanText(raw.wantedCity),
+    level: cleanText(raw.level),
   };
 }
 
@@ -1022,7 +1023,7 @@ export function sanitizeTutorTrackingSnapshot(raw: Record<string, unknown>): Tut
       ? raw.records
           .filter((record): record is Record<string, unknown> => Boolean(record && typeof record === "object"))
           .map(sanitizeTutorTrackingRecord)
-          .filter((record) => record.key && (record.tutorId || record.lastName || record.firstName || record.phone || record.email))
+          .filter((record) => record.tutorId)
       : [],
     createdAt: cleanText(raw.createdAt) || now,
     updatedAt: cleanText(raw.updatedAt) || cleanText(raw.createdAt) || now,
@@ -1035,7 +1036,7 @@ export function parseTutorTrackingCsv(value: string) {
   const firstRow = csvRows[0].map(normalizedHeader);
   const hasHeader = firstRow.some((cell) => [
     "id", "idtuteur", "nom", "nomtuteur", "nomdusage", "prenom", "prenomtuteur",
-    "telephone", "numerodetelephone", "email", "villesouhaitee", "villesouhaitees",
+    "telephone", "numerodetelephone", "email", "villesouhaitee", "villesouhaitees", "niveau",
   ].includes(cell));
   const headers = hasHeader
     ? firstRow
@@ -1056,6 +1057,7 @@ export function parseTutorTrackingCsv(value: string) {
   const emailIndex = indexFor(["email", "mail", "courriel"]);
   const schoolIndex = indexFor(["etablissement", "etablissements", "school", "ecole"]);
   const wantedCityIndex = indexFor(["villesouhaitees", "villesouhaitee", "villesouhaites", "villesouhaite", "ville"]);
+  const levelIndex = indexFor(["niveau"]);
   const byKey = new Map<string, TutorTrackingRecord>();
   dataRows.forEach((row) => {
     const record = sanitizeTutorTrackingRecord({
@@ -1066,8 +1068,9 @@ export function parseTutorTrackingCsv(value: string) {
       email: valueAt(row, emailIndex),
       school: valueAt(row, schoolIndex),
       wantedCity: valueAt(row, wantedCityIndex),
+      level: valueAt(row, levelIndex),
     });
-    if (record.key && (record.tutorId || record.lastName || record.firstName || record.phone || record.email)) {
+    if (record.tutorId) {
       byKey.set(record.key, record);
     }
   });
@@ -1078,8 +1081,9 @@ export function parseTutorTrackingCsv(value: string) {
 }
 
 export function sanitizeTutorTrackingComment(raw: Record<string, unknown>): TutorTrackingComment {
+  const legacyKey = cleanText(raw.tutorKey);
   return {
-    tutorKey: cleanText(raw.tutorKey),
+    tutorId: cleanText(raw.tutorId) || (/^id:(.+)$/i.exec(legacyKey)?.[1] ?? ""),
     comment: cleanText(raw.comment),
     updatedAt: cleanText(raw.updatedAt) || new Date().toISOString(),
   };
@@ -1097,9 +1101,55 @@ export function sanitizeTutorTrackingData(raw: Record<string, unknown>): TutorTr
       ? raw.comments
           .filter((comment): comment is Record<string, unknown> => Boolean(comment && typeof comment === "object"))
           .map(sanitizeTutorTrackingComment)
-          .filter((comment) => comment.tutorKey)
+          .filter((comment) => comment.tutorId)
       : [],
   };
+}
+
+function tutorTrackingLegacyKey(record: TutorTrackingRecord) {
+  const fallback = `${record.lastName} ${record.firstName} ${record.phone || record.email}`
+    .trim().toLocaleLowerCase("fr").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  return `name:${fallback}`;
+}
+
+function migrateTutorTrackingData(raw: Record<string, unknown>) {
+  const sourceSnapshots = Array.isArray(raw.snapshots)
+    ? raw.snapshots.filter((snapshot): snapshot is Record<string, unknown> => Boolean(snapshot && typeof snapshot === "object"))
+    : [];
+  const sourceRecords = sourceSnapshots.flatMap((snapshot) => Array.isArray(snapshot.records)
+    ? snapshot.records.filter((record): record is Record<string, unknown> => Boolean(record && typeof record === "object")).map(sanitizeTutorTrackingRecord)
+    : []);
+  const resolve = createTutorRecordResolver(sourceRecords);
+  const resolvedSnapshots = sourceSnapshots.map((snapshot) => ({
+    ...snapshot,
+    records: Array.isArray(snapshot.records)
+      ? snapshot.records.filter((record): record is Record<string, unknown> => Boolean(record && typeof record === "object")).map((rawRecord) => {
+          const record = sanitizeTutorTrackingRecord(rawRecord);
+          const tutor = resolve({ tutorId: record.tutorId, phone: record.phone, name: `${record.firstName} ${record.lastName}` });
+          return { ...rawRecord, tutorId: record.tutorId || tutor?.tutorId || "" };
+        })
+      : [],
+  }));
+  const resolvedRecords = resolvedSnapshots.flatMap((snapshot) => Array.isArray(snapshot.records)
+    ? snapshot.records.map((record) => sanitizeTutorTrackingRecord(record as unknown as Record<string, unknown>))
+    : []);
+  const idsByLegacyKey = new Map<string, Set<string>>();
+  resolvedRecords.forEach((record) => {
+    if (!record.tutorId) return;
+    const key = tutorTrackingLegacyKey(record);
+    const ids = idsByLegacyKey.get(key) ?? new Set<string>();
+    ids.add(record.tutorId);
+    idsByLegacyKey.set(key, ids);
+  });
+  const comments = Array.isArray(raw.comments)
+    ? raw.comments.filter((comment): comment is Record<string, unknown> => Boolean(comment && typeof comment === "object")).map((comment) => {
+        const legacyKey = cleanText(comment.tutorKey);
+        const legacyId = /^id:(.+)$/i.exec(legacyKey)?.[1] ?? "";
+        const ids = idsByLegacyKey.get(legacyKey);
+        return { ...comment, tutorId: cleanText(comment.tutorId) || legacyId || (ids?.size === 1 ? Array.from(ids)[0] : "") };
+      })
+    : [];
+  return sanitizeTutorTrackingData({ ...raw, snapshots: resolvedSnapshots, comments });
 }
 
 export function sanitizeUnstaffedExclusions(raw: Record<string, unknown>): UnstaffedExclusions {
@@ -1663,6 +1713,14 @@ function normalizeStaffingAuditDate(value: unknown) {
 export function sanitizeStaffingAuditSession(raw: Record<string, unknown>): StaffingAuditSession {
   const rawDate = cleanText(raw.date);
   const school = cleanText(raw.school);
+  const tutors = Array.isArray(raw.tutors)
+    ? raw.tutors
+        .filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object"))
+        .map((item) => ({ tutorId: cleanText(item.tutorId), name: cleanText(item.name || item.displayName) }))
+        .filter((item) => item.tutorId || item.name)
+    : Array.isArray(raw.tutorNames)
+      ? raw.tutorNames.map((name) => ({ tutorId: "", name: cleanText(name) })).filter((item) => item.name)
+      : [];
   return {
     sessionId: cleanText(raw.sessionId),
     date: normalizeStaffingAuditDate(rawDate) || rawDate,
@@ -1676,7 +1734,15 @@ export function sanitizeStaffingAuditSession(raw: Record<string, unknown>): Staf
     detectedStatus: isStaffingAuditClassification(raw.detectedStatus) ? raw.detectedStatus : "ambiguous",
     resolution: isStaffingAuditResolution(raw.resolution) ? raw.resolution : "",
     treated: raw.treated === true,
-    tutorNames: Array.isArray(raw.tutorNames) ? Array.from(new Set(raw.tutorNames.map(cleanText).filter(Boolean))) : [],
+    tutors: (() => {
+      const identified = new Map<string, StaffingAuditTutor>();
+      const unidentified: StaffingAuditTutor[] = [];
+      tutors.forEach((item) => {
+        if (item.tutorId) identified.set(item.tutorId, item);
+        else unidentified.push(item);
+      });
+      return [...identified.values(), ...unidentified];
+    })(),
   };
 }
 
@@ -1695,7 +1761,77 @@ export function sanitizeStaffingAuditDay(raw: Record<string, unknown>): Staffing
   };
 }
 
-export function parseStaffingAuditCsv(value: string, fileName: string, schools: School[]) {
+function tutorPhoneKey(value: string) {
+  return value.replace(/\D/g, "");
+}
+
+function createTutorRecordResolver(records: TutorTrackingRecord[]) {
+  const byId = new Map(records.filter((record) => record.tutorId).map((record) => [record.tutorId.trim(), record]));
+  const index = (keyFor: (record: TutorTrackingRecord) => string) => {
+    const idsByKey = new Map<string, Set<string>>();
+    records.forEach((record) => {
+      const key = keyFor(record);
+      if (!key || !record.tutorId.trim()) return;
+      const ids = idsByKey.get(key) ?? new Set<string>();
+      ids.add(record.tutorId.trim());
+      idsByKey.set(key, ids);
+    });
+    return new Map(Array.from(idsByKey.entries()).filter(([, ids]) => ids.size === 1).map(([key, ids]) => [key, Array.from(ids)[0]]));
+  };
+  const idByPhone = index((record) => tutorPhoneKey(record.phone));
+  const idByName = index((record) => normalizeSchoolName(`${record.firstName} ${record.lastName}`));
+  return (input: { tutorId?: string; phone?: string; name?: string }): Pick<TutorTrackingRecord, "tutorId" | "firstName" | "lastName"> | undefined => {
+    const directId = input.tutorId?.trim() || "";
+    if (directId) return byId.get(directId) ?? { tutorId: directId, firstName: "", lastName: "" };
+    const phoneId = idByPhone.get(tutorPhoneKey(input.phone || ""));
+    if (phoneId) return byId.get(phoneId);
+    const nameId = idByName.get(normalizeSchoolName(input.name || ""));
+    return nameId ? byId.get(nameId) : undefined;
+  };
+}
+
+export function resolveStaffingAuditTutorIds(days: StaffingAuditDay[], records: TutorTrackingRecord[]) {
+  const resolve = createTutorRecordResolver(records);
+  let changed = false;
+  const resolvedDays = days.map((day) => ({
+    ...day,
+    sessions: day.sessions.map((session) => {
+      const tutors = session.tutors.map((tutor) => {
+        if (tutor.tutorId) return tutor;
+        const record = resolve({ name: tutor.name });
+        if (!record?.tutorId) return tutor;
+        changed = true;
+        return { ...tutor, tutorId: record.tutorId };
+      });
+      const byId = new Map<string, StaffingAuditTutor>();
+      const unidentified: StaffingAuditTutor[] = [];
+      tutors.forEach((tutor) => {
+        if (tutor.tutorId) byId.set(tutor.tutorId, tutor);
+        else unidentified.push(tutor);
+      });
+      return { ...session, tutors: [...byId.values(), ...unidentified] };
+    }),
+  }));
+  return { days: resolvedDays, changed };
+}
+
+export function resolveTutorReportTutorIds(reports: TutorReportSnapshot[], records: TutorTrackingRecord[]) {
+  const resolve = createTutorRecordResolver(records);
+  let changed = false;
+  const resolvedReports = reports.map((report) => ({
+    ...report,
+    entries: report.entries.map((entry) => {
+      if (entry.tutorId) return entry;
+      const tutor = resolve({ tutorId: entry.tutorId, phone: entry.phone, name: `${entry.firstName} ${entry.lastName}` });
+      if (!tutor?.tutorId) return entry;
+      changed = true;
+      return { ...entry, tutorId: tutor.tutorId };
+    }),
+  }));
+  return { reports: resolvedReports, changed };
+}
+
+export function parseStaffingAuditCsv(value: string, fileName: string, schools: School[], tutorRecords: TutorTrackingRecord[] = []) {
   const csvRows = parseCsvRows(value).filter((row) => row.some(Boolean));
   if (!csvRows.length) return { days: [] as StaffingAuditDay[], invalidDateRowCount: 0 };
   const headers = csvRows[0].map(normalizedHeader);
@@ -1712,14 +1848,16 @@ export function parseStaffingAuditCsv(value: string, fileName: string, schools: 
   const tutorFirstNameIndex = indexFor(["prenomtuteur", "prenomdututeur"]);
   const tutorLastNameIndex = indexFor(["nomtuteur", "nomdututeur"]);
   const tutorPhoneIndex = indexFor(["numerotuteur", "numerodututeur", "telephone", "numerodetelephone"]);
+  const tutorIdIndex = indexFor(["id", "idtuteur", "iddututeur", "tutorid", "idpersonne"]);
   if (dateIndex < 0 || sessionIdIndex < 0 || schoolIndex < 0) throw new Error("Colonnes Date, Semaine réelle ou Établissement introuvables dans le CSV");
   const schoolByName = new Map(schools.map((school) => [normalizeSchoolName(school.name), school]));
-  type Accumulator = { sessionId: string; date: string; school: string; sourceRowCount: number; tutors: Map<string, string>; tutorKeyByName: Map<string, string> };
+  type Accumulator = { sessionId: string; date: string; school: string; sourceRowCount: number; tutors: Map<string, StaffingAuditTutor>; tutorKeyByPhone: Map<string, string> };
   const sessions = new Map<string, Accumulator>();
+  const resolveTutor = createTutorRecordResolver(tutorRecords);
   const rows = csvRows.slice(1);
   const rowCountByDate = new Map<string, number>();
   let invalidDateRowCount = 0;
-  rows.forEach((row) => {
+  rows.forEach((row, rowIndex) => {
     const date = normalizeStaffingAuditDate(row[dateIndex]);
     const sessionId = cleanText(row[sessionIdIndex]);
     if (!date) {
@@ -1733,18 +1871,21 @@ export function parseStaffingAuditCsv(value: string, fileName: string, schools: 
     const firstName = tutorFirstNameIndex >= 0 ? cleanText(row[tutorFirstNameIndex]) : "";
     const lastName = tutorLastNameIndex >= 0 ? cleanText(row[tutorLastNameIndex]) : "";
     const phone = tutorPhoneIndex >= 0 ? cleanText(row[tutorPhoneIndex]) : "";
+    const tutorId = tutorIdIndex >= 0 ? cleanText(row[tutorIdIndex]) : "";
     const tutorName = `${firstName} ${lastName}`.trim();
-    const item = sessions.get(key) ?? { sessionId, date, school, sourceRowCount: 0, tutors: new Map<string, string>(), tutorKeyByName: new Map<string, string>() };
+    const item = sessions.get(key) ?? { sessionId, date, school, sourceRowCount: 0, tutors: new Map<string, StaffingAuditTutor>(), tutorKeyByPhone: new Map<string, string>() };
     item.sourceRowCount += 1;
     if (phone || tutorName) {
-      const normalizedPhone = phone.replace(/\D/g, "");
-      const normalizedTutorName = normalizeSchoolName(tutorName);
+      const matchedTutor = resolveTutor({ tutorId, phone, name: tutorName });
+      const normalizedPhone = tutorPhoneKey(phone);
       const phoneKey = phone ? `phone:${normalizedPhone || phone.toLocaleLowerCase("fr")}` : "";
-      const previousNameKey = normalizedTutorName ? item.tutorKeyByName.get(normalizedTutorName) : "";
-      const tutorKey = phoneKey || previousNameKey || `name:${normalizedTutorName}`;
-      if (phoneKey && previousNameKey && previousNameKey !== phoneKey) item.tutors.delete(previousNameKey);
-      item.tutors.set(tutorKey, tutorName || phone);
-      if (normalizedTutorName) item.tutorKeyByName.set(normalizedTutorName, tutorKey);
+      const previousPhoneKey = normalizedPhone ? item.tutorKeyByPhone.get(normalizedPhone) : "";
+      const previousTutorId = previousPhoneKey ? item.tutors.get(previousPhoneKey)?.tutorId : "";
+      const resolvedId = matchedTutor?.tutorId || tutorId || previousTutorId || "";
+      const tutorKey = resolvedId ? `id:${resolvedId}` : phoneKey || `unresolved-row:${rowIndex}`;
+      if (resolvedId && previousPhoneKey && previousPhoneKey !== tutorKey) item.tutors.delete(previousPhoneKey);
+      item.tutors.set(tutorKey, { tutorId: resolvedId, name: tutorName || `${matchedTutor?.firstName || ""} ${matchedTutor?.lastName || ""}`.trim() || phone });
+      if (normalizedPhone) item.tutorKeyByPhone.set(normalizedPhone, tutorKey);
     }
     if (!item.school && school) item.school = school;
     sessions.set(key, item);
@@ -1753,7 +1894,8 @@ export function parseStaffingAuditCsv(value: string, fileName: string, schools: 
   const byDate = new Map<string, StaffingAuditSession[]>();
   sessions.forEach((item) => {
     const school = schoolByName.get(normalizeSchoolName(item.school));
-    const detectedStatus: StaffingAuditClassification = item.tutors.size > 1 ? "ambiguous" : item.tutors.size === 1 ? "staffed" : "unstaffed";
+    const identifiedTutorIds = new Set(Array.from(item.tutors.values()).map((tutor) => tutor.tutorId).filter(Boolean));
+    const detectedStatus: StaffingAuditClassification = item.tutors.size > 1 || (identifiedTutorIds.size > 0 && identifiedTutorIds.size !== item.tutors.size) ? "ambiguous" : item.tutors.size === 1 ? "staffed" : "unstaffed";
     const session = sanitizeStaffingAuditSession({
       sessionId: item.sessionId,
       date: item.date,
@@ -1765,7 +1907,7 @@ export function parseStaffingAuditCsv(value: string, fileName: string, schools: 
       detectedStatus,
       resolution: "",
       treated: false,
-      tutorNames: Array.from(item.tutors.values()),
+      tutors: Array.from(item.tutors.values()),
     });
     byDate.set(item.date, [...(byDate.get(item.date) ?? []), session]);
   });
@@ -1920,11 +2062,13 @@ export function parseEnrollmentCsv(value: string) {
   const classIndex = indexFor(["classe", "class"]);
   const schoolIndex = indexFor(["ecole", "etablissement", "school"]);
   const slotsIndex = indexFor(["creneaux", "creneau", "slots"]);
+  const oneTimeSessionIndex = indexFor(["seancesponctuelles", "seanceponctuelle", "ponctuelle", "ponctuel"]);
   if (studentIdIndex < 0 || slotsIndex < 0) {
     throw new Error("Colonnes « Id de l’enfant » ou « Creneaux » introuvables");
   }
   const dataRows = csvRows.slice(1);
   const rows = dataRows
+    .filter((row) => normalizedHeader(valueAt(row, oneTimeSessionIndex)) !== "oui")
     .map((row) =>
       sanitizeEnrollmentRow({
         studentId: valueAt(row, studentIdIndex),
@@ -2392,18 +2536,33 @@ export async function writeTutorReports(reports: TutorReportSnapshot[]) {
 }
 
 export async function readTutorReportComments() {
+  let rawComments: Record<string, unknown>[] = [];
   try {
     const store = taskStore();
     const comments = await store.get(TUTOR_REPORT_COMMENTS_KEY, { type: "json", consistency: "strong" });
-    return Array.isArray(comments)
-      ? comments
-          .filter((comment): comment is Record<string, unknown> => Boolean(comment && typeof comment === "object"))
-          .map(sanitizeTutorReportComment)
-          .filter((comment) => comment.tutorKey)
+    rawComments = Array.isArray(comments)
+      ? comments.filter((comment): comment is Record<string, unknown> => Boolean(comment && typeof comment === "object"))
       : [];
   } catch {
-    return memory.__petitSuiviTutorReportComments ?? [];
+    rawComments = memory.__petitSuiviTutorReportComments as unknown as Record<string, unknown>[] ?? [];
   }
+  const [reports, tracking] = await Promise.all([readTutorReports(), readTutorTracking()]);
+  const resolvedReports = resolveTutorReportTutorIds(reports, tracking.snapshots.flatMap((snapshot) => snapshot.records)).reports;
+  const idsByLegacyKey = new Map<string, Set<string>>();
+  resolvedReports.forEach((report) => report.entries.forEach((entry) => {
+    if (!entry.tutorId) return;
+    const legacyKey = `name:${`${entry.lastName} ${entry.firstName} ${entry.phone}`.trim().toLocaleLowerCase("fr").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`;
+    const ids = idsByLegacyKey.get(legacyKey) ?? new Set<string>();
+    ids.add(entry.tutorId);
+    idsByLegacyKey.set(legacyKey, ids);
+  }));
+  return rawComments.map((raw) => {
+    const oldKey = cleanText(raw.tutorKey);
+    const legacyId = /^id:(.+)$/i.exec(oldKey)?.[1] ?? "";
+    const mappedIds = idsByLegacyKey.get(oldKey);
+    const tutorId = cleanText(raw.tutorId) || legacyId || (mappedIds?.size === 1 ? Array.from(mappedIds)[0] : "");
+    return sanitizeTutorReportComment({ ...raw, tutorId });
+  }).filter((comment) => comment.tutorId);
 }
 
 export async function writeTutorReportComments(comments: TutorReportComment[]) {
@@ -2419,9 +2578,10 @@ export async function readTutorTracking() {
   try {
     const store = taskStore();
     const tracking = await store.get(TUTOR_TRACKING_KEY, { type: "json", consistency: "strong" });
-    return tracking && typeof tracking === "object"
-      ? sanitizeTutorTrackingData(tracking as Record<string, unknown>)
-      : { snapshots: [], comments: [] };
+    if (!tracking || typeof tracking !== "object") return { snapshots: [], comments: [] };
+    const migrated = migrateTutorTrackingData(tracking as Record<string, unknown>);
+    if (JSON.stringify(migrated) !== JSON.stringify(tracking)) await store.setJSON(TUTOR_TRACKING_KEY, migrated);
+    return migrated;
   } catch {
     return memory.__petitSuiviTutorTracking ?? { snapshots: [], comments: [] };
   }
@@ -3001,6 +3161,17 @@ export async function readStaffingAudits() {
   } catch (error) {
     if (!canUseMemoryFallback()) throw error;
     return memory.__petitSuiviStaffingAudits ?? [];
+  }
+}
+
+export async function writeStaffingAudits(days: StaffingAuditDay[]) {
+  const normalizedDays = days.map((day) => sanitizeStaffingAuditDay(day as unknown as Record<string, unknown>)).filter((day) => day.date).sort((a, b) => b.date.localeCompare(a.date));
+  try {
+    const store = taskStore();
+    await store.setJSON(STAFFING_AUDITS_KEY, normalizedDays);
+  } catch (error) {
+    if (!canUseMemoryFallback()) throw error;
+    memory.__petitSuiviStaffingAudits = normalizedDays;
   }
 }
 

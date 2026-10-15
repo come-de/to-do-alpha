@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { readTutorReports, sanitizeTutorReportSnapshot, writeTutorReports } from "@/app/lib/shared-data";
+import { readTutorReports, readTutorTracking, resolveTutorReportTutorIds, sanitizeTutorReportSnapshot, writeTutorReports } from "@/app/lib/shared-data";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -14,7 +14,10 @@ function json(data: unknown, status = 200) {
 }
 
 export async function GET() {
-  return json({ reports: await readTutorReports() });
+  const [reports, tracking] = await Promise.all([readTutorReports(), readTutorTracking()]);
+  const resolved = resolveTutorReportTutorIds(reports, tracking.snapshots.flatMap((snapshot) => snapshot.records));
+  if (resolved.changed) await writeTutorReports(resolved.reports);
+  return json({ reports: resolved.reports });
 }
 
 export async function PUT(request: Request) {
@@ -33,9 +36,10 @@ export async function PUT(request: Request) {
     const reports = Array.from(reportsByDate.values()).sort(
       (a, b) => new Date(`${b.date}T12:00:00`).getTime() - new Date(`${a.date}T12:00:00`).getTime(),
     );
-
-    await writeTutorReports(reports);
-    return json({ reports });
+    const tracking = await readTutorTracking();
+    const resolved = resolveTutorReportTutorIds(reports, tracking.snapshots.flatMap((snapshot) => snapshot.records));
+    await writeTutorReports(resolved.reports);
+    return json({ reports: resolved.reports });
   } catch {
     return json({ error: "Unable to save tutor reports" }, 500);
   }

@@ -4,8 +4,11 @@ import {
   parseStaffingAuditCsv,
   readSchools,
   readStaffingAudits,
+  readTutorTracking,
+  resolveStaffingAuditTutorIds,
   saveStaffingAudit,
   updateStaffingAuditSession,
+  writeStaffingAudits,
   type StaffingAuditDay,
 } from "@/app/lib/shared-data";
 
@@ -18,8 +21,11 @@ function json(data: unknown, status = 200) {
 
 export async function GET() {
   try {
-    const [days, schools] = await Promise.all([readStaffingAudits(), readSchools()]);
-    return json({ days: enrichStaffingAuditDaysWithSchools(days, schools) });
+    const [days, schools, tracking] = await Promise.all([readStaffingAudits(), readSchools(), readTutorTracking()]);
+    const roster = tracking.snapshots.flatMap((snapshot) => snapshot.records);
+    const resolved = resolveStaffingAuditTutorIds(days, roster);
+    if (resolved.changed) await writeStaffingAudits(resolved.days);
+    return json({ days: enrichStaffingAuditDaysWithSchools(resolved.days, schools) });
   } catch (error) {
     const detail = error instanceof Error ? error.message : "Impossible de charger les bilans staffing";
     return json({ error: "Impossible de charger les bilans staffing", detail }, 500);
@@ -31,7 +37,9 @@ export async function POST(request: Request) {
     const url = new URL(request.url);
     const rawCsv = await request.text();
     if (!rawCsv.trim()) return json({ error: "Fichier CSV vide" }, 400);
-    const parsed = parseStaffingAuditCsv(rawCsv, url.searchParams.get("fileName") || "rapports.csv", await readSchools());
+    const [schools, tracking] = await Promise.all([readSchools(), readTutorTracking()]);
+    const roster = tracking.snapshots.flatMap((snapshot) => snapshot.records);
+    const parsed = parseStaffingAuditCsv(rawCsv, url.searchParams.get("fileName") || "rapports.csv", schools, roster);
     if (!parsed.days.length) {
       const detail = parsed.invalidDateRowCount
         ? `${parsed.invalidDateRowCount} ligne(s) possèdent une date vide ou illisible. Formats acceptés : JJ/MM/AAAA, JJ-MM-AAAA ou AAAA-MM-JJ.`

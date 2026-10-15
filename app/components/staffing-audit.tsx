@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { SchoolPortfolioOwner, StaffingAuditDay, StaffingAuditResolution, StaffingAuditSession, StaffingAuditSessionCategory } from "@/app/lib/shared-data";
+import type { SchoolPortfolioOwner, StaffingAuditDay, StaffingAuditResolution, StaffingAuditSession, StaffingAuditSessionCategory, TutorTrackingSnapshot } from "@/app/lib/shared-data";
 
 const ownerLabels: Record<SchoolPortfolioOwner, string> = { "": "Non attribué", kelly: "Kelly", pierre: "Pierre", julie: "Julie" };
 const owners: SchoolPortfolioOwner[] = ["kelly", "pierre", "julie", ""];
@@ -54,6 +54,7 @@ function daySummary(day: StaffingAuditDay) {
 export default function StaffingAudit() {
   const [sectionTab, setSectionTab] = useState<"general" | "daily">("general");
   const [savedDays, setSavedDays] = useState<StaffingAuditDay[]>([]);
+  const [tutorSnapshots, setTutorSnapshots] = useState<TutorTrackingSnapshot[]>([]);
   const [draftDays, setDraftDays] = useState<StaffingAuditDay[]>([]);
   const [selectedDate, setSelectedDate] = useState("");
   const [view, setView] = useState<"draft" | "history">("history");
@@ -86,6 +87,33 @@ export default function StaffingAudit() {
     const timer = window.setTimeout(() => void load(), 0);
     return () => window.clearTimeout(timer);
   }, [load]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/tutor-tracking", { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) return null;
+        return await response.json() as { tracking?: { snapshots?: TutorTrackingSnapshot[] } };
+      })
+      .then((data) => {
+        if (!cancelled) setTutorSnapshots(data?.tracking?.snapshots ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setTutorSnapshots([]);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  const tutorTypeSnapshot = useMemo(() => tutorSnapshots.find((snapshot) => snapshot.records.some((record) => record.level.trim())), [tutorSnapshots]);
+  const tutorTypeById = useMemo(() => {
+    const result = new Map<string, boolean>();
+    for (const record of tutorTypeSnapshot?.records ?? []) {
+      const tutorId = record.tutorId.trim();
+      if (!tutorId || !record.level.trim()) continue;
+      result.set(tutorId, record.level.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLocaleLowerCase("fr") === "st");
+    }
+    return result;
+  }, [tutorTypeSnapshot]);
 
   const activeDay = (view === "draft" ? draftDays : savedDays).find((day) => day.date === selectedDate) ?? null;
   const totalTreatedSessions = useMemo(() => (activeDay?.sessions ?? []).filter((session) => session.treated), [activeDay]);
@@ -158,20 +186,29 @@ export default function StaffingAudit() {
       byOwner,
       daily: filteredDays.map((day) => {
         const dailyUnstaffed = day.sessions.filter(isUnstaffed).length;
-        const distinctTutors = new Set(day.sessions.flatMap((session) => session.tutorNames)
-          .map((name) => name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr").replace(/[^a-z0-9]+/g, " ").trim())
-          .filter(Boolean));
+        const distinctTutors = new Set(day.sessions.flatMap((session) => session.tutors.map((tutor) => tutor.tutorId.trim())).filter(Boolean));
+        const unidentifiedTutors = day.sessions.reduce((count, session) => count + session.tutors.filter((tutor) => !tutor.tutorId.trim()).length, 0);
+        const tutorClassifiedSessions = day.sessions.map((session) => {
+          const matchedTypes = session.tutors.map((tutor) => tutor.tutorId ? tutorTypeById.get(tutor.tutorId) : undefined);
+          return {
+            nonSt: matchedTypes.some((isSt) => isSt === false),
+            unknown: !matchedTypes.length || matchedTypes.some((isSt) => isSt === undefined),
+          };
+        });
         return {
           date: day.date,
           total: day.sessions.length,
           unstaffed: dailyUnstaffed,
           tutors: distinctTutors.size,
+          unidentifiedTutors,
+          nonStSessions: tutorTypeSnapshot ? tutorClassifiedSessions.filter((session) => session.nonSt).length : null,
+          unclassifiedTutorSessions: tutorTypeSnapshot ? tutorClassifiedSessions.filter((session) => session.unknown && !session.nonSt).length : null,
           percentage: day.sessions.length ? (dailyUnstaffed / day.sessions.length) * 100 : 0,
         };
       }),
       topSchools: Array.from(schools.values()).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "fr")).slice(0, 10),
     };
-  }, [categoryFilter, effectiveAnalysisEndDate, effectiveAnalysisStartDate, savedDays]);
+  }, [categoryFilter, effectiveAnalysisEndDate, effectiveAnalysisStartDate, savedDays, tutorTypeById, tutorTypeSnapshot]);
   const dailyChart = useMemo(() => {
     const width = Math.max(720, rangeAnalysis.daily.length * 74 + 72);
     const plotLeft = 54;
@@ -189,7 +226,7 @@ export default function StaffingAudit() {
     });
     return {
       width,
-      height: 272,
+      height: 293,
       plotLeft,
       plotRight,
       plotTop,
@@ -280,7 +317,7 @@ export default function StaffingAudit() {
         <span>{session.school || "Établissement non précisé"}</span>
         <em className={`staffing-audit-category ${session.category}`}>{categoryLabels[session.category]}</em>
         <small>{sourceRowsLabel}{session.schoolId ? "" : " · ID établissement introuvable"}</small>
-        {session.tutorNames.length ? <small>Tuteur(s) trouvé(s) : {session.tutorNames.join(", ")}</small> : <small>Aucun tuteur renseigné</small>}
+        {session.tutors.length ? <small>Tuteur(s) trouvé(s) : {session.tutors.map((tutor) => `${tutor.name || "Tuteur sans nom"}${tutor.tutorId ? ` (ID ${tutor.tutorId})` : " (ID à rapprocher)"}`).join(", ")}</small> : <small>Aucun tuteur renseigné</small>}
       </div>
       <label>Responsable RH<select value={session.portfolioOwner} onChange={(event) => changeSession(session, { portfolioOwner: event.target.value as SchoolPortfolioOwner })} disabled={saving}>{owners.map((owner) => <option value={owner} key={owner || "unassigned"}>{ownerLabels[owner]}</option>)}</select></label>
       {session.detectedStatus === "ambiguous" ? <label>Classement<select value={session.resolution} onChange={(event) => changeSession(session, { resolution: event.target.value as StaffingAuditResolution })} disabled={saving}><option value="">À vérifier</option><option value="staffed">Staffée</option><option value="unstaffed">Non staffée</option></select></label> : <span className={`staffing-audit-status ${status}`}>{status === "staffed" ? "Staffée" : "Non staffée"}</span>}
@@ -338,8 +375,8 @@ export default function StaffingAudit() {
           <div className="highlight"><span>Non-staffing global</span><strong>{new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(rangeAnalysis.percentage)} %</strong></div>
         </div>
         <div className="staffing-daily-chart">
-          <div className="staffing-daily-chart-heading"><div><h4>Évolution quotidienne</h4><span>Pourcentage de séances non staffées</span></div><div className="staffing-daily-chart-legend"><span className="percentage">% non staffé</span><span>Total</span><span>Non staffées</span><span>Tuteurs distincts</span></div></div>
-          {dailyChart.points.length ? <div className="staffing-daily-chart-scroll"><svg role="img" aria-label="Évolution quotidienne du pourcentage de séances non staffées" viewBox={`0 0 ${dailyChart.width} ${dailyChart.height}`} style={{ minWidth: `${dailyChart.width}px` }}>
+          <div className="staffing-daily-chart-heading"><div><h4>Évolution quotidienne</h4><span>Pourcentage de séances non staffées{tutorTypeSnapshot ? ` · Types selon « ${tutorTypeSnapshot.displayName} »` : " · Import de tuteurs avec la colonne Niveau requis pour classer ST"}</span></div><div className="staffing-daily-chart-legend"><span className="percentage">% non staffé</span><span>Total</span><span>Non staffées</span><span>Tuteurs distincts (ID)</span><span>Séances non-ST</span></div></div>
+          {dailyChart.points.length ? <div className="staffing-daily-chart-scroll"><svg role="img" aria-label="Évolution quotidienne des séances non staffées, des tuteurs distincts et des séances réalisées par des non-ST identifiés" viewBox={`0 0 ${dailyChart.width} ${dailyChart.height}`} style={{ minWidth: `${dailyChart.width}px` }}>
             <defs><linearGradient id="staffing-daily-line" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#f472b6" /><stop offset="1" stopColor="#be185d" /></linearGradient><linearGradient id="staffing-daily-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#f472b6" stopOpacity=".22" /><stop offset="1" stopColor="#f472b6" stopOpacity=".02" /></linearGradient></defs>
             {Array.from({ length: 5 }, (_, index) => {
               const percentage = (dailyChart.maximumPercentage / 4) * (4 - index);
@@ -349,18 +386,22 @@ export default function StaffingAudit() {
             {dailyChart.points.length > 1 ? <polygon className="daily-area" points={`${dailyChart.points[0].x},${dailyChart.plotBottom} ${dailyChart.polyline} ${dailyChart.points[dailyChart.points.length - 1].x},${dailyChart.plotBottom}`} /> : null}
             {dailyChart.points.length > 1 ? <polyline className="daily-line" points={dailyChart.polyline} /> : null}
             {dailyChart.points.map((point) => <g className="daily-point" key={point.date}>
-              <line className="day-guide" x1={point.x} x2={point.x} y1={dailyChart.plotBottom} y2={dailyChart.plotBottom + 105} />
-              <circle cx={point.x} cy={point.y} r="5"><title>{`${formatDate(point.date)} : ${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(point.percentage)} % · ${point.unstaffed} non staffées sur ${point.total} · ${point.tutors} tuteur${point.tutors > 1 ? "s" : ""} distinct${point.tutors > 1 ? "s" : ""}`}</title></circle>
+              <line className="day-guide" x1={point.x} x2={point.x} y1={dailyChart.plotBottom} y2={dailyChart.plotBottom + 126} />
+              <circle cx={point.x} cy={point.y} r="5"><title>{`${formatDate(point.date)} : ${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(point.percentage)} % · ${point.unstaffed} non staffées sur ${point.total} · ${point.tutors} tuteur${point.tutors > 1 ? "s" : ""} distinct${point.tutors > 1 ? "s" : ""} par ID · ${point.unidentifiedTutors} référence${point.unidentifiedTutors > 1 ? "s" : ""} sans ID${point.nonStSessions === null ? " · classement ST indisponible" : ` · ${point.nonStSessions} séance${point.nonStSessions > 1 ? "s" : ""} avec non-ST identifié · ${point.unclassifiedTutorSessions} sans classement complet`}`}</title></circle>
               <text className="point-value" x={point.x} y={Math.max(dailyChart.plotTop + 9, point.y - 9)}>{new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(point.percentage)} %</text>
               <text className="axis-label date" x={point.x} y={dailyChart.plotBottom + 20}>{formatChartDate(point.date)}</text>
               <text className="daily-total" x={point.x} y={dailyChart.plotBottom + 43}>{point.total}</text>
               <text className="daily-unstaffed" x={point.x} y={dailyChart.plotBottom + 64}>{point.unstaffed}</text>
               <text className="daily-tutors" x={point.x} y={dailyChart.plotBottom + 85}>{point.tutors}</text>
+              <text className="daily-non-st" x={point.x} y={dailyChart.plotBottom + 106}>{point.nonStSessions === null ? "—" : point.nonStSessions}</text>
+              {point.unclassifiedTutorSessions ? <text className="daily-unclassified" x={point.x} y={dailyChart.plotBottom + 123}>+{point.unclassifiedTutorSessions} ?</text> : null}
             </g>)}
             <text className="daily-row-label" x={dailyChart.plotLeft - 8} y={dailyChart.plotBottom + 43}>Total</text>
             <text className="daily-row-label unstaffed" x={dailyChart.plotLeft - 8} y={dailyChart.plotBottom + 64}>Non staff.</text>
             <text className="daily-row-label tutors" x={dailyChart.plotLeft - 8} y={dailyChart.plotBottom + 85}>Tuteurs</text>
+            <text className="daily-row-label non-st" x={dailyChart.plotLeft - 8} y={dailyChart.plotBottom + 106}>Séances non-ST</text>
           </svg></div> : <p className="staffing-daily-chart-empty">Aucune journée enregistrée sur cette période.</p>}
+          {tutorTypeSnapshot ? <p className="staffing-daily-chart-note">Les séances avec « ? » n’ont pas pu être classées complètement à partir des noms et du Niveau dans la liste importée.</p> : null}
         </div>
         <div className="staffing-range-layout">
           <div className="staffing-range-rh">
