@@ -276,7 +276,7 @@ export default function StaffingAudit() {
         <span>{session.school || "Établissement non précisé"}</span>
         <em className={`staffing-audit-category ${session.category}`}>{categoryLabels[session.category]}</em>
         <small>{sourceRowsLabel}{session.schoolId ? "" : " · ID établissement introuvable"}</small>
-        {session.tutorNames.length ? <small>Tuteur(s) trouvé(s) : {session.tutorNames.join(", ")}</small> : <small>Aucun tuteur renseigné</small>}
+        {session.tutors.length ? <small>Tuteur(s) trouvé(s) : {session.tutors.map((tutor) => `${tutor.name || "Tuteur sans nom"}${tutor.tutorId ? ` (ID ${tutor.tutorId})` : " (ID à rapprocher)"}`).join(", ")}</small> : <small>Aucun tuteur renseigné</small>}
       </div>
       <label>Responsable RH<select value={session.portfolioOwner} onChange={(event) => changeSession(session, { portfolioOwner: event.target.value as SchoolPortfolioOwner })} disabled={saving}>{owners.map((owner) => <option value={owner} key={owner || "unassigned"}>{ownerLabels[owner]}</option>)}</select></label>
       {session.detectedStatus === "ambiguous" ? <label>Classement<select value={session.resolution} onChange={(event) => changeSession(session, { resolution: event.target.value as StaffingAuditResolution })} disabled={saving}><option value="">À vérifier</option><option value="staffed">Staffée</option><option value="unstaffed">Non staffée</option></select></label> : <span className={`staffing-audit-status ${status}`}>{status === "staffed" ? "Staffée" : "Non staffée"}</span>}
