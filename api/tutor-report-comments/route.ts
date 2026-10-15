@@ -30,12 +30,12 @@ export async function PUT(request: Request) {
     body.comments
       .filter((comment): comment is Record<string, unknown> => Boolean(comment && typeof comment === "object"))
       .map(sanitizeTutorReportComment)
-      .filter((comment) => comment.tutorKey)
+      .filter((comment) => comment.tutorId)
       .forEach((comment) => {
-        commentsByTutor.set(comment.tutorKey, comment);
+        commentsByTutor.set(comment.tutorId, comment);
       });
 
-    const comments = Array.from(commentsByTutor.values()).sort((a, b) => a.tutorKey.localeCompare(b.tutorKey, "fr"));
+    const comments = Array.from(commentsByTutor.values()).sort((a, b) => a.tutorId.localeCompare(b.tutorId, "fr"));
     await writeTutorReportComments(comments);
     return json({ comments });
   } catch {
