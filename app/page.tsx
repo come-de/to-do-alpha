@@ -271,6 +271,24 @@ type TutorTrackingSummary = TutorTrackingRecord & {
   isCurrent: boolean;
 };
 
+type TutorActivityItem = {
+  key: string;
+  date: string;
+  timeSlot: string;
+  school: string;
+  category: string;
+  sessionId: string;
+  validated?: boolean;
+};
+
+type TutorActivity = {
+  tutorId: string;
+  upcomingSessions: TutorActivityItem[];
+  pastSessions: TutorActivityItem[];
+  availabilities: TutorActivityItem[];
+  interests: TutorActivityItem[];
+};
+
 type TutorReportAggregate = {
   key: string;
   tutorId: string;
@@ -1869,6 +1887,9 @@ export default function Home() {
   const [tutorTrackingCsv, setTutorTrackingCsv] = useState("");
   const [tutorTrackingQuery, setTutorTrackingQuery] = useState("");
   const [tutorTrackingView, setTutorTrackingView] = useState<"new" | "exited" | "current">("new");
+  const [tutorActivityById, setTutorActivityById] = useState<Record<string, TutorActivity>>({});
+  const [tutorActivityLoadingIds, setTutorActivityLoadingIds] = useState<string[]>([]);
+  const [tutorActivityError, setTutorActivityError] = useState("");
   const [availabilityDate, setAvailabilityDate] = useState(new Date().toISOString().slice(0, 10));
   const [availabilityReferenceId, setAvailabilityReferenceId] = useState("");
   const [availabilityRecentId, setAvailabilityRecentId] = useState("");
@@ -2573,7 +2594,8 @@ export default function Home() {
     exitedSince: comparedExitedTutors.length,
   };
   const filteredTutorTracking = useMemo(() => {
-    const normalized = tutorTrackingQuery.trim().toLocaleLowerCase("fr");
+    const normalized = tutorTrackingQuery.trim().toLocaleLowerCase("fr").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const phoneQuery = digitsOnly(tutorTrackingQuery);
     const source =
       tutorTrackingView === "current"
         ? comparedCurrentTutors
@@ -2583,9 +2605,11 @@ export default function Home() {
     return source
       .filter((tutor) => {
         if (!normalized) return true;
-        return `${tutor.tutorId} ${tutor.lastName} ${tutor.firstName} ${tutor.phone} ${tutor.email} ${tutor.wantedCity} ${tutorTrackingCommentByKey.get(tutor.key) || ""}`
+        const searchable = `${tutor.tutorId} ${tutor.lastName} ${tutor.firstName} ${tutor.phone} ${tutor.email} ${tutor.wantedCity} ${tutor.school} ${tutorTrackingCommentByKey.get(tutor.key) || ""}`
           .toLocaleLowerCase("fr")
-          .includes(normalized);
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "");
+        return searchable.includes(normalized) || Boolean(phoneQuery && digitsOnly(tutor.phone).includes(phoneQuery));
       })
       .sort((a, b) => {
         const dateA = tutorTrackingView === "exited" ? a.lastSeen : a.firstSeen;
@@ -2593,6 +2617,42 @@ export default function Home() {
         return sortDateValue(dateB) - sortDateValue(dateA);
       });
   }, [comparedAddedTutors, comparedCurrentTutors, comparedExitedTutors, tutorTrackingCommentByKey, tutorTrackingQuery, tutorTrackingView]);
+  const tutorActivityRequestedIds = useMemo(
+    () => tutorTrackingQuery.trim()
+      ? Array.from(new Set(filteredTutorTracking.map((tutor) => tutor.tutorId.trim()).filter(Boolean))).slice(0, 30)
+      : [],
+    [filteredTutorTracking, tutorTrackingQuery],
+  );
+  const tutorActivityRequestKey = tutorActivityRequestedIds.join(",");
+
+  useEffect(() => {
+    if (appMode !== "tutors" || !tutorActivityRequestKey) return;
+    const requestedIds = tutorActivityRequestKey.split(",");
+    const missingIds = requestedIds.filter((id) => !tutorActivityById[id]);
+    if (!missingIds.length) return;
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      setTutorActivityLoadingIds((current) => Array.from(new Set([...current, ...missingIds])));
+      setTutorActivityError("");
+      void fetch(`/api/tutor-activity?ids=${encodeURIComponent(missingIds.join(","))}`, { cache: "no-store" })
+        .then(async (response) => {
+          const data = await response.json() as { activities?: Record<string, TutorActivity>; error?: string; detail?: string };
+          if (!response.ok) throw new Error(data.detail || data.error || "Activité indisponible");
+          if (cancelled) return;
+          setTutorActivityById((current) => ({ ...current, ...(data.activities || {}) }));
+        })
+        .catch((error) => {
+          if (!cancelled) setTutorActivityError(error instanceof Error ? error.message : "Activité indisponible");
+        })
+        .finally(() => {
+          if (!cancelled) setTutorActivityLoadingIds((current) => current.filter((id) => !missingIds.includes(id)));
+        });
+    }, 250);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [appMode, tutorActivityById, tutorActivityRequestKey]);
   const selectedAvailabilityReference = useMemo(
     () => availabilityImportData[availabilityReferenceId] ?? null,
     [availabilityImportData, availabilityReferenceId],
@@ -4948,6 +5008,27 @@ export default function Home() {
     );
   }
 
+  function renderTutorActivityGroup(title: string, items: TutorActivityItem[], tone: string) {
+    const visibleItems = items.slice(0, 4);
+    const remainingItems = items.slice(4);
+    const renderItem = (item: TutorActivityItem) => (
+      <li key={item.key}>
+        <strong>{formatDate(item.date)}{item.timeSlot ? ` · ${item.timeSlot}` : ""}</strong>
+        <span>{item.school || "Établissement non renseigné"}</span>
+        <small>{[item.category, item.sessionId ? `#${item.sessionId}` : "", item.validated === true ? "Intérêt validé" : ""].filter(Boolean).join(" · ")}</small>
+      </li>
+    );
+    return (
+      <section className={`tutor-activity-group ${tone}`}>
+        <h4>{title} <span>{items.length}</span></h4>
+        {items.length ? <>
+          <ul>{visibleItems.map(renderItem)}</ul>
+          {remainingItems.length ? <details><summary>Voir {remainingItems.length} autre{remainingItems.length > 1 ? "s" : ""}</summary><ul>{remainingItems.map(renderItem)}</ul></details> : null}
+        </> : <p>Aucune donnée connue</p>}
+      </section>
+    );
+  }
+
   function renderTutorTrackingSection() {
     const latestLabel = latestTutorTrackingSnapshot ? tutorTrackingImportLabel(latestTutorTrackingSnapshot) : "aucun import";
     const activeSnapshot = tutorTrackingSnapshotById.get(selectedTutorTrackingSnapshotId) ?? tutorTracking.snapshots[0] ?? null;
@@ -5061,7 +5142,7 @@ export default function Home() {
           </div>
           <label className="search-box">
             <span aria-hidden="true">⌕</span>
-            <input value={tutorTrackingQuery} onChange={(event) => setTutorTrackingQuery(event.target.value)} placeholder="Rechercher nom, téléphone, ville..." />
+            <input value={tutorTrackingQuery} onChange={(event) => setTutorTrackingQuery(event.target.value)} placeholder="Rechercher nom, ID, téléphone, email, ville..." />
           </label>
           <button className="button quiet" onClick={exportVisibleTutorTrackingCsv} disabled={!filteredTutorTracking.length} type="button">
             Export CSV
@@ -5069,9 +5150,11 @@ export default function Home() {
         </div>
 
         <div className="tutor-tracking-list">
-          {filteredTutorTracking.length ? filteredTutorTracking.map((tutor) => (
-            <article className={`tutor-tracking-card ${tutor.isCurrent ? "is-current" : "is-exited"}`} key={tutor.key}>
-              <div>
+          {filteredTutorTracking.length ? filteredTutorTracking.map((tutor) => {
+            const activity = tutorActivityById[tutor.tutorId];
+            const activityLoading = tutorActivityLoadingIds.includes(tutor.tutorId);
+            return <article className={`tutor-tracking-card ${tutor.isCurrent ? "is-current" : "is-exited"}`} key={tutor.key}>
+              <div className="tutor-tracking-identity">
                 <strong><PersonAdminLink personId={tutor.tutorId} status="tutor">{tutorTrackingDisplayName(tutor)}</PersonAdminLink></strong>
                 <small>{tutor.wantedCity || "Ville souhaitée non renseignée"}</small>
                 <div className="tutor-tracking-meta">
@@ -5092,8 +5175,21 @@ export default function Home() {
                 }}
                 aria-label={`Commentaire pour ${tutorTrackingDisplayName(tutor)}`}
               />
-            </article>
-          )) : (
+              <div className="tutor-activity">
+                {!tutorTrackingQuery.trim() ? <p className="tutor-activity-prompt">Recherchez un nom, un ID ou une coordonnée pour charger les activités détaillées.</p>
+                  : !tutor.tutorId ? <p className="tutor-activity-prompt">Activités indisponibles : aucun ID tuteur n’est renseigné.</p>
+                    : activityLoading ? <p className="tutor-activity-prompt">Chargement des activités…</p>
+                      : !activity && tutorActivityError ? <p className="tutor-activity-prompt error">{tutorActivityError}</p>
+                        : activity ? <div className="tutor-activity-grid">
+                          {renderTutorActivityGroup("Séances à venir", activity.upcomingSessions, "upcoming")}
+                          {renderTutorActivityGroup("Disponibilités", activity.availabilities, "availability")}
+                          {renderTutorActivityGroup("Intérêts", activity.interests, "interest")}
+                          {renderTutorActivityGroup("Séances passées", activity.pastSessions, "past")}
+                        </div>
+                          : <p className="tutor-activity-prompt">Aucune activité retrouvée dans les derniers fichiers.</p>}
+              </div>
+            </article>;
+          }) : (
             <div className="empty-state tutor-tracking-empty">
               <span>👨‍🏫</span>
               <h3>{tutorTracking.snapshots.length ? "Aucun tuteur ne correspond" : "Aucun CSV tuteurs importé"}</h3>
