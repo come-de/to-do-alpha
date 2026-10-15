@@ -158,10 +158,14 @@ export default function StaffingAudit() {
       byOwner,
       daily: filteredDays.map((day) => {
         const dailyUnstaffed = day.sessions.filter(isUnstaffed).length;
+        const distinctTutors = new Set(day.sessions.flatMap((session) => session.tutorNames)
+          .map((name) => name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr").replace(/[^a-z0-9]+/g, " ").trim())
+          .filter(Boolean));
         return {
           date: day.date,
           total: day.sessions.length,
           unstaffed: dailyUnstaffed,
+          tutors: distinctTutors.size,
           percentage: day.sessions.length ? (dailyUnstaffed / day.sessions.length) * 100 : 0,
         };
       }),
@@ -185,7 +189,7 @@ export default function StaffingAudit() {
     });
     return {
       width,
-      height: 246,
+      height: 272,
       plotLeft,
       plotRight,
       plotTop,
@@ -334,7 +338,7 @@ export default function StaffingAudit() {
           <div className="highlight"><span>Non-staffing global</span><strong>{new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(rangeAnalysis.percentage)} %</strong></div>
         </div>
         <div className="staffing-daily-chart">
-          <div className="staffing-daily-chart-heading"><div><h4>Évolution quotidienne</h4><span>Pourcentage de séances non staffées</span></div><div className="staffing-daily-chart-legend"><span className="percentage">% non staffé</span><span>Total</span><span>Non staffées</span></div></div>
+          <div className="staffing-daily-chart-heading"><div><h4>Évolution quotidienne</h4><span>Pourcentage de séances non staffées</span></div><div className="staffing-daily-chart-legend"><span className="percentage">% non staffé</span><span>Total</span><span>Non staffées</span><span>Tuteurs distincts</span></div></div>
           {dailyChart.points.length ? <div className="staffing-daily-chart-scroll"><svg role="img" aria-label="Évolution quotidienne du pourcentage de séances non staffées" viewBox={`0 0 ${dailyChart.width} ${dailyChart.height}`} style={{ minWidth: `${dailyChart.width}px` }}>
             <defs><linearGradient id="staffing-daily-line" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#f472b6" /><stop offset="1" stopColor="#be185d" /></linearGradient><linearGradient id="staffing-daily-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#f472b6" stopOpacity=".22" /><stop offset="1" stopColor="#f472b6" stopOpacity=".02" /></linearGradient></defs>
             {Array.from({ length: 5 }, (_, index) => {
@@ -345,15 +349,17 @@ export default function StaffingAudit() {
             {dailyChart.points.length > 1 ? <polygon className="daily-area" points={`${dailyChart.points[0].x},${dailyChart.plotBottom} ${dailyChart.polyline} ${dailyChart.points[dailyChart.points.length - 1].x},${dailyChart.plotBottom}`} /> : null}
             {dailyChart.points.length > 1 ? <polyline className="daily-line" points={dailyChart.polyline} /> : null}
             {dailyChart.points.map((point) => <g className="daily-point" key={point.date}>
-              <line className="day-guide" x1={point.x} x2={point.x} y1={dailyChart.plotBottom} y2={dailyChart.plotBottom + 76} />
-              <circle cx={point.x} cy={point.y} r="5"><title>{`${formatDate(point.date)} : ${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(point.percentage)} % · ${point.unstaffed} non staffées sur ${point.total}`}</title></circle>
+              <line className="day-guide" x1={point.x} x2={point.x} y1={dailyChart.plotBottom} y2={dailyChart.plotBottom + 105} />
+              <circle cx={point.x} cy={point.y} r="5"><title>{`${formatDate(point.date)} : ${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(point.percentage)} % · ${point.unstaffed} non staffées sur ${point.total} · ${point.tutors} tuteur${point.tutors > 1 ? "s" : ""} distinct${point.tutors > 1 ? "s" : ""}`}</title></circle>
               <text className="point-value" x={point.x} y={Math.max(dailyChart.plotTop + 9, point.y - 9)}>{new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(point.percentage)} %</text>
               <text className="axis-label date" x={point.x} y={dailyChart.plotBottom + 20}>{formatChartDate(point.date)}</text>
               <text className="daily-total" x={point.x} y={dailyChart.plotBottom + 43}>{point.total}</text>
               <text className="daily-unstaffed" x={point.x} y={dailyChart.plotBottom + 64}>{point.unstaffed}</text>
+              <text className="daily-tutors" x={point.x} y={dailyChart.plotBottom + 85}>{point.tutors}</text>
             </g>)}
             <text className="daily-row-label" x={dailyChart.plotLeft - 8} y={dailyChart.plotBottom + 43}>Total</text>
             <text className="daily-row-label unstaffed" x={dailyChart.plotLeft - 8} y={dailyChart.plotBottom + 64}>Non staff.</text>
+            <text className="daily-row-label tutors" x={dailyChart.plotLeft - 8} y={dailyChart.plotBottom + 85}>Tuteurs</text>
           </svg></div> : <p className="staffing-daily-chart-empty">Aucune journée enregistrée sur cette période.</p>}
         </div>
         <div className="staffing-range-layout">
