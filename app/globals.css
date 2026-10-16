@@ -1946,3 +1946,87 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+
+.staffing-evolution-source-cards {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: stretch;
+  grid-column: 1 / -1;
+}
+
+.staffing-evolution-source-card {
+  display: grid;
+  gap: 5px;
+  padding: 12px 14px;
+  border: 1px solid #c8dce9;
+  border-radius: 12px;
+  background: #f8fcff;
+}
+
+.staffing-evolution-source-card > span {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #58738b;
+}
+
+.staffing-evolution-source-card > strong {
+  color: #173f57;
+}
+
+.staffing-evolution-source-card > small {
+  color: #58738b;
+}
+
+.staffing-evolution-source-card select,
+.staffing-evolution-source-card input {
+  min-width: 0;
+  width: 100%;
+}
+
+.staffing-evolution-source-card.reference {
+  border-color: #9ed7f0;
+  background: #effaff;
+}
+
+.staffing-evolution-source-card.report,
+.staffing-evolution-source-card.selected {
+  border-color: #9fe0c4;
+  background: #f0fff7;
+}
+
+.staffing-evolution-source-card.upcoming {
+  border-color: #c5b5fb;
+  background: #f7f4ff;
+}
+
+.staffing-evolution-source-arrow {
+  display: grid;
+  place-items: center;
+  min-width: 28px;
+  color: #047a5d;
+  font-size: 1.7rem;
+  font-weight: 900;
+}
+
+.staffing-evolution-filter-controls {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) minmax(150px, 1fr) minmax(220px, 1.2fr);
+  gap: 12px;
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 760px) {
+  .staffing-evolution-source-cards,
+  .staffing-evolution-filter-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .staffing-evolution-source-arrow {
+    transform: rotate(90deg);
+    min-height: 20px;
+  }
+}
