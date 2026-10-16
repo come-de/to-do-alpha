@@ -68,11 +68,12 @@ function parseReportCsv(value: string, tutorRecords: TutorTrackingRecord[]) {
   if (Object.values(columns).some((index) => index < 0)) return { sessions: [] as UpcomingStaffingSession[], rowCount: 0, invalidRows: rows.length - 1, unmatchedTutorCount: 0 };
   const tutorCandidatesByPhone = new Map<string, Map<string, TutorTrackingRecord>>();
   tutorRecords.forEach((record) => { const key = phoneKey(record.phone); if (!key || !record.tutorId) return; const candidates = tutorCandidatesByPhone.get(key) ?? new Map<string, TutorTrackingRecord>(); candidates.set(record.tutorId, record); tutorCandidatesByPhone.set(key, candidates); });
-  const tutorByPhone = new Map(Array.from(tutorCandidatesByPhone.entries()).filter(([, candidates]) => candidates.size === 1).map(([key, candidates]) => [key, Array.from(candidates.values())[0]]));
+  const tutorByPhone = new Map<string, TutorTrackingRecord>();
+  tutorCandidatesByPhone.forEach((candidates, key) => { if (candidates.size === 1) tutorByPhone.set(key, candidates.values().next().value as TutorTrackingRecord); });
   const sessions = new Map<string, { sessionId: string; date: string; school: string; sourceRowCount: number; tutors: Map<string, UpcomingSessionTutor> }>();
   let invalidRows = 0;
   let unmatchedTutorCount = 0;
-  rows.slice(1).forEach((cells) => {
+  rows.slice(1).forEach((cells, rowIndex) => {
     const get = (index: number) => (cells[index] ?? "").trim();
     const date = reportDate(get(columns.date));
     const sessionId = get(columns.sessionId);
@@ -82,9 +83,12 @@ function parseReportCsv(value: string, tutorRecords: TutorTrackingRecord[]) {
     item.sourceRowCount += 1;
     const phone = get(columns.phone);
     const tutor = tutorByPhone.get(phoneKey(phone));
-    const tutorId = tutor?.tutorId || (phone ? `inconnu-${phoneKey(phone)}` : "inconnu-sans-numero");
+    const firstName = get(columns.firstName);
+    const lastName = get(columns.lastName);
+    const unmatchedKey = phoneKey(phone) || normalize(`${firstName} ${lastName}`) || `ligne-${rowIndex}`;
+    const tutorId = tutor?.tutorId || `inconnu-${unmatchedKey}`;
     if (!tutor) unmatchedTutorCount += 1;
-    item.tutors.set(tutorId, { tutorId, firstName: tutor?.firstName || get(columns.firstName), lastName: tutor?.lastName || get(columns.lastName), phone });
+    item.tutors.set(tutorId, { tutorId, firstName: tutor?.firstName || firstName, lastName: tutor?.lastName || lastName, phone });
     if (!item.school) item.school = get(columns.school);
     sessions.set(key, item);
   });
