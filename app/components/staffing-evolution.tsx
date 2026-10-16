@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import PersonAdminLink from "@/app/components/person-admin-link";
 import SchoolAdminLink from "@/app/components/school-admin-link";
-import type { UpcomingSessionImport, UpcomingSessionTutor, UpcomingStaffingSession } from "@/app/lib/shared-data";
+import type { TutorTrackingRecord, UpcomingSessionImport, UpcomingSessionTutor, UpcomingStaffingSession } from "@/app/lib/shared-data";
 
 type Owner = "" | "kelly" | "pierre" | "julie";
 type OwnerFilter = "all" | "unassigned" | Exclude<Owner, "">;
@@ -22,6 +22,82 @@ const kindLabels: Record<ChangeKind, string> = {
 
 function normalize(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr").replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+
+function phoneKey(value: string) {
+  let digits = value.replace(/\D/g, "");
+  if (digits.startsWith("33") && digits.length === 11) digits = `0${digits.slice(2)}`;
+  return digits;
+}
+
+function reportDate(value: string) {
+  const cleaned = value.trim();
+  const iso = cleaned.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  const french = cleaned.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})/);
+  if (iso) return `${iso[1]}-${iso[2].padStart(2, "0")}-${iso[3].padStart(2, "0")}`;
+  if (french) return `${french[3]}-${french[2].padStart(2, "0")}-${french[1].padStart(2, "0")}`;
+  return "";
+}
+
+function parseReportCsv(value: string, tutorRecords: TutorTrackingRecord[]) {
+  value = value.replace(/^\uFEFF/, "");
+  const firstLine = value.split(/\r?\n/, 1)[0] || "";
+  const delimiter = [";", ",", "\t"].sort((a, b) => firstLine.split(b).length - firstLine.split(a).length)[0];
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let cell = "";
+  let quoted = false;
+  for (let index = 0; index < value.length; index += 1) {
+    const char = value[index];
+    if (char === '"') {
+      if (quoted && value[index + 1] === '"') { cell += '"'; index += 1; }
+      else quoted = !quoted;
+    } else if (char === delimiter && !quoted) { row.push(cell); cell = ""; }
+    else if ((char === "\n" || char === "\r") && !quoted) {
+      if (char === "\r" && value[index + 1] === "\n") index += 1;
+      row.push(cell); if (row.some((part) => part.trim())) rows.push(row); row = []; cell = "";
+    } else cell += char;
+  }
+  if (cell || row.length) { row.push(cell); if (row.some((part) => part.trim())) rows.push(row); }
+  if (rows.length < 2) return { sessions: [] as UpcomingStaffingSession[], rowCount: 0, invalidRows: 0, unmatchedTutorCount: 0 };
+  const normalizeHeader = (header: string) => normalize(header).replace(/ /g, "");
+  const headers = rows[0].map(normalizeHeader);
+  const column = (name: string) => headers.indexOf(normalizeHeader(name));
+  const columns = { date: column("Date"), firstName: column("Prénom tuteur"), lastName: column("Nom tuteur"), phone: column("Numéro tuteur"), sessionId: column("Semaine réelle"), school: column("Etablissement") };
+  if (Object.values(columns).some((index) => index < 0)) return { sessions: [] as UpcomingStaffingSession[], rowCount: 0, invalidRows: rows.length - 1, unmatchedTutorCount: 0 };
+  const tutorCandidatesByPhone = new Map<string, Map<string, TutorTrackingRecord>>();
+  tutorRecords.forEach((record) => { const key = phoneKey(record.phone); if (!key || !record.tutorId) return; const candidates = tutorCandidatesByPhone.get(key) ?? new Map<string, TutorTrackingRecord>(); candidates.set(record.tutorId, record); tutorCandidatesByPhone.set(key, candidates); });
+  const tutorByPhone = new Map(Array.from(tutorCandidatesByPhone.entries()).filter(([, candidates]) => candidates.size === 1).map(([key, candidates]) => [key, Array.from(candidates.values())[0]]));
+  const sessions = new Map<string, { sessionId: string; date: string; school: string; sourceRowCount: number; tutors: Map<string, UpcomingSessionTutor> }>();
+  let invalidRows = 0;
+  let unmatchedTutorCount = 0;
+  rows.slice(1).forEach((cells) => {
+    const get = (index: number) => (cells[index] ?? "").trim();
+    const date = reportDate(get(columns.date));
+    const sessionId = get(columns.sessionId);
+    if (!date || !sessionId) { invalidRows += 1; return; }
+    const key = `${date}::${sessionId}`;
+    const item = sessions.get(key) ?? { sessionId, date, school: get(columns.school), sourceRowCount: 0, tutors: new Map<string, UpcomingSessionTutor>() };
+    item.sourceRowCount += 1;
+    const phone = get(columns.phone);
+    const tutor = tutorByPhone.get(phoneKey(phone));
+    const tutorId = tutor?.tutorId || (phone ? `inconnu-${phoneKey(phone)}` : "inconnu-sans-numero");
+    if (!tutor) unmatchedTutorCount += 1;
+    item.tutors.set(tutorId, { tutorId, firstName: tutor?.firstName || get(columns.firstName), lastName: tutor?.lastName || get(columns.lastName), phone });
+    if (!item.school) item.school = get(columns.school);
+    sessions.set(key, item);
+  });
+  return {
+    sessions: Array.from(sessions.values()).map((item) => ({ sessionId: item.sessionId, sourceRowCount: item.sourceRowCount, schoolId: "", school: item.school, category: "", date: item.date, startTime: "", endTime: "", group: "", tutors: Array.from(item.tutors.values()) })),
+    rowCount: rows.length - 1,
+    invalidRows,
+    unmatchedTutorCount,
+  };
+}
+
+function sessionKey(session: UpcomingStaffingSession) {
+  return `${session.date}::${session.sessionId}`;
 }
 
 function timestamp(value: string) {
@@ -56,6 +132,9 @@ function csvCell(value: unknown) {
 export default function StaffingEvolution() {
   const [imports, setImports] = useState<UpcomingSessionImport[]>([]);
   const [loadedImports, setLoadedImports] = useState<Record<string, UpcomingSessionImport>>({});
+  const [actualReportCsv, setActualReportCsv] = useState("");
+  const [actualReportFileName, setActualReportFileName] = useState("");
+  const [tutorRecords, setTutorRecords] = useState<TutorTrackingRecord[]>([]);
   const [schools, setSchools] = useState<SchoolRecord[]>([]);
   const [referenceId, setReferenceId] = useState("");
   const [recentId, setRecentId] = useState("");
@@ -95,6 +174,14 @@ export default function StaffingEvolution() {
   useEffect(() => { const timer = window.setTimeout(() => void loadSummaries(), 0); return () => window.clearTimeout(timer); }, [loadSummaries]);
 
   useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/tutor-tracking", { cache: "no-store" }).then(async (response) => response.ok ? await response.json() as { tracking?: { snapshots?: { records?: TutorTrackingRecord[] }[] } } : null).then((data) => {
+      if (!cancelled) setTutorRecords(data?.tracking?.snapshots?.flatMap((snapshot) => snapshot.records ?? []) ?? []);
+    }).catch(() => { if (!cancelled) setTutorRecords([]); });
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
     const ids = Array.from(new Set([referenceId, recentId].filter(Boolean))).filter((id) => !loadedImports[id]);
     if (!ids.length) return;
     let cancelled = false;
@@ -109,9 +196,16 @@ export default function StaffingEvolution() {
     return () => { cancelled = true; };
   }, [loadedImports, recentId, referenceId]);
 
+  const reportData = useMemo(() => actualReportCsv ? parseReportCsv(actualReportCsv, tutorRecords) : null, [actualReportCsv, tutorRecords]);
+  const actualReports = useMemo<UpcomingSessionImport | null>(() => reportData ? ({ id: "actual-reports", importedAt: new Date().toISOString(), displayName: actualReportFileName || "Rapports réels", fileName: actualReportFileName || "rapports.csv", sourceRowCount: reportData.rowCount, sourceSessionCount: reportData.sessions.length, schools: [], schoolStaffing: [], staffingSessions: reportData.sessions, rows: [], createdAt: new Date().toISOString() }) : null, [actualReportFileName, reportData]);
   const reference = loadedImports[referenceId] ?? null;
-  const recent = loadedImports[recentId] ?? null;
-  const dates = useMemo(() => Array.from(new Set([...(reference?.staffingSessions ?? []), ...(recent?.staffingSessions ?? [])].map((row) => row.date).filter(Boolean))).sort(), [recent, reference]);
+  const recent = actualReports ?? loadedImports[recentId] ?? null;
+  const dates = useMemo(() => {
+    const plannedDates = new Set((reference?.staffingSessions ?? []).map((row) => row.date).filter(Boolean));
+    const resultDates = new Set((recent?.staffingSessions ?? []).map((row) => row.date).filter(Boolean));
+    const values = actualReports ? [...plannedDates].filter((date) => resultDates.has(date)) : [...new Set([...plannedDates, ...resultDates])];
+    return values.sort();
+  }, [actualReports, recent, reference]);
   const activeStartDate = dates.includes(startDate) ? startDate : dates[0] || "";
   const activeEndDate = dates.includes(endDate) ? endDate : dates.at(-1) || activeStartDate;
   const schoolByName = useMemo(() => new Map(schools.map((school) => [normalize(school.name), school])), [schools]);
@@ -120,10 +214,10 @@ export default function StaffingEvolution() {
   const hasComparableSnapshots = Boolean(reference?.staffingSessions.length && recent?.staffingSessions.length);
 
   const changes = useMemo(() => {
-    if (!reference || !recent) return [];
+    if (!reference || !recent || (actualReports && !dates.length)) return [];
     const inRange = (date: string) => (!activeStartDate || date >= activeStartDate) && (!activeEndDate || date <= activeEndDate);
-    const beforeSessions = new Map(reference.staffingSessions.filter((item) => inRange(item.date)).map((item) => [item.sessionId, item]));
-    const afterSessions = new Map(recent.staffingSessions.filter((item) => inRange(item.date)).map((item) => [item.sessionId, item]));
+    const beforeSessions = new Map(reference.staffingSessions.filter((item) => inRange(item.date)).map((item) => [sessionKey(item), item]));
+    const afterSessions = new Map(recent.staffingSessions.filter((item) => inRange(item.date)).map((item) => [sessionKey(item), item]));
     const items: SessionChange[] = [];
     new Set([...beforeSessions.keys(), ...afterSessions.keys()]).forEach((sessionId) => {
       const beforeSession = beforeSessions.get(sessionId);
@@ -137,10 +231,11 @@ export default function StaffingEvolution() {
         return;
       }
       if (!beforeSession || !afterSession) return;
-      const beforeIds = new Set(beforeSession.tutors.map((item) => item.tutorId));
-      const afterIds = new Set(afterSession.tutors.map((item) => item.tutorId));
-      const added = afterSession.tutors.filter((item) => !beforeIds.has(item.tutorId));
-      const removed = beforeSession.tutors.filter((item) => !afterIds.has(item.tutorId));
+      const knownTutor = (item: UpcomingSessionTutor) => item.tutorId && !item.tutorId.startsWith("inconnu-");
+      const beforeIds = new Set(beforeSession.tutors.filter(knownTutor).map((item) => item.tutorId));
+      const afterIds = new Set(afterSession.tutors.filter(knownTutor).map((item) => item.tutorId));
+      const added = afterSession.tutors.filter((item) => knownTutor(item) && !beforeIds.has(item.tutorId));
+      const removed = beforeSession.tutors.filter((item) => knownTutor(item) && !afterIds.has(item.tutorId));
       if (added.length && removed.length) items.push({ kind: "replacements", session: afterSession, before: removed, after: added, beforeSourceRowCount: beforeSession.sourceRowCount, afterSourceRowCount: afterSession.sourceRowCount });
       else {
         if (added.length) items.push({ kind: "additions", session: afterSession, before: [], after: added, beforeSourceRowCount: beforeSession.sourceRowCount, afterSourceRowCount: afterSession.sourceRowCount });
@@ -148,7 +243,7 @@ export default function StaffingEvolution() {
       }
     });
     return items.sort((a, b) => `${a.session.date} ${a.session.startTime} ${a.session.school}`.localeCompare(`${b.session.date} ${b.session.startTime} ${b.session.school}`, "fr"));
-  }, [activeEndDate, activeStartDate, recent, reference]);
+  }, [activeEndDate, activeStartDate, actualReports, dates, recent, reference]);
 
   const searchFilteredChanges = useMemo(() => {
     const normalizedQuery = normalize(query);
@@ -174,7 +269,7 @@ export default function StaffingEvolution() {
     });
   }, [kindFilter, ownerFilter, ownerFor, searchFilteredChanges]);
 
-  async function upload(file?: File) {
+  async function uploadReport(file?: File) {\n    if (!file) return;\n    setSaving(true);\n    try {\n      const text = await file.text();\n      const parsed = parseReportCsv(text, tutorRecords);\n      if (!parsed.sessions.length) throw new Error("Aucune séance reconnue. Vérifiez les colonnes Date, Semaine réelle, Numéro tuteur et Etablissement.");\n      setActualReportCsv(text);\n      setActualReportFileName(file.name);\n      if (recentId) setReferenceId(recentId);\n      setMessage(`${parsed.sessions.length} groupes réels sur ${new Set(parsed.sessions.map((session) => session.date)).size} dates chargés${parsed.unmatchedTutorCount ? ` · ${parsed.unmatchedTutorCount} ligne(s) tuteur non rapprochée(s) par téléphone` : ""}${parsed.invalidRows ? ` · ${parsed.invalidRows} ligne(s) ignorée(s)` : ""}`);\n    } catch (error) { setMessage(error instanceof Error ? error.message : "Import des rapports impossible"); }\n    finally { setSaving(false); }\n  }\n\n  async function upload(file?: File) {
     if (!file) return;
     setSaving(true);
     try {
@@ -213,18 +308,18 @@ export default function StaffingEvolution() {
   return <section className="task-panel staffing-evolution">
     <div className="panel-heading">
       <div><p className="eyebrow">Comparaison des exports Semaines à venir</p><h2>Évolution staffing</h2><p>Comparez les tuteurs réellement affectés à chaque session entre deux exports successifs.</p></div>
-      <div className="filters"><label className="import-button">Importer Semaines à venir<input type="file" accept=".csv,text/csv" disabled={saving} onChange={(event) => { void upload(event.target.files?.[0]); event.currentTarget.value = ""; }} /></label><button type="button" className="button quiet" onClick={() => void loadSummaries()} disabled={loading}>↻ Actualiser</button></div>
+      <div className="filters"><label className="import-button">Importer Semaines à venir<input type="file" accept=".csv,text/csv" disabled={saving} onChange={(event) => { void upload(event.target.files?.[0]); event.currentTarget.value = ""; }} /></label><label className="import-button">Importer rapports réels<input type="file" accept=".csv,text/csv" disabled={saving} onChange={(event) => { void uploadReport(event.target.files?.[0]); event.currentTarget.value = ""; }} /></label>{actualReports ? <button type="button" className="button quiet" onClick={() => { setActualReportCsv(""); setActualReportFileName(""); setMessage(""); }}>Retirer rapports</button> : null}<button type="button" className="button quiet" onClick={() => void loadSummaries()} disabled={loading}>↻ Actualiser</button></div>
     </div>
     {message ? <p className="enrollment-message">{message}</p> : null}
     <div className="staffing-evolution-controls">
       <label>Export de référence<select value={referenceId} onChange={(event) => setReferenceId(event.target.value)}>{imports.map((item) => <option value={item.id} key={item.id}>{importLabel(item)}</option>)}</select></label>
       <span aria-hidden="true">→</span>
-      <label>Export récent<select value={recentId} onChange={(event) => setRecentId(event.target.value)}>{imports.map((item) => <option value={item.id} key={item.id}>{importLabel(item)}</option>)}</select></label>
+      {actualReports ? <label>Résultat réel<input value={actualReportFileName} readOnly /></label> : <label>Export récent<select value={recentId} onChange={(event) => setRecentId(event.target.value)}>{imports.map((item) => <option value={item.id} key={item.id}>{importLabel(item)}</option>)}</select></label>}
       <label>Du<select value={activeStartDate} onChange={(event) => { const next = event.target.value; setStartDate(next); if (activeEndDate && next > activeEndDate) setEndDate(next); }}>{dates.map((date) => <option key={date} value={date}>{fullDate(date)}</option>)}</select></label>
       <label>Au<select value={activeEndDate} onChange={(event) => { const next = event.target.value; setEndDate(next); if (activeStartDate && next < activeStartDate) setStartDate(next); }}>{dates.map((date) => <option key={date} value={date}>{fullDate(date)}</option>)}</select></label>
       <label>Recherche<input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="ID, établissement ou tuteur…" /></label>
     </div>
-    <p className="staffing-comparison-note">Les sessions sont rapprochées prioritairement par leur ID séance. Les groupes et élèves présents sur plusieurs lignes ne créent pas de doublons.</p>
+    <p className="staffing-comparison-note">{actualReports ? (dates.length ? "Comparaison de l’export planifié avec les rapports réellement saisis, limitée aux dates communes. Les groupes sont rapprochés par ID de séance / Semaine réelle, les tuteurs par ID retrouvé grâce au numéro de téléphone." : "Aucune date commune entre l’export planifié et les rapports.") : "Les sessions sont rapprochées prioritairement par leur ID séance. Les groupes et élèves présents sur plusieurs lignes ne créent pas de doublons."}{reportData?.unmatchedTutorCount ? ` ${reportData.unmatchedTutorCount} ligne(s) de tuteur ne sont pas rapprochées à un ID.` : ""}</p>
     {reference && recent && !hasComparableSnapshots ? <div className="staffing-evolution-legacy-warning"><strong>Ces anciens imports ne contiennent pas le détail des tuteurs staffés.</strong><span>Réimportez les deux exports « Semaines à venir » dans cet onglet pour obtenir une comparaison complète.</span></div> : null}
     <div className="staffing-evolution-totals">{totals.map((item) => <button type="button" className={`${item.kind} ${kindFilter === item.kind ? "active" : ""}`} onClick={() => setKindFilter((current) => current === item.kind ? "all" : item.kind)} key={item.kind}><span>{kindLabels[item.kind]}</span><strong>{item.count}</strong></button>)}</div>
     <div className="staffing-evolution-owner-table">
@@ -232,9 +327,9 @@ export default function StaffingEvolution() {
       {countsByOwner.map((row) => <button type="button" className={(ownerFilter === "unassigned" ? !row.owner : ownerFilter === row.owner) ? "active" : ""} onClick={() => setOwnerFilter((current) => current === (row.owner || "unassigned") ? "all" : row.owner || "unassigned")} key={row.owner || "unassigned"}><strong>{ownerLabels[row.owner]}</strong><span>{row.additions}</span><span>{row.replacements}</span><span>{row.removals}</span><span>{row.appeared}</span><span>{row.disappeared}</span></button>)}
     </div>
     <div className="staffing-evolution-list-heading"><div><strong>{filtered.length} évolution{filtered.length > 1 ? "s" : ""}</strong><span>{activeStartDate && activeEndDate ? `Du ${fullDate(activeStartDate)} au ${fullDate(activeEndDate)}` : "Toutes les dates des deux exports"}{ownerFilter !== "all" ? ` · ${ownerFilter === "unassigned" ? ownerLabels[""] : ownerLabels[ownerFilter]}` : ""}</span></div><button type="button" className="ghost-button" onClick={exportCsv} disabled={!filtered.length}>Export CSV</button></div>
-    {!reference || !recent ? <div className="empty-state compact">{imports.length < 2 ? "Importez au moins deux exports Semaines à venir pour commencer." : "Chargement des deux fichiers…"}</div> : !hasComparableSnapshots ? <div className="empty-state compact"><h3>Réimport nécessaire</h3><p>Les anciens imports restent disponibles pour les séances non affectées, mais ne contiennent pas les noms et ID des tuteurs staffés.</p></div> : filtered.length ? <div className="staffing-evolution-results">{filtered.map((item, index) => {
+    {!reference || !recent ? <div className="empty-state compact">{!reference ? "Importez un export Semaines à venir comme référence." : imports.length < 2 && !actualReports ? "Importez un second export ou un fichier de rapports réels pour commencer." : "Chargement des fichiers…"}</div> : !hasComparableSnapshots ? <div className="empty-state compact"><h3>Réimport nécessaire</h3><p>Les anciens imports restent disponibles pour les séances non affectées, mais ne contiennent pas les noms et ID des tuteurs staffés.</p></div> : filtered.length ? <div className="staffing-evolution-results">{filtered.map((item, index) => {
       const school = schoolFor(item.session);
-      const renderTutors = (rows: UpcomingSessionTutor[]) => rows.length ? rows.map((row) => <span key={`${row.tutorId}-${row.phone}`}><PersonAdminLink personId={row.tutorId} status="tutor">{tutorName(row)}</PersonAdminLink><small>#{row.tutorId}{row.phone ? ` · ${row.phone}` : ""}</small></span>) : <em>Aucun tuteur</em>;
+      const renderTutors = (rows: UpcomingSessionTutor[]) => rows.length ? rows.map((row) => <span key={`${row.tutorId}-${row.phone}`}>{row.tutorId.startsWith("inconnu-") ? tutorName(row) : <PersonAdminLink personId={row.tutorId} status="tutor">{tutorName(row)}</PersonAdminLink>}<small>{row.tutorId.startsWith("inconnu-") ? "ID non rapproché" : `#${row.tutorId}`}{row.phone ? ` · ${row.phone}` : ""}</small></span>) : <em>Aucun tuteur</em>;
       return <article className={`staffing-evolution-card ${item.kind}`} key={`${item.kind}-${item.session.sessionId}-${index}`}>
         <div className="staffing-evolution-session"><span>{fullDate(item.session.date)} · {timeSlot(item.session)} · #{item.session.sessionId}</span><strong><SchoolAdminLink schoolId={item.session.schoolId || school?.externalId}>{item.session.school || "Établissement non précisé"}</SchoolAdminLink></strong><small>{item.session.category || "Catégorie non précisée"} · RH : {ownerLabels[ownerFor(item.session)]}</small><small className="staffing-evolution-row-count">Lignes : avant {item.beforeSourceRowCount || "—"} · après {item.afterSourceRowCount || "—"}</small></div>
         <div className="staffing-evolution-kind"><span>{kindLabels[item.kind]}</span></div>
