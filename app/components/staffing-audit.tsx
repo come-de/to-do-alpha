@@ -64,6 +64,7 @@ export default function StaffingAudit() {
   const [analysisEndDate, setAnalysisEndDate] = useState("");
   const [sessionListMode, setSessionListMode] = useState<"active" | "staffed">("active");
   const [showTreated, setShowTreated] = useState(false);
+  const [excludedSchoolKeys, setExcludedSchoolKeys] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -159,9 +160,13 @@ export default function StaffingAudit() {
         date: day.date,
         sessions: day.sessions.filter((session) => categoryFilter === "all" || session.category === categoryFilter),
       }));
-    const sessions = filteredDays.flatMap((day) => day.sessions);
+    const allSessions = filteredDays.flatMap((day) => day.sessions);
+    const schoolKey = (session: StaffingAuditSession) => session.school.trim().toLocaleLowerCase("fr") || "établissement non précisé";
+    const isExcluded = (session: StaffingAuditSession) => excludedSchoolKeys.includes(schoolKey(session));
+    const sessions = allSessions.filter((session) => !isExcluded(session));
     const isUnstaffed = (session: StaffingAuditSession) => effectiveStatus(session) === "unstaffed" && !session.treated;
     const unstaffed = sessions.filter(isUnstaffed);
+    const allUnstaffed = allSessions.filter(isUnstaffed);
     const byOwner = (["kelly", "pierre", "julie"] as const).map((owner) => {
       const ownerSessions = sessions.filter((session) => session.portfolioOwner === owner);
       const ownerUnstaffed = ownerSessions.filter(isUnstaffed).length;
@@ -172,10 +177,10 @@ export default function StaffingAudit() {
         percentage: ownerSessions.length ? (ownerUnstaffed / ownerSessions.length) * 100 : 0,
       };
     });
-    const schools = new Map<string, { name: string; count: number; owners: Set<SchoolPortfolioOwner> }>();
-    unstaffed.forEach((session) => {
-      const key = session.school.trim().toLocaleLowerCase("fr") || "établissement non précisé";
-      const item = schools.get(key) ?? { name: session.school || "Établissement non précisé", count: 0, owners: new Set<SchoolPortfolioOwner>() };
+    const schools = new Map<string, { key: string; name: string; count: number; owners: Set<SchoolPortfolioOwner> }>();
+    allUnstaffed.forEach((session) => {
+      const key = schoolKey(session);
+      const item = schools.get(key) ?? { key, name: session.school || "Établissement non précisé", count: 0, owners: new Set<SchoolPortfolioOwner>() };
       item.count += 1;
       item.owners.add(session.portfolioOwner);
       schools.set(key, item);
@@ -186,10 +191,11 @@ export default function StaffingAudit() {
       percentage: sessions.length ? (unstaffed.length / sessions.length) * 100 : 0,
       byOwner,
       daily: filteredDays.map((day) => {
-        const dailyUnstaffed = day.sessions.filter(isUnstaffed).length;
-        const distinctTutors = new Set(day.sessions.flatMap((session) => session.tutors.map((tutor) => tutor.tutorId.trim())).filter(Boolean));
-        const unidentifiedTutors = day.sessions.reduce((count, session) => count + session.tutors.filter((tutor) => !tutor.tutorId.trim()).length, 0);
-        const tutorClassifiedSessions = day.sessions.map((session) => {
+        const daySessions = day.sessions.filter((session) => !isExcluded(session));
+        const dailyUnstaffed = daySessions.filter(isUnstaffed).length;
+        const distinctTutors = new Set(daySessions.flatMap((session) => session.tutors.map((tutor) => tutor.tutorId.trim())).filter(Boolean));
+        const unidentifiedTutors = daySessions.reduce((count, session) => count + session.tutors.filter((tutor) => !tutor.tutorId.trim()).length, 0);
+        const tutorClassifiedSessions = daySessions.map((session) => {
           const matchedTypes = session.tutors.map((tutor) => tutor.tutorId ? tutorTypeById.get(tutor.tutorId) : undefined);
           return {
             nonSt: matchedTypes.some((isSt) => isSt === false),
@@ -198,21 +204,21 @@ export default function StaffingAudit() {
         });
         return {
           date: day.date,
-          total: day.sessions.length,
+          total: daySessions.length,
           unstaffed: dailyUnstaffed,
           tutors: distinctTutors.size,
           unidentifiedTutors,
           nonStSessions: tutorTypeSnapshot ? tutorClassifiedSessions.filter((session) => session.nonSt).length : null,
           unclassifiedTutorSessions: tutorTypeSnapshot ? tutorClassifiedSessions.filter((session) => session.unknown && !session.nonSt).length : null,
           byOwner: owners.map((owner) => {
-            const ownerSessions = day.sessions.filter((session) => session.portfolioOwner === owner);
+            const ownerSessions = daySessions.filter((session) => session.portfolioOwner === owner);
             return {
               owner,
               total: ownerSessions.length,
               unstaffed: ownerSessions.filter(isUnstaffed).length,
             };
           }),
-          percentage: day.sessions.length ? (dailyUnstaffed / day.sessions.length) * 100 : 0,
+          percentage: daySessions.length ? (dailyUnstaffed / daySessions.length) * 100 : 0,
         };
       }),
       topSchools: Array.from(schools.values())
@@ -220,7 +226,7 @@ export default function StaffingAudit() {
         .slice(0, 20)
         .map((school) => ({ ...school, owners: owners.filter((owner) => school.owners.has(owner)).map((owner) => ownerLabels[owner]) })),
     };
-  }, [categoryFilter, effectiveAnalysisEndDate, effectiveAnalysisStartDate, savedDays, tutorTypeById, tutorTypeSnapshot]);
+  }, [categoryFilter, effectiveAnalysisEndDate, effectiveAnalysisStartDate, excludedSchoolKeys, savedDays, tutorTypeById, tutorTypeSnapshot]);
   const dailyChart = useMemo(() => {
     const width = Math.max(720, rangeAnalysis.daily.length * 74 + 72);
     const plotLeft = 142;
@@ -434,7 +440,12 @@ export default function StaffingAudit() {
           </div>
           <div className="staffing-range-schools">
             <h4>Établissements les plus concernés</h4>
-            {rangeAnalysis.topSchools.length ? rangeAnalysis.topSchools.map((school, index) => <article key={school.name}><span>{index + 1}</span><strong>{school.name}</strong><small>RH : {school.owners.join(", ")}</small><b>{school.count}</b></article>) : <p>Aucune séance non staffée sur cette période.</p>}
+            <small className="staffing-range-schools-help">Excluez-en un pour mesurer son impact sans modifier les bilans enregistrés.</small>
+            {rangeAnalysis.topSchools.length ? rangeAnalysis.topSchools.map((school, index) => {
+              const excluded = excludedSchoolKeys.includes(school.key);
+              return <article className={excluded ? "excluded" : ""} key={school.key}><span>{index + 1}</span><strong>{school.name}</strong><small>RH : {school.owners.join(", ")}</small><b>{school.count}</b><button type="button" aria-pressed={excluded} onClick={() => setExcludedSchoolKeys((current) => excluded ? current.filter((key) => key !== school.key) : [...current, school.key])}>{excluded ? "Réintégrer" : "Exclure"}</button></article>;
+            }) : <p>Aucune séance non staffée sur cette période.</p>}
+            {excludedSchoolKeys.length ? <button type="button" className="staffing-range-reset-exclusions" onClick={() => setExcludedSchoolKeys([])}>Réintégrer tous les établissements ({excludedSchoolKeys.length})</button> : null}
           </div>
         </div>
       </section> : null}
