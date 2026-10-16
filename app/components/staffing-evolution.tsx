@@ -7,9 +7,11 @@ import type { TutorTrackingRecord, UpcomingSessionImport, UpcomingSessionTutor, 
 
 type Owner = "" | "kelly" | "pierre" | "julie";
 type OwnerFilter = "all" | "unassigned" | Exclude<Owner, "">;
-type ChangeKind = "replacements" | "additions" | "removals" | "appeared" | "disappeared";
+type ChangeKind = "replacements" | "additions" | "removals" | "appeared" | "disappeared" | "unstaffed";
 type SchoolRecord = { externalId: string; name: string; portfolioOwner: Owner };
-type SessionChange = { kind: ChangeKind; session: UpcomingStaffingSession; before: UpcomingSessionTutor[]; after: UpcomingSessionTutor[]; beforeSourceRowCount: number; afterSourceRowCount: number };
+type SessionChange = { kind: ChangeKind; session: UpcomingStaffingSession; before: UpcomingSessionTutor[]; after: UpcomingSessionTutor[]; beforeSourceRowCount: number; afterSourceRowCount: number; portfolioOwner?: Owner };
+type AuditSession = { sessionId: string; date: string; school: string; schoolId: string; category: string; sourceRowCount: number | null; portfolioOwner: Owner; detectedStatus: string; resolution: string; treated: boolean };
+type AuditDay = { date: string; sessions: AuditSession[] };
 
 const ownerLabels: Record<Owner, string> = { "": "Non attribué", kelly: "Kelly", pierre: "Pierre", julie: "Julie" };
 const kindLabels: Record<ChangeKind, string> = {
@@ -18,6 +20,7 @@ const kindLabels: Record<ChangeKind, string> = {
   removals: "Tuteur retiré",
   appeared: "Session apparue",
   disappeared: "Session disparue",
+  unstaffed: "Séance non staffée",
 };
 
 function normalize(value: string) {
@@ -82,13 +85,15 @@ function parseReportCsv(value: string, tutorRecords: TutorTrackingRecord[]) {
     const item = sessions.get(key) ?? { sessionId, date, school: get(columns.school), sourceRowCount: 0, tutors: new Map<string, UpcomingSessionTutor>() };
     item.sourceRowCount += 1;
     const phone = get(columns.phone);
-    const tutor = tutorByPhone.get(phoneKey(phone));
     const firstName = get(columns.firstName);
     const lastName = get(columns.lastName);
-    const unmatchedKey = phoneKey(phone) || normalize(`${firstName} ${lastName}`) || `ligne-${rowIndex}`;
-    const tutorId = tutor?.tutorId || `inconnu-${unmatchedKey}`;
-    if (!tutor) unmatchedTutorCount += 1;
-    item.tutors.set(tutorId, { tutorId, firstName: tutor?.firstName || firstName, lastName: tutor?.lastName || lastName, phone });
+    if (phone || firstName || lastName) {
+      const tutor = tutorByPhone.get(phoneKey(phone));
+      const unmatchedKey = phoneKey(phone) || normalize(`${firstName} ${lastName}`) || `ligne-${rowIndex}`;
+      const tutorId = tutor?.tutorId || `inconnu-${unmatchedKey}`;
+      if (!tutor) unmatchedTutorCount += 1;
+      item.tutors.set(tutorId, { tutorId, firstName: tutor?.firstName || firstName, lastName: tutor?.lastName || lastName, phone });
+    }
     if (!item.school) item.school = get(columns.school);
     sessions.set(key, item);
   });
@@ -140,6 +145,7 @@ export default function StaffingEvolution() {
   const [actualReportFileName, setActualReportFileName] = useState("");
   const [tutorRecords, setTutorRecords] = useState<TutorTrackingRecord[]>([]);
   const [schools, setSchools] = useState<SchoolRecord[]>([]);
+  const [staffingAuditDays, setStaffingAuditDays] = useState<AuditDay[]>([]);
   const [referenceId, setReferenceId] = useState("");
   const [recentId, setRecentId] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -154,17 +160,20 @@ export default function StaffingEvolution() {
   const loadSummaries = useCallback(async () => {
     setLoading(true);
     try {
-      const [importsResponse, schoolsResponse] = await Promise.all([
+      const [importsResponse, schoolsResponse, auditsResponse] = await Promise.all([
         fetch("/api/upcoming-session-imports?summary=1", { cache: "no-store" }),
         fetch("/api/schools", { cache: "no-store" }),
+        fetch("/api/staffing-audits", { cache: "no-store" }),
       ]);
       const importsData = await importsResponse.json() as { imports?: UpcomingSessionImport[]; error?: string; detail?: string };
       const schoolsData = await schoolsResponse.json() as { schools?: SchoolRecord[]; error?: string; detail?: string };
+      const auditsData = auditsResponse.ok ? await auditsResponse.json() as { days?: AuditDay[] } : { days: [] };
       if (!importsResponse.ok) throw new Error(importsData.detail || importsData.error || "Imports indisponibles");
       if (!schoolsResponse.ok) throw new Error(schoolsData.detail || schoolsData.error || "Établissements indisponibles");
       const nextImports = (importsData.imports ?? []).sort((a, b) => timestamp(b.importedAt) - timestamp(a.importedAt));
       setImports(nextImports);
       setSchools(schoolsData.schools ?? []);
+      setStaffingAuditDays(auditsData.days ?? []);
       setRecentId((current) => nextImports.some((item) => item.id === current) ? current : nextImports[0]?.id || "");
       setReferenceId((current) => nextImports.some((item) => item.id === current) ? current : nextImports[1]?.id || nextImports[0]?.id || "");
       setMessage("");
@@ -230,6 +239,7 @@ export default function StaffingEvolution() {
   }, [schoolByName, schools]);
   const ownerFor = useCallback((session: UpcomingStaffingSession): Owner => schoolFor(session)?.portfolioOwner || "", [schoolFor]);
   const hasComparableSnapshots = Boolean(reference?.staffingSessions.length && recent?.staffingSessions.length);
+  const changeOwnerFor = useCallback((item: SessionChange): Owner => item.portfolioOwner ?? ownerFor(item.session), [ownerFor]);
 
   const changes = useMemo(() => {
     if (!reference || !recent || (actualReports && !dates.length)) return [];
@@ -265,39 +275,53 @@ export default function StaffingEvolution() {
     return items.sort((a, b) => `${a.session.date} ${a.session.startTime} ${a.session.school}`.localeCompare(`${b.session.date} ${b.session.startTime} ${b.session.school}`, "fr"));
   }, [activeEndDate, activeStartDate, actualReports, dates, recent, reference]);
 
-  const searchFilteredChanges = useMemo(() => {
-    const normalizedQuery = normalize(query);
-    if (!normalizedQuery) return changes;
-    return changes.filter((item) => normalize(`${item.session.sessionId} ${item.session.school} ${item.session.category} ${timeSlot(item.session)} ${item.before.map(tutorName).join(" ")} ${item.after.map(tutorName).join(" ")}`).includes(normalizedQuery));
-  }, [changes, query]);
-
   const recentSessionsInRange = useMemo(() => {
     const inRange = (date: string) => (!activeStartDate || date >= activeStartDate) && (!activeEndDate || date <= activeEndDate);
     return (recent?.staffingSessions ?? []).filter((session) => inRange(session.date));
   }, [activeEndDate, activeStartDate, recent]);
 
+  const auditDaysInRange = useMemo(() => staffingAuditDays.filter((day) => (!activeStartDate || day.date >= activeStartDate) && (!activeEndDate || day.date <= activeEndDate)), [activeEndDate, activeStartDate, staffingAuditDays]);
+  const auditedDates = useMemo(() => new Set(auditDaysInRange.map((day) => day.date)), [auditDaysInRange]);
+  const auditSessions = useMemo(() => auditDaysInRange.flatMap((day) => day.sessions.map((session) => ({ session, dayDate: day.date }))), [auditDaysInRange]);
+  const metricSessions = useMemo(() => {
+    const fromAudits = auditSessions.map(({ session, dayDate }) => ({ owner: session.portfolioOwner, unstaffed: (session.resolution || session.detectedStatus) === "unstaffed" && !session.treated, date: dayDate }));
+    const fromReports = recentSessionsInRange.filter((session) => !auditedDates.has(session.date)).map((session) => ({ owner: ownerFor(session), unstaffed: session.tutors.length === 0, date: session.date }));
+    return [...fromAudits, ...fromReports];
+  }, [auditSessions, auditedDates, ownerFor, recentSessionsInRange]);
+  const unstaffedChanges = useMemo<SessionChange[]>(() => {
+    const fromAudits = auditSessions.filter(({ session }) => (session.resolution || session.detectedStatus) === "unstaffed" && !session.treated).map(({ session }) => ({ kind: "unstaffed" as const, session: { sessionId: session.sessionId, sourceRowCount: session.sourceRowCount ?? 0, schoolId: session.schoolId, school: session.school, category: session.category, date: session.date, startTime: "", endTime: "", group: "", tutors: [] }, before: [], after: [], beforeSourceRowCount: 0, afterSourceRowCount: session.sourceRowCount ?? 0, portfolioOwner: session.portfolioOwner }));
+    const fromReports = recentSessionsInRange.filter((session) => !auditedDates.has(session.date) && session.tutors.length === 0).map((session) => ({ kind: "unstaffed" as const, session, before: [], after: [], beforeSourceRowCount: 0, afterSourceRowCount: session.sourceRowCount, portfolioOwner: ownerFor(session) }));
+    return [...fromAudits, ...fromReports].sort((a, b) => `${a.session.date} ${a.session.school}`.localeCompare(`${b.session.date} ${b.session.school}`, "fr"));
+  }, [auditSessions, auditedDates, ownerFor, recentSessionsInRange]);
+  const searchFilteredChanges = useMemo(() => {
+    const allChanges = [...changes, ...unstaffedChanges];
+    const normalizedQuery = normalize(query);
+    if (!normalizedQuery) return allChanges;
+    return allChanges.filter((item) => normalize(`${kindLabels[item.kind]} ${item.session.sessionId} ${item.session.school} ${item.session.category} ${timeSlot(item.session)} ${item.before.map(tutorName).join(" ")} ${item.after.map(tutorName).join(" ")}`).includes(normalizedQuery));
+  }, [changes, query, unstaffedChanges]);
+
   const countsByOwner = useMemo(() => (["kelly", "pierre", "julie", ""] as Owner[]).map((owner) => {
-    const ownerSessions = recentSessionsInRange.filter((session) => ownerFor(session) === owner);
+    const ownerSessions = metricSessions.filter((session) => session.owner === owner);
     return {
       owner,
-      replacements: searchFilteredChanges.filter((item) => ownerFor(item.session) === owner && item.kind === "replacements").length,
+      replacements: searchFilteredChanges.filter((item) => changeOwnerFor(item) === owner && item.kind === "replacements").length,
       additions: searchFilteredChanges.filter((item) => ownerFor(item.session) === owner && item.kind === "additions").length,
       removals: searchFilteredChanges.filter((item) => ownerFor(item.session) === owner && item.kind === "removals").length,
       appeared: searchFilteredChanges.filter((item) => ownerFor(item.session) === owner && item.kind === "appeared").length,
       disappeared: searchFilteredChanges.filter((item) => ownerFor(item.session) === owner && item.kind === "disappeared").length,
       totalSessions: ownerSessions.length,
-      unstaffedSessions: ownerSessions.filter((session) => session.tutors.length === 0).length,
+      unstaffedSessions: ownerSessions.filter((session) => session.unstaffed).length,
     };
-  }), [ownerFor, recentSessionsInRange, searchFilteredChanges]);
+  }), [changeOwnerFor, metricSessions, searchFilteredChanges]);
 
   const filtered = useMemo(() => {
     return searchFilteredChanges.filter((item) => {
-      const owner = ownerFor(item.session);
+      const owner = changeOwnerFor(item);
       const ownerMatches = ownerFilter === "all" || (ownerFilter === "unassigned" ? !owner : owner === ownerFilter);
       const kindMatches = kindFilter === "all" || item.kind === kindFilter;
       return ownerMatches && kindMatches;
     });
-  }, [kindFilter, ownerFilter, ownerFor, searchFilteredChanges]);
+  }, [changeOwnerFor, kindFilter, ownerFilter, searchFilteredChanges]);
 
   async function uploadReport(file?: File) {
     if (!file) return;
@@ -338,7 +362,7 @@ export default function StaffingEvolution() {
 
   function exportCsv() {
     const rows = [["Évolution", "ID séance", "Date", "Horaire", "Établissement", "ID établissement", "Responsable RH", "Catégorie", "Lignes avant", "Lignes après", "Tuteurs avant", "Tuteurs après"], ...filtered.map((item) => [
-      kindLabels[item.kind], item.session.sessionId, item.session.date, timeSlot(item.session), item.session.school, item.session.schoolId, ownerLabels[ownerFor(item.session)], item.session.category,
+      kindLabels[item.kind], item.session.sessionId, item.session.date, timeSlot(item.session), item.session.school, item.session.schoolId, ownerLabels[changeOwnerFor(item)], item.session.category,
       item.beforeSourceRowCount, item.afterSourceRowCount, item.before.map((row) => `${tutorName(row)} (#${row.tutorId})`).join(" | "), item.after.map((row) => `${tutorName(row)} (#${row.tutorId})`).join(" | "),
     ])];
     const blob = new Blob([`\uFEFF${rows.map((row) => row.map(csvCell).join(";")).join("\n")}`], { type: "text/csv;charset=utf-8" });
@@ -350,8 +374,9 @@ export default function StaffingEvolution() {
     URL.revokeObjectURL(url);
   }
 
-  const totalScope = ownerFilter === "all" ? searchFilteredChanges : searchFilteredChanges.filter((item) => ownerFilter === "unassigned" ? !ownerFor(item.session) : ownerFor(item.session) === ownerFilter);
+  const totalScope = ownerFilter === "all" ? searchFilteredChanges : searchFilteredChanges.filter((item) => ownerFilter === "unassigned" ? !changeOwnerFor(item) : changeOwnerFor(item) === ownerFilter);
   const totals = (Object.keys(kindLabels) as ChangeKind[]).map((kind) => ({ kind, count: totalScope.filter((item) => item.kind === kind).length }));
+  const groupedFilteredChanges = (Object.keys(kindLabels) as ChangeKind[]).map((kind) => ({ kind, items: filtered.filter((item) => item.kind === kind) })).filter((group) => group.items.length);
 
   return <section className="task-panel staffing-evolution">
     <div className="panel-heading">
@@ -371,11 +396,11 @@ export default function StaffingEvolution() {
     {reference && recent && !hasComparableSnapshots ? <div className="staffing-evolution-legacy-warning"><strong>Ces anciens imports ne contiennent pas le détail des tuteurs staffés.</strong><span>Réimportez les deux exports « Semaines à venir » dans cet onglet pour obtenir une comparaison complète.</span></div> : null}
     <div className="staffing-evolution-totals">{totals.map((item) => <button type="button" className={`${item.kind} ${kindFilter === item.kind ? "active" : ""}`} onClick={() => setKindFilter((current) => current === item.kind ? "all" : item.kind)} key={item.kind}><span>{kindLabels[item.kind]}</span><strong>{item.count}</strong></button>)}</div>
     <div className="staffing-evolution-owner-table">
-      <div className="head"><span>Responsable RH</span><span>Sessions totales<br />(export récent)</span><span>Non staffées<br />(export récent)</span><span>Nouveaux tuteurs</span><span>Changements</span><span>Tuteurs retirés</span><span>Sessions apparues</span><span>Sessions disparues</span></div>
+      <div className="head"><span>Responsable RH</span><span>Sessions totales<br />(bilan / rapport)</span><span>Non staffées<br />(bilan / rapport)</span><span>Nouveaux tuteurs</span><span>Changements</span><span>Tuteurs retirés</span><span>Sessions apparues</span><span>Sessions disparues</span></div>
       {countsByOwner.map((row) => <button type="button" className={(ownerFilter === "unassigned" ? !row.owner : ownerFilter === row.owner) ? "active" : ""} onClick={() => setOwnerFilter((current) => current === (row.owner || "unassigned") ? "all" : row.owner || "unassigned")} key={row.owner || "unassigned"}><strong>{ownerLabels[row.owner]}</strong><span>{row.totalSessions}</span><span>{row.unstaffedSessions}</span><span>{row.additions}</span><span>{row.replacements}</span><span>{row.removals}</span><span>{row.appeared}</span><span>{row.disappeared}</span></button>)}
     </div>
     <div className="staffing-evolution-list-heading"><div><strong>{filtered.length} évolution{filtered.length > 1 ? "s" : ""}</strong><span>{activeStartDate && activeEndDate ? `Du ${fullDate(activeStartDate)} au ${fullDate(activeEndDate)}` : "Toutes les dates des deux exports"}{ownerFilter !== "all" ? ` · ${ownerFilter === "unassigned" ? ownerLabels[""] : ownerLabels[ownerFilter]}` : ""}</span></div><button type="button" className="ghost-button" onClick={exportCsv} disabled={!filtered.length}>Export CSV</button></div>
-    {!reference || !recent ? <div className="empty-state compact">{!reference ? "Importez un export Semaines à venir comme référence." : imports.length < 2 && !actualReports ? "Importez un second export ou un fichier de rapports réels pour commencer." : "Chargement des fichiers…"}</div> : !hasComparableSnapshots ? <div className="empty-state compact"><h3>Réimport nécessaire</h3><p>Les anciens imports restent disponibles pour les séances non affectées, mais ne contiennent pas les noms et ID des tuteurs staffés.</p></div> : filtered.length ? <div className="staffing-evolution-results">{filtered.map((item, index) => {
+    {!reference || !recent ? <div className="empty-state compact">{!reference ? "Importez un export Semaines à venir comme référence." : imports.length < 2 && !actualReports ? "Importez un second export ou un fichier de rapports réels pour commencer." : "Chargement des fichiers…"}</div> : !hasComparableSnapshots ? <div className="empty-state compact"><h3>Réimport nécessaire</h3><p>Les anciens imports restent disponibles pour les séances non affectées, mais ne contiennent pas les noms et ID des tuteurs staffés.</p></div> : filtered.length ? <div className="staffing-evolution-results">{groupedFilteredChanges.map(({ kind, items }) => <section className="staffing-evolution-group" key={kind}><h3 className="staffing-evolution-group-heading">{kindLabels[kind]} <span>{items.length}</span></h3><div className="staffing-evolution-kind-items">{items.map((item, index) => {
       const school = schoolFor(item.session);
       const renderTutors = (rows: UpcomingSessionTutor[]) => rows.length ? rows.map((row) => <span key={`${row.tutorId}-${row.phone}`}>{row.tutorId.startsWith("inconnu-") ? tutorName(row) : <PersonAdminLink personId={row.tutorId} status="tutor">{tutorName(row)}</PersonAdminLink>}<small>{row.tutorId.startsWith("inconnu-") ? "ID non rapproché" : `#${row.tutorId}`}{row.phone ? ` · ${row.phone}` : ""}</small></span>) : <em>Aucun tuteur</em>;
       return <article className={`staffing-evolution-card ${item.kind}`} key={`${item.kind}-${item.session.sessionId}-${index}`}>
@@ -384,6 +409,6 @@ export default function StaffingEvolution() {
         <div className="staffing-evolution-before"><b>Avant</b>{renderTutors(item.before)}</div>
         <div className="staffing-evolution-after"><b>Après</b>{renderTutors(item.after)}</div>
       </article>;
-    })}</div> : <div className="empty-state compact"><span>✓</span><h3>Aucune évolution détectée</h3><p>Les deux exports sont identiques pour les filtres sélectionnés.</p></div>}
+    })}</div></section>)}</div> : <div className="empty-state compact"><span>✓</span><h3>Aucune évolution détectée</h3><p>Les deux exports sont identiques pour les filtres sélectionnés.</p></div>}
   </section>;
 }
