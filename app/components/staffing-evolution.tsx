@@ -231,7 +231,7 @@ export default function StaffingEvolution() {
     })));
     if (!staffingSessions.length) return null;
     const lastUpdated = staffingAuditDays.map((day) => day.updatedAt).sort().at(-1) || new Date().toISOString();
-    return { id: "staffing-audits", importedAt: lastUpdated, displayName: "Bilans staffing enregistrés", fileName: "bilans-staffing", sourceRowCount: staffingAuditDays.reduce((sum, day) => sum + day.sourceRowCount, 0), sourceSessionCount: staffingSessions.length, schools: [], schoolStaffing: [], staffingSessions, rows: [], createdAt: lastUpdated };
+    return { id: "staffing-audits", importedAt: lastUpdated, displayName: "Bilans staffing enregistrés", fileName: "bilans-staffing", sourceRowCount: staffingAuditDays.reduce((sum, day) => sum + day.sessions.reduce((daySum, session) => daySum + (session.sourceRowCount ?? 0), 0), 0), sourceSessionCount: staffingSessions.length, schools: [], schoolStaffing: [], staffingSessions, rows: [], createdAt: lastUpdated };
   }, [staffingAuditDays]);
   const auditComparison = recentId === "staffing-audits";
   const recent = auditComparison ? auditSnapshot : actualReports ?? loadedImports[recentId] ?? null;
