@@ -741,7 +741,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .staffing-daily-chart-legend span:nth-child(4)::before { background: #0f766e; }
 .staffing-daily-chart-legend span:last-child::before { background: #c2410c; }
 .staffing-daily-chart-scroll { overflow-x: auto; overflow-y: hidden; padding: 0 4px 2px; }
-.staffing-daily-chart svg { width: 100%; height: 293px; display: block; }
+.staffing-daily-chart svg { width: 100%; height: 438px; display: block; }
 .staffing-daily-chart .grid-line { stroke: rgba(213,231,239,.9); stroke-width: 1; }
 .staffing-daily-chart .day-guide { stroke: rgba(213,231,239,.55); stroke-width: 1; }
 .staffing-daily-chart .daily-area { fill: url(#staffing-daily-area); }
@@ -751,17 +751,21 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .staffing-daily-chart text { font-family: inherit; }
 .staffing-daily-chart .axis-label { fill: var(--muted); font-size: 8px; }
 .staffing-daily-chart .axis-label.y, .staffing-daily-chart .daily-row-label { text-anchor: end; }
-.staffing-daily-chart .axis-label.date, .staffing-daily-chart .point-value, .staffing-daily-chart .daily-total, .staffing-daily-chart .daily-unstaffed, .staffing-daily-chart .daily-tutors, .staffing-daily-chart .daily-non-st, .staffing-daily-chart .daily-unclassified { text-anchor: middle; }
+.staffing-daily-chart .axis-label.date, .staffing-daily-chart .point-value, .staffing-daily-chart .daily-total, .staffing-daily-chart .daily-unstaffed, .staffing-daily-chart .daily-tutors, .staffing-daily-chart .daily-non-st, .staffing-daily-chart .daily-unclassified, .staffing-daily-chart .daily-owner-total, .staffing-daily-chart .daily-owner-unstaffed { text-anchor: middle; }
 .staffing-daily-chart .point-value { fill: var(--red); font-size: 8px; font-weight: 850; }
 .staffing-daily-chart .daily-total { fill: var(--blue-title); font-size: 8px; font-weight: 850; }
 .staffing-daily-chart .daily-unstaffed { fill: var(--red); font-size: 8px; font-weight: 850; }
 .staffing-daily-chart .daily-tutors { fill: #0f766e; font-size: 8px; font-weight: 850; }
 .staffing-daily-chart .daily-non-st { fill: #c2410c; font-size: 8px; font-weight: 850; }
 .staffing-daily-chart .daily-unclassified { fill: var(--muted); font-size: 7px; }
+.staffing-daily-chart .daily-owner-total { fill: var(--blue-title); font-size: 7px; font-weight: 800; }
+.staffing-daily-chart .daily-owner-unstaffed { fill: var(--red); font-size: 7px; font-weight: 800; }
 .staffing-daily-chart .daily-row-label { fill: var(--muted); font-size: 7px; font-weight: 760; }
 .staffing-daily-chart .daily-row-label.unstaffed { fill: var(--red); }
 .staffing-daily-chart .daily-row-label.tutors { fill: #0f766e; }
 .staffing-daily-chart .daily-row-label.non-st { fill: #c2410c; }
+.staffing-daily-chart .daily-row-label.owner-total { fill: var(--blue-title); }
+.staffing-daily-chart .daily-row-label.owner-unstaffed { fill: var(--red); }
 .staffing-daily-chart-note { margin: 0; padding: 0 9px 7px; color: var(--muted); font-size: 7px; }
 .staffing-daily-chart-empty { margin: 0; padding: 18px; color: var(--muted); font-size: 8px; text-align: center; }
 .staffing-range-layout { display: grid; grid-template-columns: minmax(0,1.25fr) minmax(260px,.75fr); gap: 8px; }
