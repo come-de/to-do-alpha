@@ -211,7 +211,7 @@ export default function StaffingAudit() {
   }, [categoryFilter, effectiveAnalysisEndDate, effectiveAnalysisStartDate, savedDays, tutorTypeById, tutorTypeSnapshot]);
   const dailyChart = useMemo(() => {
     const width = Math.max(720, rangeAnalysis.daily.length * 74 + 72);
-    const plotLeft = 54;
+    const plotLeft = 112;
     const plotRight = width - 18;
     const plotTop = 20;
     const plotBottom = 156;
@@ -401,7 +401,7 @@ export default function StaffingAudit() {
             <text className="daily-row-label tutors" x={dailyChart.plotLeft - 8} y={dailyChart.plotBottom + 85}>Tuteurs</text>
             <text className="daily-row-label non-st" x={dailyChart.plotLeft - 8} y={dailyChart.plotBottom + 106}>Séances non-ST</text>
           </svg></div> : <p className="staffing-daily-chart-empty">Aucune journée enregistrée sur cette période.</p>}
-          {tutorTypeSnapshot ? <p className="staffing-daily-chart-note">Les séances avec « ? » n’ont pas pu être classées complètement à partir des noms et du Niveau dans la liste importée.</p> : null}
+          {tutorTypeSnapshot ? <p className="staffing-daily-chart-note">Les « +N ? » sont les séances sans classement complet : aucun tuteur non-ST n’a pu être confirmé par ID et niveau dans l’import.</p> : null}
         </div>
         <div className="staffing-range-layout">
           <div className="staffing-range-rh">
