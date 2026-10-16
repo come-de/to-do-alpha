@@ -12,7 +12,7 @@ type SchoolRecord = { externalId: string; name: string; portfolioOwner: Owner };
 type ComparableSession = UpcomingStaffingSession & { portfolioOwner?: Owner; staffingStatus?: string; treated?: boolean };
 type SessionChange = { kind: ChangeKind; session: ComparableSession; before: UpcomingSessionTutor[]; after: UpcomingSessionTutor[]; beforeSourceRowCount: number; afterSourceRowCount: number; portfolioOwner?: Owner };
 type AuditSession = { sessionId: string; date: string; school: string; schoolId: string; category: string; sourceRowCount: number | null; portfolioOwner: Owner; detectedStatus: string; resolution: string; treated: boolean; tutors: { tutorId: string; name: string; phone: string }[] };
-type AuditDay = { date: string; sessions: AuditSession[] };
+type AuditDay = { date: string; updatedAt: string; sessions: AuditSession[] };
 
 const ownerLabels: Record<Owner, string> = { "": "Non attribué", kelly: "Kelly", pierre: "Pierre", julie: "Julie" };
 const kindLabels: Record<ChangeKind, string> = {
