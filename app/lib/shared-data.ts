@@ -428,6 +428,17 @@ export type SchoolPortfolioOwner = "" | "kelly" | "pierre" | "julie";
 
 export type StaffingAuditClassification = "staffed" | "unstaffed" | "ambiguous";
 export type StaffingAuditResolution = "" | "staffed" | "unstaffed";
+export const STAFFING_AUDIT_UNSTAFFED_REASONS = [
+  "Annulation tardive",
+  "Difficulté de staffing",
+  "Tuteur absent",
+  "Pas assez d'élèves",
+  "Non pris en compte",
+  "Rajout tardif de séances",
+  "Établissement fermé",
+  "Autre",
+] as const;
+export type StaffingAuditUnstaffedReason = "" | (typeof STAFFING_AUDIT_UNSTAFFED_REASONS)[number];
 export type StaffingAuditSessionCategory = "alpha" | "surveillance" | "service";
 
 export type StaffingAuditTutor = {
@@ -447,6 +458,8 @@ export type StaffingAuditSession = {
   detectedStatus: StaffingAuditClassification;
   resolution: StaffingAuditResolution;
   treated: boolean;
+  unstaffedReason: StaffingAuditUnstaffedReason;
+  comment: string;
   tutors: StaffingAuditTutor[];
 };
 
@@ -1735,6 +1748,8 @@ export function sanitizeStaffingAuditSession(raw: Record<string, unknown>): Staf
     detectedStatus: isStaffingAuditClassification(raw.detectedStatus) ? raw.detectedStatus : "ambiguous",
     resolution: isStaffingAuditResolution(raw.resolution) ? raw.resolution : "",
     treated: raw.treated === true,
+    unstaffedReason: STAFFING_AUDIT_UNSTAFFED_REASONS.includes(raw.unstaffedReason as (typeof STAFFING_AUDIT_UNSTAFFED_REASONS)[number]) ? raw.unstaffedReason as StaffingAuditUnstaffedReason : "",
+    comment: cleanText(raw.comment).slice(0, 2000),
     tutors: (() => {
       const identified = new Map<string, StaffingAuditTutor>();
       const unidentified: StaffingAuditTutor[] = [];
@@ -3203,7 +3218,7 @@ export async function saveStaffingAudit(day: StaffingAuditDay, overwrite: boolea
   return { conflict: false, day: saved, days: next };
 }
 
-export async function updateStaffingAuditSession(input: { date: string; sessionId: string; portfolioOwner?: unknown; resolution?: unknown; treated?: unknown }) {
+export async function updateStaffingAuditSession(input: { date: string; sessionId: string; portfolioOwner?: unknown; resolution?: unknown; treated?: unknown; unstaffedReason?: unknown; comment?: unknown }) {
   const existing = await readStaffingAudits();
   const day = existing.find((item) => item.date === input.date);
   if (!day) throw new Error("Bilan introuvable");
@@ -3213,6 +3228,8 @@ export async function updateStaffingAuditSession(input: { date: string; sessionI
     portfolioOwner: input.portfolioOwner === undefined ? session.portfolioOwner : isStaffingAuditOwner(input.portfolioOwner) ? input.portfolioOwner : session.portfolioOwner,
     resolution: input.resolution === undefined ? session.resolution : isStaffingAuditResolution(input.resolution) ? input.resolution : session.resolution,
     treated: input.treated === undefined ? session.treated : input.treated === true,
+    unstaffedReason: input.unstaffedReason === undefined ? session.unstaffedReason : STAFFING_AUDIT_UNSTAFFED_REASONS.includes(input.unstaffedReason as (typeof STAFFING_AUDIT_UNSTAFFED_REASONS)[number]) ? input.unstaffedReason as StaffingAuditUnstaffedReason : session.unstaffedReason,
+    comment: input.comment === undefined ? session.comment : cleanText(input.comment).slice(0, 2000),
   } : session);
   return saveStaffingAudit({ ...day, sessions, updatedAt: new Date().toISOString() }, true);
 }
