@@ -295,7 +295,7 @@ export default function StaffingEvolution() {
 
   const isUnstaffedSession = useCallback((session: ComparableSession) => session.staffingStatus ? session.staffingStatus === "unstaffed" && !session.treated : session.tutors.length === 0, []);
   const metricSessions = useMemo(() => recentSessionsInRange.map((session) => ({ owner: ownerFor(session), unstaffed: isUnstaffedSession(session) })), [isUnstaffedSession, ownerFor, recentSessionsInRange]);
-  const unstaffedChanges = useMemo<SessionChange[]>(() => recentSessionsInRange.filter(isUnstaffedSession).map((session) => ({ kind: "unstaffed", session, before: [], after: [], beforeSourceRowCount: 0, afterSourceRowCount: session.sourceRowCount, portfolioOwner: ownerFor(session) })).sort((a, b) => `${a.session.date} ${a.session.school}`.localeCompare(`${b.session.date} ${b.session.school}`, "fr")), [isUnstaffedSession, ownerFor, recentSessionsInRange]);
+  const unstaffedChanges = useMemo<SessionChange[]>(() => recentSessionsInRange.filter(isUnstaffedSession).map((session) => ({ kind: "unstaffed" as const, session, before: [], after: [], beforeSourceRowCount: 0, afterSourceRowCount: session.sourceRowCount, portfolioOwner: ownerFor(session) })).sort((a, b) => `${a.session.date} ${a.session.school}`.localeCompare(`${b.session.date} ${b.session.school}`, "fr")), [isUnstaffedSession, ownerFor, recentSessionsInRange]);
   const searchFilteredChanges = useMemo(() => {
     const allChanges = [...changes, ...unstaffedChanges];
     const normalizedQuery = normalize(query);
