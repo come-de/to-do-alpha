@@ -285,12 +285,12 @@ export default function StaffingEvolution() {
   const auditSessions = useMemo(() => auditDaysInRange.flatMap((day) => day.sessions.map((session) => ({ session, dayDate: day.date }))), [auditDaysInRange]);
   const metricSessions = useMemo(() => {
     const fromAudits = auditSessions.map(({ session, dayDate }) => ({ owner: session.portfolioOwner, unstaffed: (session.resolution || session.detectedStatus) === "unstaffed" && !session.treated, date: dayDate }));
-    const fromReports = actualReports ? recentSessionsInRange.filter((session) => !auditedDates.has(session.date)).map((session) => ({ owner: ownerFor(session), unstaffed: session.tutors.length === 0, date: session.date }));
+    const fromReports = actualReports ? recentSessionsInRange.filter((session) => !auditedDates.has(session.date)).map((session) => ({ owner: ownerFor(session), unstaffed: session.tutors.length === 0, date: session.date })) : [];
     return [...fromAudits, ...(fromReports ?? [])];
   }, [actualReports, auditSessions, auditedDates, ownerFor, recentSessionsInRange]);
   const unstaffedChanges = useMemo<SessionChange[]>(() => {
     const fromAudits = auditSessions.filter(({ session }) => (session.resolution || session.detectedStatus) === "unstaffed" && !session.treated).map(({ session }) => ({ kind: "unstaffed" as const, session: { sessionId: session.sessionId, sourceRowCount: session.sourceRowCount ?? 0, schoolId: session.schoolId, school: session.school, category: session.category, date: session.date, startTime: "", endTime: "", group: "", tutors: [] }, before: [], after: [], beforeSourceRowCount: 0, afterSourceRowCount: session.sourceRowCount ?? 0, portfolioOwner: session.portfolioOwner }));
-    const fromReports = actualReports ? recentSessionsInRange.filter((session) => !auditedDates.has(session.date) && session.tutors.length === 0).map((session) => ({ kind: "unstaffed" as const, session, before: [], after: [], beforeSourceRowCount: 0, afterSourceRowCount: session.sourceRowCount, portfolioOwner: ownerFor(session) }));
+    const fromReports = actualReports ? recentSessionsInRange.filter((session) => !auditedDates.has(session.date) && session.tutors.length === 0).map((session) => ({ kind: "unstaffed" as const, session, before: [], after: [], beforeSourceRowCount: 0, afterSourceRowCount: session.sourceRowCount, portfolioOwner: ownerFor(session) })) : [];
     return [...fromAudits, ...(fromReports ?? [])].sort((a, b) => `${a.session.date} ${a.session.school}`.localeCompare(`${b.session.date} ${b.session.school}`, "fr"));
   }, [actualReports, auditSessions, auditedDates, ownerFor, recentSessionsInRange]);
   const searchFilteredChanges = useMemo(() => {
