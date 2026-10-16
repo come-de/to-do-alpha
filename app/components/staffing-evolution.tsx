@@ -327,7 +327,7 @@ export default function StaffingEvolution() {
 
   return <section className="task-panel staffing-evolution">
     <div className="panel-heading">
-      <div><p className="eyebrow">Comparaison des exports Semaines à venir</p><h2>Évolution staffing</h2><p>Comparez les tuteurs réellement affectés à chaque session entre deux exports successifs.</p></div>
+      <div><p className="eyebrow">Comparaison staffing</p><h2>Évolution staffing</h2><p>Comparez deux exports prévisionnels ou les affectations prévues aux séances réalisées dans les rapports.</p></div>
       <div className="filters"><label className="import-button">Importer Semaines à venir<input type="file" accept=".csv,text/csv" disabled={saving} onChange={(event) => { void upload(event.target.files?.[0]); event.currentTarget.value = ""; }} /></label><label className="import-button">Importer rapports réels<input type="file" accept=".csv,text/csv" disabled={saving} onChange={(event) => { void uploadReport(event.target.files?.[0]); event.currentTarget.value = ""; }} /></label>{actualReports ? <button type="button" className="button quiet" onClick={() => { setActualReportCsv(""); setActualReportFileName(""); setMessage(""); }}>Retirer rapports</button> : null}<button type="button" className="button quiet" onClick={() => void loadSummaries()} disabled={loading}>↻ Actualiser</button></div>
     </div>
     {message ? <p className="enrollment-message">{message}</p> : null}
