@@ -611,7 +611,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .staffing-evolution-totals .replacements { background: #f5f3ff; border-color: rgba(124,58,237,.23); }
 .staffing-evolution-totals .removals, .staffing-evolution-totals .disappeared { background: var(--red-pale); border-color: rgba(190,24,93,.2); }
 .staffing-evolution-owner-table { margin: 0 12px 10px; overflow: hidden; border: 1px solid var(--line); border-radius: 10px; background: white; }
-.staffing-evolution-owner-table .head, .staffing-evolution-owner-table > button { width: 100%; padding: 6px 9px; display: grid; grid-template-columns: minmax(120px,1fr) repeat(5,minmax(72px,.48fr)); gap: 5px; align-items: center; border: 0; border-top: 1px solid var(--line); text-align: center; }
+.staffing-evolution-owner-table .head, .staffing-evolution-owner-table > button { width: 100%; padding: 6px 9px; display: grid; grid-template-columns: minmax(120px,1fr) repeat(7,minmax(72px,.48fr)); gap: 5px; align-items: center; border: 0; border-top: 1px solid var(--line); text-align: center; }
 .staffing-evolution-owner-table .head { border-top: 0; color: var(--muted); background: linear-gradient(100deg,#f5f3ff,#eefaff); font-size: 7px; font-weight: 850; text-transform: uppercase; }
 .staffing-evolution-owner-table .head span:first-child, .staffing-evolution-owner-table > button strong { text-align: left; }
 .staffing-evolution-owner-table > button { min-height: 33px; color: var(--blue-title); background: white; cursor: pointer; }
@@ -1820,7 +1820,7 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .staffing-evolution-totals { margin: 0 8px 8px; grid-template-columns: repeat(2,minmax(0,1fr)); }
   .staffing-evolution-legacy-warning { margin: 0 8px 8px; }
   .staffing-evolution-owner-table { margin: 0 8px 8px; overflow-x: auto; }
-  .staffing-evolution-owner-table .head, .staffing-evolution-owner-table > button { min-width: 680px; }
+  .staffing-evolution-owner-table .head, .staffing-evolution-owner-table > button { min-width: 770px; }
   .staffing-evolution-list-heading { margin: 0 8px 7px; }
   .staffing-evolution-results { margin: 0 8px 8px; }
   .staffing-evolution-card { grid-template-columns: 1fr; }
