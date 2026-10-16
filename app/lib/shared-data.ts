@@ -433,6 +433,7 @@ export type StaffingAuditSessionCategory = "alpha" | "surveillance" | "service";
 export type StaffingAuditTutor = {
   tutorId: string;
   name: string;
+  phone: string;
 };
 
 export type StaffingAuditSession = {
@@ -1716,10 +1717,10 @@ export function sanitizeStaffingAuditSession(raw: Record<string, unknown>): Staf
   const tutors = Array.isArray(raw.tutors)
     ? raw.tutors
         .filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object"))
-        .map((item) => ({ tutorId: cleanText(item.tutorId), name: cleanText(item.name || item.displayName) }))
+        .map((item) => ({ tutorId: cleanText(item.tutorId), name: cleanText(item.name || item.displayName), phone: cleanText(item.phone) }))
         .filter((item) => item.tutorId || item.name)
     : Array.isArray(raw.tutorNames)
-      ? raw.tutorNames.map((name) => ({ tutorId: "", name: cleanText(name) })).filter((item) => item.name)
+      ? raw.tutorNames.map((name) => ({ tutorId: "", name: cleanText(name), phone: "" })).filter((item) => item.name)
       : [];
   return {
     sessionId: cleanText(raw.sessionId),
@@ -1762,7 +1763,10 @@ export function sanitizeStaffingAuditDay(raw: Record<string, unknown>): Staffing
 }
 
 function tutorPhoneKey(value: string) {
-  return value.replace(/\D/g, "");
+  const digits = value.replace(/\D/g, "");
+  if (digits.startsWith("0033") && digits.length === 13) return `0${digits.slice(4)}`;
+  if (digits.startsWith("33") && digits.length === 11) return `0${digits.slice(2)}`;
+  return digits;
 }
 
 function createTutorRecordResolver(records: TutorTrackingRecord[]) {
@@ -1781,10 +1785,13 @@ function createTutorRecordResolver(records: TutorTrackingRecord[]) {
   const idByPhone = index((record) => tutorPhoneKey(record.phone));
   const idByName = index((record) => normalizeSchoolName(`${record.firstName} ${record.lastName}`));
   return (input: { tutorId?: string; phone?: string; name?: string }): Pick<TutorTrackingRecord, "tutorId" | "firstName" | "lastName"> | undefined => {
+    const phone = tutorPhoneKey(input.phone || "");
+    if (phone) {
+      const phoneId = idByPhone.get(phone);
+      return phoneId ? byId.get(phoneId) : undefined;
+    }
     const directId = input.tutorId?.trim() || "";
     if (directId) return byId.get(directId) ?? { tutorId: directId, firstName: "", lastName: "" };
-    const phoneId = idByPhone.get(tutorPhoneKey(input.phone || ""));
-    if (phoneId) return byId.get(phoneId);
     const nameId = idByName.get(normalizeSchoolName(input.name || ""));
     return nameId ? byId.get(nameId) : undefined;
   };
@@ -1797,11 +1804,13 @@ export function resolveStaffingAuditTutorIds(days: StaffingAuditDay[], records: 
     ...day,
     sessions: day.sessions.map((session) => {
       const tutors = session.tutors.map((tutor) => {
-        if (tutor.tutorId) return tutor;
-        const record = resolve({ name: tutor.name });
-        if (!record?.tutorId) return tutor;
+        const record = tutor.phone
+          ? resolve({ phone: tutor.phone })
+          : tutor.tutorId ? undefined : resolve({ name: tutor.name });
+        const resolvedId = record?.tutorId || tutor.tutorId;
+        if (!resolvedId || resolvedId === tutor.tutorId) return tutor;
         changed = true;
-        return { ...tutor, tutorId: record.tutorId };
+        return { ...tutor, tutorId: resolvedId };
       });
       const byId = new Map<string, StaffingAuditTutor>();
       const unidentified: StaffingAuditTutor[] = [];
@@ -1848,7 +1857,7 @@ export function parseStaffingAuditCsv(value: string, fileName: string, schools: 
   const tutorFirstNameIndex = indexFor(["prenomtuteur", "prenomdututeur"]);
   const tutorLastNameIndex = indexFor(["nomtuteur", "nomdututeur"]);
   const tutorPhoneIndex = indexFor(["numerotuteur", "numerodututeur", "telephone", "numerodetelephone"]);
-  const tutorIdIndex = indexFor(["id", "idtuteur", "iddututeur", "tutorid", "idpersonne"]);
+  const tutorIdIndex = indexFor(["idtuteur", "iddututeur", "tutorid", "idpersonne"]);
   if (dateIndex < 0 || sessionIdIndex < 0 || schoolIndex < 0) throw new Error("Colonnes Date, Semaine réelle ou Établissement introuvables dans le CSV");
   const schoolByName = new Map(schools.map((school) => [normalizeSchoolName(school.name), school]));
   type Accumulator = { sessionId: string; date: string; school: string; sourceRowCount: number; tutors: Map<string, StaffingAuditTutor>; tutorKeyByPhone: Map<string, string> };
@@ -1884,7 +1893,7 @@ export function parseStaffingAuditCsv(value: string, fileName: string, schools: 
       const resolvedId = matchedTutor?.tutorId || tutorId || previousTutorId || "";
       const tutorKey = resolvedId ? `id:${resolvedId}` : phoneKey || `unresolved-row:${rowIndex}`;
       if (resolvedId && previousPhoneKey && previousPhoneKey !== tutorKey) item.tutors.delete(previousPhoneKey);
-      item.tutors.set(tutorKey, { tutorId: resolvedId, name: tutorName || `${matchedTutor?.firstName || ""} ${matchedTutor?.lastName || ""}`.trim() || phone });
+      item.tutors.set(tutorKey, { tutorId: resolvedId, name: tutorName || `${matchedTutor?.firstName || ""} ${matchedTutor?.lastName || ""}`.trim() || phone, phone });
       if (normalizedPhone) item.tutorKeyByPhone.set(normalizedPhone, tutorKey);
     }
     if (!item.school && school) item.school = school;
