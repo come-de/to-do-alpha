@@ -276,10 +276,23 @@ export default function StaffingEvolution() {
       }
       if (!beforeSession || !afterSession) return;
       const knownTutor = (item: UpcomingSessionTutor) => item.tutorId && !item.tutorId.startsWith("inconnu-");
-      const beforeIds = new Set(beforeSession.tutors.filter(knownTutor).map((item) => item.tutorId));
-      const afterIds = new Set(afterSession.tutors.filter(knownTutor).map((item) => item.tutorId));
-      const added = afterSession.tutors.filter((item) => knownTutor(item) && !beforeIds.has(item.tutorId));
-      const removed = beforeSession.tutors.filter((item) => knownTutor(item) && !afterIds.has(item.tutorId));
+      const sameTutor = (left: UpcomingSessionTutor, right: UpcomingSessionTutor) => {
+        if (left.tutorId === right.tutorId) return true;
+        const leftPhone = phoneKey(left.phone);
+        const rightPhone = phoneKey(right.phone);
+        if (leftPhone && rightPhone) return leftPhone === rightPhone;
+        const leftName = normalize(tutorName(left));
+        const rightName = normalize(tutorName(right));
+        return Boolean(leftName && leftName === rightName);
+      };
+      const unmatchedAfter = afterSession.tutors.map((_, index) => index);
+      const removed: UpcomingSessionTutor[] = [];
+      beforeSession.tutors.filter(knownTutor).forEach((beforeTutor) => {
+        const matchIndex = unmatchedAfter.findIndex((index) => knownTutor(afterSession.tutors[index]) && sameTutor(beforeTutor, afterSession.tutors[index]));
+        if (matchIndex < 0) removed.push(beforeTutor);
+        else unmatchedAfter.splice(matchIndex, 1);
+      });
+      const added = unmatchedAfter.map((index) => afterSession.tutors[index]).filter(knownTutor);
       if (added.length && removed.length) items.push({ kind: "replacements", session: afterSession, before: removed, after: added, beforeSourceRowCount: beforeSession.sourceRowCount, afterSourceRowCount: afterSession.sourceRowCount });
       else {
         if (added.length) items.push({ kind: "additions", session: afterSession, before: [], after: added, beforeSourceRowCount: beforeSession.sourceRowCount, afterSourceRowCount: afterSession.sourceRowCount });
