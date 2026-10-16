@@ -622,6 +622,12 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .staffing-evolution-list-heading > div { display: grid; gap: 2px; }
 .staffing-evolution-list-heading strong { color: var(--blue-title); font-size: 11px; }
 .staffing-evolution-list-heading span { color: var(--muted); font-size: 8px; }
+.staffing-evolution-group { display: grid; gap: 5px; }
+.staffing-evolution-group-heading { margin: 0; padding: 5px 8px; border-radius: 7px; color: var(--blue-title); background: var(--soft); display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 9px; }
+.staffing-evolution-group-heading span { min-width: 20px; border-radius: 999px; padding: 2px 6px; color: var(--blue-dark); background: white; text-align: center; }
+.staffing-evolution-kind-items { display: grid; gap: 6px; }
+.staffing-evolution-card.unstaffed { border-left-color: #c2410c; }
+.staffing-evolution-card.unstaffed .staffing-evolution-kind span { color: #9a3412; background: #fff7ed; }
 .staffing-evolution-results { margin: 0 12px 12px; display: grid; gap: 7px; }
 .staffing-evolution-card { padding: 8px; border: 1px solid var(--line); border-left: 4px solid var(--blue-main); border-radius: 10px; background: white; display: grid; grid-template-columns: minmax(230px,1fr) minmax(105px,.34fr) minmax(180px,.62fr) minmax(180px,.62fr); align-items: center; gap: 8px; }
 .staffing-evolution-card.additions, .staffing-evolution-card.appeared { border-left-color: var(--green); }
