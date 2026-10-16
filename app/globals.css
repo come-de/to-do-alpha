@@ -750,6 +750,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .staffing-daily-chart .daily-point:hover circle { r: 7; fill: var(--red-pale); }
 .staffing-daily-chart text { font-family: inherit; }
 .staffing-daily-chart .axis-label { fill: var(--muted); font-size: 8px; }
+.staffing-daily-chart .axis-label.date { font-size: 6.5px; }
 .staffing-daily-chart .axis-label.y, .staffing-daily-chart .daily-row-label { text-anchor: end; }
 .staffing-daily-chart .axis-label.date, .staffing-daily-chart .point-value, .staffing-daily-chart .daily-total, .staffing-daily-chart .daily-unstaffed, .staffing-daily-chart .daily-tutors, .staffing-daily-chart .daily-non-st, .staffing-daily-chart .daily-unclassified, .staffing-daily-chart .daily-owner-total, .staffing-daily-chart .daily-owner-unstaffed { text-anchor: middle; }
 .staffing-daily-chart .point-value { fill: var(--red); font-size: 8px; font-weight: 850; }
@@ -780,11 +781,12 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .staffing-range-rate { height: 8px; overflow: hidden; border-radius: 999px; background: rgba(213,231,239,.65); }
 .staffing-range-rate span { display: block; min-width: 2px; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#f472b6,var(--red)); }
 .staffing-range-schools { display: grid; align-content: start; }
-.staffing-range-schools article { min-height: 25px; padding: 2px 0; border-top: 1px solid rgba(213,231,239,.7); display: grid; grid-template-columns: 20px minmax(0,1fr) auto; align-items: center; gap: 5px; }
+.staffing-range-schools article { min-height: 30px; padding: 3px 0; border-top: 1px solid rgba(213,231,239,.7); display: grid; grid-template-columns: 20px minmax(0,1fr) auto; grid-template-rows: auto auto; align-items: center; gap: 1px 5px; }
 .staffing-range-schools article:first-of-type { border-top: 0; }
-.staffing-range-schools article > span { width: 18px; height: 18px; border-radius: 50%; background: #eef2ff; color: #6366f1; display: grid; place-items: center; font-size: 7px; font-weight: 850; }
-.staffing-range-schools article strong { min-width: 0; overflow: hidden; color: var(--text); font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
-.staffing-range-schools article b { min-width: 22px; color: var(--red); font-size: 9px; text-align: right; }
+.staffing-range-schools article > span { grid-column: 1; grid-row: 1 / 3; width: 18px; height: 18px; border-radius: 50%; background: #eef2ff; color: #6366f1; display: grid; place-items: center; font-size: 7px; font-weight: 850; }
+.staffing-range-schools article strong { grid-column: 2; grid-row: 1; min-width: 0; color: var(--text); font-size: 8px; line-height: 1.25; overflow-wrap: anywhere; }
+.staffing-range-schools article small { grid-column: 2; grid-row: 2; color: var(--muted); font-size: 7px; line-height: 1.2; }
+.staffing-range-schools article b { grid-column: 3; grid-row: 1 / 3; min-width: 22px; color: var(--red); font-size: 9px; text-align: right; }
 .staffing-range-schools > p { margin: 4px 0; color: var(--muted); font-size: 8px; }
 .staffing-comparison-results { padding: 0 12px 12px; display: grid; gap: 10px; }
 .staffing-comparison-results > section { overflow: hidden; border: 1px solid var(--line); border-radius: 11px; background: white; }
