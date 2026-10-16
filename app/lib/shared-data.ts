@@ -1304,7 +1304,7 @@ export function parseAvailabilityCsv(value: string): AvailabilityRow[] {
         firstName: valueAt(row, firstNameIndex),
         grade: valueAt(row, gradeIndex),
         phone: valueAt(row, phoneIndex),
-        date: valueAt(row, dateIndex),
+        date,
         school: valueAt(row, schoolIndex),
         className: valueAt(row, classIndex),
         timeSlot: valueAt(row, timeSlotIndex),
@@ -1531,7 +1531,10 @@ export function parseUpcomingSessionsCsv(value: string) {
     }
     const sessionId = valueAt(row, sessionIdIndex).trim();
     if (!sessionId) return;
-    const existing = sessions.get(sessionId) ?? {
+    const rawDate = valueAt(row, dateIndex).trim();
+    const date = normalizeStaffingAuditDate(rawDate) || rawDate;
+    const sessionKey = `${date}::${sessionId}`;
+    const existing = sessions.get(sessionKey) ?? {
       sessionId,
       sourceRowCount: 0,
       schoolId,
@@ -1566,7 +1569,7 @@ export function parseUpcomingSessionsCsv(value: string) {
     if (studentId) existing.studentIds.add(studentId);
     if (className) existing.classSet.add(className);
     existing.declaredStudentCount = Math.max(existing.declaredStudentCount, Math.round(Number(valueAt(row, declaredStudentCountIndex).replace(",", ".")) || 0));
-    sessions.set(sessionId, existing);
+    sessions.set(sessionKey, existing);
   });
 
   const rows = Array.from(sessions.values())
