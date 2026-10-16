@@ -278,10 +278,10 @@ export default function StaffingEvolution() {
       const knownTutor = (item: UpcomingSessionTutor) => item.tutorId && !item.tutorId.startsWith("inconnu-");
       const sameTutor = (left: UpcomingSessionTutor, right: UpcomingSessionTutor) => {
         if (left.tutorId === right.tutorId) return true;
+        if (!auditComparison && !actualReports) return false;
         const leftPhone = phoneKey(left.phone);
         const rightPhone = phoneKey(right.phone);
         if (leftPhone && rightPhone) return leftPhone === rightPhone;
-        if (!auditComparison && !actualReports) return false;
         const leftName = normalize(tutorName(left));
         const rightName = normalize(tutorName(right));
         return Boolean(leftName && leftName === rightName);
