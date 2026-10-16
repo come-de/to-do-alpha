@@ -372,7 +372,10 @@ export default function StaffingAudit() {
           if (view === "draft") updateDraftSession(session.sessionId, { comment: value });
           else setCommentDrafts((current) => ({ ...current, [commentKey]: value }));
         }} disabled={saving} /></label>
-        {commentPending ? <button type="button" className="button quiet staffing-audit-save-comment" onClick={() => void saveSessionComment(session, commentKey)} disabled={saving}>Enregistrer le commentaire</button> : <button type="button" className="ghost-button staffing-audit-ignore" onClick={() => changeSession(session, { treated: !session.treated })} disabled={saving}>{session.treated ? "Reconsidérer comme non staffée" : "Ne pas considérer comme non staffée"}</button>}
+        <div className="staffing-audit-actions">
+          {commentPending ? <button type="button" className="button quiet staffing-audit-save-comment" onClick={() => void saveSessionComment(session, commentKey)} disabled={saving}>Enregistrer le commentaire</button> : null}
+          <button type="button" className="ghost-button staffing-audit-ignore" onClick={() => changeSession(session, { treated: !session.treated })} disabled={saving}>{session.treated ? "Reconsidérer comme non staffée" : "Ne pas considérer comme non staffée"}</button>
+        </div>
       </> : null}
     </article>;
   }
