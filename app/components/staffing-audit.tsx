@@ -229,7 +229,8 @@ export default function StaffingAudit() {
   }, [categoryFilter, effectiveAnalysisEndDate, effectiveAnalysisStartDate, excludedSchoolKeys, savedDays, tutorTypeById, tutorTypeSnapshot]);
   const dailyChart = useMemo(() => {
     const width = Math.max(720, rangeAnalysis.daily.length * 74 + 72);
-    const plotLeft = 142;
+    const labelWidth = 142;
+    const plotLeft = 30;
     const plotRight = width - 18;
     const plotTop = 20;
     const plotBottom = 156;
@@ -245,6 +246,7 @@ export default function StaffingAudit() {
     return {
       width,
       height: 438,
+      labelWidth,
       plotLeft,
       plotRight,
       plotTop,
@@ -394,39 +396,47 @@ export default function StaffingAudit() {
         </div>
         <div className="staffing-daily-chart">
           <div className="staffing-daily-chart-heading"><div><h4>Évolution quotidienne</h4><span>Pourcentage de séances non staffées{tutorTypeSnapshot ? ` · Types selon « ${tutorTypeSnapshot.displayName} »` : " · Import de tuteurs avec la colonne Niveau requis pour classer ST"}</span></div><div className="staffing-daily-chart-legend"><span className="percentage">% non staffé</span><span>Total</span><span>Non staffées</span><span>Tuteurs distincts (ID)</span><span>Séances non-ST</span></div></div>
-          {dailyChart.points.length ? <div className="staffing-daily-chart-scroll"><svg role="img" aria-label="Évolution quotidienne des séances non staffées, des tuteurs distincts, des séances non-ST et des totaux par responsable RH" viewBox={`0 0 ${dailyChart.width} ${dailyChart.height}`} style={{ minWidth: `${dailyChart.width}px` }}>
-            <defs><linearGradient id="staffing-daily-line" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#f472b6" /><stop offset="1" stopColor="#be185d" /></linearGradient><linearGradient id="staffing-daily-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#f472b6" stopOpacity=".22" /><stop offset="1" stopColor="#f472b6" stopOpacity=".02" /></linearGradient></defs>
-            {Array.from({ length: 5 }, (_, index) => {
-              const percentage = (dailyChart.maximumPercentage / 4) * (4 - index);
-              const y = dailyChart.plotTop + (index / 4) * (dailyChart.plotBottom - dailyChart.plotTop);
-              return <g key={index}><line className="grid-line" x1={dailyChart.plotLeft} x2={dailyChart.plotRight} y1={y} y2={y} /><text className="axis-label y" x={dailyChart.plotLeft - 8} y={y + 3}>{new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(percentage)} %</text></g>;
-            })}
-            {dailyChart.points.length > 1 ? <polygon className="daily-area" points={`${dailyChart.points[0].x},${dailyChart.plotBottom} ${dailyChart.polyline} ${dailyChart.points[dailyChart.points.length - 1].x},${dailyChart.plotBottom}`} /> : null}
-            {dailyChart.points.length > 1 ? <polyline className="daily-line" points={dailyChart.polyline} /> : null}
-            {dailyChart.points.map((point) => <g className="daily-point" key={point.date}>
-              <line className="day-guide" x1={point.x} x2={point.x} y1={dailyChart.plotBottom} y2={dailyChart.height - 12} />
-              <circle cx={point.x} cy={point.y} r="5"><title>{`${formatDate(point.date)} : ${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(point.percentage)} % · ${point.unstaffed} non staffées sur ${point.total} · ${point.tutors} tuteur${point.tutors > 1 ? "s" : ""} distinct${point.tutors > 1 ? "s" : ""} par ID · ${point.unidentifiedTutors} référence${point.unidentifiedTutors > 1 ? "s" : ""} sans ID${point.nonStSessions === null ? " · classement ST indisponible" : ` · ${point.nonStSessions} séance${point.nonStSessions > 1 ? "s" : ""} avec non-ST identifié · ${point.unclassifiedTutorSessions} sans classement complet`}`}</title></circle>
-              <text className="point-value" x={point.x} y={Math.max(dailyChart.plotTop + 9, point.y - 9)}>{new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(point.percentage)} %</text>
-              <text className="axis-label date" x={point.x} y={dailyChart.plotBottom + 20}>{formatChartDate(point.date)}</text>
-              <text className="daily-total" x={point.x} y={dailyChart.plotBottom + 43}>{point.total}</text>
-              <text className="daily-unstaffed" x={point.x} y={dailyChart.plotBottom + 64}>{point.unstaffed}</text>
-              <text className="daily-tutors" x={point.x} y={dailyChart.plotBottom + 85}>{point.tutors}</text>
-              <text className="daily-non-st" x={point.x} y={dailyChart.plotBottom + 106}>{point.nonStSessions === null ? "—" : point.nonStSessions}</text>
-              {point.unclassifiedTutorSessions ? <text className="daily-unclassified" x={point.x} y={dailyChart.plotBottom + 123}>+{point.unclassifiedTutorSessions} ?</text> : null}
-              {point.byOwner.map((row, ownerIndex) => <g key={row.owner || "unassigned"}>
-                <text className="daily-owner-total" x={point.x} y={dailyChart.plotBottom + 151 + ownerIndex * 34}>{row.total}</text>
-                <text className="daily-owner-unstaffed" x={point.x} y={dailyChart.plotBottom + 167 + ownerIndex * 34}>{row.unstaffed}</text>
+          {dailyChart.points.length ? <div className="staffing-daily-chart-table" role="img" aria-label="Évolution quotidienne des séances non staffées, des tuteurs distincts, des séances non-ST et des totaux par responsable RH">
+            <svg className="staffing-daily-chart-labels" aria-hidden="true" viewBox={`0 0 ${dailyChart.labelWidth} ${dailyChart.height}`}>
+              {Array.from({ length: 5 }, (_, index) => {
+                const percentage = (dailyChart.maximumPercentage / 4) * (4 - index);
+                const y = dailyChart.plotTop + (index / 4) * (dailyChart.plotBottom - dailyChart.plotTop);
+                return <text className="axis-label y" x={dailyChart.labelWidth - 8} y={y + 3} key={index}>{new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(percentage)} %</text>;
+              })}
+              <text className="daily-row-label" x={dailyChart.labelWidth - 8} y={dailyChart.plotBottom + 43}>Total</text>
+              <text className="daily-row-label unstaffed" x={dailyChart.labelWidth - 8} y={dailyChart.plotBottom + 64}>Non staff.</text>
+              <text className="daily-row-label tutors" x={dailyChart.labelWidth - 8} y={dailyChart.plotBottom + 85}>Tuteurs</text>
+              <text className="daily-row-label non-st" x={dailyChart.labelWidth - 8} y={dailyChart.plotBottom + 106}>Séances non-ST</text>
+              {owners.map((owner, index) => <g key={owner || "unassigned"}>
+                <text className="daily-row-label owner-total" x={dailyChart.labelWidth - 8} y={dailyChart.plotBottom + 151 + index * 34}>{ownerLabels[owner]} · total</text>
+                <text className="daily-row-label owner-unstaffed" x={dailyChart.labelWidth - 8} y={dailyChart.plotBottom + 167 + index * 34}>{ownerLabels[owner]} · non staff.</text>
               </g>)}
-            </g>)}
-            <text className="daily-row-label" x={dailyChart.plotLeft - 8} y={dailyChart.plotBottom + 43}>Total</text>
-            <text className="daily-row-label unstaffed" x={dailyChart.plotLeft - 8} y={dailyChart.plotBottom + 64}>Non staff.</text>
-            <text className="daily-row-label tutors" x={dailyChart.plotLeft - 8} y={dailyChart.plotBottom + 85}>Tuteurs</text>
-            <text className="daily-row-label non-st" x={dailyChart.plotLeft - 8} y={dailyChart.plotBottom + 106}>Séances non-ST</text>
-            {owners.map((owner, index) => <g key={owner || "unassigned"}>
-              <text className="daily-row-label owner-total" x={dailyChart.plotLeft - 8} y={dailyChart.plotBottom + 151 + index * 34}>{ownerLabels[owner]} · total</text>
-              <text className="daily-row-label owner-unstaffed" x={dailyChart.plotLeft - 8} y={dailyChart.plotBottom + 167 + index * 34}>{ownerLabels[owner]} · non staff.</text>
-            </g>)}
-          </svg></div> : <p className="staffing-daily-chart-empty">Aucune journée enregistrée sur cette période.</p>}
+            </svg>
+            <div className="staffing-daily-chart-scroll"><svg viewBox={`0 0 ${dailyChart.width} ${dailyChart.height}`} style={{ minWidth: `${dailyChart.width}px` }}>
+              <defs><linearGradient id="staffing-daily-line" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#f472b6" /><stop offset="1" stopColor="#be185d" /></linearGradient><linearGradient id="staffing-daily-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#f472b6" stopOpacity=".22" /><stop offset="1" stopColor="#f472b6" stopOpacity=".02" /></linearGradient></defs>
+              {Array.from({ length: 5 }, (_, index) => {
+                const y = dailyChart.plotTop + (index / 4) * (dailyChart.plotBottom - dailyChart.plotTop);
+                return <line className="grid-line" x1={dailyChart.plotLeft} x2={dailyChart.plotRight} y1={y} y2={y} key={index} />;
+              })}
+              {dailyChart.points.length > 1 ? <polygon className="daily-area" points={`${dailyChart.points[0].x},${dailyChart.plotBottom} ${dailyChart.polyline} ${dailyChart.points[dailyChart.points.length - 1].x},${dailyChart.plotBottom}`} /> : null}
+              {dailyChart.points.length > 1 ? <polyline className="daily-line" points={dailyChart.polyline} /> : null}
+              {dailyChart.points.map((point) => <g className="daily-point" key={point.date}>
+                <line className="day-guide" x1={point.x} x2={point.x} y1={dailyChart.plotBottom} y2={dailyChart.height - 12} />
+                <circle cx={point.x} cy={point.y} r="5"><title>{`${formatDate(point.date)} : ${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(point.percentage)} % · ${point.unstaffed} non staffées sur ${point.total} · ${point.tutors} tuteur${point.tutors > 1 ? "s" : ""} distinct${point.tutors > 1 ? "s" : ""} par ID · ${point.unidentifiedTutors} référence${point.unidentifiedTutors > 1 ? "s" : ""} sans ID${point.nonStSessions === null ? " · classement ST indisponible" : ` · ${point.nonStSessions} séance${point.nonStSessions > 1 ? "s" : ""} avec non-ST identifié · ${point.unclassifiedTutorSessions} sans classement complet`}`}</title></circle>
+                <text className="point-value" x={point.x} y={Math.max(dailyChart.plotTop + 9, point.y - 9)}>{new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(point.percentage)} %</text>
+                <text className="axis-label date" x={point.x} y={dailyChart.plotBottom + 20}>{formatChartDate(point.date)}</text>
+                <text className="daily-total" x={point.x} y={dailyChart.plotBottom + 43}>{point.total}</text>
+                <text className="daily-unstaffed" x={point.x} y={dailyChart.plotBottom + 64}>{point.unstaffed}</text>
+                <text className="daily-tutors" x={point.x} y={dailyChart.plotBottom + 85}>{point.tutors}</text>
+                <text className="daily-non-st" x={point.x} y={dailyChart.plotBottom + 106}>{point.nonStSessions === null ? "—" : point.nonStSessions}</text>
+                {point.unclassifiedTutorSessions ? <text className="daily-unclassified" x={point.x} y={dailyChart.plotBottom + 123}>+{point.unclassifiedTutorSessions} ?</text> : null}
+                {point.byOwner.map((row, ownerIndex) => <g key={row.owner || "unassigned"}>
+                  <text className="daily-owner-total" x={point.x} y={dailyChart.plotBottom + 151 + ownerIndex * 34}>{row.total}</text>
+                  <text className="daily-owner-unstaffed" x={point.x} y={dailyChart.plotBottom + 167 + ownerIndex * 34}>{row.unstaffed}</text>
+                </g>)}
+              </g>)}
+            </svg></div>
+          </div> : <p className="staffing-daily-chart-empty">Aucune journée enregistrée sur cette période.</p>}
           {tutorTypeSnapshot ? <p className="staffing-daily-chart-note">Les « +N ? » sont les séances sans classement complet : aucun tuteur non-ST n’a pu être confirmé par ID et niveau dans l’import.</p> : null}
         </div>
         <div className="staffing-range-layout">
