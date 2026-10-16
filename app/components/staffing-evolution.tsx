@@ -201,8 +201,16 @@ export default function StaffingEvolution() {
   }, [loadedImports, recentId, referenceId]);
 
   const reportData = useMemo(() => actualReportCsv ? parseReportCsv(actualReportCsv, tutorRecords) : null, [actualReportCsv, tutorRecords]);
-  const actualReports = useMemo<UpcomingSessionImport | null>(() => reportData ? ({ id: "actual-reports", importedAt: new Date().toISOString(), displayName: actualReportFileName || "Rapports réels", fileName: actualReportFileName || "rapports.csv", sourceRowCount: reportData.rowCount, sourceSessionCount: reportData.sessions.length, schools: [], schoolStaffing: [], staffingSessions: reportData.sessions, rows: [], createdAt: new Date().toISOString() }) : null, [actualReportFileName, reportData]);
   const reference = loadedImports[referenceId] ?? null;
+  const actualReports = useMemo<UpcomingSessionImport | null>(() => {
+    if (!reportData) return null;
+    const plannedByKey = new Map((reference?.staffingSessions ?? []).map((session) => [sessionKey(session), session]));
+    const staffingSessions = reportData.sessions.map((session) => {
+      const planned = plannedByKey.get(sessionKey(session));
+      return { ...session, schoolId: planned?.schoolId || "", category: planned?.category || "", startTime: planned?.startTime || "", endTime: planned?.endTime || "", group: planned?.group || "" };
+    });
+    return { id: "actual-reports", importedAt: new Date().toISOString(), displayName: actualReportFileName || "Rapports réels", fileName: actualReportFileName || "rapports.csv", sourceRowCount: reportData.rowCount, sourceSessionCount: staffingSessions.length, schools: [], schoolStaffing: [], staffingSessions, rows: [], createdAt: new Date().toISOString() };
+  }, [actualReportFileName, reference, reportData]);
   const recent = actualReports ?? loadedImports[recentId] ?? null;
   const dates = useMemo(() => {
     const plannedDates = new Set((reference?.staffingSessions ?? []).map((row) => row.date).filter(Boolean));
@@ -213,7 +221,12 @@ export default function StaffingEvolution() {
   const activeStartDate = dates.includes(startDate) ? startDate : dates[0] || "";
   const activeEndDate = dates.includes(endDate) ? endDate : dates.at(-1) || activeStartDate;
   const schoolByName = useMemo(() => new Map(schools.map((school) => [normalize(school.name), school])), [schools]);
-  const schoolFor = useCallback((session: UpcomingStaffingSession) => schools.find((school) => session.schoolId && school.externalId === session.schoolId) || schoolByName.get(normalize(session.school)), [schoolByName, schools]);
+  const schoolFor = useCallback((session: UpcomingStaffingSession) => {
+    const byId = schools.find((school) => session.schoolId && school.externalId === session.schoolId);
+    if (byId) return byId;
+    const names = [session.school, ...session.school.split(" - ")].map(normalize);
+    return schools.find((school) => names.includes(normalize(school.name))) || schoolByName.get(normalize(session.school));
+  }, [schoolByName, schools]);
   const ownerFor = useCallback((session: UpcomingStaffingSession): Owner => schoolFor(session)?.portfolioOwner || "", [schoolFor]);
   const hasComparableSnapshots = Boolean(reference?.staffingSessions.length && recent?.staffingSessions.length);
 
