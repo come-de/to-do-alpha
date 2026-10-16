@@ -175,7 +175,7 @@ export default function StaffingEvolution() {
       setImports(nextImports);
       setSchools(schoolsData.schools ?? []);
       setStaffingAuditDays(auditsData.days ?? []);
-      setRecentId((current) => current.startsWith("staffing-audit:") && auditsData.days?.some((day) => current === `staffing-audit:${day.date}`) ? current : nextImports.some((item) => item.id === current) ? current : nextImports[0]?.id || (auditsData.days?.length ? `staffing-audit:${[...(auditsData.days ?? [])].sort((a, b) => b.date.localeCompare(a.date))[0].date}` : ""));
+      setRecentId((current) => current.startsWith("staffing-audit:") && auditsData.days?.some((day) => current === `staffing-audit:${day.date}`) ? current : nextImports.some((item) => item.id === current) ? current : nextImports[0]?.id || (auditsData.days?.length ? `staffing-audit:${[...(auditsData.days ?? [])].sort((a, b) => b.date.localeCompare(a.date))[0]?.date ?? ""}` : ""));
       setReferenceId((current) => nextImports.some((item) => item.id === current) ? current : nextImports[1]?.id || nextImports[0]?.id || "");
       setMessage("");
     } catch (error) {
