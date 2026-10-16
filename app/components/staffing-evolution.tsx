@@ -305,10 +305,10 @@ export default function StaffingEvolution() {
     return {
       owner,
       replacements: searchFilteredChanges.filter((item) => changeOwnerFor(item) === owner && item.kind === "replacements").length,
-      additions: searchFilteredChanges.filter((item) => ownerFor(item.session) === owner && item.kind === "additions").length,
-      removals: searchFilteredChanges.filter((item) => ownerFor(item.session) === owner && item.kind === "removals").length,
-      appeared: searchFilteredChanges.filter((item) => ownerFor(item.session) === owner && item.kind === "appeared").length,
-      disappeared: searchFilteredChanges.filter((item) => ownerFor(item.session) === owner && item.kind === "disappeared").length,
+      additions: searchFilteredChanges.filter((item) => changeOwnerFor(item) === owner && item.kind === "additions").length,
+      removals: searchFilteredChanges.filter((item) => changeOwnerFor(item) === owner && item.kind === "removals").length,
+      appeared: searchFilteredChanges.filter((item) => changeOwnerFor(item) === owner && item.kind === "appeared").length,
+      disappeared: searchFilteredChanges.filter((item) => changeOwnerFor(item) === owner && item.kind === "disappeared").length,
       totalSessions: ownerSessions.length,
       unstaffedSessions: ownerSessions.filter((session) => session.unstaffed).length,
     };
