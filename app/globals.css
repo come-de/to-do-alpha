@@ -740,7 +740,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .staffing-daily-chart-legend span:nth-child(3)::before { background: #f472b6; }
 .staffing-daily-chart-legend span:nth-child(4)::before { background: #0f766e; }
 .staffing-daily-chart-legend span:last-child::before { background: #c2410c; }
-.staffing-daily-chart-scroll { overflow-x: auto; overflow-y: hidden; padding: 0 4px 2px; }
+.staffing-daily-chart-table { width: 100%; min-width: 0; display: flex; align-items: flex-start; }
+.staffing-daily-chart .staffing-daily-chart-labels { flex: 0 0 142px; width: 142px; min-width: 142px; height: 438px; background: white; }
+.staffing-daily-chart-scroll { flex: 1 1 auto; min-width: 0; overflow-x: auto; overflow-y: hidden; padding: 0 4px 2px; }
 .staffing-daily-chart svg { width: 100%; height: 438px; display: block; }
 .staffing-daily-chart .grid-line { stroke: rgba(213,231,239,.9); stroke-width: 1; }
 .staffing-daily-chart .day-guide { stroke: rgba(213,231,239,.55); stroke-width: 1; }
