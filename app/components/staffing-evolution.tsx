@@ -204,7 +204,8 @@ export default function StaffingEvolution() {
   const reference = loadedImports[referenceId] ?? null;
   const actualReports = useMemo<UpcomingSessionImport | null>(() => {
     if (!reportData) return null;
-    const plannedByKey = new Map((reference?.staffingSessions ?? []).map((session) => [sessionKey(session), session]));
+    const plannedByKey = new Map<string, UpcomingStaffingSession>();
+    (reference?.staffingSessions ?? []).forEach((session) => plannedByKey.set(sessionKey(session), session));
     const staffingSessions = reportData.sessions.map((session) => {
       const planned = plannedByKey.get(sessionKey(session));
       return { ...session, schoolId: planned?.schoolId || "", category: planned?.category || "", startTime: planned?.startTime || "", endTime: planned?.endTime || "", group: planned?.group || "" };
@@ -233,8 +234,10 @@ export default function StaffingEvolution() {
   const changes = useMemo(() => {
     if (!reference || !recent || (actualReports && !dates.length)) return [];
     const inRange = (date: string) => (!activeStartDate || date >= activeStartDate) && (!activeEndDate || date <= activeEndDate);
-    const beforeSessions = new Map(reference.staffingSessions.filter((item) => inRange(item.date)).map((item) => [sessionKey(item), item]));
-    const afterSessions = new Map(recent.staffingSessions.filter((item) => inRange(item.date)).map((item) => [sessionKey(item), item]));
+    const beforeSessions = new Map<string, UpcomingStaffingSession>();
+    reference.staffingSessions.filter((item) => inRange(item.date)).forEach((item) => beforeSessions.set(sessionKey(item), item));
+    const afterSessions = new Map<string, UpcomingStaffingSession>();
+    recent.staffingSessions.filter((item) => inRange(item.date)).forEach((item) => afterSessions.set(sessionKey(item), item));
     const items: SessionChange[] = [];
     new Set([...beforeSessions.keys(), ...afterSessions.keys()]).forEach((sessionId) => {
       const beforeSession = beforeSessions.get(sessionId);
