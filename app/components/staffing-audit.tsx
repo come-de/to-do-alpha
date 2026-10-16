@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { SchoolPortfolioOwner, StaffingAuditDay, StaffingAuditResolution, StaffingAuditSession, StaffingAuditSessionCategory, TutorTrackingSnapshot } from "@/app/lib/shared-data";
+import { STAFFING_AUDIT_UNSTAFFED_REASONS, type SchoolPortfolioOwner, type StaffingAuditDay, type StaffingAuditResolution, type StaffingAuditSession, type StaffingAuditSessionCategory, type TutorTrackingSnapshot, type StaffingAuditUnstaffedReason } from "@/app/lib/shared-data";
 
 const ownerLabels: Record<SchoolPortfolioOwner, string> = { "": "Non attribué", kelly: "Kelly", pierre: "Pierre", julie: "Julie" };
 const owners: SchoolPortfolioOwner[] = ["kelly", "pierre", "julie", ""];
@@ -67,6 +67,7 @@ export default function StaffingAudit() {
   const [excludedSchoolKeys, setExcludedSchoolKeys] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
 
   const load = useCallback(async (silent = false) => {
     try {
@@ -285,7 +286,7 @@ export default function StaffingAudit() {
     setDraftDays((current) => current.map((day) => day.date === selectedDate ? { ...day, sessions: day.sessions.map((session) => session.sessionId === sessionId ? { ...session, ...changes } : session) } : day));
   }
 
-  async function updateSavedSession(session: StaffingAuditSession, changes: { portfolioOwner?: SchoolPortfolioOwner; resolution?: StaffingAuditResolution; treated?: boolean }) {
+  async function updateSavedSession(session: StaffingAuditSession, changes: { portfolioOwner?: SchoolPortfolioOwner; resolution?: StaffingAuditResolution; treated?: boolean; unstaffedReason?: StaffingAuditUnstaffedReason; comment?: string }) {
     setSaving(true);
     try {
       const response = await fetch("/api/staffing-audits", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ date: selectedDate, sessionId: session.sessionId, ...changes }) });
@@ -293,16 +294,33 @@ export default function StaffingAudit() {
       if (!response.ok) throw new Error(data.detail || data.error || "Modification impossible");
       setSavedDays(data.days ?? savedDays);
       setMessage("Bilan mis à jour");
+      return true;
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Modification impossible");
+      return false;
     } finally {
       setSaving(false);
     }
   }
 
-  function changeSession(session: StaffingAuditSession, changes: { portfolioOwner?: SchoolPortfolioOwner; resolution?: StaffingAuditResolution; treated?: boolean }) {
+  function changeSession(session: StaffingAuditSession, changes: { portfolioOwner?: SchoolPortfolioOwner; resolution?: StaffingAuditResolution; treated?: boolean; unstaffedReason?: StaffingAuditUnstaffedReason; comment?: string }) {
     if (view === "draft") updateDraftSession(session.sessionId, changes);
     else void updateSavedSession(session, changes);
+  }
+
+  async function saveSessionComment(session: StaffingAuditSession, key: string) {
+    const comment = commentDrafts[key] ?? session.comment;
+    if (view === "draft") {
+      updateDraftSession(session.sessionId, { comment });
+      return;
+    }
+    if (await updateSavedSession(session, { comment })) {
+      setCommentDrafts((current) => {
+        const next = { ...current };
+        delete next[key];
+        return next;
+      });
+    }
   }
 
   async function saveDay() {
@@ -331,7 +349,10 @@ export default function StaffingAudit() {
     const sourceRowsLabel = session.sourceRowCount === null
       ? "Nombre de lignes non disponible"
       : `${session.sourceRowCount} ligne${session.sourceRowCount > 1 ? "s" : ""} dans le fichier`;
-    return <article className={`staffing-audit-session ${status} ${session.treated ? "treated" : ""}`} key={session.sessionId}>
+    const commentKey = `${selectedDate}::${session.sessionId}`;
+    const commentValue = view === "draft" ? session.comment : commentDrafts[commentKey] ?? session.comment;
+    const commentPending = view === "history" && commentDrafts[commentKey] !== undefined && commentDrafts[commentKey] !== session.comment;
+    return <article className={`staffing-audit-session ${status} ${status === "unstaffed" ? "has-followup-fields" : ""} ${session.treated ? "treated" : ""}`} key={session.sessionId}>
       <div>
         {session.schoolId ? <a className="staffing-audit-session-link" href={`https://www.alphaeducation.fr/administration/schools/${encodeURIComponent(session.schoolId)}/history`} target="_blank" rel="noreferrer" title={`Ouvrir l’historique de l’établissement (ID ${session.schoolId})`}>{sessionLabel}<span aria-hidden="true">↗</span></a> : <strong>{sessionLabel}</strong>}
         <span>{session.school || "Établissement non précisé"}</span>
@@ -341,7 +362,18 @@ export default function StaffingAudit() {
       </div>
       <label>Responsable RH<select value={session.portfolioOwner} onChange={(event) => changeSession(session, { portfolioOwner: event.target.value as SchoolPortfolioOwner })} disabled={saving}>{owners.map((owner) => <option value={owner} key={owner || "unassigned"}>{ownerLabels[owner]}</option>)}</select></label>
       {session.detectedStatus === "ambiguous" ? <label>Classement<select value={session.resolution} onChange={(event) => changeSession(session, { resolution: event.target.value as StaffingAuditResolution })} disabled={saving}><option value="">À vérifier</option><option value="staffed">Staffée</option><option value="unstaffed">Non staffée</option></select></label> : <span className={`staffing-audit-status ${status}`}>{status === "staffed" ? "Staffée" : "Non staffée"}</span>}
-      {status === "unstaffed" ? <button type="button" className="ghost-button staffing-audit-ignore" onClick={() => changeSession(session, { treated: !session.treated })} disabled={saving}>{session.treated ? "Reconsidérer comme non staffée" : "Ne pas considérer comme non staffée"}</button> : null}
+      {status === "unstaffed" ? <>
+        <label>Motif<select value={session.unstaffedReason} onChange={(event) => changeSession(session, { unstaffedReason: event.target.value as StaffingAuditUnstaffedReason })} disabled={saving}>
+          <option value="">À préciser</option>
+          {STAFFING_AUDIT_UNSTAFFED_REASONS.map((reason) => <option value={reason} key={reason}>{reason}</option>)}
+        </select></label>
+        <label className="staffing-audit-comment">Commentaire<textarea value={commentValue} maxLength={2000} placeholder="Ajouter un commentaire…" onChange={(event) => {
+          const value = event.target.value;
+          if (view === "draft") updateDraftSession(session.sessionId, { comment: value });
+          else setCommentDrafts((current) => ({ ...current, [commentKey]: value }));
+        }} disabled={saving} /></label>
+        {commentPending ? <button type="button" className="button quiet staffing-audit-save-comment" onClick={() => void saveSessionComment(session, commentKey)} disabled={saving}>Enregistrer le commentaire</button> : <button type="button" className="ghost-button staffing-audit-ignore" onClick={() => changeSession(session, { treated: !session.treated })} disabled={saving}>{session.treated ? "Reconsidérer comme non staffée" : "Ne pas considérer comme non staffée"}</button>}
+      </> : null}
     </article>;
   }
 
