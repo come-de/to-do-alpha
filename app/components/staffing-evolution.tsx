@@ -196,7 +196,7 @@ export default function StaffingEvolution() {
   }, []);
 
   useEffect(() => {
-    const ids = Array.from(new Set([referenceId, recentId].filter((id) => Boolean(id) && id !== "staffing-audits"))).filter((id) => !loadedImports[id]);
+    const ids = Array.from(new Set([referenceId, recentId].filter((id) => Boolean(id) && !id.startsWith("staffing-audit:")))).filter((id) => !loadedImports[id]);
     if (!ids.length) return;
     let cancelled = false;
     Promise.all(ids.map(async (id) => {
