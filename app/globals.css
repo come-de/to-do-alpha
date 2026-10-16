@@ -2030,3 +2030,21 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
     min-height: 20px;
   }
 }
+
+
+.staffing-evolution-load-more {
+  display: block;
+  width: min(100%, 520px);
+  margin: 14px auto 0;
+  padding: 12px 18px;
+  border: 1px solid #a9d9e9;
+  border-radius: 10px;
+  background: #f1fbff;
+  color: #175673;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.staffing-evolution-load-more:hover {
+  background: #e3f6fc;
+}
