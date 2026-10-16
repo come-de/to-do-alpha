@@ -72,7 +72,7 @@ export async function PATCH(request: Request) {
   try {
     const body = (await request.json()) as { date?: unknown; sessionId?: unknown; portfolioOwner?: unknown; resolution?: unknown; treated?: unknown; unstaffedReason?: unknown; comment?: unknown };
     if (typeof body.date !== "string" || typeof body.sessionId !== "string") return json({ error: "Séance invalide" }, 400);
-    const result = await updateStaffingAuditSession({ date: body.date, sessionId: body.sessionId, portfolioOwner: body.portfolioOwner, resolution: body.resolution, treated: body.treated });
+    const result = await updateStaffingAuditSession({ date: body.date, sessionId: body.sessionId, portfolioOwner: body.portfolioOwner, resolution: body.resolution, treated: body.treated, unstaffedReason: body.unstaffedReason, comment: body.comment });
     const schools = await readSchools();
     return json({ ...result, day: result.day ? enrichStaffingAuditDaysWithSchools([result.day], schools)[0] : undefined, days: enrichStaffingAuditDaysWithSchools(result.days, schools) });
   } catch (error) {
