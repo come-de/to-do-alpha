@@ -281,6 +281,7 @@ export default function StaffingEvolution() {
         const leftPhone = phoneKey(left.phone);
         const rightPhone = phoneKey(right.phone);
         if (leftPhone && rightPhone) return leftPhone === rightPhone;
+        if (!auditComparison && !actualReports) return false;
         const leftName = normalize(tutorName(left));
         const rightName = normalize(tutorName(right));
         return Boolean(leftName && leftName === rightName);
