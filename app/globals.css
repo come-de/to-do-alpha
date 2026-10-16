@@ -697,6 +697,11 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .staffing-audit-category-group-heading span { min-width: 22px; height: 20px; display: grid; place-items: center; border-radius: 999px; background: rgba(255,255,255,.78); font-size: 8px; font-weight: 850; }
 .staffing-audit-category-group .staffing-audit-list { margin: 0; }
 .staffing-audit-session { padding: 7px 8px; border: 1px solid var(--line); border-left: 4px solid var(--red); border-radius: 9px; background: white; display: grid; grid-template-columns: minmax(260px,1fr) minmax(150px,.45fr) minmax(135px,.4fr) auto; align-items: center; gap: 7px; }
+.staffing-audit-session.has-followup-fields { grid-template-columns: minmax(220px,1.1fr) minmax(125px,.55fr) minmax(100px,.4fr) minmax(145px,.55fr) minmax(190px,.8fr) minmax(145px,.5fr); }
+.staffing-audit-session .staffing-audit-comment textarea { width: 100%; min-width: 0; min-height: 48px; padding: 6px 7px; resize: vertical; border: 1px solid var(--line); border-radius: 7px; background: white; color: var(--blue-title); font: inherit; font-size: 9px; font-weight: 500; text-transform: none; }
+.staffing-audit-session .staffing-audit-comment textarea::placeholder { color: var(--muted); }
+.staffing-audit-actions { display: grid; justify-items: stretch; gap: 5px; }
+.staffing-audit-save-comment { padding: 5px 7px; font-size: 8px; white-space: normal; line-height: 1.2; }
 .staffing-audit-session.ambiguous { border-left-color: #f59e0b; background: #fffdf5; }
 .staffing-audit-session.treated { opacity: .78; border-left-color: var(--green); background: var(--green-pale); }
 .staffing-audit-session > div { min-width: 0; }
@@ -1311,6 +1316,9 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .staffing-comparison-summary { grid-template-columns: repeat(4,minmax(0,1fr)); }
   .staffing-comparison-results article { grid-template-columns: minmax(210px,1fr) 1fr 1fr; }
   .staffing-audit-session { grid-template-columns: minmax(210px,1fr) minmax(130px,.5fr) minmax(120px,.45fr); }
+  .staffing-audit-session.has-followup-fields { grid-template-columns: minmax(210px,1fr) minmax(130px,.5fr) minmax(120px,.45fr); }
+  .staffing-audit-session.has-followup-fields .staffing-audit-comment { grid-column: 1 / 3; }
+  .staffing-audit-session.has-followup-fields .staffing-audit-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
   .staffing-audit-session > button { grid-column: 1 / -1; justify-self: end; }
   .files-grid { grid-template-columns: 1fr; }
   .tutor-activity-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1554,7 +1562,9 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .staffing-range-layout { grid-template-columns: 1fr; }
   .staffing-range-rh article { grid-template-columns: minmax(110px,.8fr) minmax(80px,1fr) 42px; }
   .staffing-audit-session { grid-template-columns: 1fr; }
-  .staffing-audit-session > button { grid-column: auto; width: 100%; }
+  .staffing-audit-session.has-followup-fields .staffing-audit-comment { grid-column: auto; }
+  .staffing-audit-session.has-followup-fields .staffing-audit-actions { grid-column: auto; display: grid; }
+  .staffing-audit-session > button, .staffing-audit-actions button { grid-column: auto; width: 100%; }
   .availability-history-list .text-button { grid-column: 1 / -1; justify-self: start; }
   .availability-tabs { padding: 0 8px 8px; }
   .availability-tabs .ghost-button { margin-left: 0; }
