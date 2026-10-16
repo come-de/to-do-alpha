@@ -289,7 +289,25 @@ export default function StaffingEvolution() {
     });
   }, [kindFilter, ownerFilter, ownerFor, searchFilteredChanges]);
 
-  async function uploadReport(file?: File) {\n    if (!file) return;\n    setSaving(true);\n    try {\n      const text = await file.text();\n      const parsed = parseReportCsv(text, tutorRecords);\n      if (!parsed.sessions.length) throw new Error("Aucune séance reconnue. Vérifiez les colonnes Date, Semaine réelle, Numéro tuteur et Etablissement.");\n      setActualReportCsv(text);\n      setActualReportFileName(file.name);\n      if (recentId) setReferenceId(recentId);\n      setMessage(`${parsed.sessions.length} groupes réels sur ${new Set(parsed.sessions.map((session) => session.date)).size} dates chargés${parsed.unmatchedTutorCount ? ` · ${parsed.unmatchedTutorCount} ligne(s) tuteur non rapprochée(s) par téléphone` : ""}${parsed.invalidRows ? ` · ${parsed.invalidRows} ligne(s) ignorée(s)` : ""}`);\n    } catch (error) { setMessage(error instanceof Error ? error.message : "Import des rapports impossible"); }\n    finally { setSaving(false); }\n  }\n\n  async function upload(file?: File) {
+  async function uploadReport(file?: File) {
+    if (!file) return;
+    setSaving(true);
+    try {
+      const text = await file.text();
+      const parsed = parseReportCsv(text, tutorRecords);
+      if (!parsed.sessions.length) throw new Error("Aucune séance reconnue. Vérifiez les colonnes Date, Semaine réelle, Numéro tuteur et Etablissement.");
+      setActualReportCsv(text);
+      setActualReportFileName(file.name);
+      if (recentId) setReferenceId(recentId);
+      setMessage(`${parsed.sessions.length} groupes réels sur ${new Set(parsed.sessions.map((session) => session.date)).size} dates chargés${parsed.unmatchedTutorCount ? ` · ${parsed.unmatchedTutorCount} ligne(s) tuteur non rapprochée(s) par téléphone` : ""}${parsed.invalidRows ? ` · ${parsed.invalidRows} ligne(s) ignorée(s)` : ""}`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Import des rapports impossible");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function upload(file?: File) {
     if (!file) return;
     setSaving(true);
     try {
