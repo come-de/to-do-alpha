@@ -239,7 +239,7 @@ export default function StaffingEvolution() {
   const dates = useMemo(() => {
     const referenceDates = reference?.staffingSessions.map((row) => row.date) ?? [];
     const resultDates = recent?.staffingSessions.map((row) => row.date) ?? [];
-    const values = actualReports && !auditComparison ? referenceDates.filter((date) => resultDates.includes(date)) : [...referenceDates, ...resultDates];
+    const values = referenceDates.filter((date) => resultDates.includes(date));
     return [...new Set(values.filter(Boolean))].sort();
   }, [actualReports, auditComparison, recent, reference]);
   const activeStartDate = dates.includes(startDate) ? startDate : dates[0] || "";
@@ -256,7 +256,7 @@ export default function StaffingEvolution() {
   const changeOwnerFor = useCallback((item: SessionChange): Owner => item.portfolioOwner ?? ownerFor(item.session), [ownerFor]);
 
   const changes = useMemo(() => {
-    if (!reference || !recent || (actualReports && !auditComparison && !dates.length)) return [];
+    if (!reference || !recent || !dates.length) return [];
     const inRange = (date: string) => (!activeStartDate || date >= activeStartDate) && (!activeEndDate || date <= activeEndDate);
     const beforeSessions = new Map<string, UpcomingStaffingSession>();
     reference.staffingSessions.filter((item) => inRange(item.date)).forEach((item) => beforeSessions.set(sessionKey(item), item));
@@ -426,7 +426,7 @@ export default function StaffingEvolution() {
       {countsByOwner.map((row) => <button type="button" className={(ownerFilter === "unassigned" ? !row.owner : ownerFilter === row.owner) ? "active" : ""} onClick={() => setOwnerFilter((current) => current === (row.owner || "unassigned") ? "all" : row.owner || "unassigned")} key={row.owner || "unassigned"}><strong>{ownerLabels[row.owner]}</strong><span>{row.totalSessions}</span><span>{row.unstaffedSessions}</span><span>{row.additions}</span><span>{row.replacements}</span><span>{row.removals}</span><span>{row.appeared}</span><span>{row.disappeared}</span></button>)}
     </div>
     <div className="staffing-evolution-list-heading"><div><strong>{filtered.length} évolution{filtered.length > 1 ? "s" : ""}</strong><span>{activeStartDate && activeEndDate ? `Du ${fullDate(activeStartDate)} au ${fullDate(activeEndDate)}` : "Toutes les dates des deux exports"}{ownerFilter !== "all" ? ` · ${ownerFilter === "unassigned" ? ownerLabels[""] : ownerLabels[ownerFilter]}` : ""}</span></div><button type="button" className="ghost-button" onClick={exportCsv} disabled={!filtered.length}>Export CSV</button></div>
-    {!reference || !recent ? <div className="empty-state compact">{!reference ? "Importez un export Semaines à venir comme référence." : imports.length < 2 && !actualReports ? "Importez un second export ou un fichier de rapports réels pour commencer." : "Chargement des fichiers…"}</div> : !hasComparableSnapshots ? <div className="empty-state compact"><h3>Réimport nécessaire</h3><p>Les anciens imports restent disponibles pour les séances non affectées, mais ne contiennent pas les noms et ID des tuteurs staffés.</p></div> : filtered.length ? <div className="staffing-evolution-results">{groupedFilteredChanges.map(({ kind, items }) => <section className="staffing-evolution-group" key={kind}><h3 className="staffing-evolution-group-heading">{kindLabels[kind]} <span>{items.length}</span></h3><div className="staffing-evolution-kind-items">{items.map((item, index) => {
+    {!reference || !recent ? <div className="empty-state compact">{!reference ? "Importez un export Semaines à venir comme référence." : imports.length < 2 && !actualReports ? "Importez un second export ou un fichier de rapports réels pour commencer." : "Chargement des fichiers…"}</div> : !hasComparableSnapshots ? <div className="empty-state compact"><h3>Réimport nécessaire</h3><p>Les anciens imports restent disponibles pour les séances non affectées, mais ne contiennent pas les noms et ID des tuteurs staffés.</p></div> : !dates.length ? <div className="empty-state compact"><h3>Aucune date en commun</h3><p>Les deux sources ne couvrent pas les mêmes jours. Aucune séance n’est classée comme apparue ou disparue.</p></div> : filtered.length ? <div className="staffing-evolution-results">{groupedFilteredChanges.map(({ kind, items }) => <section className="staffing-evolution-group" key={kind}><h3 className="staffing-evolution-group-heading">{kindLabels[kind]} <span>{items.length}</span></h3><div className="staffing-evolution-kind-items">{items.map((item, index) => {
       const school = schoolFor(item.session);
       const renderTutors = (rows: UpcomingSessionTutor[]) => rows.length ? rows.map((row) => <span key={`${row.tutorId}-${row.phone}`}>{row.tutorId.startsWith("inconnu-") ? tutorName(row) : <PersonAdminLink personId={row.tutorId} status="tutor">{tutorName(row)}</PersonAdminLink>}<small>{row.tutorId.startsWith("inconnu-") ? "ID non rapproché" : `#${row.tutorId}`}{row.phone ? ` · ${row.phone}` : ""}</small></span>) : <em>Aucun tuteur</em>;
       return <article className={`staffing-evolution-card ${item.kind}`} key={`${item.kind}-${item.session.sessionId}-${index}`}>
