@@ -9,8 +9,9 @@ type Owner = "" | "kelly" | "pierre" | "julie";
 type OwnerFilter = "all" | "unassigned" | Exclude<Owner, "">;
 type ChangeKind = "replacements" | "additions" | "removals" | "appeared" | "disappeared" | "unstaffed";
 type SchoolRecord = { externalId: string; name: string; portfolioOwner: Owner };
-type SessionChange = { kind: ChangeKind; session: UpcomingStaffingSession; before: UpcomingSessionTutor[]; after: UpcomingSessionTutor[]; beforeSourceRowCount: number; afterSourceRowCount: number; portfolioOwner?: Owner };
-type AuditSession = { sessionId: string; date: string; school: string; schoolId: string; category: string; sourceRowCount: number | null; portfolioOwner: Owner; detectedStatus: string; resolution: string; treated: boolean };
+type ComparableSession = UpcomingStaffingSession & { portfolioOwner?: Owner; staffingStatus?: string; treated?: boolean };
+type SessionChange = { kind: ChangeKind; session: ComparableSession; before: UpcomingSessionTutor[]; after: UpcomingSessionTutor[]; beforeSourceRowCount: number; afterSourceRowCount: number; portfolioOwner?: Owner };
+type AuditSession = { sessionId: string; date: string; school: string; schoolId: string; category: string; sourceRowCount: number | null; portfolioOwner: Owner; detectedStatus: string; resolution: string; treated: boolean; tutors: { tutorId: string; name: string; phone: string }[] };
 type AuditDay = { date: string; sessions: AuditSession[] };
 
 const ownerLabels: Record<Owner, string> = { "": "Non attribué", kelly: "Kelly", pierre: "Pierre", julie: "Julie" };
@@ -105,7 +106,7 @@ function parseReportCsv(value: string, tutorRecords: TutorTrackingRecord[]) {
   };
 }
 
-function sessionKey(session: UpcomingStaffingSession) {
+function sessionKey(session: ComparableSession) {
   return `${session.date}::${session.sessionId}`;
 }
 
@@ -174,7 +175,7 @@ export default function StaffingEvolution() {
       setImports(nextImports);
       setSchools(schoolsData.schools ?? []);
       setStaffingAuditDays(auditsData.days ?? []);
-      setRecentId((current) => nextImports.some((item) => item.id === current) ? current : nextImports[0]?.id || "");
+      setRecentId((current) => current === "staffing-audits" && auditsData.days?.length ? current : nextImports.some((item) => item.id === current) ? current : nextImports[0]?.id || (auditsData.days?.length ? "staffing-audits" : ""));
       setReferenceId((current) => nextImports.some((item) => item.id === current) ? current : nextImports[1]?.id || nextImports[0]?.id || "");
       setMessage("");
     } catch (error) {
@@ -195,7 +196,7 @@ export default function StaffingEvolution() {
   }, []);
 
   useEffect(() => {
-    const ids = Array.from(new Set([referenceId, recentId].filter(Boolean))).filter((id) => !loadedImports[id]);
+    const ids = Array.from(new Set([referenceId, recentId].filter((id) => Boolean(id) && id !== "staffing-audits"))).filter((id) => !loadedImports[id]);
     if (!ids.length) return;
     let cancelled = false;
     Promise.all(ids.map(async (id) => {
@@ -213,7 +214,7 @@ export default function StaffingEvolution() {
   const reference = loadedImports[referenceId] ?? null;
   const actualReports = useMemo<UpcomingSessionImport | null>(() => {
     if (!reportData) return null;
-    const plannedByKey = new Map<string, UpcomingStaffingSession>();
+    const plannedByKey = new Map<string, ComparableSession>();
     (reference?.staffingSessions ?? []).forEach((session) => plannedByKey.set(sessionKey(session), session));
     const staffingSessions = reportData.sessions.map((session) => {
       const planned = plannedByKey.get(sessionKey(session));
@@ -221,13 +222,25 @@ export default function StaffingEvolution() {
     });
     return { id: "actual-reports", importedAt: new Date().toISOString(), displayName: actualReportFileName || "Rapports réels", fileName: actualReportFileName || "rapports.csv", sourceRowCount: reportData.rowCount, sourceSessionCount: staffingSessions.length, schools: [], schoolStaffing: [], staffingSessions, rows: [], createdAt: new Date().toISOString() };
   }, [actualReportFileName, reference, reportData]);
-  const recent = actualReports ?? loadedImports[recentId] ?? null;
+  const auditSnapshot = useMemo<UpcomingSessionImport | null>(() => {
+    const staffingSessions = staffingAuditDays.flatMap((day) => day.sessions.map((session): ComparableSession => ({
+      sessionId: session.sessionId, sourceRowCount: session.sourceRowCount ?? 0, schoolId: session.schoolId, school: session.school,
+      category: session.category, date: session.date || day.date, startTime: "", endTime: "", group: "",
+      portfolioOwner: session.portfolioOwner, staffingStatus: session.resolution || session.detectedStatus, treated: session.treated,
+      tutors: session.tutors.map((tutor) => ({ tutorId: tutor.tutorId, firstName: tutor.name, lastName: "", phone: tutor.phone })),
+    })));
+    if (!staffingSessions.length) return null;
+    const lastUpdated = staffingAuditDays.map((day) => day.updatedAt).sort().at(-1) || new Date().toISOString();
+    return { id: "staffing-audits", importedAt: lastUpdated, displayName: "Bilans staffing enregistrés", fileName: "bilans-staffing", sourceRowCount: staffingAuditDays.reduce((sum, day) => sum + day.sourceRowCount, 0), sourceSessionCount: staffingSessions.length, schools: [], schoolStaffing: [], staffingSessions, rows: [], createdAt: lastUpdated };
+  }, [staffingAuditDays]);
+  const auditComparison = recentId === "staffing-audits";
+  const recent = auditComparison ? auditSnapshot : actualReports ?? loadedImports[recentId] ?? null;
   const dates = useMemo(() => {
-    const plannedDates = new Set((reference?.staffingSessions ?? []).map((row) => row.date).filter(Boolean));
-    const resultDates = new Set((recent?.staffingSessions ?? []).map((row) => row.date).filter(Boolean));
-    const values = actualReports ? [...plannedDates].filter((date) => resultDates.has(date)) : [...new Set([...plannedDates, ...resultDates])];
-    return values.sort();
-  }, [actualReports, recent, reference]);
+    const referenceDates = reference?.staffingSessions.map((row) => row.date) ?? [];
+    const resultDates = recent?.staffingSessions.map((row) => row.date) ?? [];
+    const values = actualReports && !auditComparison ? referenceDates.filter((date) => resultDates.includes(date)) : [...referenceDates, ...resultDates];
+    return [...new Set(values.filter(Boolean))].sort();
+  }, [actualReports, auditComparison, recent, reference]);
   const activeStartDate = dates.includes(startDate) ? startDate : dates[0] || "";
   const activeEndDate = dates.includes(endDate) ? endDate : dates.at(-1) || activeStartDate;
   const schoolByName = useMemo(() => new Map(schools.map((school) => [normalize(school.name), school])), [schools]);
@@ -237,12 +250,12 @@ export default function StaffingEvolution() {
     const names = [session.school, ...session.school.split(" - ")].map(normalize);
     return schools.find((school) => names.includes(normalize(school.name))) || schoolByName.get(normalize(session.school));
   }, [schoolByName, schools]);
-  const ownerFor = useCallback((session: UpcomingStaffingSession): Owner => schoolFor(session)?.portfolioOwner || "", [schoolFor]);
+  const ownerFor = useCallback((session: ComparableSession): Owner => session.portfolioOwner ?? schoolFor(session)?.portfolioOwner ?? "", [schoolFor]);
   const hasComparableSnapshots = Boolean(reference?.staffingSessions.length && recent?.staffingSessions.length);
   const changeOwnerFor = useCallback((item: SessionChange): Owner => item.portfolioOwner ?? ownerFor(item.session), [ownerFor]);
 
   const changes = useMemo(() => {
-    if (!reference || !recent || (actualReports && !dates.length)) return [];
+    if (!reference || !recent || (actualReports && !auditComparison && !dates.length)) return [];
     const inRange = (date: string) => (!activeStartDate || date >= activeStartDate) && (!activeEndDate || date <= activeEndDate);
     const beforeSessions = new Map<string, UpcomingStaffingSession>();
     reference.staffingSessions.filter((item) => inRange(item.date)).forEach((item) => beforeSessions.set(sessionKey(item), item));
@@ -273,26 +286,16 @@ export default function StaffingEvolution() {
       }
     });
     return items.sort((a, b) => `${a.session.date} ${a.session.startTime} ${a.session.school}`.localeCompare(`${b.session.date} ${b.session.startTime} ${b.session.school}`, "fr"));
-  }, [activeEndDate, activeStartDate, actualReports, dates, recent, reference]);
+  }, [activeEndDate, activeStartDate, actualReports, auditComparison, dates, recent, reference]);
 
   const recentSessionsInRange = useMemo(() => {
     const inRange = (date: string) => (!activeStartDate || date >= activeStartDate) && (!activeEndDate || date <= activeEndDate);
     return (recent?.staffingSessions ?? []).filter((session) => inRange(session.date));
   }, [activeEndDate, activeStartDate, recent]);
 
-  const auditDaysInRange = useMemo(() => staffingAuditDays.filter((day) => (!activeStartDate || day.date >= activeStartDate) && (!activeEndDate || day.date <= activeEndDate)), [activeEndDate, activeStartDate, staffingAuditDays]);
-  const auditedDates = useMemo(() => new Set(auditDaysInRange.map((day) => day.date)), [auditDaysInRange]);
-  const auditSessions = useMemo(() => auditDaysInRange.flatMap((day) => day.sessions.map((session) => ({ session, dayDate: day.date }))), [auditDaysInRange]);
-  const metricSessions = useMemo(() => {
-    const fromAudits = auditSessions.map(({ session, dayDate }) => ({ owner: session.portfolioOwner, unstaffed: (session.resolution || session.detectedStatus) === "unstaffed" && !session.treated, date: dayDate }));
-    const fromReports = actualReports ? recentSessionsInRange.filter((session) => !auditedDates.has(session.date)).map((session) => ({ owner: ownerFor(session), unstaffed: session.tutors.length === 0, date: session.date })) : [];
-    return [...fromAudits, ...(fromReports ?? [])];
-  }, [actualReports, auditSessions, auditedDates, ownerFor, recentSessionsInRange]);
-  const unstaffedChanges = useMemo<SessionChange[]>(() => {
-    const fromAudits = auditSessions.filter(({ session }) => (session.resolution || session.detectedStatus) === "unstaffed" && !session.treated).map(({ session }) => ({ kind: "unstaffed" as const, session: { sessionId: session.sessionId, sourceRowCount: session.sourceRowCount ?? 0, schoolId: session.schoolId, school: session.school, category: session.category, date: session.date, startTime: "", endTime: "", group: "", tutors: [] }, before: [], after: [], beforeSourceRowCount: 0, afterSourceRowCount: session.sourceRowCount ?? 0, portfolioOwner: session.portfolioOwner }));
-    const fromReports = actualReports ? recentSessionsInRange.filter((session) => !auditedDates.has(session.date) && session.tutors.length === 0).map((session) => ({ kind: "unstaffed" as const, session, before: [], after: [], beforeSourceRowCount: 0, afterSourceRowCount: session.sourceRowCount, portfolioOwner: ownerFor(session) })) : [];
-    return [...fromAudits, ...(fromReports ?? [])].sort((a, b) => `${a.session.date} ${a.session.school}`.localeCompare(`${b.session.date} ${b.session.school}`, "fr"));
-  }, [actualReports, auditSessions, auditedDates, ownerFor, recentSessionsInRange]);
+  const isUnstaffedSession = useCallback((session: ComparableSession) => session.staffingStatus ? session.staffingStatus === "unstaffed" && !session.treated : session.tutors.length === 0, []);
+  const metricSessions = useMemo(() => recentSessionsInRange.map((session) => ({ owner: ownerFor(session), unstaffed: isUnstaffedSession(session) })), [isUnstaffedSession, ownerFor, recentSessionsInRange]);
+  const unstaffedChanges = useMemo<SessionChange[]>(() => recentSessionsInRange.filter(isUnstaffedSession).map((session) => ({ kind: "unstaffed", session, before: [], after: [], beforeSourceRowCount: 0, afterSourceRowCount: session.sourceRowCount, portfolioOwner: ownerFor(session) })).sort((a, b) => `${a.session.date} ${a.session.school}`.localeCompare(`${b.session.date} ${b.session.school}`, "fr")), [isUnstaffedSession, ownerFor, recentSessionsInRange]);
   const searchFilteredChanges = useMemo(() => {
     const allChanges = [...changes, ...unstaffedChanges];
     const normalizedQuery = normalize(query);
@@ -380,23 +383,23 @@ export default function StaffingEvolution() {
 
   return <section className="task-panel staffing-evolution">
     <div className="panel-heading">
-      <div><p className="eyebrow">Comparaison staffing</p><h2>Évolution staffing</h2><p>Comparez deux exports prévisionnels ou les affectations prévues aux séances réalisées dans les rapports.</p></div>
+      <div><p className="eyebrow">Comparaison staffing</p><h2>Évolution staffing</h2><p>Comparez deux semaines à venir enregistrées, ou une semaine avec les rapports déjà sauvegardés dans « Bilans staffing ».</p></div>
       <div className="filters"><label className="import-button">Importer Semaines à venir<input type="file" accept=".csv,text/csv" disabled={saving} onChange={(event) => { void upload(event.target.files?.[0]); event.currentTarget.value = ""; }} /></label><label className="import-button">Importer rapports réels<input type="file" accept=".csv,text/csv" disabled={saving} onChange={(event) => { void uploadReport(event.target.files?.[0]); event.currentTarget.value = ""; }} /></label>{actualReports ? <button type="button" className="button quiet" onClick={() => { setActualReportCsv(""); setActualReportFileName(""); setMessage(""); }}>Retirer rapports</button> : null}<button type="button" className="button quiet" onClick={() => void loadSummaries()} disabled={loading}>↻ Actualiser</button></div>
     </div>
     {message ? <p className="enrollment-message">{message}</p> : null}
     <div className="staffing-evolution-controls">
       <label>Export de référence<select value={referenceId} onChange={(event) => setReferenceId(event.target.value)}>{imports.map((item) => <option value={item.id} key={item.id}>{importLabel(item)}</option>)}</select></label>
       <span aria-hidden="true">→</span>
-      {actualReports ? <label>Résultat réel<input value={actualReportFileName} readOnly /></label> : <label>Export récent<select value={recentId} onChange={(event) => setRecentId(event.target.value)}>{imports.map((item) => <option value={item.id} key={item.id}>{importLabel(item)}</option>)}</select></label>}
+      {actualReports ? <label>Résultat réel<input value={actualReportFileName} readOnly /></label> : <label>Source à comparer<select value={recentId} onChange={(event) => setRecentId(event.target.value)}>{imports.map((item) => <option value={item.id} key={item.id}>{importLabel(item)}</option>)}<option value="staffing-audits" disabled={!auditSnapshot}>Rapports enregistrés · Bilans staffing ({staffingAuditDays.length} jours)</option></select></label>}
       <label>Du<select value={activeStartDate} onChange={(event) => { const next = event.target.value; setStartDate(next); if (activeEndDate && next > activeEndDate) setEndDate(next); }}>{dates.map((date) => <option key={date} value={date}>{fullDate(date)}</option>)}</select></label>
       <label>Au<select value={activeEndDate} onChange={(event) => { const next = event.target.value; setEndDate(next); if (activeStartDate && next < activeStartDate) setStartDate(next); }}>{dates.map((date) => <option key={date} value={date}>{fullDate(date)}</option>)}</select></label>
       <label>Recherche<input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="ID, établissement ou tuteur…" /></label>
     </div>
-    <p className="staffing-comparison-note">{actualReports ? (dates.length ? "Comparaison de l’export planifié avec les rapports réellement saisis, limitée aux dates communes. Les groupes sont rapprochés par ID de séance / Semaine réelle, les tuteurs par ID retrouvé grâce au numéro de téléphone." : "Aucune date commune entre l’export planifié et les rapports.") : "Les sessions sont rapprochées prioritairement par leur ID séance. Les groupes et élèves présents sur plusieurs lignes ne créent pas de doublons."} Bilan staffing enregistré prioritaire par jour; sinon, les séances sans tuteur sont déduites des rapports réellement importés.{reportData?.unmatchedTutorCount ? ` ${reportData.unmatchedTutorCount} ligne(s) de tuteur ne sont pas rapprochées à un ID.` : ""}</p>
+    <p className="staffing-comparison-note">{auditComparison ? "Comparaison avec les bilans déjà enregistrés. Les séances sont rapprochées par ID de séance / Semaine réelle et les tuteurs par leur ID. Les dates des deux sources sont réunies pour montrer les séances présentes dans une seule source." : "Les séances sont rapprochées prioritairement par leur ID séance. Les groupes et élèves présents sur plusieurs lignes ne créent pas de doublons. Choisissez « Rapports enregistrés · Bilans staffing » pour comparer avec les données déjà saisies dans l’autre onglet."}</p>
     {reference && recent && !hasComparableSnapshots ? <div className="staffing-evolution-legacy-warning"><strong>Ces anciens imports ne contiennent pas le détail des tuteurs staffés.</strong><span>Réimportez les deux exports « Semaines à venir » dans cet onglet pour obtenir une comparaison complète.</span></div> : null}
     <div className="staffing-evolution-totals">{totals.map((item) => <button type="button" className={`${item.kind} ${kindFilter === item.kind ? "active" : ""}`} onClick={() => setKindFilter((current) => current === item.kind ? "all" : item.kind)} key={item.kind}><span>{kindLabels[item.kind]}</span><strong>{item.count}</strong></button>)}</div>
     <div className="staffing-evolution-owner-table">
-      <div className="head"><span>Responsable RH</span><span>Sessions totales<br />(bilan / rapport)</span><span>Non staffées<br />(bilan / rapport)</span><span>Nouveaux tuteurs</span><span>Changements</span><span>Tuteurs retirés</span><span>Sessions apparues</span><span>Sessions disparues</span></div>
+      <div className="head"><span>Responsable RH</span><span>Sessions totales<br />({auditComparison ? "bilan" : "source récente"})</span><span>Non staffées<br />({auditComparison ? "bilan" : "source récente"})</span><span>Nouveaux tuteurs</span><span>Changements</span><span>Tuteurs retirés</span><span>Sessions apparues</span><span>Sessions disparues</span></div>
       {countsByOwner.map((row) => <button type="button" className={(ownerFilter === "unassigned" ? !row.owner : ownerFilter === row.owner) ? "active" : ""} onClick={() => setOwnerFilter((current) => current === (row.owner || "unassigned") ? "all" : row.owner || "unassigned")} key={row.owner || "unassigned"}><strong>{ownerLabels[row.owner]}</strong><span>{row.totalSessions}</span><span>{row.unstaffedSessions}</span><span>{row.additions}</span><span>{row.replacements}</span><span>{row.removals}</span><span>{row.appeared}</span><span>{row.disappeared}</span></button>)}
     </div>
     <div className="staffing-evolution-list-heading"><div><strong>{filtered.length} évolution{filtered.length > 1 ? "s" : ""}</strong><span>{activeStartDate && activeEndDate ? `Du ${fullDate(activeStartDate)} au ${fullDate(activeEndDate)}` : "Toutes les dates des deux exports"}{ownerFilter !== "all" ? ` · ${ownerFilter === "unassigned" ? ownerLabels[""] : ownerLabels[ownerFilter]}` : ""}</span></div><button type="button" className="ghost-button" onClick={exportCsv} disabled={!filtered.length}>Export CSV</button></div>
