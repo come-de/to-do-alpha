@@ -175,7 +175,7 @@ export default function StaffingEvolution() {
       setImports(nextImports);
       setSchools(schoolsData.schools ?? []);
       setStaffingAuditDays(auditsData.days ?? []);
-      setRecentId((current) => current === "staffing-audits" && auditsData.days?.length ? current : nextImports.some((item) => item.id === current) ? current : nextImports[0]?.id || (auditsData.days?.length ? "staffing-audits" : ""));
+      setRecentId((current) => current.startsWith("staffing-audit:") && auditsData.days?.some((day) => current === `staffing-audit:${day.date}`) ? current : nextImports.some((item) => item.id === current) ? current : nextImports[0]?.id || (auditsData.days?.length ? `staffing-audit:${[...(auditsData.days ?? [])].sort((a, b) => b.date.localeCompare(a.date))[0].date}` : ""));
       setReferenceId((current) => nextImports.some((item) => item.id === current) ? current : nextImports[1]?.id || nextImports[0]?.id || "");
       setMessage("");
     } catch (error) {
@@ -222,18 +222,19 @@ export default function StaffingEvolution() {
     });
     return { id: "actual-reports", importedAt: new Date().toISOString(), displayName: actualReportFileName || "Rapports réels", fileName: actualReportFileName || "rapports.csv", sourceRowCount: reportData.rowCount, sourceSessionCount: staffingSessions.length, schools: [], schoolStaffing: [], staffingSessions, rows: [], createdAt: new Date().toISOString() };
   }, [actualReportFileName, reference, reportData]);
+  const selectedAuditDate = recentId.startsWith("staffing-audit:") ? recentId.slice("staffing-audit:".length) : "";
+  const selectedAuditDay = staffingAuditDays.find((day) => day.date === selectedAuditDate) ?? null;
   const auditSnapshot = useMemo<UpcomingSessionImport | null>(() => {
-    const staffingSessions = staffingAuditDays.flatMap((day) => day.sessions.map((session): ComparableSession => ({
+    if (!selectedAuditDay?.sessions.length) return null;
+    const staffingSessions = selectedAuditDay.sessions.map((session): ComparableSession => ({
       sessionId: session.sessionId, sourceRowCount: session.sourceRowCount ?? 0, schoolId: session.schoolId, school: session.school,
-      category: session.category, date: session.date || day.date, startTime: "", endTime: "", group: "",
+      category: session.category, date: session.date || selectedAuditDay.date, startTime: "", endTime: "", group: "",
       portfolioOwner: session.portfolioOwner, staffingStatus: session.resolution || session.detectedStatus, treated: session.treated,
       tutors: session.tutors.map((tutor) => ({ tutorId: tutor.tutorId, firstName: tutor.name, lastName: "", phone: tutor.phone })),
-    })));
-    if (!staffingSessions.length) return null;
-    const lastUpdated = staffingAuditDays.map((day) => day.updatedAt).sort().at(-1) || new Date().toISOString();
-    return { id: "staffing-audits", importedAt: lastUpdated, displayName: "Bilans staffing enregistrés", fileName: "bilans-staffing", sourceRowCount: staffingAuditDays.reduce((sum, day) => sum + day.sessions.reduce((daySum, session) => daySum + (session.sourceRowCount ?? 0), 0), 0), sourceSessionCount: staffingSessions.length, schools: [], schoolStaffing: [], staffingSessions, rows: [], createdAt: lastUpdated };
-  }, [staffingAuditDays]);
-  const auditComparison = recentId === "staffing-audits";
+    }));
+    return { id: recentId, importedAt: selectedAuditDay.updatedAt, displayName: `Bilan staffing · ${fullDate(selectedAuditDay.date)}`, fileName: "bilan-staffing", sourceRowCount: selectedAuditDay.sessions.reduce((sum, session) => sum + (session.sourceRowCount ?? 0), 0), sourceSessionCount: staffingSessions.length, schools: [], schoolStaffing: [], staffingSessions, rows: [], createdAt: selectedAuditDay.updatedAt };
+  }, [recentId, selectedAuditDay]);
+  const auditComparison = recentId.startsWith("staffing-audit:");
   const recent = auditComparison ? auditSnapshot : actualReports ?? loadedImports[recentId] ?? null;
   const dates = useMemo(() => {
     const referenceDates = reference?.staffingSessions.map((row) => row.date) ?? [];
@@ -379,7 +380,10 @@ export default function StaffingEvolution() {
 
   const totalScope = ownerFilter === "all" ? searchFilteredChanges : searchFilteredChanges.filter((item) => ownerFilter === "unassigned" ? !changeOwnerFor(item) : changeOwnerFor(item) === ownerFilter);
   const totals = (Object.keys(kindLabels) as ChangeKind[]).map((kind) => ({ kind, count: totalScope.filter((item) => item.kind === kind).length }));
-  const groupedFilteredChanges = (Object.keys(kindLabels) as ChangeKind[]).map((kind) => ({ kind, items: filtered.filter((item) => item.kind === kind) })).filter((group) => group.items.length);
+  const [visibleCount, setVisibleCount] = useState(100);
+  useEffect(() => { setVisibleCount(100); }, [referenceId, recentId, activeStartDate, activeEndDate, ownerFilter, kindFilter, query]);
+  const visibleChanges = filtered.slice(0, visibleCount);
+  const groupedFilteredChanges = (Object.keys(kindLabels) as ChangeKind[]).map((kind) => ({ kind, items: visibleChanges.filter((item) => item.kind === kind) })).filter((group) => group.items.length);
 
   return <section className="task-panel staffing-evolution">
     <div className="panel-heading">
@@ -391,7 +395,7 @@ export default function StaffingEvolution() {
       <div className="staffing-evolution-source-cards">
         <label className="staffing-evolution-source-card reference"><span>1. Point de départ</span><strong>Semaine à venir</strong><select value={referenceId} onChange={(event) => setReferenceId(event.target.value)}>{imports.map((item) => <option value={item.id} key={item.id}>{importLabel(item)}</option>)}</select><small>Prévision à comparer</small></label>
         <span className="staffing-evolution-source-arrow" aria-hidden="true">→</span>
-        {actualReports ? <label className="staffing-evolution-source-card report"><span>2. Résultat réel</span><strong>Rapport importé</strong><input value={actualReportFileName} readOnly /><small>Fichier chargé dans cette page</small></label> : <label className={`staffing-evolution-source-card ${auditComparison ? "report selected" : "upcoming"}`}><span>2. Comparer avec</span><strong>{auditComparison ? "Rapport enregistré · Bilans staffing" : "Semaine à venir"}</strong><select value={recentId} onChange={(event) => setRecentId(event.target.value)}><optgroup label="Semaines à venir enregistrées">{imports.map((item) => <option value={item.id} key={item.id}>{importLabel(item)}</option>)}</optgroup><optgroup label="Rapports de staffing déjà enregistrés"><option value="staffing-audits" disabled={!auditSnapshot}>Rapports enregistrés · Bilans staffing ({staffingAuditDays.length} jours)</option></optgroup></select><small>{auditComparison ? `${staffingAuditDays.length} journées de rapports disponibles` : "Deuxième prévision à comparer"}</small></label>}
+        {actualReports ? <label className="staffing-evolution-source-card report"><span>2. Résultat réel</span><strong>Rapport importé</strong><input value={actualReportFileName} readOnly /><small>Fichier chargé dans cette page</small></label> : <label className={`staffing-evolution-source-card ${auditComparison ? "report selected" : "upcoming"}`}><span>2. Comparer avec</span><strong>{auditComparison ? `Journée de rapport · ${selectedAuditDay ? fullDate(selectedAuditDay.date) : "chargement"}` : "Semaine à venir"}</strong><select value={recentId} onChange={(event) => setRecentId(event.target.value)}><optgroup label="Semaines à venir enregistrées">{imports.map((item) => <option value={item.id} key={item.id}>{importLabel(item)}</option>)}</optgroup><optgroup label="Journées de rapport · Bilans staffing">{staffingAuditDays.slice().sort((a, b) => b.date.localeCompare(a.date)).map((day) => <option value={`staffing-audit:${day.date}`} key={day.date}>Rapport du {fullDate(day.date)}</option>)}</optgroup></select><small>{auditComparison ? `Bilan enregistré le ${new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short" }).format(new Date(selectedAuditDay?.updatedAt ?? ""))}` : "Deuxième semaine à venir enregistrée"}</small></label>}
       </div>
       <div className="staffing-evolution-filter-controls">
         <label>Du<select value={activeStartDate} onChange={(event) => { const next = event.target.value; setStartDate(next); if (activeEndDate && next > activeEndDate) setEndDate(next); }}>{dates.map((date) => <option key={date} value={date}>{fullDate(date)}</option>)}</select></label>
@@ -399,7 +403,7 @@ export default function StaffingEvolution() {
         <label>Recherche<input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="ID, établissement ou tuteur…" /></label>
       </div>
     </div>
-    <p className="staffing-comparison-note">{auditComparison ? "Comparaison avec les bilans déjà enregistrés. Les séances sont rapprochées par ID de séance / Semaine réelle et les tuteurs par leur ID. Les dates des deux sources sont réunies pour montrer les séances présentes dans une seule source." : "Les séances sont rapprochées prioritairement par leur ID séance. Les groupes et élèves présents sur plusieurs lignes ne créent pas de doublons. Choisissez « Rapports enregistrés · Bilans staffing » pour comparer avec les données déjà saisies dans l’autre onglet."}</p>
+    <p className="staffing-comparison-note">{auditComparison ? `Comparaison avec le bilan enregistré du ${selectedAuditDay ? fullDate(selectedAuditDay.date) : "jour sélectionné"}. Les séances sont rapprochées par ID de séance / Semaine réelle et les tuteurs par leur ID.` : "Les séances sont rapprochées prioritairement par leur ID séance. Les groupes et élèves présents sur plusieurs lignes ne créent pas de doublons. Choisissez « Rapports enregistrés · Bilans staffing » pour comparer avec les données déjà saisies dans l’autre onglet."}</p>
     {reference && recent && !hasComparableSnapshots ? <div className="staffing-evolution-legacy-warning"><strong>Ces anciens imports ne contiennent pas le détail des tuteurs staffés.</strong><span>Réimportez les deux exports « Semaines à venir » dans cet onglet pour obtenir une comparaison complète.</span></div> : null}
     <div className="staffing-evolution-totals">{totals.map((item) => <button type="button" className={`${item.kind} ${kindFilter === item.kind ? "active" : ""}`} onClick={() => setKindFilter((current) => current === item.kind ? "all" : item.kind)} key={item.kind}><span>{kindLabels[item.kind]}</span><strong>{item.count}</strong></button>)}</div>
     <div className="staffing-evolution-owner-table">
@@ -416,6 +420,6 @@ export default function StaffingEvolution() {
         <div className="staffing-evolution-before"><b>Avant</b>{renderTutors(item.before)}</div>
         <div className="staffing-evolution-after"><b>Après</b>{renderTutors(item.after)}</div>
       </article>;
-    })}</div></section>)}</div> : <div className="empty-state compact"><span>✓</span><h3>Aucune évolution détectée</h3><p>Les deux exports sont identiques pour les filtres sélectionnés.</p></div>}
+    })}</div></section>)}{visibleChanges.length < filtered.length ? <button type="button" className="staffing-evolution-load-more" onClick={() => setVisibleCount((count) => count + 100)}>Afficher les 100 évolutions suivantes · {filtered.length - visibleChanges.length} restantes</button> : null}</div> : <div className="empty-state compact"><span>✓</span><h3>Aucune évolution détectée</h3><p>Les deux exports sont identiques pour les filtres sélectionnés.</p></div>}
   </section>;
 }
