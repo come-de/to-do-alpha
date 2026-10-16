@@ -31,7 +31,7 @@ function formatShortDate(value: string) {
 
 function formatChartDate(value: string) {
   const date = staffingAuditDate(value);
-  return date ? new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit" }).format(date) : value;
+  return date ? new Intl.DateTimeFormat("fr-FR", { weekday: "short", day: "2-digit", month: "2-digit" }).format(date) : value;
 }
 
 function effectiveStatus(session: StaffingAuditSession) {
@@ -172,11 +172,12 @@ export default function StaffingAudit() {
         percentage: ownerSessions.length ? (ownerUnstaffed / ownerSessions.length) * 100 : 0,
       };
     });
-    const schools = new Map<string, { name: string; count: number }>();
+    const schools = new Map<string, { name: string; count: number; owners: Set<SchoolPortfolioOwner> }>();
     unstaffed.forEach((session) => {
       const key = session.school.trim().toLocaleLowerCase("fr") || "établissement non précisé";
-      const item = schools.get(key) ?? { name: session.school || "Établissement non précisé", count: 0 };
+      const item = schools.get(key) ?? { name: session.school || "Établissement non précisé", count: 0, owners: new Set<SchoolPortfolioOwner>() };
       item.count += 1;
+      item.owners.add(session.portfolioOwner);
       schools.set(key, item);
     });
     return {
@@ -214,7 +215,10 @@ export default function StaffingAudit() {
           percentage: day.sessions.length ? (dailyUnstaffed / day.sessions.length) * 100 : 0,
         };
       }),
-      topSchools: Array.from(schools.values()).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "fr")).slice(0, 10),
+      topSchools: Array.from(schools.values())
+        .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "fr"))
+        .slice(0, 20)
+        .map((school) => ({ ...school, owners: owners.filter((owner) => school.owners.has(owner)).map((owner) => ownerLabels[owner]) })),
     };
   }, [categoryFilter, effectiveAnalysisEndDate, effectiveAnalysisStartDate, savedDays, tutorTypeById, tutorTypeSnapshot]);
   const dailyChart = useMemo(() => {
@@ -430,7 +434,7 @@ export default function StaffingAudit() {
           </div>
           <div className="staffing-range-schools">
             <h4>Établissements les plus concernés</h4>
-            {rangeAnalysis.topSchools.length ? rangeAnalysis.topSchools.map((school, index) => <article key={school.name}><span>{index + 1}</span><strong>{school.name}</strong><b>{school.count}</b></article>) : <p>Aucune séance non staffée sur cette période.</p>}
+            {rangeAnalysis.topSchools.length ? rangeAnalysis.topSchools.map((school, index) => <article key={school.name}><span>{index + 1}</span><strong>{school.name}</strong><small>RH : {school.owners.join(", ")}</small><b>{school.count}</b></article>) : <p>Aucune séance non staffée sur cette période.</p>}
           </div>
         </div>
       </section> : null}
