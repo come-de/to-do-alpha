@@ -271,14 +271,24 @@ export default function StaffingEvolution() {
     return changes.filter((item) => normalize(`${item.session.sessionId} ${item.session.school} ${item.session.category} ${timeSlot(item.session)} ${item.before.map(tutorName).join(" ")} ${item.after.map(tutorName).join(" ")}`).includes(normalizedQuery));
   }, [changes, query]);
 
-  const countsByOwner = useMemo(() => (["kelly", "pierre", "julie", ""] as Owner[]).map((owner) => ({
-    owner,
-    replacements: searchFilteredChanges.filter((item) => ownerFor(item.session) === owner && item.kind === "replacements").length,
-    additions: searchFilteredChanges.filter((item) => ownerFor(item.session) === owner && item.kind === "additions").length,
-    removals: searchFilteredChanges.filter((item) => ownerFor(item.session) === owner && item.kind === "removals").length,
-    appeared: searchFilteredChanges.filter((item) => ownerFor(item.session) === owner && item.kind === "appeared").length,
-    disappeared: searchFilteredChanges.filter((item) => ownerFor(item.session) === owner && item.kind === "disappeared").length,
-  })), [ownerFor, searchFilteredChanges]);
+  const recentSessionsInRange = useMemo(() => {
+    const inRange = (date: string) => (!activeStartDate || date >= activeStartDate) && (!activeEndDate || date <= activeEndDate);
+    return (recent?.staffingSessions ?? []).filter((session) => inRange(session.date));
+  }, [activeEndDate, activeStartDate, recent]);
+
+  const countsByOwner = useMemo(() => (["kelly", "pierre", "julie", ""] as Owner[]).map((owner) => {
+    const ownerSessions = recentSessionsInRange.filter((session) => ownerFor(session) === owner);
+    return {
+      owner,
+      replacements: searchFilteredChanges.filter((item) => ownerFor(item.session) === owner && item.kind === "replacements").length,
+      additions: searchFilteredChanges.filter((item) => ownerFor(item.session) === owner && item.kind === "additions").length,
+      removals: searchFilteredChanges.filter((item) => ownerFor(item.session) === owner && item.kind === "removals").length,
+      appeared: searchFilteredChanges.filter((item) => ownerFor(item.session) === owner && item.kind === "appeared").length,
+      disappeared: searchFilteredChanges.filter((item) => ownerFor(item.session) === owner && item.kind === "disappeared").length,
+      totalSessions: ownerSessions.length,
+      unstaffedSessions: ownerSessions.filter((session) => session.tutors.length === 0).length,
+    };
+  }), [ownerFor, recentSessionsInRange, searchFilteredChanges]);
 
   const filtered = useMemo(() => {
     return searchFilteredChanges.filter((item) => {
@@ -361,8 +371,8 @@ export default function StaffingEvolution() {
     {reference && recent && !hasComparableSnapshots ? <div className="staffing-evolution-legacy-warning"><strong>Ces anciens imports ne contiennent pas le détail des tuteurs staffés.</strong><span>Réimportez les deux exports « Semaines à venir » dans cet onglet pour obtenir une comparaison complète.</span></div> : null}
     <div className="staffing-evolution-totals">{totals.map((item) => <button type="button" className={`${item.kind} ${kindFilter === item.kind ? "active" : ""}`} onClick={() => setKindFilter((current) => current === item.kind ? "all" : item.kind)} key={item.kind}><span>{kindLabels[item.kind]}</span><strong>{item.count}</strong></button>)}</div>
     <div className="staffing-evolution-owner-table">
-      <div className="head"><span>Responsable RH</span><span>Nouveaux tuteurs</span><span>Changements</span><span>Tuteurs retirés</span><span>Sessions apparues</span><span>Sessions disparues</span></div>
-      {countsByOwner.map((row) => <button type="button" className={(ownerFilter === "unassigned" ? !row.owner : ownerFilter === row.owner) ? "active" : ""} onClick={() => setOwnerFilter((current) => current === (row.owner || "unassigned") ? "all" : row.owner || "unassigned")} key={row.owner || "unassigned"}><strong>{ownerLabels[row.owner]}</strong><span>{row.additions}</span><span>{row.replacements}</span><span>{row.removals}</span><span>{row.appeared}</span><span>{row.disappeared}</span></button>)}
+      <div className="head"><span>Responsable RH</span><span>Sessions totales<br />(export récent)</span><span>Non staffées<br />(export récent)</span><span>Nouveaux tuteurs</span><span>Changements</span><span>Tuteurs retirés</span><span>Sessions apparues</span><span>Sessions disparues</span></div>
+      {countsByOwner.map((row) => <button type="button" className={(ownerFilter === "unassigned" ? !row.owner : ownerFilter === row.owner) ? "active" : ""} onClick={() => setOwnerFilter((current) => current === (row.owner || "unassigned") ? "all" : row.owner || "unassigned")} key={row.owner || "unassigned"}><strong>{ownerLabels[row.owner]}</strong><span>{row.totalSessions}</span><span>{row.unstaffedSessions}</span><span>{row.additions}</span><span>{row.replacements}</span><span>{row.removals}</span><span>{row.appeared}</span><span>{row.disappeared}</span></button>)}
     </div>
     <div className="staffing-evolution-list-heading"><div><strong>{filtered.length} évolution{filtered.length > 1 ? "s" : ""}</strong><span>{activeStartDate && activeEndDate ? `Du ${fullDate(activeStartDate)} au ${fullDate(activeEndDate)}` : "Toutes les dates des deux exports"}{ownerFilter !== "all" ? ` · ${ownerFilter === "unassigned" ? ownerLabels[""] : ownerLabels[ownerFilter]}` : ""}</span></div><button type="button" className="ghost-button" onClick={exportCsv} disabled={!filtered.length}>Export CSV</button></div>
     {!reference || !recent ? <div className="empty-state compact">{!reference ? "Importez un export Semaines à venir comme référence." : imports.length < 2 && !actualReports ? "Importez un second export ou un fichier de rapports réels pour commencer." : "Chargement des fichiers…"}</div> : !hasComparableSnapshots ? <div className="empty-state compact"><h3>Réimport nécessaire</h3><p>Les anciens imports restent disponibles pour les séances non affectées, mais ne contiennent pas les noms et ID des tuteurs staffés.</p></div> : filtered.length ? <div className="staffing-evolution-results">{filtered.map((item, index) => {
