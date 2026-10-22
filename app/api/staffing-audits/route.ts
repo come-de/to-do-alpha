@@ -1,3 +1,4 @@
+import { withIdentity } from "@/app/lib/with-identity";
 import { NextResponse } from "next/server";
 import {
   enrichStaffingAuditDaysWithSchools,
@@ -19,7 +20,7 @@ function json(data: unknown, status = 200) {
   return NextResponse.json(data, { status, headers: { "Cache-Control": "no-store" } });
 }
 
-export async function GET() {
+async function getHandler() {
   try {
     const [days, schools, tracking] = await Promise.all([readStaffingAudits(), readSchools(), readTutorTracking()]);
     const roster = tracking.snapshots.flatMap((snapshot) => snapshot.records);
@@ -32,7 +33,7 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
+async function postHandler(request: Request) {
   try {
     const url = new URL(request.url);
     const rawCsv = await request.text();
@@ -53,7 +54,7 @@ export async function POST(request: Request) {
   }
 }
 
-export async function PUT(request: Request) {
+async function putHandler(request: Request) {
   try {
     const body = (await request.json()) as { day?: StaffingAuditDay; overwrite?: boolean };
     if (!body.day || typeof body.day !== "object") return json({ error: "Journée invalide" }, 400);
@@ -68,11 +69,11 @@ export async function PUT(request: Request) {
   }
 }
 
-export async function PATCH(request: Request) {
+async function patchHandler(request: Request) {
   try {
-    const body = (await request.json()) as { date?: unknown; sessionId?: unknown; portfolioOwner?: unknown; resolution?: unknown; treated?: unknown; unstaffedReason?: unknown; comment?: unknown };
+    const body = (await request.json()) as { date?: unknown; sessionId?: unknown; portfolioOwner?: unknown; resolution?: unknown; treated?: unknown };
     if (typeof body.date !== "string" || typeof body.sessionId !== "string") return json({ error: "Séance invalide" }, 400);
-    const result = await updateStaffingAuditSession({ date: body.date, sessionId: body.sessionId, portfolioOwner: body.portfolioOwner, resolution: body.resolution, treated: body.treated, unstaffedReason: body.unstaffedReason, comment: body.comment });
+    const result = await updateStaffingAuditSession({ date: body.date, sessionId: body.sessionId, portfolioOwner: body.portfolioOwner, resolution: body.resolution, treated: body.treated });
     const schools = await readSchools();
     return json({ ...result, day: result.day ? enrichStaffingAuditDaysWithSchools([result.day], schools)[0] : undefined, days: enrichStaffingAuditDaysWithSchools(result.days, schools) });
   } catch (error) {
@@ -80,3 +81,8 @@ export async function PATCH(request: Request) {
     return json({ error: "Impossible de modifier la séance", detail }, 500);
   }
 }
+
+export const GET = withIdentity(getHandler);
+export const POST = withIdentity(postHandler);
+export const PUT = withIdentity(putHandler);
+export const PATCH = withIdentity(patchHandler);

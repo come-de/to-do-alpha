@@ -1,3 +1,4 @@
+import { withIdentity } from "@/app/lib/with-identity";
 import { NextResponse } from "next/server";
 import {
   readTutorReportComments,
@@ -17,11 +18,11 @@ function json(data: unknown, status = 200) {
   });
 }
 
-export async function GET() {
+async function getHandler() {
   return json({ comments: await readTutorReportComments() });
 }
 
-export async function PUT(request: Request) {
+async function putHandler(request: Request) {
   try {
     const body = (await request.json()) as { comments?: unknown };
     if (!Array.isArray(body.comments)) return json({ error: "Invalid tutor report comment list" }, 400);
@@ -42,3 +43,6 @@ export async function PUT(request: Request) {
     return json({ error: "Unable to save tutor report comments" }, 500);
   }
 }
+
+export const GET = withIdentity(getHandler);
+export const PUT = withIdentity(putHandler);

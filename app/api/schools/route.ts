@@ -1,3 +1,4 @@
+import { withIdentity } from "@/app/lib/with-identity";
 import { NextResponse } from "next/server";
 import { readSchools, sanitizeSchool, writeSchools } from "@/app/lib/shared-data";
 
@@ -13,7 +14,7 @@ function json(data: unknown, status = 200) {
   });
 }
 
-export async function GET() {
+async function getHandler() {
   return json({ schools: await readSchools() });
 }
 
@@ -27,7 +28,7 @@ function inferredSchoolType(categories: string[]) {
   return "mixed" as const;
 }
 
-export async function POST(request: Request) {
+async function postHandler(request: Request) {
   try {
     const body = (await request.json()) as { schools?: unknown };
     if (!Array.isArray(body.schools)) return json({ error: "Liste d’établissements invalide" }, 400);
@@ -87,7 +88,7 @@ export async function POST(request: Request) {
   }
 }
 
-export async function PUT(request: Request) {
+async function putHandler(request: Request) {
   try {
     const body = (await request.json()) as { schools?: unknown };
     if (!Array.isArray(body.schools)) return json({ error: "Invalid school list" }, 400);
@@ -113,3 +114,7 @@ export async function PUT(request: Request) {
     return json({ error: "Unable to save schools" }, 500);
   }
 }
+
+export const GET = withIdentity(getHandler);
+export const POST = withIdentity(postHandler);
+export const PUT = withIdentity(putHandler);

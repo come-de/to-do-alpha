@@ -1,3 +1,4 @@
+import { withIdentity } from "@/app/lib/with-identity";
 import { NextResponse } from "next/server";
 import {
   readAvailabilityImportById,
@@ -52,7 +53,7 @@ function uniqueSorted(items: ActivityItem[], direction: "asc" | "desc") {
   });
 }
 
-export async function GET(request: Request) {
+async function getHandler(request: Request) {
   try {
     const requestedIds = (new URL(request.url).searchParams.get("ids") || "")
       .split(",")
@@ -157,3 +158,5 @@ export async function GET(request: Request) {
     return json({ error: "Impossible de charger l’activité des tuteurs", detail }, 500);
   }
 }
+
+export const GET = withIdentity(getHandler);

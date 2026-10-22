@@ -1,3 +1,4 @@
+import { withIdentity } from "@/app/lib/with-identity";
 import { NextResponse } from "next/server";
 import { notifyAssignment, readPeople, readTasks, sanitizeTask, writeTasks } from "@/app/lib/shared-data";
 
@@ -13,11 +14,11 @@ function json(data: unknown, status = 200) {
   });
 }
 
-export async function GET() {
+async function getHandler() {
   return json({ tasks: await readTasks() });
 }
 
-export async function PUT(request: Request) {
+async function putHandler(request: Request) {
   try {
     const body = (await request.json()) as { tasks?: unknown; notifyAssignments?: boolean; sendAssignmentEmail?: boolean };
     if (!Array.isArray(body.tasks)) return json({ error: "Invalid task list" }, 400);
@@ -54,3 +55,6 @@ export async function PUT(request: Request) {
     return json({ error: "Unable to save tasks" }, 500);
   }
 }
+
+export const GET = withIdentity(getHandler);
+export const PUT = withIdentity(putHandler);

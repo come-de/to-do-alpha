@@ -1,3 +1,4 @@
+import { withIdentity } from "@/app/lib/with-identity";
 import { NextResponse } from "next/server";
 import { readTutorReports, readTutorTracking, resolveTutorReportTutorIds, sanitizeTutorReportSnapshot, writeTutorReports } from "@/app/lib/shared-data";
 
@@ -13,14 +14,14 @@ function json(data: unknown, status = 200) {
   });
 }
 
-export async function GET() {
+async function getHandler() {
   const [reports, tracking] = await Promise.all([readTutorReports(), readTutorTracking()]);
   const resolved = resolveTutorReportTutorIds(reports, tracking.snapshots.flatMap((snapshot) => snapshot.records));
   if (resolved.changed) await writeTutorReports(resolved.reports);
   return json({ reports: resolved.reports });
 }
 
-export async function PUT(request: Request) {
+async function putHandler(request: Request) {
   try {
     const body = (await request.json()) as { reports?: unknown };
     if (!Array.isArray(body.reports)) return json({ error: "Invalid tutor report list" }, 400);
@@ -44,3 +45,6 @@ export async function PUT(request: Request) {
     return json({ error: "Unable to save tutor reports" }, 500);
   }
 }
+
+export const GET = withIdentity(getHandler);
+export const PUT = withIdentity(putHandler);

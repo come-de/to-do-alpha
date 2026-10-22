@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { getUser, logout } from "@netlify/identity";
 import EnrollmentComparison from "@/app/components/enrollment-comparison";
 import FilesHub, { type FileKind } from "@/app/components/files-hub";
 import TutorCoverageComparison from "@/app/components/tutor-coverage-comparison";
@@ -1733,6 +1734,7 @@ export default function Home() {
   const [saving, setSaving] = useState(false);
   const [notifying, setNotifying] = useState(false);
   const [syncError, setSyncError] = useState("");
+  const [signedInEmail, setSignedInEmail] = useState("");
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | Status | "late">("all");
   const [priorityFilter, setPriorityFilter] = useState<"all" | Priority>("all");
@@ -2078,6 +2080,14 @@ export default function Home() {
     } catch {
       setToast("Historique eleves indisponible");
     }
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    void getUser().then((user) => {
+      if (active) setSignedInEmail(user?.email || "");
+    });
+    return () => { active = false; };
   }, []);
 
   useEffect(() => {
@@ -5501,6 +5511,9 @@ export default function Home() {
             <span aria-hidden="true">●</span>
             {saving ? "Sauvegarde..." : syncError || "Synchronise en ligne"}
           </div>
+          <button className="button quiet" type="button" title={signedInEmail || "Compte individuel"} onClick={() => { void logout().finally(() => window.location.replace("/access")); }}>
+            {signedInEmail || "Mon compte"} · Déconnexion
+          </button>
           <button className="button quiet" onClick={() => openPerson()} disabled={saving}>
             Personnes
           </button>

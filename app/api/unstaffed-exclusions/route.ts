@@ -1,3 +1,4 @@
+import { withIdentity } from "@/app/lib/with-identity";
 import { NextResponse } from "next/server";
 import { readUnstaffedExclusions, sanitizeUnstaffedExclusions, writeUnstaffedExclusions } from "@/app/lib/shared-data";
 
@@ -8,11 +9,11 @@ function json(data: unknown, status = 200) {
   return NextResponse.json(data, { status, headers: { "Cache-Control": "no-store" } });
 }
 
-export async function GET() {
+async function getHandler() {
   return json({ exclusions: await readUnstaffedExclusions() });
 }
 
-export async function PUT(request: Request) {
+async function putHandler(request: Request) {
   try {
     const body = (await request.json()) as { exclusions?: unknown };
     if (!body.exclusions || typeof body.exclusions !== "object") return json({ error: "Exclusions invalides" }, 400);
@@ -23,3 +24,6 @@ export async function PUT(request: Request) {
     return json({ error: "Sauvegarde impossible", detail }, 500);
   }
 }
+
+export const GET = withIdentity(getHandler);
+export const PUT = withIdentity(putHandler);

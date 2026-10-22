@@ -1,3 +1,4 @@
+import { withIdentity } from "@/app/lib/with-identity";
 import { NextResponse } from "next/server";
 import {
   createTutorAssignmentImportFromCsv,
@@ -16,7 +17,7 @@ function json(data: unknown, status = 200) {
   return NextResponse.json(data, { status, headers: { "Cache-Control": "no-store" } });
 }
 
-export async function GET(request: Request) {
+async function getHandler(request: Request) {
   try {
     const searchParams = new URL(request.url).searchParams;
     if (searchParams.get("latest") === "1") return json({ import: await readLatestTutorAssignmentImport() });
@@ -33,7 +34,7 @@ export async function GET(request: Request) {
   }
 }
 
-export async function POST(request: Request) {
+async function postHandler(request: Request) {
   try {
     const url = new URL(request.url);
     const rawCsv = await request.text();
@@ -49,7 +50,7 @@ export async function POST(request: Request) {
   }
 }
 
-export async function PATCH(request: Request) {
+async function patchHandler(request: Request) {
   try {
     const body = (await request.json()) as { id?: unknown; displayName?: unknown };
     if (typeof body.id !== "string" || typeof body.displayName !== "string") return json({ error: "Nom invalide" }, 400);
@@ -61,7 +62,7 @@ export async function PATCH(request: Request) {
   }
 }
 
-export async function DELETE(request: Request) {
+async function deleteHandler(request: Request) {
   try {
     const id = new URL(request.url).searchParams.get("id");
     if (!id) return json({ error: "Identifiant manquant" }, 400);
@@ -72,3 +73,8 @@ export async function DELETE(request: Request) {
     return json({ error: "Impossible de supprimer l’import", detail }, 500);
   }
 }
+
+export const GET = withIdentity(getHandler);
+export const POST = withIdentity(postHandler);
+export const PATCH = withIdentity(patchHandler);
+export const DELETE = withIdentity(deleteHandler);
