@@ -5661,7 +5661,7 @@ export default function Home() {
           </button>
         </div>}
 
-        {appMode === "dashboard" ? null : appMode === "tasks" ? <section className="task-panel">
+        {appMode === "dashboard" || appMode === "organization" ? null : appMode === "tasks" ? <section className="task-panel">
           <div className="panel-heading">
             <div>
               <h2>Liste partagee</h2>
