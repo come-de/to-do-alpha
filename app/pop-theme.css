@@ -88,6 +88,76 @@ body { background: radial-gradient(ellipse at 0 15%, #f2e7ff 0, transparent 45%)
 .main-tabs { gap: 3px; padding: 0 2px 2px; }
 .main-tabs button { min-height: 34px; padding: 5px 9px; margin-bottom: 0; font-size: 11px; }
 .main-tabs button.active .tab-count { background: #dcff78; color: #302044; }
+.tabs-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 7px;
+  position: relative;
+  z-index: 15;
+  border: 2px solid #302044;
+  border-radius: 14px;
+  padding: 6px;
+  box-shadow: 2px 3px 0 #302044;
+}
+.main-tabs {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  overflow: visible;
+  padding: 0;
+}
+.main-tabs button {
+  min-height: 32px;
+  margin: 0;
+  padding: 3px 8px 3px 5px;
+  border: 1px solid #302044;
+  border-radius: 10px;
+  background: #eee5ff;
+  color: #302044;
+  box-shadow: 1px 2px 0 #302044;
+  font-size: 10px;
+  font-weight: 800;
+  gap: 6px;
+}
+.main-tabs button:nth-child(7n+2) { background: #fff0b0; }
+.main-tabs button:nth-child(7n+3) { background: #ffe3ed; }
+.main-tabs button:nth-child(7n+4) { background: #dcf9e9; }
+.main-tabs button:nth-child(7n+5) { background: #dcecff; }
+.main-tabs button:nth-child(7n+6) { background: #e9e1ff; }
+.main-tabs button:nth-child(7n+7) { background: #f9e8d7; }
+.main-tabs button:hover:not(.active) { transform: translateY(-1px); box-shadow: 1px 3px 0 #302044; }
+.main-tabs .tab-icon {
+  width: 25px;
+  height: 25px;
+  flex: 0 0 25px;
+  border: 1px solid #302044;
+  border-radius: 7px;
+  background: #fffdf9;
+  font-size: 14px;
+  box-shadow: 1px 1px 0 #302044;
+}
+.main-tabs button.active {
+  border-color: #302044;
+  color: white;
+  background: #7038e8;
+  box-shadow: 2px 2px 0 #302044;
+}
+.main-tabs button.active .tab-icon { background: #dcff78; }
+.main-tabs button.active .tab-count { color: #302044; background: #dcff78; }
+.copy-tab-link {
+  align-self: start;
+  min-height: 30px;
+  margin: 1px 0 0;
+  border: 1px solid #302044;
+  border-radius: 9px;
+  background: #dcff78;
+  color: #302044;
+  box-shadow: 1px 2px 0 #302044;
+}
+.copy-tab-link:hover { border-color: #302044; background: #d0f85f; }
 .panel-heading { padding: 10px 12px; border-bottom: 1px solid var(--line); background: linear-gradient(110deg, #eee5ff, #fffdf9 70%); box-shadow: inset 4px 0 0 #7038e8; }
 .panel-heading h2 { font-size: 17px; }
 .panel-heading .eyebrow { color: var(--blue-dark); }
@@ -115,6 +185,9 @@ body { background: radial-gradient(ellipse at 0 15%, #f2e7ff 0, transparent 45%)
   .home-objectives .objective-card { padding-top: 36px; }
 }
 @media (max-width: 800px) {
+  .tabs-shell { grid-template-columns: minmax(0, 1fr); }
+  .main-tabs { flex-wrap: nowrap; overflow-x: auto; padding: 0 0 4px; scrollbar-width: thin; }
+  .copy-tab-link { justify-self: start; }
   .home-objectives { grid-template-columns: 1fr; }
   .home-welcome { min-height: 0; padding: 14px 16px; }
   .home-welcome strong { max-width: none; font-size: 25px; }
