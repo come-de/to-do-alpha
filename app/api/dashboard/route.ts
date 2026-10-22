@@ -9,6 +9,7 @@ import {
   readSchoolWatchlist,
   readSchools,
   readStudentHistory,
+  readStaffingAudits,
   readTasks,
 } from "@/app/lib/shared-data";
 
@@ -27,6 +28,7 @@ async function getHandler() {
       objectives,
       history,
       availabilityImports,
+      staffingAudits,
     ] = await Promise.all([
       readSchools(),
       readTasks(),
@@ -37,10 +39,17 @@ async function getHandler() {
       readObjectives(),
       readStudentHistory(),
       readAvailabilityImportSummaries(),
+      readStaffingAudits(),
     ]);
+
+    const staffingYear = new Date().getFullYear();
+    const staffedSessions = staffingAudits.reduce((total, day) => total + day.sessions.filter((session) =>
+      session.date.startsWith(`${staffingYear}-`) && (session.resolution || session.detectedStatus) === "staffed",
+    ).length, 0);
 
     return NextResponse.json({
       objectives: objectives.filter((objective) => objective.kind === "counter"),
+      staffing: { year: staffingYear, staffedSessions },
       counts: {
         tasks: tasks.filter((task) => task.status !== "done").length,
         links: links.length,
