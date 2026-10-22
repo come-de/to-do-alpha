@@ -5837,7 +5837,9 @@ export default function Home() {
         {appMode === "dashboard" && <section className="home-objectives" aria-label="Objectifs Alpha Education">
           <div className="home-welcome">
             <div className="mission-badge">Alpha Education · rentrée 2026</div>
-            <strong>Piloter, organiser, avancer.</strong>
+            <strong>Ensemble,<br />on fait <em>la différence.</em></strong>
+            <p>Les bonnes énergies. Les bonnes actions. Tout Alpha, au même endroit.</p>
+            <span className="welcome-spark" aria-hidden="true">✳</span>
           </div>
           <div className="objective-stack">
             {renderCounterObjective(studentObjective, "Objectif élèves")}
