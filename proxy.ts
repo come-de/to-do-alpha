@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const ACCESS_COOKIE = "alpha_access";
-const ACCESS_TOKEN = "alpha-unlocked-v1";
-
 function isPublicPath(pathname: string) {
   return (
     pathname === "/access" ||
-    pathname === "/api/access" ||
     pathname.startsWith("/_next/") ||
     pathname.startsWith("/favicon") ||
     pathname.startsWith("/public/") ||
@@ -18,8 +14,10 @@ export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   if (isPublicPath(pathname)) return NextResponse.next();
 
-  const hasAccess = request.cookies.get(ACCESS_COOKIE)?.value === ACCESS_TOKEN;
-  if (hasAccess) return NextResponse.next();
+  // This only avoids redirecting an existing session. API handlers independently
+  // verify the signed Netlify Identity JWT with getUser().
+  const hasIdentitySession = Boolean(request.cookies.get("nf_jwt")?.value);
+  if (hasIdentitySession) return NextResponse.next();
 
   if (pathname.startsWith("/api/")) {
     return NextResponse.json({ error: "Accès protégé" }, { status: 401 });

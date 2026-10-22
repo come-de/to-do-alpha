@@ -1,3 +1,4 @@
+import { withIdentity } from "@/app/lib/with-identity";
 import { NextResponse } from "next/server";
 import { notifyCompletion, readPeople, readTasks, writeTasks } from "@/app/lib/shared-data";
 
@@ -13,7 +14,7 @@ function json(data: unknown, status = 200) {
   });
 }
 
-export async function POST(request: Request, context: { params: Promise<{ taskId: string }> }) {
+async function postHandler(request: Request, context: { params: Promise<{ taskId: string }> }) {
   const { taskId } = await context.params;
 
   try {
@@ -58,3 +59,5 @@ export async function POST(request: Request, context: { params: Promise<{ taskId
     return json({ error: "Unable to notify completion" }, 500);
   }
 }
+
+export const POST = withIdentity(postHandler);

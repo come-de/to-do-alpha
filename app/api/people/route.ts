@@ -1,3 +1,4 @@
+import { withIdentity } from "@/app/lib/with-identity";
 import { NextResponse } from "next/server";
 import { publicPerson, readPeople, sanitizePerson, writePeople } from "@/app/lib/shared-data";
 
@@ -13,12 +14,12 @@ function json(data: unknown, status = 200) {
   });
 }
 
-export async function GET() {
+async function getHandler() {
   const people = await readPeople();
   return json({ people: people.map(publicPerson) });
 }
 
-export async function PUT(request: Request) {
+async function putHandler(request: Request) {
   try {
     const body = (await request.json()) as { people?: unknown };
     if (!Array.isArray(body.people)) return json({ error: "Invalid people list" }, 400);
@@ -36,3 +37,6 @@ export async function PUT(request: Request) {
     return json({ error: "Unable to save people" }, 500);
   }
 }
+
+export const GET = withIdentity(getHandler);
+export const PUT = withIdentity(putHandler);

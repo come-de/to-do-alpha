@@ -1,3 +1,4 @@
+import { withIdentity } from "@/app/lib/with-identity";
 import { NextResponse } from "next/server";
 import { readFileImportTrash, restoreFileImportFromTrash, type FileImportKind } from "@/app/lib/shared-data";
 
@@ -8,7 +9,7 @@ function json(data: unknown, status = 200) {
   return NextResponse.json(data, { status, headers: { "Cache-Control": "no-store" } });
 }
 
-export async function GET() {
+async function getHandler() {
   try {
     return json({ imports: await readFileImportTrash() });
   } catch (error) {
@@ -17,7 +18,7 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
+async function postHandler(request: Request) {
   try {
     const body = await request.json() as { kind?: FileImportKind; id?: string };
     if (!body.kind || !body.id) return json({ error: "Fichier à restaurer invalide" }, 400);
@@ -28,3 +29,6 @@ export async function POST(request: Request) {
     return json({ error: "Restauration impossible", detail }, 500);
   }
 }
+
+export const GET = withIdentity(getHandler);
+export const POST = withIdentity(postHandler);

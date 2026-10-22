@@ -1,3 +1,4 @@
+import { withIdentity } from "@/app/lib/with-identity";
 import { NextResponse } from "next/server";
 import { readStaffingSessions, sanitizeStaffingDay, writeStaffingSessions } from "@/app/lib/shared-data";
 
@@ -13,11 +14,11 @@ function json(data: unknown, status = 200) {
   });
 }
 
-export async function GET() {
+async function getHandler() {
   return json({ staffing: await readStaffingSessions() });
 }
 
-export async function PUT(request: Request) {
+async function putHandler(request: Request) {
   try {
     const body = (await request.json()) as { staffing?: unknown };
     if (!Array.isArray(body.staffing)) return json({ error: "Invalid staffing list" }, 400);
@@ -40,3 +41,6 @@ export async function PUT(request: Request) {
     return json({ error: "Unable to save staffing sessions" }, 500);
   }
 }
+
+export const GET = withIdentity(getHandler);
+export const PUT = withIdentity(putHandler);

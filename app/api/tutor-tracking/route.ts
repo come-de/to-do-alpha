@@ -1,3 +1,4 @@
+import { withIdentity } from "@/app/lib/with-identity";
 import { NextResponse } from "next/server";
 import {
   createTutorTrackingSnapshotFromCsv,
@@ -20,7 +21,7 @@ function json(data: unknown, status = 200) {
   });
 }
 
-export async function GET(request: Request) {
+async function getHandler(request: Request) {
   const tracking = await readTutorTracking();
   const searchParams = new URL(request.url).searchParams;
   if (searchParams.get("latest") === "1") return json({ snapshot: tracking.snapshots[0] ?? null });
@@ -39,7 +40,7 @@ export async function GET(request: Request) {
   return json({ tracking });
 }
 
-export async function POST(request: Request) {
+async function postHandler(request: Request) {
   try {
     const body = (await request.json()) as { date?: unknown; fileName?: unknown; rawCsv?: unknown };
     if (typeof body.date !== "string" || typeof body.rawCsv !== "string" || !body.rawCsv.trim()) {
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
   }
 }
 
-export async function PUT(request: Request) {
+async function putHandler(request: Request) {
   try {
     const body = (await request.json()) as { tracking?: unknown };
     if (!body.tracking || typeof body.tracking !== "object") return json({ error: "Invalid tutor tracking" }, 400);
@@ -69,7 +70,7 @@ export async function PUT(request: Request) {
   }
 }
 
-export async function PATCH(request: Request) {
+async function patchHandler(request: Request) {
   try {
     const body = (await request.json()) as { id?: unknown; displayName?: unknown };
     if (typeof body.id !== "string" || typeof body.displayName !== "string") {
@@ -82,7 +83,7 @@ export async function PATCH(request: Request) {
   }
 }
 
-export async function DELETE(request: Request) {
+async function deleteHandler(request: Request) {
   try {
     const id = new URL(request.url).searchParams.get("id");
     if (!id) return json({ error: "Identifiant manquant" }, 400);
@@ -93,3 +94,9 @@ export async function DELETE(request: Request) {
     return json({ error: "Suppression impossible", detail }, 500);
   }
 }
+
+export const GET = withIdentity(getHandler);
+export const POST = withIdentity(postHandler);
+export const PUT = withIdentity(putHandler);
+export const PATCH = withIdentity(patchHandler);
+export const DELETE = withIdentity(deleteHandler);

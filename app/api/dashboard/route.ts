@@ -1,3 +1,4 @@
+import { withIdentity } from "@/app/lib/with-identity";
 import { NextResponse } from "next/server";
 import {
   readAvailabilityImportSummaries,
@@ -14,7 +15,7 @@ import {
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-export async function GET() {
+async function getHandler() {
   try {
     const [
       schools,
@@ -57,3 +58,5 @@ export async function GET() {
     return NextResponse.json({ error: "Dashboard indisponible", detail }, { status: 500, headers: { "Cache-Control": "no-store" } });
   }
 }
+
+export const GET = withIdentity(getHandler);

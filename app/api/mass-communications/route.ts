@@ -1,3 +1,4 @@
+import { withIdentity } from "@/app/lib/with-identity";
 import { NextResponse } from "next/server";
 import { readMassCommunications, sanitizeMassCommunication, writeMassCommunications } from "@/app/lib/shared-data";
 
@@ -13,11 +14,11 @@ function json(data: unknown, status = 200) {
   });
 }
 
-export async function GET() {
+async function getHandler() {
   return json({ communications: await readMassCommunications() });
 }
 
-export async function PUT(request: Request) {
+async function putHandler(request: Request) {
   try {
     const body = (await request.json()) as { communications?: unknown };
     if (!Array.isArray(body.communications)) return json({ error: "Invalid communication list" }, 400);
@@ -34,3 +35,6 @@ export async function PUT(request: Request) {
     return json({ error: "Unable to save communications" }, 500);
   }
 }
+
+export const GET = withIdentity(getHandler);
+export const PUT = withIdentity(putHandler);

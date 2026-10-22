@@ -1,3 +1,4 @@
+import { withIdentity } from "@/app/lib/with-identity";
 import { NextResponse } from "next/server";
 import { readTutorCoverageNotes, upsertTutorCoverageNote } from "@/app/lib/shared-data";
 
@@ -8,7 +9,7 @@ function json(data: unknown, status = 200) {
   return NextResponse.json(data, { status, headers: { "Cache-Control": "no-store" } });
 }
 
-export async function GET() {
+async function getHandler() {
   try {
     return json({ notes: await readTutorCoverageNotes() });
   } catch (error) {
@@ -17,7 +18,7 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
+async function postHandler(request: Request) {
   try {
     const body = await request.json() as Record<string, unknown>;
     const note = await upsertTutorCoverageNote(body);
@@ -27,3 +28,6 @@ export async function POST(request: Request) {
     return json({ error: "Impossible de sauvegarder l’annotation", detail }, 500);
   }
 }
+
+export const GET = withIdentity(getHandler);
+export const POST = withIdentity(postHandler);

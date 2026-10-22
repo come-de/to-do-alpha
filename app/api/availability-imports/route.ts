@@ -1,3 +1,4 @@
+import { withIdentity } from "@/app/lib/with-identity";
 import { NextResponse } from "next/server";
 import {
   createAvailabilityImportFromCsv,
@@ -23,7 +24,7 @@ function json(data: unknown, status = 200) {
   });
 }
 
-export async function GET(request: Request) {
+async function getHandler(request: Request) {
   try {
     const url = new URL(request.url);
     const rawImportId = url.searchParams.get("id");
@@ -52,7 +53,7 @@ export async function GET(request: Request) {
   }
 }
 
-export async function POST(request: Request) {
+async function postHandler(request: Request) {
   try {
     const body = (await request.json()) as { fileName?: unknown; rawCsv?: unknown };
     if (typeof body.rawCsv !== "string" || !body.rawCsv.trim()) return json({ error: "Invalid CSV" }, 400);
@@ -67,7 +68,7 @@ export async function POST(request: Request) {
   }
 }
 
-export async function PUT(request: Request) {
+async function putHandler(request: Request) {
   try {
     const body = (await request.json()) as { imports?: unknown };
     if (!Array.isArray(body.imports)) return json({ error: "Invalid availability imports" }, 400);
@@ -84,7 +85,7 @@ export async function PUT(request: Request) {
   }
 }
 
-export async function PATCH(request: Request) {
+async function patchHandler(request: Request) {
   try {
     const body = (await request.json()) as { id?: unknown; displayName?: unknown };
     if (typeof body.id !== "string" || typeof body.displayName !== "string") {
@@ -98,7 +99,7 @@ export async function PATCH(request: Request) {
   }
 }
 
-export async function DELETE(request: Request) {
+async function deleteHandler(request: Request) {
   try {
     const url = new URL(request.url);
     const id = url.searchParams.get("id");
@@ -110,3 +111,9 @@ export async function DELETE(request: Request) {
     return json({ error: "Unable to delete availability import", detail: message }, 500);
   }
 }
+
+export const GET = withIdentity(getHandler);
+export const POST = withIdentity(postHandler);
+export const PUT = withIdentity(putHandler);
+export const PATCH = withIdentity(patchHandler);
+export const DELETE = withIdentity(deleteHandler);

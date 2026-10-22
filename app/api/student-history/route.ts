@@ -1,3 +1,4 @@
+import { withIdentity } from "@/app/lib/with-identity";
 import { NextResponse } from "next/server";
 import {
   readStudentHistory,
@@ -17,11 +18,11 @@ function json(data: unknown, status = 200) {
   });
 }
 
-export async function GET() {
+async function getHandler() {
   return json({ history: await readStudentHistory() });
 }
 
-export async function PUT(request: Request) {
+async function putHandler(request: Request) {
   try {
     const body = (await request.json()) as { history?: unknown };
     if (!Array.isArray(body.history)) return json({ error: "Invalid student history" }, 400);
@@ -39,3 +40,6 @@ export async function PUT(request: Request) {
     return json({ error: "Unable to save student history" }, 500);
   }
 }
+
+export const GET = withIdentity(getHandler);
+export const PUT = withIdentity(putHandler);
