@@ -5,7 +5,6 @@ import EnrollmentComparison from "@/app/components/enrollment-comparison";
 import FilesHub, { type FileKind } from "@/app/components/files-hub";
 import TutorCoverageComparison from "@/app/components/tutor-coverage-comparison";
 import UnstaffedSessions from "@/app/components/unstaffed-sessions";
-import TutorAvailabilityFeed from "@/app/components/tutor-availability-feed";
 import SchoolAdminLink from "@/app/components/school-admin-link";
 import PersonAdminLink from "@/app/components/person-admin-link";
 import HomeDashboard, { type HomeDestination } from "@/app/components/home-dashboard";
@@ -16,14 +15,13 @@ import type { TutorAssignmentImport, TutorAssignmentRow, TutorInterestImport, Tu
 type Status = "todo" | "progress" | "done";
 type Priority = "low" | "medium" | "high";
 type Density = "compact" | "comfortable";
-type AppMode = "dashboard" | "tasks" | "recurring" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffing" | "staffingAudit" | "staffingEvolution" | "watchlist" | "tutorReports" | "tutors" | "availability" | "availabilityFeed" | "enrollments" | "coverage" | "unstaffed" | "files";
+type AppMode = "dashboard" | "organization" | "tasks" | "recurring" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffingAudit" | "staffingEvolution" | "watchlist" | "tutorReports" | "tutors" | "availability" | "enrollments" | "coverage" | "unstaffed" | "files";
 type ViewMode = "list" | "matrix";
 type DurationBucket = "short" | "medium" | "long" | "unset";
 type ObjectiveKind = "counter" | "qualitative";
 type ObjectiveStatus = "todo" | "progress" | "done";
 type CommunicationAudience = "tuteurs" | "candidats" | "etablissements" | "parents" | "coordinateurs";
 type CommunicationStatus = "draft" | "sent" | "to-follow-up" | "cancelled";
-type StaffingPersonKey = "pierre" | "julie" | "kelly";
 
 type Comment = {
   id: string;
@@ -131,21 +129,6 @@ type MassCommunication = {
   author: string;
   notes: string;
   tags: string[];
-  createdAt: string;
-  updatedAt: string;
-};
-
-type StaffingPersonStats = {
-  staffedSessions: number;
-  unstaffedSessions: number;
-};
-
-type StaffingDay = {
-  id: string;
-  date: string;
-  people: Record<StaffingPersonKey, StaffingPersonStats>;
-  totalStaffedSessions: number;
-  totalUnstaffedSessions: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -425,6 +408,7 @@ const DENSITY_KEY = "petit-suivi-densite-v2";
 
 const appModeSlugs: Record<AppMode, string> = {
   dashboard: "accueil",
+  organization: "organisation",
   tasks: "taches",
   recurring: "recurrences",
   links: "liens",
@@ -433,14 +417,12 @@ const appModeSlugs: Record<AppMode, string> = {
   journal: "journal",
   schools: "etablissements",
   communications: "communications",
-  staffing: "staffing",
   staffingAudit: "bilan-staffing",
   staffingEvolution: "evolution-staffing",
   watchlist: "a-suivre",
   tutorReports: "bilans-tuteurs",
   tutors: "tuteurs",
   availability: "comparaison-dispos",
-  availabilityFeed: "fil-disponibilites",
   enrollments: "comparaison-inscriptions",
   coverage: "couverture-tuteurs",
   unstaffed: "seances-non-affectees",
@@ -449,6 +431,8 @@ const appModeSlugs: Record<AppMode, string> = {
 
 const appModeAliases: Record<string, AppMode> = {
   accueil: "dashboard",
+  organisation: "organization",
+  organization: "organization",
   home: "dashboard",
   dashboard: "dashboard",
   taches: "tasks",
@@ -465,7 +449,7 @@ const appModeAliases: Record<string, AppMode> = {
   établissements: "schools",
   schools: "schools",
   communications: "communications",
-  staffing: "staffing",
+  staffing: "dashboard",
   "bilan-staffing": "staffingAudit",
   "historique-staffing": "staffingAudit",
   "evolution-staffing": "staffingEvolution",
@@ -481,9 +465,9 @@ const appModeAliases: Record<string, AppMode> = {
   "comparaison-disponibilites": "availability",
   "comparaison-disponibilités": "availability",
   availability: "availability",
-  "fil-disponibilites": "availabilityFeed",
-  "fil-disponibilités": "availabilityFeed",
-  "disponibilites-du-jour": "availabilityFeed",
+  "fil-disponibilites": "availability",
+  "fil-disponibilités": "availability",
+  "disponibilites-du-jour": "availability",
   inscriptions: "enrollments",
   "comparaison-inscriptions": "enrollments",
   parents: "enrollments",
@@ -504,6 +488,21 @@ const appModeAliases: Record<string, AppMode> = {
   suivis: "watchlist",
   watchlist: "watchlist",
 };
+
+const organizationSections: Array<{ mode: AppMode; icon: string; title: string; description: string }> = [
+  { mode: "tasks", icon: "✅", title: "Tâches", description: "Actions à faire, en cours et terminées." },
+  { mode: "links", icon: "🔗", title: "Liens", description: "Ressources et raccourcis utiles." },
+  { mode: "watchlist", icon: "👀", title: "À suivre", description: "Établissements qui demandent une attention particulière." },
+  { mode: "communications", icon: "📣", title: "Communications", description: "Messages envoyés et suivis à effectuer." },
+  { mode: "staffingEvolution", icon: "🔄", title: "Évolution staffing", description: "Comparer les changements entre deux exports." },
+  { mode: "enrollments", icon: "🎒", title: "Inscriptions", description: "Comparer les inscriptions par établissement." },
+  { mode: "tutorReports", icon: "🧾", title: "Bilans tuteurs", description: "Suivre les bilans et leurs commentaires." },
+  { mode: "objectives", icon: "🎯", title: "Objectifs", description: "Suivre les objectifs de l’équipe." },
+  { mode: "history", icon: "📈", title: "Historique", description: "Consulter les évolutions par année." },
+  { mode: "journal", icon: "✍️", title: "Journal", description: "Partager les nouvelles et les informations." },
+];
+
+const organizationModes = new Set<AppMode>(organizationSections.map(({ mode }) => mode));
 
 function normalizeUrlToken(value: string | null) {
   return (value || "")
@@ -736,11 +735,6 @@ const communicationStatusLabels: Record<CommunicationStatus, string> = {
 const communicationAudiences: CommunicationAudience[] = ["tuteurs", "candidats", "etablissements", "parents", "coordinateurs"];
 const communicationStatuses: ("all" | CommunicationStatus)[] = ["all", "sent", "to-follow-up", "draft", "cancelled"];
 const communicationChannels = ["Email", "SMS", "WhatsApp", "Téléphone", "Réunion", "Autre"];
-const staffingPeople: { key: StaffingPersonKey; label: string }[] = [
-  { key: "pierre", label: "Pierre" },
-  { key: "julie", label: "Julie" },
-  { key: "kelly", label: "Kelly" },
-];
 const schoolWatchTags: SchoolWatchTag[] = ["Nouvel établissement", "Nouveau besoin", "Suivi particulier"];
 const schoolWatchStatusLabels: Record<SchoolWatchStatus, string> = {
   active: "Actif",
@@ -948,63 +942,6 @@ function normalizeSessionCount(value: unknown) {
         ? Number(value)
         : 0;
   return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 0;
-}
-
-function normalizeStaffingPerson(raw: Partial<StaffingPersonStats> | undefined): StaffingPersonStats {
-  return {
-    staffedSessions: normalizeSessionCount(raw?.staffedSessions),
-    unstaffedSessions: normalizeSessionCount(raw?.unstaffedSessions),
-  };
-}
-
-function staffingPeopleTotals(people: Record<StaffingPersonKey, StaffingPersonStats>) {
-  return staffingPeople.reduce(
-    (totals, person) => {
-      totals.staffed += people[person.key].staffedSessions;
-      totals.unstaffed += people[person.key].unstaffedSessions;
-      return totals;
-    },
-    { staffed: 0, unstaffed: 0 },
-  );
-}
-
-function staffingDayTotals(day: StaffingDay) {
-  return {
-    staffed: normalizeSessionCount(day.totalStaffedSessions),
-    unstaffed: normalizeSessionCount(day.totalUnstaffedSessions),
-  };
-}
-
-function staffingUnstaffedPercent(staffed: number, unstaffed: number) {
-  const total = staffed + unstaffed;
-  if (total <= 0) return 0;
-  return Math.round((unstaffed / total) * 100);
-}
-
-function normalizeStaffingDay(raw: Partial<StaffingDay>): StaffingDay {
-  const now = new Date().toISOString();
-  const date = raw.date || now.slice(0, 10);
-  const people = {
-    pierre: normalizeStaffingPerson(raw.people?.pierre),
-    julie: normalizeStaffingPerson(raw.people?.julie),
-    kelly: normalizeStaffingPerson(raw.people?.kelly),
-  };
-  const peopleTotals = staffingPeopleTotals(people);
-  return {
-    id: raw.id || `staffing-${date}`,
-    date,
-    people,
-    totalStaffedSessions:
-      raw.totalStaffedSessions === undefined || raw.totalStaffedSessions === null
-        ? peopleTotals.staffed
-        : normalizeSessionCount(raw.totalStaffedSessions),
-    totalUnstaffedSessions:
-      raw.totalUnstaffedSessions === undefined || raw.totalUnstaffedSessions === null
-        ? peopleTotals.unstaffed
-        : normalizeSessionCount(raw.totalUnstaffedSessions),
-    createdAt: raw.createdAt || now,
-    updatedAt: raw.updatedAt || raw.createdAt || now,
-  };
 }
 
 function normalizeTutorReportEntry(
@@ -1463,23 +1400,6 @@ function normalizeSchoolWatchItem(raw: Partial<SchoolWatchItem>): SchoolWatchIte
   };
 }
 
-function createEmptyStaffingDay(date = new Date().toISOString().slice(0, 10)): StaffingDay {
-  const now = new Date().toISOString();
-  return {
-    id: `staffing-${date}`,
-    date,
-    people: {
-      pierre: { staffedSessions: 0, unstaffedSessions: 0 },
-      julie: { staffedSessions: 0, unstaffedSessions: 0 },
-      kelly: { staffedSessions: 0, unstaffedSessions: 0 },
-    },
-    totalStaffedSessions: 0,
-    totalUnstaffedSessions: 0,
-    createdAt: now,
-    updatedAt: now,
-  };
-}
-
 function normalizeSchoolEvent(raw: Partial<SchoolEvent>): SchoolEvent {
   const now = new Date().toISOString();
   return {
@@ -1796,7 +1716,6 @@ export default function Home() {
   const [links, setLinks] = useState<SharedLink[]>([]);
   const [journalPosts, setJournalPosts] = useState<JournalPost[]>([]);
   const [communications, setCommunications] = useState<MassCommunication[]>([]);
-  const [staffingDays, setStaffingDays] = useState<StaffingDay[]>([]);
   const [tutorReports, setTutorReports] = useState<TutorReportSnapshot[]>([]);
   const [tutorReportComments, setTutorReportComments] = useState<TutorReportComment[]>([]);
   const [tutorTracking, setTutorTracking] = useState<TutorTrackingData>({ snapshots: [], comments: [] });
@@ -2019,31 +1938,6 @@ export default function Home() {
     }
   }, []);
 
-  const loadStaffingDays = useCallback(async () => {
-    try {
-      const response = await fetch("/api/staffing-sessions", { cache: "no-store" });
-      if (!response.ok) throw new Error("load-staffing-failed");
-      const data = (await response.json()) as { staffing?: Partial<StaffingDay>[] };
-      const today = new Date().toISOString().slice(0, 10);
-      const loadedStaffing = Array.isArray(data.staffing) ? data.staffing.map(normalizeStaffingDay) : [];
-      if (loadedStaffing.some((day) => day.date === today)) {
-        setStaffingDays(loadedStaffing);
-        return;
-      }
-      const nextStaffing = [createEmptyStaffingDay(today), ...loadedStaffing].sort(
-        (a, b) => sortDateValue(b.date) - sortDateValue(a.date),
-      );
-      setStaffingDays(nextStaffing);
-      await fetch("/api/staffing-sessions", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ staffing: nextStaffing }),
-      });
-    } catch {
-      setToast("Staffing indisponible");
-    }
-  }, []);
-
   const loadTutorReports = useCallback(async () => {
     try {
       const response = await fetch("/api/tutor-reports", { cache: "no-store" });
@@ -2215,7 +2109,6 @@ export default function Home() {
       else if (appMode === "links") void loadLinks();
       else if (appMode === "journal") { void loadJournalPosts(); void loadPeople(); }
       else if (appMode === "communications") void loadCommunications();
-      else if (appMode === "staffing") void loadStaffingDays();
       else if (appMode === "tutorReports") { void loadTutorReports(); void loadTutorReportComments(); }
       else if (appMode === "tutors") void loadTutorTracking();
       else if (appMode === "availability") { void loadAvailabilityImports(); void loadLatestAvailabilityStaffing(); void loadSchools(); void loadTutorTracking(); }
@@ -2227,7 +2120,7 @@ export default function Home() {
     const initial = window.setTimeout(refreshCurrentPage, 0);
     const refresh = window.setInterval(refreshCurrentPage, 30_000);
     return () => { window.clearTimeout(initial); window.clearInterval(refresh); };
-  }, [appMode, loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadCommunications, loadStaffingDays, loadTutorReports, loadTutorReportComments, loadTutorTracking, loadAvailabilityImports, loadLatestAvailabilityStaffing, loadSchoolWatchlist, loadSchools, loadStudentHistory]);
+  }, [appMode, loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadCommunications, loadTutorReports, loadTutorReportComments, loadTutorTracking, loadAvailabilityImports, loadLatestAvailabilityStaffing, loadSchoolWatchlist, loadSchools, loadStudentHistory]);
 
   useEffect(() => {
     if (appMode !== "availability") return;
@@ -2410,54 +2303,6 @@ export default function Home() {
           sortDateValue(a.sentAt || a.followUpDate || a.createdAt),
       );
   }, [communications, communicationQuery, communicationAudienceFilter, communicationStatusFilter]);
-  const staffingSummary = useMemo(() => {
-    const today = new Date();
-    today.setHours(12, 0, 0, 0);
-    const sevenDaysAgo = today.getTime() - 6 * 24 * 60 * 60 * 1000;
-    return staffingDays.reduce(
-      (summary, day) => {
-        const dayValue = sortDateValue(day.date);
-        const dayTotals = staffingDayTotals(day);
-        summary.totalStaffed += dayTotals.staffed;
-        summary.totalUnstaffed += dayTotals.unstaffed;
-        if (dayValue >= sevenDaysAgo && dayValue <= today.getTime()) {
-          summary.weekStaffed += dayTotals.staffed;
-          summary.weekUnstaffed += dayTotals.unstaffed;
-        }
-        return summary;
-      },
-      { totalStaffed: 0, totalUnstaffed: 0, weekStaffed: 0, weekUnstaffed: 0 },
-    );
-  }, [staffingDays]);
-  const staffingChart = useMemo(() => {
-    const points = staffingDays
-      .slice()
-      .sort((a, b) => sortDateValue(a.date) - sortDateValue(b.date))
-      .slice(-14)
-      .map((day) => {
-        const totals = staffingDayTotals(day);
-        return {
-          date: day.date,
-          total: totals.staffed + totals.unstaffed,
-          unstaffed: totals.unstaffed,
-        };
-      });
-    const maxValue = Math.max(1, ...points.flatMap((point) => [point.total, point.unstaffed]));
-    const pathFor = (field: "total" | "unstaffed") =>
-      points
-        .map((point, index) => {
-          const x = points.length <= 1 ? 0 : (index / (points.length - 1)) * 100;
-          const y = 42 - (point[field] / maxValue) * 36;
-          return `${x.toFixed(1)},${y.toFixed(1)}`;
-        })
-        .join(" ");
-    return {
-      points,
-      totalPath: pathFor("total"),
-      unstaffedPath: pathFor("unstaffed"),
-      unstaffedPercent: staffingUnstaffedPercent(staffingSummary.totalStaffed, staffingSummary.totalUnstaffed),
-    };
-  }, [staffingDays, staffingSummary.totalStaffed, staffingSummary.totalUnstaffed]);
   const activeTutorReport = useMemo(
     () => tutorReports.find((report) => report.date === tutorReportDate) ?? null,
     [tutorReports, tutorReportDate],
@@ -3010,31 +2855,6 @@ export default function Home() {
     } catch {
       setSyncError("Sauvegarde impossible, rechargez la page avant de continuer");
       setToast("Communication non sauvegardée");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function saveStaffingDays(nextStaffing: StaffingDay[], message: string) {
-    setSaving(true);
-    setSyncError("");
-    const normalizedStaffing = nextStaffing
-      .map(normalizeStaffingDay)
-      .sort((a, b) => sortDateValue(b.date) - sortDateValue(a.date));
-    setStaffingDays(normalizedStaffing);
-    try {
-      const response = await fetch("/api/staffing-sessions", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ staffing: normalizedStaffing }),
-      });
-      if (!response.ok) throw new Error("save-staffing-failed");
-      const data = (await response.json()) as { staffing?: Partial<StaffingDay>[] };
-      setStaffingDays(Array.isArray(data.staffing) ? data.staffing.map(normalizeStaffingDay) : []);
-      setToast(message);
-    } catch {
-      setSyncError("Sauvegarde impossible, rechargez la page avant de continuer");
-      setToast("Staffing non sauvegardé");
     } finally {
       setSaving(false);
     }
@@ -3666,58 +3486,6 @@ export default function Home() {
     await saveCommunications(
       communications.filter((communication) => communication.id !== communicationId),
       "Communication supprimée",
-    );
-  }
-
-  async function updateStaffingValue(
-    dayId: string,
-    personKey: StaffingPersonKey,
-    field: keyof StaffingPersonStats,
-    value: string,
-  ) {
-    const count = normalizeSessionCount(value);
-    const now = new Date().toISOString();
-    await saveStaffingDays(
-      staffingDays.map((day) => {
-        if (day.id !== dayId) return day;
-        const people = {
-          ...day.people,
-          [personKey]: {
-            ...day.people[personKey],
-            [field]: count,
-          },
-        };
-        const peopleTotals = staffingPeopleTotals(people);
-        return {
-          ...day,
-          people,
-          totalStaffedSessions: field === "staffedSessions" ? peopleTotals.staffed : day.totalStaffedSessions,
-          totalUnstaffedSessions: field === "unstaffedSessions" ? peopleTotals.unstaffed : day.totalUnstaffedSessions,
-          updatedAt: now,
-        };
-      }),
-      "Staffing mis à jour",
-    );
-  }
-
-  async function updateStaffingTotal(
-    dayId: string,
-    field: "totalStaffedSessions" | "totalUnstaffedSessions",
-    value: string,
-  ) {
-    const count = normalizeSessionCount(value);
-    const now = new Date().toISOString();
-    await saveStaffingDays(
-      staffingDays.map((day) =>
-        day.id === dayId
-          ? {
-              ...day,
-              [field]: count,
-              updatedAt: now,
-            }
-          : day,
-      ),
-      "Total staffing mis à jour",
     );
   }
 
@@ -4622,18 +4390,6 @@ export default function Home() {
     setSelectedHistoryYears((current) =>
       checked ? [...new Set([...current, year])] : current.filter((item) => item !== year),
     );
-  }
-
-  async function copyCurrentTabLink() {
-    const url = new URL(window.location.href);
-    url.searchParams.set("onglet", appModeSlugs[appMode]);
-    const link = `${url.origin}${url.pathname}?${url.searchParams.toString()}${url.hash}`;
-    try {
-      await navigator.clipboard.writeText(link);
-      setToast("Lien de l'onglet copié");
-    } catch {
-      window.prompt("Copiez ce lien", link);
-    }
   }
 
   async function saveTask(event: FormEvent) {
@@ -5759,16 +5515,12 @@ export default function Home() {
                     ? openNewJournalPost
                   : appMode === "communications"
                       ? openNewCommunication
-                    : appMode === "staffing"
-                      ? () => { void loadStaffingDays(); }
                     : appMode === "staffingAudit"
                       ? () => setAppMode("staffingAudit")
                     : appMode === "tutors"
                       ? () => { void loadTutorTracking(); }
                     : appMode === "availability"
                       ? () => { void loadAvailabilityImports(); }
-                    : appMode === "availabilityFeed"
-                      ? () => setAppMode("availabilityFeed")
                     : appMode === "enrollments"
                       ? () => setAppMode("enrollments")
                     : appMode === "coverage"
@@ -5800,16 +5552,12 @@ export default function Home() {
                     ? "Nouveau post"
                   : appMode === "communications"
                       ? "Nouvelle communication"
-                    : appMode === "staffing"
-                      ? "Ligne du jour"
                     : appMode === "staffingAudit"
                       ? "Voir les bilans"
                     : appMode === "tutors"
                       ? "Actualiser tuteurs"
                     : appMode === "availability"
                       ? "Actualiser dispos"
-                    : appMode === "availabilityFeed"
-                      ? "Voir le fil"
                     : appMode === "enrollments"
                       ? "Comparer inscriptions"
                     : appMode === "coverage"
@@ -5854,29 +5602,14 @@ export default function Home() {
             <button className={appMode === "dashboard" ? "active" : ""} onClick={() => setAppMode("dashboard")}>
               <span className="tab-icon" aria-hidden="true">🏠</span> Accueil
             </button>
-            <button className={appMode === "tasks" ? "active" : ""} onClick={() => setAppMode("tasks")}>
-              <span className="tab-icon" aria-hidden="true">✅</span> Tâches
-            </button>
-            <button className={appMode === "links" ? "active" : ""} onClick={() => setAppMode("links")}>
-              <span className="tab-icon" aria-hidden="true">🔗</span> Liens
-            </button>
-            <button className={appMode === "watchlist" ? "active" : ""} onClick={() => setAppMode("watchlist")}>
-              <span className="tab-icon" aria-hidden="true">👀</span> À suivre
+            <button className={appMode === "organization" || organizationModes.has(appMode) ? "active" : ""} onClick={() => setAppMode("organization")}>
+              <span className="tab-icon" aria-hidden="true">🗂️</span> Organisation
             </button>
             <button className={appMode === "schools" ? "active" : ""} onClick={() => setAppMode("schools")}>
               <span className="tab-icon" aria-hidden="true">🏫</span> Établissements
             </button>
-            <button className={appMode === "communications" ? "active" : ""} onClick={() => setAppMode("communications")}>
-              <span className="tab-icon" aria-hidden="true">📣</span> Communications
-            </button>
-            <button className={appMode === "staffing" ? "active" : ""} onClick={() => setAppMode("staffing")}>
-              <span className="tab-icon" aria-hidden="true">👥</span> Staffing
-            </button>
             <button className={appMode === "staffingAudit" ? "active" : ""} onClick={() => setAppMode("staffingAudit")}>
               <span className="tab-icon" aria-hidden="true">📊</span> Bilan staffing
-            </button>
-            <button className={appMode === "staffingEvolution" ? "active" : ""} onClick={() => setAppMode("staffingEvolution")}>
-              <span className="tab-icon" aria-hidden="true">🔄</span> Évolution staffing
             </button>
             <button className={appMode === "unstaffed" ? "active" : ""} onClick={() => setAppMode("unstaffed")}>
               <span className="tab-icon" aria-hidden="true">📋</span> Séances non affectées
@@ -5887,35 +5620,28 @@ export default function Home() {
             <button className={appMode === "availability" ? "active" : ""} onClick={() => setAppMode("availability")}>
               <span className="tab-icon" aria-hidden="true">📆</span> Comparaison dispos
             </button>
-            <button className={appMode === "availabilityFeed" ? "active" : ""} onClick={() => setAppMode("availabilityFeed")}>
-              <span className="tab-icon" aria-hidden="true">🕒</span> Fil des disponibilités
-            </button>
-            <button className={appMode === "enrollments" ? "active" : ""} onClick={() => setAppMode("enrollments")}>
-              <span className="tab-icon" aria-hidden="true">🎒</span> Inscriptions
-            </button>
             <button className={appMode === "coverage" ? "active" : ""} onClick={() => setAppMode("coverage")}>
               <span className="tab-icon" aria-hidden="true">🧩</span> Tuteurs dispo sans séance
             </button>
             <button className={appMode === "files" ? "active" : ""} onClick={() => setAppMode("files")}>
               <span className="tab-icon" aria-hidden="true">🗂️</span> Fichiers
             </button>
-            <button className={appMode === "tutorReports" ? "active" : ""} onClick={() => setAppMode("tutorReports")}>
-              <span className="tab-icon" aria-hidden="true">🧾</span> Bilans tuteurs
-            </button>
-            <button className={appMode === "objectives" ? "active" : ""} onClick={() => setAppMode("objectives")}>
-              <span className="tab-icon" aria-hidden="true">🎯</span> Objectifs
-            </button>
-            <button className={appMode === "history" ? "active" : ""} onClick={() => setAppMode("history")}>
-              <span className="tab-icon" aria-hidden="true">📈</span> Historique
-            </button>
-            <button className={appMode === "journal" ? "active" : ""} onClick={() => setAppMode("journal")}>
-              <span className="tab-icon" aria-hidden="true">✍️</span> Journal
-            </button>
           </div>
-          <button className="copy-tab-link" onClick={copyCurrentTabLink} type="button">
-            Copier le lien
-          </button>
+          {(appMode === "organization" || organizationModes.has(appMode)) && <div className="organization-tabs" role="group" aria-label="Rubriques Organisation">
+            {organizationSections.map((section) => <button key={section.mode} className={appMode === section.mode ? "active" : ""} onClick={() => setAppMode(section.mode)}>
+              <span aria-hidden="true">{section.icon}</span>{section.title}
+            </button>)}
+          </div>}
         </div>
+
+        {appMode === "organization" && <section className="organization-hub task-panel">
+          <div className="panel-heading"><div><h2>Organisation</h2><p>Les outils pour organiser le quotidien, suivre les actions et partager les informations.</p></div></div>
+          <div className="home-menu-grid">
+            {organizationSections.map((section) => <button className="home-menu-card" key={section.mode} onClick={() => setAppMode(section.mode)}>
+              <i aria-hidden="true">{section.icon}</i><span><strong>{section.title}</strong><small>{section.description}</small></span><b aria-hidden="true">›</b>
+            </button>)}
+          </div>
+        </section>}
 
         {appMode === "tasks" && <div className="stats-grid" aria-label="Resume des taches">
           <button className={`stat-card neutral ${statusFilter === "all" ? "active" : ""}`} onClick={() => setStatusFilter("all")}>
@@ -6323,134 +6049,8 @@ export default function Home() {
             )}
           </div>
         </section>
-        : appMode === "staffing" ? <section className="task-panel">
-          <div className="panel-heading">
-            <div>
-              <h2>Staffing séances</h2>
-              <p>{`${staffingDays.length} jour${staffingDays.length > 1 ? "s" : ""} suivi${staffingDays.length > 1 ? "s" : ""} · Pierre, Julie, Kelly`}</p>
-            </div>
-            <div className="filters">
-              <button className="button quiet" onClick={() => { void loadStaffingDays(); }} disabled={saving}>↻ Actualiser</button>
-              <button className="button primary" onClick={() => { void loadStaffingDays(); }} disabled={saving}>＋ Ligne du jour</button>
-            </div>
-          </div>
-          <div className="staffing-mini-chart" aria-label="Évolution globale des séances">
-            <div className="staffing-chart-copy">
-              <span>Global</span>
-              <strong>{staffingSummary.totalStaffed + staffingSummary.totalUnstaffed} séances</strong>
-              <small>{staffingChart.unstaffedPercent}% non staffées</small>
-            </div>
-            <svg viewBox="0 0 100 46" role="img" aria-label="Courbes total séances et séances non staffées">
-              <line x1="0" y1="42" x2="100" y2="42" />
-              <polyline className="total-line" points={staffingChart.totalPath || "0,42 100,42"} />
-              <polyline className="unstaffed-line" points={staffingChart.unstaffedPath || "0,42 100,42"} />
-            </svg>
-            <div className="staffing-chart-legend">
-              <span><i className="total-dot" /> Total</span>
-              <span><i className="unstaffed-dot" /> Non staffées</span>
-              <small>{staffingChart.points.length ? `${staffingChart.points.length} dernier${staffingChart.points.length > 1 ? "s" : ""} jour${staffingChart.points.length > 1 ? "s" : ""}` : "Aucune donnée"}</small>
-            </div>
-          </div>
-          <div className="staffing-summary" aria-label="Résumé staffing">
-            <div><span>7 jours staffées</span><strong>{staffingSummary.weekStaffed}</strong></div>
-            <div><span>7 jours non staffées</span><strong>{staffingSummary.weekUnstaffed}</strong></div>
-            <div><span>Total staffées</span><strong>{staffingSummary.totalStaffed}</strong></div>
-            <div><span>Total non staffées</span><strong>{staffingSummary.totalUnstaffed}</strong></div>
-          </div>
-          <div className="staffing-table-wrap">
-            <div className="staffing-table staffing-head" role="row">
-              <span>Date</span>
-              {staffingPeople.map((person) => <span key={person.key}>{person.label}</span>)}
-              <span>Total staffé</span>
-              <span>Total non staffé</span>
-            </div>
-            {staffingDays.length ? staffingDays.map((day) => {
-              const dayTotals = staffingDayTotals(day);
-              return (
-                <article className="staffing-table staffing-row" key={day.id}>
-                  <div className="staffing-date">
-                    <strong>{formatDate(day.date)}</strong>
-                    <small>{day.date}</small>
-                  </div>
-                  {staffingPeople.map((person) => (
-                    <div className="staffing-person-cell" key={person.key}>
-                      <label>
-                        <span>Staffées</span>
-                        <input
-                          type="number"
-                          min="0"
-                          step="1"
-                          defaultValue={day.people[person.key].staffedSessions}
-                          onBlur={(event) => {
-                            const count = normalizeSessionCount(event.target.value);
-                            event.target.value = String(count);
-                            void updateStaffingValue(day.id, person.key, "staffedSessions", event.target.value);
-                          }}
-                          aria-label={`${person.label} séances staffées ${day.date}`}
-                        />
-                      </label>
-                      <label>
-                        <span>Non staffées</span>
-                        <input
-                          type="number"
-                          min="0"
-                          step="1"
-                          defaultValue={day.people[person.key].unstaffedSessions}
-                          onBlur={(event) => {
-                            const count = normalizeSessionCount(event.target.value);
-                            event.target.value = String(count);
-                            void updateStaffingValue(day.id, person.key, "unstaffedSessions", event.target.value);
-                          }}
-                          aria-label={`${person.label} séances non staffées ${day.date}`}
-                        />
-                      </label>
-                    </div>
-                  ))}
-                  <label className="staffing-total-input good">
-                    <span>Total staffé</span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      defaultValue={dayTotals.staffed}
-                      onBlur={(event) => {
-                        const count = normalizeSessionCount(event.target.value);
-                        event.target.value = String(count);
-                        void updateStaffingTotal(day.id, "totalStaffedSessions", event.target.value);
-                      }}
-                      aria-label={`Total séances staffées ${day.date}`}
-                    />
-                  </label>
-                  <label className={`staffing-total-input ${dayTotals.unstaffed > 0 ? "alert" : ""}`}>
-                    <span>Total non staffé</span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      defaultValue={dayTotals.unstaffed}
-                      onBlur={(event) => {
-                        const count = normalizeSessionCount(event.target.value);
-                        event.target.value = String(count);
-                        void updateStaffingTotal(day.id, "totalUnstaffedSessions", event.target.value);
-                      }}
-                      aria-label={`Total séances non staffées ${day.date}`}
-                    />
-                  </label>
-                </article>
-              );
-            }) : (
-              <div className="empty-state staffing-empty">
-                <span>≡</span>
-                <h3>Aucune journée suivie</h3>
-                <p>La ligne du jour sera ajoutée automatiquement pour commencer le suivi des séances staffées et non staffées.</p>
-                <button className="button primary" onClick={() => { void loadStaffingDays(); }}>Créer la ligne du jour</button>
-              </div>
-            )}
-          </div>
-        </section>
         : appMode === "tutors" ? renderTutorTrackingSection()
         : appMode === "availability" ? renderAvailabilityComparisonSection()
-        : appMode === "availabilityFeed" ? <TutorAvailabilityFeed onOpenFiles={openFiles} />
         : appMode === "enrollments" ? <EnrollmentComparison onOpenFiles={openFiles} />
         : appMode === "coverage" ? <TutorCoverageComparison onOpenFiles={openFiles} />
         : appMode === "unstaffed" ? <UnstaffedSessions onOpenFiles={openFiles} />

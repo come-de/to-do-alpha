@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-export type HomeDestination = "tasks" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffing" | "staffingAudit" | "staffingEvolution" | "watchlist" | "tutorReports" | "tutors" | "availability" | "availabilityFeed" | "enrollments" | "coverage" | "unstaffed" | "files";
+export type HomeDestination = "tasks" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffingAudit" | "staffingEvolution" | "watchlist" | "tutorReports" | "tutors" | "availability" | "enrollments" | "coverage" | "unstaffed" | "files";
 type DashboardPayload = {
   counts?: Record<string, number>;
   error?: string;
@@ -19,14 +19,12 @@ const menuItems: Array<{ mode: HomeDestination; icon: string; title: string; des
   { mode: "coverage", icon: "🧩", title: "Tuteurs dispo sans séance", description: "Croiser les disponibilités, les intérêts et les séances à staffer." },
   { mode: "schools", icon: "🏫", title: "Établissements", description: "Consulter le CRM et la répartition des établissements.", countKey: "schools" },
   { mode: "files", icon: "🗂️", title: "Fichiers", description: "Retrouver et gérer les imports partagés." },
-  { mode: "availabilityFeed", icon: "🕒", title: "Fil des disponibilités", description: "Voir les créneaux libres dans l’ordre chronologique." },
   { mode: "history", icon: "📈", title: "Historique", description: "Comparer l’évolution du nombre d’élèves.", countKey: "history" },
   { mode: "enrollments", icon: "🎒", title: "Inscriptions", description: "Comparer les inscriptions entre deux exports." },
   { mode: "journal", icon: "✍️", title: "Journal", description: "Relire les nouvelles et décisions de l’Étude Alpha.", countKey: "journal" },
   { mode: "links", icon: "🔗", title: "Liens", description: "Accéder rapidement aux ressources partagées.", countKey: "links" },
   { mode: "objectives", icon: "🎯", title: "Objectifs", description: "Suivre les objectifs collectifs et individuels.", countKey: "objectives" },
   { mode: "unstaffed", icon: "📋", title: "Séances non affectées", description: "Identifier les séances à staffer et les personnes mobilisables." },
-  { mode: "staffing", icon: "👥", title: "Staffing", description: "Suivre les volumes staffés et non staffés au quotidien.", countKey: "staffing" },
   { mode: "tasks", icon: "✅", title: "Tâches", description: "Organiser et suivre les actions de l’équipe.", countKey: "tasks" },
   { mode: "tutors", icon: "👨‍🏫", title: "Tuteurs", description: "Suivre les entrées, sorties et commentaires tuteurs." },
 ];

@@ -164,9 +164,9 @@ body { background: radial-gradient(ellipse at 0 15%, #f2e7ff 0, transparent 45%)
 .task-row:hover { background: #faf6ff; }
 .stat-card { border-bottom-color: currentColor; }
 .stat-card.blue { color: var(--blue-dark); }
-:where(.staffing-summary, .tutor-report-summary, .availability-summary) > div { border-color: var(--line); background: #f5effc; padding: 7px 9px; }
-:where(.staffing-summary, .tutor-report-summary) > div:nth-child(2) { background: #fff0b0; }
-:where(.staffing-summary, .tutor-report-summary) > div:nth-child(3) { background: #dcf9e9; }
+:where(.tutor-report-summary, .availability-summary) > div { border-color: var(--line); background: #f5effc; padding: 7px 9px; }
+:where(.tutor-report-summary) > div:nth-child(2) { background: #fff0b0; }
+:where(.tutor-report-summary) > div:nth-child(3) { background: #dcf9e9; }
 .files-category-heading { background: #eee5ff; }
 .files-category:nth-child(3n+2) .files-category-heading { background: #fff0b0; }
 .files-category:nth-child(3n+3) .files-category-heading { background: #ffe3ed; }
