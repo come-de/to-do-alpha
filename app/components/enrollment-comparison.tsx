@@ -198,6 +198,8 @@ export default function EnrollmentComparison({ onOpenFiles }: { onOpenFiles: (ki
     return counts;
   }, [alphaRows, recentImport, schoolAssignments]);
 
+  const maxSchoolNet = Math.max(1, ...schoolSummary.map((school) => Math.abs(school.net)));
+
   const excludedStudentCounts = useMemo(() => ({
     reference: studentMap(referenceImport?.rows ?? []).size - studentMap(alphaRows(referenceImport?.rows ?? [])).size,
     recent: studentMap(recentImport?.rows ?? []).size - studentMap(alphaRows(recentImport?.rows ?? [])).size,
@@ -314,7 +316,7 @@ export default function EnrollmentComparison({ onOpenFiles }: { onOpenFiles: (ki
 
   return (
     <section className="task-panel enrollment-panel">
-      <div className="panel-heading">
+        <div className="panel-heading enrollment-heading">
         <div>
           <p className="eyebrow">Suivi des inscriptions</p>
           <h2>Comparer les inscriptions par établissement</h2>
@@ -325,7 +327,7 @@ export default function EnrollmentComparison({ onOpenFiles }: { onOpenFiles: (ki
 
       <div className="availability-import-box">
         <div>
-          <strong>Importer un export Parents</strong>
+          <strong><span className="enrollment-import-icon" aria-hidden="true">📥</span>Importer un export Parents</strong>
           <span>Les données bancaires et les coordonnées des parents ne sont jamais enregistrées.</span>
         </div>
         <label className="import-button">
@@ -359,12 +361,15 @@ export default function EnrollmentComparison({ onOpenFiles }: { onOpenFiles: (ki
         </label>
       </div>
 
+      <div className="enrollment-comparison-hero" aria-label="Comparaison des deux fichiers">
+        <div className="enrollment-snapshot reference"><small>Fichier de référence</small><strong>{comparison.referenceCount.toLocaleString("fr-FR")}</strong><span>{referenceImport?.displayName || "À sélectionner"}</span></div>
+        <span className="enrollment-snapshot-arrow" aria-hidden="true">→</span>
+        <div className="enrollment-snapshot recent"><small>Fichier récent</small><strong>{comparison.recentCount.toLocaleString("fr-FR")}</strong><span>{recentImport?.displayName || "À sélectionner"}</span></div>
+        <div className={`enrollment-net-total ${comparison.recentCount - comparison.referenceCount < 0 ? "is-negative" : "is-positive"}`}><small>Évolution nette</small><strong>{comparison.recentCount - comparison.referenceCount > 0 ? "+" : ""}{(comparison.recentCount - comparison.referenceCount).toLocaleString("fr-FR")}</strong><span>sur la période</span></div>
+      </div>
       <div className="enrollment-summary">
-        <div><span>Inscrits référence</span><strong>{comparison.referenceCount}</strong></div>
-        <div><span>Inscrits récents</span><strong>{comparison.recentCount}</strong></div>
         <div className="positive"><span>Nouvelles inscriptions</span><strong>+{comparison.newStudents.length}</strong></div>
         <div className="negative"><span>Inscriptions perdues</span><strong>-{comparison.lostStudents.length}</strong></div>
-        <div><span>Évolution nette</span><strong>{comparison.recentCount - comparison.referenceCount > 0 ? "+" : ""}{comparison.recentCount - comparison.referenceCount}</strong></div>
       </div>
       <div className="enrollment-scope-note"><strong>Périmètre : Étude Alpha uniquement</strong><span>{excludedStudentCounts.reference} élève(s) hors périmètre exclu(s) du fichier de référence · {excludedStudentCounts.recent} du fichier récent</span></div>
 
@@ -382,14 +387,14 @@ export default function EnrollmentComparison({ onOpenFiles }: { onOpenFiles: (ki
           <div className="enrollment-school-head"><span>Établissement</span><span>Avant</span><span>Après</span><span>Nouvelles</span><span>Perdues</span><span>Net</span></div>
           {schoolSummary.slice(0, 40).map((school) => (
             <button key={school.key} type="button" className={schoolFilter === school.key ? "active" : ""} onClick={() => setSchoolFilter(school.key)}>
-              <strong>{school.label}</strong><span>{school.before}</span><span>{school.after}</span><span className="positive">+{school.added}</span><span className="negative">-{school.lost}</span><span>{school.net > 0 ? "+" : ""}{school.net}</span>
+              <strong>{school.label}</strong><span>{school.before}</span><span>{school.after}</span><span className="positive">+{school.added}</span><span className="negative">-{school.lost}</span><span className={`enrollment-net-cell ${school.net < 0 ? "is-negative" : "is-positive"}`}><b>{school.net > 0 ? "+" : ""}{school.net}</b><i className="enrollment-net-track" aria-hidden="true"><i style={{ width: `${Math.max(5, Math.abs(school.net) / maxSchoolNet * 100)}%` }} /></i></span>
             </button>
           ))}
         </div>
       </div>
 
-      <div className="availability-history enrollment-history">
-        <div><h3>Fichiers enregistrés</h3><p>{imports.length} export(s) conservé(s)</p></div>
+      <details className="availability-history enrollment-history">
+        <summary className="enrollment-history-summary"><span><strong>🗃️ Fichiers enregistrés</strong><small>{imports.length} export(s) conservé(s)</small></span><b>Afficher l’historique</b></summary>
         <div className="availability-history-list">
           {imports.map((item) => (
             <div key={item.id}>
@@ -402,7 +407,7 @@ export default function EnrollmentComparison({ onOpenFiles }: { onOpenFiles: (ki
             </div>
           ))}
         </div>
-      </div>
+      </details>
 
       <div className="availability-tabs">
         <button type="button" className={view === "new" ? "active" : ""} onClick={() => setView("new")}>✨ Nouvelles ({comparison.newStudents.length})</button>
