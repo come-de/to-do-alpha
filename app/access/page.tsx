@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { acceptInvite, getUser, handleAuthCallback, login, requestPasswordRecovery, updateUser } from "@netlify/identity";
+import { acceptInvite, getUser, handleAuthCallback, login, oauthLogin, requestPasswordRecovery, updateUser } from "@netlify/identity";
 
 function safeNextPath(value: string | null) {
   return value && value.startsWith("/") && !value.startsWith("//") ? value : "/";
@@ -20,10 +20,21 @@ export default function AccessPage() {
     let active = true;
     void (async () => {
       try {
+        const authHash = new URLSearchParams(window.location.hash.slice(1));
+        if (authHash.has("error")) {
+          history.replaceState(null, "", window.location.pathname + window.location.search);
+          setError("La connexion Google a été annulée ou refusée. Réessayez ou utilisez votre adresse e-mail.");
+          return;
+        }
         const callback = await handleAuthCallback();
         if (!active) return;
         if (callback?.type === "invite" && callback.token) setInviteToken(callback.token);
         if (callback?.type === "recovery") setRecovering(true);
+        if (callback?.type === "oauth" && callback.user) {
+          const params = new URLSearchParams(window.location.search);
+          window.location.replace(safeNextPath(params.get("next")));
+          return;
+        }
         if (!callback) {
           const params = new URLSearchParams(window.location.search);
           if (params.has("invite")) setInviteToken(params.get("invite") || "");
@@ -76,6 +87,17 @@ export default function AccessPage() {
     }
   }
 
+  function signInWithGoogle() {
+    setError("");
+    try {
+      oauthLogin("google");
+    } catch (cause) {
+      // oauthLogin intentionally throws after starting the browser redirect.
+      if (cause instanceof Error && cause.message === "Redirecting to OAuth provider") return;
+      setError("La connexion Google n’est pas disponible pour le moment. Réessayez ou utilisez votre adresse e-mail.");
+    }
+  }
+
   const title = inviteToken ? "Activer votre compte" : recovering ? "Choisir un nouveau mot de passe" : "Accès à l’application";
 
   return (
@@ -89,6 +111,13 @@ export default function AccessPage() {
           : recovering
             ? "Choisissez un mot de passe personnel et sécurisé."
             : "Connectez-vous avec votre compte individuel Alpha Education."}</p>
+        {!inviteToken && !recovering && <>
+          <button className="button quiet access-google-button" type="button" onClick={signInWithGoogle} disabled={loading}>
+            <span className="access-google-mark" aria-hidden="true">G</span>
+            Continuer avec Google
+          </button>
+          <div className="access-divider" aria-hidden="true"><span>ou avec votre adresse e-mail</span></div>
+        </>}
         <form onSubmit={submit} className="access-form">
           {!inviteToken && !recovering && <label>
             <span>Adresse e-mail</span>

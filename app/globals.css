@@ -42,6 +42,11 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .access-form label span { color: var(--blue-title); font-size: 11px; font-weight: 850; text-transform: uppercase; letter-spacing: .06em; }
 .access-form input { min-height: 42px; border: 1px solid var(--line); border-radius: 11px; padding: 9px 11px; color: var(--blue-title); background: var(--soft); font-size: 15px; font-weight: 760; }
 .access-form .button { min-height: 42px; margin-top: 4px; font-size: 13px; }
+.access-google-button { width: 100%; min-height: 42px; gap: 10px; border-color: #302044; color: #302044; box-shadow: 2px 2px 0 #302044; }
+.access-google-button:hover:not(:disabled) { background: #f2edff; }
+.access-google-mark { width: 21px; height: 21px; display: inline-grid; place-items: center; border-radius: 50%; color: #4285f4; background: white; font-size: 15px; font-weight: 900; }
+.access-divider { display: flex; align-items: center; gap: 10px; margin: 12px 0 2px; color: var(--muted); font-size: 11px; font-weight: 700; }
+.access-divider::before, .access-divider::after { height: 1px; flex: 1; background: var(--line); content: ""; }
 .access-error { border: 1px solid #ffd4e5; border-radius: 10px; padding: 8px 10px; color: var(--red); background: var(--red-pale); font-size: 12px; font-weight: 750; }
 .topbar { min-height: 58px; padding: 8px max(18px, calc((100vw - 1320px) / 2)); display: flex; align-items: center; justify-content: space-between; gap: 18px; background: rgba(255,255,255,.9); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 20; backdrop-filter: blur(14px); box-shadow: 0 8px 24px rgba(14, 165, 233, .06); }
 .brand { display: flex; align-items: center; gap: 9px; min-width: 0; padding: 0; border: 0; background: transparent; font: inherit; text-align: left; cursor: pointer; }
