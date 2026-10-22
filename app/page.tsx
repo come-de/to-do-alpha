@@ -9,6 +9,7 @@ import UnstaffedSessions from "@/app/components/unstaffed-sessions";
 import SchoolAdminLink from "@/app/components/school-admin-link";
 import PersonAdminLink from "@/app/components/person-admin-link";
 import HomeDashboard, { type HomeDestination } from "@/app/components/home-dashboard";
+import AnnualStaffingBadge from "@/app/components/annual-staffing-badge";
 import StaffingAudit from "@/app/components/staffing-audit";
 import StaffingEvolution from "@/app/components/staffing-evolution";
 import type { TutorAssignmentImport, TutorAssignmentRow, TutorInterestImport, TutorInterestRow, UnstaffedExclusions } from "@/app/lib/shared-data";
@@ -5597,6 +5598,7 @@ export default function Home() {
       <section className="content">
 
         <div className="tabs-shell">
+          <div className="main-navigation-row">
           <div className="main-tabs" role="group" aria-label="Choisir le type de suivi">
             <button className={appMode === "dashboard" ? "active" : ""} onClick={() => setAppMode("dashboard")}>
               <span className="tab-icon" aria-hidden="true">🏠</span> Accueil
@@ -5625,6 +5627,8 @@ export default function Home() {
             <button className={appMode === "files" ? "active" : ""} onClick={() => setAppMode("files")}>
               <span className="tab-icon" aria-hidden="true">🗂️</span> Fichiers
             </button>
+          </div>
+          <AnnualStaffingBadge />
           </div>
           {(appMode === "organization" || organizationModes.has(appMode)) && <div className="organization-tabs" role="group" aria-label="Rubriques Organisation">
             {organizationSections.map((section) => <button key={section.mode} className={appMode === section.mode ? "active" : ""} onClick={() => setAppMode(section.mode)}>
