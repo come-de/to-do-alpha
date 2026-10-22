@@ -317,3 +317,20 @@ body { background: radial-gradient(ellipse at 0 15%, #f2e7ff 0, transparent 45%)
   .staffing-range-kpis > div { padding: 8px; }
   .staffing-range-kpis > div strong { font-size: 21px; }
 }
+
+
+/* Compact annual staffing highlight beside the shared navigation. */
+.main-navigation-row { display: flex; min-width: 0; align-items: center; gap: 9px; }
+.main-navigation-row .main-tabs { flex: 1 1 700px; }
+.annual-staffing-badge { min-width: 174px; min-height: 42px; padding: 4px 9px 4px 7px; border: 2px solid #302044; border-radius: 12px; background: #dcff78; box-shadow: 2px 3px 0 #302044; color: #302044; display: flex; align-items: center; gap: 7px; flex: 0 0 auto; }
+.annual-staffing-spark { width: 27px; height: 27px; display: grid; place-items: center; border: 1px solid #302044; border-radius: 8px; background: #fffdf9; color: #7038e8; font-size: 19px; transform: rotate(-8deg); }
+.annual-staffing-copy { min-width: 0; display: grid; grid-template-columns: auto auto; align-items: baseline; column-gap: 6px; line-height: 1; }
+.annual-staffing-copy small { grid-column: 1 / -1; margin-bottom: 2px; color: #51435f; font-size: 7px; font-weight: 900; letter-spacing: .09em; }
+.annual-staffing-copy strong { font-size: 17px; font-weight: 950; letter-spacing: -.045em; }
+.annual-staffing-copy > span { color: #51435f; font-size: 8px; font-weight: 800; white-space: nowrap; }
+.annual-staffing-check { align-self: flex-start; margin-left: auto; color: #7038e8; font-size: 14px; font-weight: 950; }
+@media (max-width: 800px) {
+  .main-navigation-row { flex-wrap: wrap; }
+  .main-navigation-row .main-tabs { flex-basis: 100%; }
+  .annual-staffing-badge { margin-left: auto; }
+}
