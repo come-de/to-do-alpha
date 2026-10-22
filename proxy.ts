@@ -3,6 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 function isPublicPath(pathname: string) {
   return (
     pathname === "/access" ||
+    // Netlify Identity owns these endpoints. They must stay reachable before
+    // login so invitation, recovery, and login callbacks can complete.
+    pathname === "/.netlify/identity" ||
+    pathname.startsWith("/.netlify/identity/") ||
     pathname.startsWith("/_next/") ||
     pathname.startsWith("/favicon") ||
     pathname.startsWith("/public/") ||
