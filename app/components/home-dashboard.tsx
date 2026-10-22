@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-export type HomeDestination = "tasks" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffingAudit" | "staffingEvolution" | "watchlist" | "tutorReports" | "tutors" | "availability" | "enrollments" | "coverage" | "unstaffed" | "files";
+export type HomeDestination = "organization" | "tasks" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffingAudit" | "staffingEvolution" | "watchlist" | "tutorReports" | "tutors" | "availability" | "enrollments" | "coverage" | "unstaffed" | "files";
 type DashboardPayload = {
   counts?: Record<string, number>;
   error?: string;
@@ -10,22 +10,13 @@ type DashboardPayload = {
 };
 
 const menuItems: Array<{ mode: HomeDestination; icon: string; title: string; description: string; countKey?: string }> = [
-  { mode: "watchlist", icon: "👀", title: "À suivre", description: "Établissements nécessitant une attention particulière.", countKey: "watchlist" },
+  { mode: "organization", icon: "🗂️", title: "Organisation", description: "Tâches, liens, communications, objectifs et suivis d’équipe." },
   { mode: "staffingAudit", icon: "📊", title: "Bilan staffing", description: "Enregistrer et suivre les séances non staffées par journée." },
-  { mode: "staffingEvolution", icon: "🔄", title: "Évolution staffing", description: "Comparer deux exports Semaines à venir et suivre les changements par RH." },
-  { mode: "tutorReports", icon: "🧾", title: "Bilans tuteurs", description: "Suivre les bilans non réalisés et les commentaires." },
-  { mode: "communications", icon: "📣", title: "Communications", description: "Journal des communications envoyées aux différents publics.", countKey: "communications" },
   { mode: "availability", icon: "📆", title: "Comparaison dispos", description: "Comparer deux exports de disponibilités tuteurs.", countKey: "availability" },
   { mode: "coverage", icon: "🧩", title: "Tuteurs dispo sans séance", description: "Croiser les disponibilités, les intérêts et les séances à staffer." },
   { mode: "schools", icon: "🏫", title: "Établissements", description: "Consulter le CRM et la répartition des établissements.", countKey: "schools" },
   { mode: "files", icon: "🗂️", title: "Fichiers", description: "Retrouver et gérer les imports partagés." },
-  { mode: "history", icon: "📈", title: "Historique", description: "Comparer l’évolution du nombre d’élèves.", countKey: "history" },
-  { mode: "enrollments", icon: "🎒", title: "Inscriptions", description: "Comparer les inscriptions entre deux exports." },
-  { mode: "journal", icon: "✍️", title: "Journal", description: "Relire les nouvelles et décisions de l’Étude Alpha.", countKey: "journal" },
-  { mode: "links", icon: "🔗", title: "Liens", description: "Accéder rapidement aux ressources partagées.", countKey: "links" },
-  { mode: "objectives", icon: "🎯", title: "Objectifs", description: "Suivre les objectifs collectifs et individuels.", countKey: "objectives" },
   { mode: "unstaffed", icon: "📋", title: "Séances non affectées", description: "Identifier les séances à staffer et les personnes mobilisables." },
-  { mode: "tasks", icon: "✅", title: "Tâches", description: "Organiser et suivre les actions de l’équipe.", countKey: "tasks" },
   { mode: "tutors", icon: "👨‍🏫", title: "Tuteurs", description: "Suivre les entrées, sorties et commentaires tuteurs." },
 ];
 
