@@ -5595,20 +5595,6 @@ export default function Home() {
       </header>
 
       <section className="content">
-        {appMode === "dashboard" && <section className="home-objectives" aria-label="Objectifs Alpha Education">
-          <div className="home-welcome">
-            <div className="mission-badge">Alpha Education · rentrée 2026</div>
-            <strong>Ensemble,<br />{" "}on fait <em>la différence.</em></strong>
-            <p>Les bonnes énergies. Les bonnes actions. Tout Alpha, au même endroit.</p>
-            <span className="welcome-spark" aria-hidden="true">✳</span>
-          </div>
-          <div className="objective-stack">
-            {renderCounterObjective(studentObjective, "Objectif élèves")}
-            {renderCounterObjective(sessionObjective, "Objectif hebdo")}
-          </div>
-        </section>}
-
-        {appMode === "dashboard" && <HomeDashboard onNavigate={(mode: HomeDestination) => setAppMode(mode as AppMode)} />}
 
         <div className="tabs-shell">
           <div className="main-tabs" role="group" aria-label="Choisir le type de suivi">
@@ -5646,6 +5632,21 @@ export default function Home() {
             </button>)}
           </div>}
         </div>
+
+        {appMode === "dashboard" && <section className="home-objectives" aria-label="Objectifs Alpha Education">
+          <div className="home-welcome">
+            <div className="mission-badge">Alpha Education · rentrée 2026</div>
+            <strong>Ensemble,<br />{" "}on fait <em>la différence.</em></strong>
+            <p>Les bonnes énergies. Les bonnes actions. Tout Alpha, au même endroit.</p>
+            <span className="welcome-spark" aria-hidden="true">✳</span>
+          </div>
+          <div className="objective-stack">
+            {renderCounterObjective(studentObjective, "Objectif élèves")}
+            {renderCounterObjective(sessionObjective, "Objectif hebdo")}
+          </div>
+        </section>}
+
+        {appMode === "dashboard" && <HomeDashboard onNavigate={(mode: HomeDestination) => setAppMode(mode as AppMode)} />}
 
         {appMode === "organization" && <section className="organization-hub task-panel">
           <div className="panel-heading"><div><h2>Organisation</h2><p>Les outils pour organiser le quotidien, suivre les actions et partager les informations.</p></div></div>
