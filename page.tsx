@@ -5730,7 +5730,7 @@ export default function Home() {
           </div>
         </section>}
 
-        {appMode === "dashboard" && <HomeDashboard onNavigate={(mode: HomeDestination) => setAppMode(mode)} />}
+        {appMode === "dashboard" && <HomeDashboard onNavigate={(mode: HomeDestination) => setAppMode(mode as AppMode)} />}
 
         <div className="tabs-shell">
           <div className="main-tabs" role="group" aria-label="Choisir le type de suivi">
