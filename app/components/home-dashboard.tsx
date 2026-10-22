@@ -59,7 +59,7 @@ export default function HomeDashboard({ onNavigate }: { onNavigate: (mode: HomeD
 
   return <>
     <section className="home-menu-section">
-      <div className="home-section-heading"><div><p className="eyebrow">Navigation</p><h2>Tous les outils Alpha</h2><span>Choisissez un espace pour commencer.</span></div>{loading ? <span>Actualisation…</span> : message ? <span>{message}</span> : null}</div>
+      <div className="home-section-heading"><div><p className="eyebrow">À vous de jouer</p><h2>De belles idées. Et de l’action.</h2><span>Votre boîte à outils pour faire avancer l’équipe.</span></div>{loading ? <span>Actualisation…</span> : message ? <span>{message}</span> : null}</div>
       <div className="home-menu-grid">{menuItems.map((item) => {
         const count = item.countKey ? data.counts?.[item.countKey] : undefined;
         return <button type="button" className="home-menu-card" key={item.mode} onClick={() => onNavigate(item.mode)}>
