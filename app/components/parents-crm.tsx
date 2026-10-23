@@ -6,8 +6,10 @@ import { parentSourceLabels, type ParentContact, type ParentFollowUp, type Paren
 import "./parents-crm.css";
 
 type CsvState = { headers: string[]; rows: string[][]; fileName: string };
-type Field = "firstName" | "lastName" | "parentName" | "email" | "phone" | "school" | "enrolled" | "childClass" | "submittedAt" | "brochure" | "visioInterested" | "enrolledAnswer" | "contactPreference" | "selectedMeeting" | "expectations" | "knownVia" | "aircallStatus" | "aircallIncomingCalls" | "aircallMissedCalls" | "aircallAnsweredCalls" | "aircallFirstIncoming" | "aircallLastIncoming";
+type ImportSource = ParentSource | "combined";
+type Field = "source" | "firstName" | "lastName" | "parentName" | "email" | "phone" | "school" | "enrolled" | "childClass" | "submittedAt" | "brochure" | "visioInterested" | "enrolledAnswer" | "contactPreference" | "selectedMeeting" | "expectations" | "knownVia" | "aircallStatus" | "aircallIncomingCalls" | "aircallMissedCalls" | "aircallAnsweredCalls" | "aircallFirstIncoming" | "aircallLastIncoming";
 const fields: Array<{ key: Field; label: string; aliases: string[] }> = [
+  { key: "source", label: "Source de chaque ligne", aliases: ["source", "source de donnees", "origine de la donnee"] },
   { key: "firstName", label: "Prénom", aliases: ["prenom", "first name", "firstname", "given name"] },
   { key: "lastName", label: "Nom", aliases: ["nom", "nom de famille", "last name", "lastname", "surname"] },
   { key: "parentName", label: "Nom du parent", aliases: ["nom du parent", "parent name"] },
@@ -32,7 +34,8 @@ const fields: Array<{ key: Field; label: string; aliases: string[] }> = [
   { key: "aircallLastIncoming", label: "Dernier appel entrant", aliases: ["dernier appel entrant"] },
 ];
 const normalize = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr").replace(/[^a-z0-9]+/g, " ").trim();
-const sourceOptions = Object.entries(parentSourceLabels) as Array<[ParentSource, string]>;
+const sourceOptions = [...Object.entries(parentSourceLabels), ["combined", "Base consolidée"]] as Array<[ImportSource, string]>;
+const importSourceLabel = (source: ImportSource) => source === "combined" ? "Base consolidée" : parentSourceLabels[source];
 const sourceNames: Record<ParentSource, string> = { alpha: "Alpha", aircall: "Aircall", visio: "Visio", enrolled: "Déjà inscrits", brochure: "Plaquette" };
 type StatusFilter = "all" | "enrolled" | "not-enrolled" | "unknown" | "eligible" | "review" | "school-review" | "suppressed";
 type SourceFilter = ParentSource | "all" | "multiple";
@@ -93,9 +96,9 @@ export default function ParentsCRM() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
   const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
-  const [source, setSource] = useState<ParentSource>("alpha");
+  const [source, setSource] = useState<ImportSource>("alpha");
   const [csv, setCsv] = useState<CsvState | null>(null);
-  const [mapping, setMapping] = useState<Record<Field, string[]>>({ firstName: [], lastName: [], parentName: [], email: [], phone: [], school: [], enrolled: [], childClass: [], submittedAt: [], brochure: [], visioInterested: [], enrolledAnswer: [], contactPreference: [], selectedMeeting: [], expectations: [], knownVia: [], aircallStatus: [], aircallIncomingCalls: [], aircallMissedCalls: [], aircallAnsweredCalls: [], aircallFirstIncoming: [], aircallLastIncoming: [] });
+  const [mapping, setMapping] = useState<Record<Field, string[]>>({ source: [], firstName: [], lastName: [], parentName: [], email: [], phone: [], school: [], enrolled: [], childClass: [], submittedAt: [], brochure: [], visioInterested: [], enrolledAnswer: [], contactPreference: [], selectedMeeting: [], expectations: [], knownVia: [], aircallStatus: [], aircallIncomingCalls: [], aircallMissedCalls: [], aircallAnsweredCalls: [], aircallFirstIncoming: [], aircallLastIncoming: [] });
 
   async function refresh() {
     setLoading(true); setError("");
@@ -151,16 +154,30 @@ export default function ParentsCRM() {
     const pickAll = (row: string[], field: Field) => mapping[field].map((column) => row[Number(column)] ?? "").map((value) => value.trim()).filter(Boolean);
     const pick = (row: string[], field: Field) => pickAll(row, field)[0] ?? "";
     const rows: ParentImportRow[] = csv.rows.map((row) => ({
+      source: source === "combined" ? pick(row, "source") as ParentSource : undefined,
       firstName: pick(row, "firstName"), lastName: pick(row, "lastName"), fullName: pick(row, "parentName"), emails: pickAll(row, "email").flatMap((email) => email.split(/[;,]/).map((value) => value.trim()).filter(Boolean)), phones: pickAll(row, "phone").flatMap((phone) => phone.split(/[;,]/).map((value) => value.trim()).filter(Boolean)), school: pick(row, "school"),
-      enrolled: source === "alpha" && mapping.enrolled.length ? enrollmentValue(pick(row, "enrolled")) : null,
+      enrolled: (source === "alpha" || source === "combined" && pick(row, "source") === "alpha") && mapping.enrolled.length ? enrollmentValue(pick(row, "enrolled")) : null,
       childClass: pick(row, "childClass"), submittedAt: pick(row, "submittedAt"), brochure: pick(row, "brochure"), visioInterested: yesNoValue(pick(row, "visioInterested")),
       enrolledAnswer: pick(row, "enrolledAnswer"), contactPreference: pick(row, "contactPreference"), selectedMeeting: pick(row, "selectedMeeting"), expectations: pick(row, "expectations"), knownVia: pick(row, "knownVia"),
       aircallStatus: pick(row, "aircallStatus"), aircallIncomingCalls: pick(row, "aircallIncomingCalls"), aircallMissedCalls: pick(row, "aircallMissedCalls"), aircallAnsweredCalls: pick(row, "aircallAnsweredCalls"), aircallFirstIncoming: pick(row, "aircallFirstIncoming"), aircallLastIncoming: pick(row, "aircallLastIncoming"),
     })).filter((row) => row.firstName || row.lastName || row.fullName || row.emails?.length || row.phones?.length);
     try {
-      const response = await fetch("/api/parents", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ source, fileName: csv.fileName, rows }) });
-      const body = await response.json(); if (!response.ok) throw new Error(body.error || "Import impossible.");
-      setNotice(`${body.imported} ligne(s) importée(s), ${body.matched} rapprochée(s), ${body.review} identité(s) à vérifier, ${body.schoolReview ?? 0} établissement(s) à harmoniser.`); setCsv(null); await refresh();
+      if (source === "combined" && rows.some((row) => !row.source || !["alpha", "aircall", "visio", "enrolled", "brochure"].includes(row.source))) throw new Error("La colonne Source doit contenir Alpha, Aircall, Visio, Déjà inscrits ou Plaquette pour chaque ligne.");
+      const batchSize = 750;
+      const batchCount = Math.ceil(rows.length / batchSize);
+      const importId = crypto.randomUUID();
+      let imported = 0, matched = 0, review = 0, schoolReview = 0;
+      for (let offset = 0; offset < rows.length; offset += batchSize) {
+        const batch = rows.slice(offset, offset + batchSize);
+        setNotice(`Import sécurisé en cours · lot ${Math.floor(offset / batchSize) + 1}/${batchCount}…`);
+        const response = await fetch("/api/parents", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ source, mixedSources: source === "combined", importId, fileName: csv.fileName, rows: batch }) });
+        let body: { error?: string; imported?: number; matched?: number; review?: number; schoolReview?: number };
+        try { body = await response.json(); }
+        catch { throw new Error(`Réponse invalide au lot ${Math.floor(offset / batchSize) + 1}/${batchCount}. ${imported} ligne(s) ont déjà été enregistrées; le fichier peut être réimporté sans créer de doublons.`); }
+        if (!response.ok) throw new Error(`${body.error || "Import impossible."} ${imported ? `${imported} ligne(s) déjà enregistrées; réimporte le même fichier si nécessaire.` : ""}`);
+        imported += body.imported ?? batch.length; matched += body.matched ?? 0; review += body.review ?? 0; schoolReview += body.schoolReview ?? 0;
+      }
+      setNotice(`${imported} ligne(s) importée(s), ${matched} rapprochée(s), ${review} identité(s) à vérifier, ${schoolReview} établissement(s) à harmoniser.`); setCsv(null); await refresh();
     } catch (caught) { setError(caught instanceof Error ? caught.message : "Import impossible."); }
     finally { setBusy(false); }
   }
@@ -196,6 +213,16 @@ export default function ParentsCRM() {
     { key: "aircall", title: "Aircall", value: stats.aircall, icon: "☎", color: "blue" },
     { key: "eligible", title: "À relancer", value: stats.eligible, icon: "✉", color: "pink" },
   ];
+  const visibleFields = fields.filter((field) => {
+    if (source === "combined") return fieldColumns(csv?.headers ?? [], field.key).length > 0;
+    if (source === "brochure") return ["firstName", "lastName", "parentName", "email", "phone", "childClass", "submittedAt", "brochure", "visioInterested"].includes(field.key);
+    if (source === "visio") return ["firstName", "lastName", "parentName", "email", "phone", "school", "childClass", "submittedAt", "enrolledAnswer", "contactPreference", "selectedMeeting", "expectations", "knownVia"].includes(field.key);
+    if (source === "aircall") return ["phone", "aircallStatus", "aircallIncomingCalls", "aircallMissedCalls", "aircallAnsweredCalls", "aircallFirstIncoming", "aircallLastIncoming"].includes(field.key);
+    return ["firstName", "lastName", "parentName", "email", "phone", "school", ...(source === "alpha" ? ["enrolled"] : [])].includes(field.key);
+  }).filter((field) => (source === "combined" || !["brochure", "visio", "aircall"].includes(source) || fieldColumns(csv?.headers ?? [], field.key).length > 0)
+    && !(source !== "combined" && field.key === "parentName" && mapping.firstName.length > 0 && mapping.lastName.length > 0));
+  const hasIdentityMapping = mapping.email.length > 0 || mapping.phone.length > 0 || mapping.firstName.length > 0 || mapping.lastName.length > 0 || mapping.parentName.length > 0;
+  const canImport = hasIdentityMapping && (source !== "combined" || mapping.source.length > 0) && (source !== "alpha" || mapping.enrolled.length > 0);
 
   return <main className="parents-crm">
     <section className="parents-hero">
@@ -207,14 +234,14 @@ export default function ParentsCRM() {
       <div className="parents-section-heading"><div><span className="parents-eyebrow">01 · CENTRALISER</span><h2>Faire entrer les bonnes données</h2><p>CSV uniquement · colonnes ajustables · le fichier brut n’est jamais conservé.</p></div><span className="parents-import-count">{imports.length} import{imports.length > 1 ? "s" : ""}</span></div>
       <div className="parents-import-grid">
         {sourceOptions.map(([key, label], index) => <button type="button" className={`parents-source-card source-${key}`} key={key} onClick={() => { setSource(key); setCsv(null); setError(""); document.getElementById("parents-csv-input")?.click(); }}>
-          <span className="parents-source-number">0{index + 1}</span><span className="parents-source-icon">{["🌱", "☎️", "🎥", "🛡️", "📄"][index]}</span><strong>{label}</strong><small>{key === "enrolled" ? "Alimente la liste d’exclusion" : key === "alpha" ? "Comptes sans créneau = non inscrits" : key === "aircall" ? "Appelants non inscrits ou inconnus · rapprochement par téléphone" : key === "brochure" ? "Réponses Google Forms, même si les colonnes ont évolué" : "Participants et coordonnées"}</small><b>Importer un CSV <span>↗</span></b>
+          <span className="parents-source-number">0{index + 1}</span><span className="parents-source-icon">{["🌱", "☎️", "🎥", "🛡️", "📄", "🧩"][index]}</span><strong>{label}</strong><small>{key === "combined" ? "Plaquettes, visios, inscrits et Aircall dans un seul fichier" : key === "enrolled" ? "Alimente la liste d’exclusion" : key === "alpha" ? "Comptes sans créneau = non inscrits" : key === "aircall" ? "Appelants non inscrits ou inconnus · rapprochement par téléphone" : key === "brochure" ? "Réponses Google Forms, même si les colonnes ont évolué" : "Participants et coordonnées"}</small><b>Importer un CSV <span>↗</span></b>
         </button>)}
       </div>
       <input id="parents-csv-input" className="parents-hidden-input" type="file" accept=".csv,text/csv" onChange={(event) => void pickFile(event)} />
       {csv && <div className="parents-import-preview">
-        <div className="parents-preview-title"><div><strong>Préparer l’import · {parentSourceLabels[source]}</strong><span>{csv.fileName} · {csv.rows.length.toLocaleString("fr-FR")} lignes détectées</span></div><button type="button" onClick={() => setCsv(null)} aria-label="Fermer">×</button></div>
-        <div className="parents-mapping-grid">{fields.filter((field) => source === "brochure" ? ["firstName", "lastName", "parentName", "email", "phone", "childClass", "submittedAt", "brochure", "visioInterested"].includes(field.key) : source === "visio" ? ["firstName", "lastName", "parentName", "email", "phone", "school", "childClass", "submittedAt", "enrolledAnswer", "contactPreference", "selectedMeeting", "expectations", "knownVia"].includes(field.key) : source === "aircall" ? ["phone", "aircallStatus", "aircallIncomingCalls", "aircallMissedCalls", "aircallAnsweredCalls", "aircallFirstIncoming", "aircallLastIncoming"].includes(field.key) : ["firstName", "lastName", "parentName", "email", "phone", "school", ...(source === "alpha" ? ["enrolled"] : [])].includes(field.key)).filter((field) => ["brochure", "visio", "aircall"].includes(source) ? fieldColumns(csv.headers, field.key).length > 0 : true).map((field) => { const candidates = fieldColumns(csv.headers, field.key); const columns = candidates.length ? candidates : csv.headers.map((_, index) => String(index)); return <fieldset className="parents-mapping-field" key={field.key}><legend>{field.label}</legend>{columns.map((column) => { const index = Number(column); const header = csv.headers[index]; return <label key={`${field.key}-${index}`}><input type="checkbox" checked={mapping[field.key].includes(column)} onChange={(event) => setMapping((current) => ({ ...current, [field.key]: event.target.checked ? [...current[field.key], column] : current[field.key].filter((value) => value !== column) }))} /><span>{header || `Colonne ${index + 1}`}</span></label>; })}</fieldset>; })}</div>
-        <div className="parents-preview-footer"><span>{source === "alpha" ? "Pour distinguer les comptes sans créneau, associe obligatoirement la colonne des créneaux/statut." : source === "brochure" ? "Les anciennes et nouvelles colonnes e-mail/téléphone sont regroupées automatiquement. Les doublons déjà inscrits seront exclus par coordonnées." : source === "aircall" ? "« Non inscrit » alimente les non-inscrits ; « inconnu » reste à qualifier. Les numéros partagés sont isolés pour vérification." : "Les lignes sans nom, e-mail ni téléphone seront ignorées."} Toute ambiguïté sera mise en vérification.</span><button className="parents-button parents-button-primary" type="button" disabled={busy || !mapping.email.length && !mapping.phone.length && !mapping.firstName.length && !mapping.lastName.length || source === "alpha" && !mapping.enrolled.length} onClick={() => void importCsv()}>{busy ? "Import en cours…" : "Valider l’import ✨"}</button></div>
+        <div className="parents-preview-title"><div><strong>Préparer l’import · {importSourceLabel(source)}</strong><span>{csv.fileName} · {csv.rows.length.toLocaleString("fr-FR")} lignes détectées</span></div><button type="button" onClick={() => setCsv(null)} aria-label="Fermer">×</button></div>
+        <div className="parents-mapping-grid">{visibleFields.map((field) => { const candidates = fieldColumns(csv.headers, field.key); const columns = candidates.length ? candidates : csv.headers.map((_, index) => String(index)); return <fieldset className="parents-mapping-field" key={field.key}><legend>{field.label}</legend>{columns.map((column) => { const index = Number(column); const header = csv.headers[index]; return <label key={`${field.key}-${index}`}><input type="checkbox" checked={mapping[field.key].includes(column)} onChange={(event) => setMapping((current) => ({ ...current, [field.key]: event.target.checked ? [...current[field.key], column] : current[field.key].filter((value) => value !== column) }))} /><span>{header || `Colonne ${index + 1}`}</span></label>; })}</fieldset>; })}</div>
+        <div className="parents-preview-footer"><span>{source === "combined" ? "Le fichier contient les quatre sources et une colonne Source par ligne. Les données bancaires ne sont pas nécessaires." : source === "alpha" ? "Pour distinguer les comptes sans créneau, associe obligatoirement la colonne des créneaux/statut." : source === "brochure" ? "Les anciennes et nouvelles colonnes e-mail/téléphone sont regroupées automatiquement. Les doublons déjà inscrits seront exclus par coordonnées." : source === "aircall" ? "« Non inscrit » alimente les non-inscrits ; « inconnu » reste à qualifier. Les numéros partagés sont isolés pour vérification." : "Les lignes sans nom, e-mail ni téléphone seront ignorées."} Toute ambiguïté sera mise en vérification.</span><button className="parents-button parents-button-primary" type="button" disabled={busy || !canImport} onClick={() => void importCsv()}>{busy ? "Import en cours…" : "Valider l’import ✨"}</button></div>
       </div>}
       {imports.length > 0 && <div className="parents-recent-imports"><strong>Derniers imports</strong>{imports.slice(0, 3).map((item) => <span key={item.id}>{parentSourceLabels[item.source]} · {item.fileName} · {new Date(item.importedAt).toLocaleDateString("fr-FR")}</span>)}</div>}
     </section>
@@ -234,7 +261,7 @@ export default function ParentsCRM() {
     <section className="parents-list-panel">
       <div className="parents-list-heading"><div><span className="parents-eyebrow">03 · SUIVI COMMERCIAL</span><h2>La base consolidée <span>{filtered.length}</span></h2><p className="parents-list-subtitle">Chaque source garde son fichier et sa date. Les filtres se combinent.</p></div><div className="parents-list-actions"><label className="parents-search"><span>⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Nom, e-mail, téléphone, école…" /></label><label className="parents-sort-label">Trier <select value={sortOrder} onChange={(event) => setSortOrder(event.target.value as SortOrder)}><option value="newest">Date · plus récent</option><option value="oldest">Date · plus ancien</option><option value="sources">Plus de sources</option><option value="name">Nom A–Z</option></select></label><button type="button" className="parents-button parents-button-primary" onClick={exportEligible} disabled={!stats.eligible}>Exporter les relances ↗</button></div></div>
       <div className="parents-filter-stack">
-        <div className="parents-filter-row" role="group" aria-label="Filtrer par source"><span className="parents-filter-label">Sources</span>{[["all", "Toutes", stats.all], ...sourceOptions.map(([key]) => [key, sourceNames[key], contacts.filter((contact) => contact.sources.includes(key)).length]), ["multiple", "Plusieurs sources", stats.cross]].map(([key, label, count]) => <button type="button" key={key} className={sourceFilter === key ? "active" : ""} aria-pressed={sourceFilter === key} onClick={() => setSourceFilter(key as SourceFilter)}>{label} <b>{count}</b></button>)}</div>
+        <div className="parents-filter-row" role="group" aria-label="Filtrer par source"><span className="parents-filter-label">Sources</span>{[["all", "Toutes", stats.all], ...sourceOptions.filter(([key]) => key !== "combined").map(([key]) => [key, sourceNames[key as ParentSource], contacts.filter((contact) => contact.sources.includes(key as ParentSource)).length]), ["multiple", "Plusieurs sources", stats.cross]].map(([key, label, count]) => <button type="button" key={key} className={sourceFilter === key ? "active" : ""} aria-pressed={sourceFilter === key} onClick={() => setSourceFilter(key as SourceFilter)}>{label} <b>{count}</b></button>)}</div>
         <div className="parents-filter-row" role="group" aria-label="Filtrer par inscription et suivi"><span className="parents-filter-label">Situation</span>{[["all", `Tous (${stats.all})`], ["enrolled", `Inscrits (${stats.enrolled})`], ["not-enrolled", `Non inscrits (${stats.notEnrolled})`], ["unknown", `À préciser (${stats.unknown})`], ["eligible", `À relancer (${stats.eligible})`], ["review", "Identité à vérifier"], ["school-review", `Établissement à corriger (${stats.schoolReview})`], ["suppressed", `Exclusion (${stats.suppressed})`]].map(([key, label]) => <button type="button" key={key} className={statusFilter === key ? "active" : ""} aria-pressed={statusFilter === key} onClick={() => setStatusFilter(key as StatusFilter)}>{label}</button>)}</div>
       </div>
       <div className="parents-table-wrap"><table className="parents-table"><thead><tr><th>Parent</th><th>Établissement</th><th>Sources et parcours</th><th>Dernière trace</th><th>Inscription</th><th>Suivi</th><th aria-label="Actions" /></tr></thead><tbody>
