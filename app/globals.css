@@ -1715,6 +1715,13 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
 .unstaffed-day th:nth-child(7), .unstaffed-day td:nth-child(7) { width: 80px; }
 .unstaffed-day td > strong { color: var(--blue-title); font-size: 10px; white-space: nowrap; }
 .unstaffed-day td > small { display: block; margin-top: 2px; color: var(--muted); font-size: 7.8px; }
+.unstaffed-day .slot-session-count { display: inline-flex; margin-top: 4px; padding: 2px 6px; border-radius: 999px; color: #6d28d9; background: #f3e8ff; font-size: 8px; font-weight: 850; white-space: nowrap; }
+.slot-categories, .slot-groups { display: flex; flex-wrap: wrap; gap: 3px; }
+.slot-groups span { display: inline-flex; padding: 3px 6px; border-radius: 999px; color: #6d28d9; background: #f3e8ff; font-size: 8px; font-weight: 850; white-space: nowrap; }
+.slot-session-details { min-width: 65px; }
+.slot-session-details summary { color: var(--blue-dark); font-size: 8px; font-weight: 850; cursor: pointer; }
+.slot-session-details > div { width: max-content; min-width: 180px; padding: 6px; border: 1px solid var(--line); border-radius: 8px; background: white; }
+.slot-session-details > div > span { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 3px; color: var(--ink); font-size: 8px; }
 .unstaffed-day tr.has-candidates td { border-top-color: rgba(16,185,129,.22); background: rgba(236,253,245,.18); }
 .session-candidates-row td { padding: 4px 7px 7px 16px; border-left: 4px solid rgba(14,165,233,.32); background: rgba(244,251,252,.38); }
 .session-candidates-row.has-results td { background: rgba(236,253,245,.32); }
