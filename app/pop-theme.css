@@ -75,6 +75,15 @@ body { background: radial-gradient(ellipse at 0 15%, #f2e7ff 0, transparent 45%)
 .main-tabs button { border-radius: 9px; }
 .main-tabs button.active { color: white; background: #7038e8; border-color: #7038e8; box-shadow: 2px 2px 0 #302044; }
 .main-tabs button.active .tab-icon { background: #ffffff30; }
+.main-navigation-row { display: flex; min-width: 0; align-items: center; gap: 9px; }
+.main-navigation-row .main-tabs { flex: 1 1 700px; }
+.annual-staffing-badge { min-width: 174px; min-height: 42px; padding: 4px 9px 4px 7px; border: 2px solid #302044; border-radius: 12px; background: #dcff78; box-shadow: 2px 3px 0 #302044; color: #302044; display: flex; align-items: center; gap: 7px; flex: 0 0 auto; }
+.annual-staffing-spark { width: 27px; height: 27px; display: grid; place-items: center; border: 1px solid #302044; border-radius: 8px; background: #fffdf9; color: #7038e8; font-size: 19px; transform: rotate(-8deg); }
+.annual-staffing-copy { min-width: 0; display: grid; grid-template-columns: auto auto; align-items: baseline; column-gap: 6px; line-height: 1; }
+.annual-staffing-copy small { grid-column: 1 / -1; margin-bottom: 2px; color: #51435f; font-size: 7px; font-weight: 900; letter-spacing: .09em; }
+.annual-staffing-copy strong { font-size: 17px; font-weight: 950; letter-spacing: -.045em; }
+.annual-staffing-copy > span { color: #51435f; font-size: 8px; font-weight: 800; white-space: nowrap; }
+.annual-staffing-check { align-self: flex-start; margin-left: auto; color: #7038e8; font-size: 14px; font-weight: 950; }
 .stat-card { border-radius: 12px; border-bottom-width: 3px; }
 .stat-card.amber { background: var(--amber-pale); }
 .stat-card.green { background: var(--green-pale); }
@@ -184,6 +193,9 @@ body { background: radial-gradient(ellipse at 0 15%, #f2e7ff 0, transparent 45%)
 }
 @media (max-width: 800px) {
   .tabs-shell { grid-template-columns: minmax(0, 1fr); }
+  .main-navigation-row { flex-wrap: wrap; }
+  .main-navigation-row .main-tabs { flex-basis: 100%; }
+  .annual-staffing-badge { margin-left: auto; }
   .main-tabs { flex-wrap: nowrap; overflow-x: auto; padding: 0 0 4px; scrollbar-width: thin; }
   .home-objectives { grid-template-columns: 1fr; }
   .home-welcome { min-height: 0; padding: 14px 16px; }
@@ -310,6 +322,29 @@ body { background: radial-gradient(ellipse at 0 15%, #f2e7ff 0, transparent 45%)
 .staffing-range-kpis > div.highlight { background: #ffc8dc; border-color: #302044; }
 .staffing-range-kpis > div span { font-size: 11px; color: #51435f; font-weight: 750; }
 .staffing-range-kpis > div strong { font-size: 25px; letter-spacing: -.04em; }
+.staffing-range-layout { grid-template-columns: minmax(210px,.8fr) minmax(0,1.15fr) minmax(0,1fr); align-items: start; }
+.staffing-range-ranking { min-width: 0; overflow: hidden; padding: 0; border: 2px solid #302044; border-radius: 12px; background: #fffdf9; box-shadow: 2px 2px 0 #302044; }
+.staffing-range-ranking-heading { padding: 9px 10px 7px; border-bottom: 1px solid #e4dbef; background: linear-gradient(105deg,#eee5ff,#fffdf9 75%); }
+.staffing-range-ranking-heading h4 { margin: 0; color: #302044; font-size: 12px; line-height: 1.2; }
+.staffing-range-ranking-heading small { display: block; margin-top: 3px; color: #6a6077; font-size: 9px; line-height: 1.3; }
+.staffing-range-ranking-list { max-height: 340px; overflow: auto; scrollbar-color: #7038e8 #eee5ff; scrollbar-width: thin; }
+.staffing-range-ranking-list article { min-height: 42px; padding: 5px 7px; border-top: 1px solid #e9e1f1; display: grid; grid-template-columns: 22px minmax(0,1fr) auto auto; align-items: center; gap: 6px; }
+.staffing-range-ranking-list article:first-child { border-top: 0; }
+.staffing-range-ranking-list article.excluded { background: #f3eff7; opacity: .65; }
+.staffing-range-rank { width: 20px; height: 20px; border-radius: 50%; background: #eee5ff; color: #7038e8; display: grid; place-items: center; font-size: 9px; font-weight: 900; }
+.staffing-range-ranking-name { min-width: 0; display: grid; gap: 2px; }
+.staffing-range-ranking-name strong { min-width: 0; overflow: hidden; color: #302044; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.staffing-range-ranking-name small { overflow: hidden; color: #6a6077; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.staffing-range-ranking-count { min-width: 28px; padding: 4px 6px; border-radius: 8px; background: #ffe3ed; color: #bb2459; font-size: 10px; text-align: center; }
+.staffing-range-ranking-list article button { min-height: 27px; padding: 3px 7px; border: 1px solid #d8c9f3; border-radius: 8px; background: #fff; color: #5023a2; font: inherit; font-size: 8px; font-weight: 850; white-space: nowrap; cursor: pointer; }
+.staffing-range-ranking-list article button:hover { border-color: #7038e8; background: #eee5ff; }
+.staffing-range-ranking-list article.excluded button { border-color: #9be5c5; background: #dcf9e9; color: #096348; }
+.staffing-range-reset-exclusions { margin: 6px 8px 8px; padding: 5px 7px; border: 1px solid #9be5c5; border-radius: 8px; background: #dcf9e9; color: #096348; font-size: 8px; font-weight: 850; cursor: pointer; }
+.staffing-range-ranking-list > p { margin: 0; padding: 12px; color: #6a6077; font-size: 9px; }
+@media (max-width: 1050px) {
+  .staffing-range-layout { grid-template-columns: minmax(0,1fr) minmax(0,1fr); }
+  .staffing-range-rh { grid-column: 1 / -1; }
+}
 @media (max-width: 600px) {
   .staffing-chart-pop .staffing-daily-chart-heading { padding: 10px; gap: 8px; flex-wrap: wrap; }
   .staffing-chart-pop .staffing-daily-chart-heading h4 { font-size: 16px; }
@@ -317,20 +352,10 @@ body { background: radial-gradient(ellipse at 0 15%, #f2e7ff 0, transparent 45%)
   .staffing-range-kpis > div { padding: 8px; }
   .staffing-range-kpis > div strong { font-size: 21px; }
 }
-
-
-/* Compact annual staffing highlight beside the shared navigation. */
-.main-navigation-row { display: flex; min-width: 0; align-items: center; gap: 9px; }
-.main-navigation-row .main-tabs { flex: 1 1 700px; }
-.annual-staffing-badge { min-width: 174px; min-height: 42px; padding: 4px 9px 4px 7px; border: 2px solid #302044; border-radius: 12px; background: #dcff78; box-shadow: 2px 3px 0 #302044; color: #302044; display: flex; align-items: center; gap: 7px; flex: 0 0 auto; }
-.annual-staffing-spark { width: 27px; height: 27px; display: grid; place-items: center; border: 1px solid #302044; border-radius: 8px; background: #fffdf9; color: #7038e8; font-size: 19px; transform: rotate(-8deg); }
-.annual-staffing-copy { min-width: 0; display: grid; grid-template-columns: auto auto; align-items: baseline; column-gap: 6px; line-height: 1; }
-.annual-staffing-copy small { grid-column: 1 / -1; margin-bottom: 2px; color: #51435f; font-size: 7px; font-weight: 900; letter-spacing: .09em; }
-.annual-staffing-copy strong { font-size: 17px; font-weight: 950; letter-spacing: -.045em; }
-.annual-staffing-copy > span { color: #51435f; font-size: 8px; font-weight: 800; white-space: nowrap; }
-.annual-staffing-check { align-self: flex-start; margin-left: auto; color: #7038e8; font-size: 14px; font-weight: 950; }
-@media (max-width: 800px) {
-  .main-navigation-row { flex-wrap: wrap; }
-  .main-navigation-row .main-tabs { flex-basis: 100%; }
-  .annual-staffing-badge { margin-left: auto; }
+@media (max-width: 700px) {
+  .staffing-range-layout { grid-template-columns: minmax(0,1fr); }
+  .staffing-range-rh { grid-column: auto; }
+  .staffing-range-ranking-list { max-height: 300px; }
+  .staffing-range-ranking-list article { grid-template-columns: 22px minmax(0,1fr) auto; }
+  .staffing-range-ranking-list article button { grid-column: 2 / -1; justify-self: end; }
 }
