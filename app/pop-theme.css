@@ -339,6 +339,8 @@ body { background: radial-gradient(ellipse at 0 15%, #f2e7ff 0, transparent 45%)
 .staffing-range-ranking-list article button { min-height: 27px; padding: 3px 7px; border: 1px solid #d8c9f3; border-radius: 8px; background: #fff; color: #5023a2; font: inherit; font-size: 8px; font-weight: 850; white-space: nowrap; cursor: pointer; }
 .staffing-range-ranking-list article button:hover { border-color: #7038e8; background: #eee5ff; }
 .staffing-range-ranking-list article.excluded button { border-color: #9be5c5; background: #dcf9e9; color: #096348; }
+.staffing-range-cities .staffing-range-ranking-list article { grid-template-columns: 22px minmax(0,1fr) auto auto auto; }
+.staffing-range-city-rate { min-width: 48px; padding: 4px 6px; border-radius: 8px; background: #dcf9e9; color: #096348; font-size: 9px; font-weight: 900; text-align: center; white-space: nowrap; }
 .staffing-range-reset-exclusions { margin: 6px 8px 8px; padding: 5px 7px; border: 1px solid #9be5c5; border-radius: 8px; background: #dcf9e9; color: #096348; font-size: 8px; font-weight: 850; cursor: pointer; }
 .staffing-range-ranking-list > p { margin: 0; padding: 12px; color: #6a6077; font-size: 9px; }
 @media (max-width: 1050px) {
@@ -357,5 +359,6 @@ body { background: radial-gradient(ellipse at 0 15%, #f2e7ff 0, transparent 45%)
   .staffing-range-rh { grid-column: auto; }
   .staffing-range-ranking-list { max-height: 300px; }
   .staffing-range-ranking-list article { grid-template-columns: 22px minmax(0,1fr) auto; }
+  .staffing-range-cities .staffing-range-ranking-list article { grid-template-columns: 22px minmax(0,1fr) auto auto; }
   .staffing-range-ranking-list article button { grid-column: 2 / -1; justify-self: end; }
 }
