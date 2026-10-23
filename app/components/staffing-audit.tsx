@@ -206,6 +206,7 @@ export default function StaffingAudit() {
     const isExcluded = (session: StaffingAuditSession) => excludedSchoolKeys.includes(schoolKey(session)) || excludedCityKeys.includes(cityKey(session));
     const sessions = allSessions.filter((session) => !isExcluded(session));
     const isUnstaffed = (session: StaffingAuditSession) => effectiveStatus(session) === "unstaffed" && !session.treated;
+    const isStaffed = (session: StaffingAuditSession) => effectiveStatus(session) === "staffed";
     const unstaffed = sessions.filter(isUnstaffed);
     const allUnstaffed = allSessions.filter(isUnstaffed);
     const byOwner = (["kelly", "pierre", "julie"] as const).map((owner) => {
@@ -219,7 +220,8 @@ export default function StaffingAudit() {
       };
     });
     const schools = new Map<string, { key: string; name: string; count: number; owners: Set<SchoolPortfolioOwner> }>();
-    const cities = new Map<string, { key: string; name: string; count: number; total: number; owners: Set<SchoolPortfolioOwner> }>();
+    const schoolsByTotal = new Map<string, { key: string; name: string; count: number; owners: Set<SchoolPortfolioOwner> }>();
+    const schoolIdentity = (session: StaffingAuditSession) => session.schoolId.trim() ? `id:${session.schoolId.trim()}` : `name:${schoolLookupKey(session.school)}`;
     allUnstaffed.forEach((session) => {
       const key = schoolKey(session);
       const item = schools.get(key) ?? { key, name: session.school || "Établissement non précisé", count: 0, owners: new Set<SchoolPortfolioOwner>() };
@@ -227,53 +229,67 @@ export default function StaffingAudit() {
       item.owners.add(session.portfolioOwner);
       schools.set(key, item);
     });
+    const cities = new Map<string, { key: string; name: string; count: number; staffed: number; total: number; schools: Set<string>; unstaffedSchools: Set<string>; owners: Set<SchoolPortfolioOwner> }>();
     allSessions.forEach((session) => {
       const name = cityForSession(session);
       const key = cityKey(session);
-      const city = cities.get(key) ?? { key, name, count: 0, total: 0, owners: new Set<SchoolPortfolioOwner>() };
+      const city = cities.get(key) ?? { key, name, count: 0, staffed: 0, total: 0, schools: new Set<string>(), unstaffedSchools: new Set<string>(), owners: new Set<SchoolPortfolioOwner>() };
       city.total += 1;
+      city.schools.add(schoolIdentity(session));
       if (isUnstaffed(session)) {
         city.count += 1;
+        city.unstaffedSchools.add(schoolIdentity(session));
         city.owners.add(session.portfolioOwner);
       }
+      if (isStaffed(session)) city.staffed += 1;
       cities.set(key, city);
+    });
+    const daily = filteredDays.map((day) => {
+      const daySessions = day.sessions.filter((session) => !isExcluded(session));
+      const dailyUnstaffed = daySessions.filter(isUnstaffed).length;
+      const distinctTutors = new Set(daySessions.flatMap((session) => session.tutors.map((tutor) => tutor.tutorId.trim())).filter(Boolean));
+      const unidentifiedTutors = daySessions.reduce((count, session) => count + session.tutors.filter((tutor) => !tutor.tutorId.trim()).length, 0);
+      const tutorClassifiedSessions = daySessions.map((session) => {
+        const matchedTypes = session.tutors.map((tutor) => tutor.tutorId ? tutorTypeById.get(tutor.tutorId) : undefined);
+        return {
+          nonSt: matchedTypes.some((isSt) => isSt === false),
+          unknown: !matchedTypes.length || matchedTypes.some((isSt) => isSt === undefined),
+        };
+      });
+      return {
+        date: day.date,
+        total: daySessions.length,
+        unstaffed: dailyUnstaffed,
+        tutors: distinctTutors.size,
+        unidentifiedTutors,
+        nonStSessions: tutorTypeSnapshot ? tutorClassifiedSessions.filter((session) => session.nonSt).length : null,
+        unclassifiedTutorSessions: tutorTypeSnapshot ? tutorClassifiedSessions.filter((session) => session.unknown && !session.nonSt).length : null,
+        byOwner: owners.map((owner) => {
+          const ownerSessions = daySessions.filter((session) => session.portfolioOwner === owner);
+          return {
+            owner,
+            total: ownerSessions.length,
+            unstaffed: ownerSessions.filter(isUnstaffed).length,
+          };
+        }),
+        percentage: daySessions.length ? (dailyUnstaffed / daySessions.length) * 100 : 0,
+      };
+    });
+    allSessions.forEach((session) => {
+      const key = schoolIdentity(session);
+      const item = schoolsByTotal.get(key) ?? { key, name: session.school || "Établissement non précisé", count: 0, owners: new Set<SchoolPortfolioOwner>() };
+      item.count += 1;
+      item.owners.add(session.portfolioOwner);
+      schoolsByTotal.set(key, item);
     });
     return {
       total: sessions.length,
       unstaffed: unstaffed.length,
       percentage: sessions.length ? (unstaffed.length / sessions.length) * 100 : 0,
       byOwner,
-      daily: filteredDays.map((day) => {
-        const daySessions = day.sessions.filter((session) => !isExcluded(session));
-        const dailyUnstaffed = daySessions.filter(isUnstaffed).length;
-        const distinctTutors = new Set(daySessions.flatMap((session) => session.tutors.map((tutor) => tutor.tutorId.trim())).filter(Boolean));
-        const unidentifiedTutors = daySessions.reduce((count, session) => count + session.tutors.filter((tutor) => !tutor.tutorId.trim()).length, 0);
-        const tutorClassifiedSessions = daySessions.map((session) => {
-          const matchedTypes = session.tutors.map((tutor) => tutor.tutorId ? tutorTypeById.get(tutor.tutorId) : undefined);
-          return {
-            nonSt: matchedTypes.some((isSt) => isSt === false),
-            unknown: !matchedTypes.length || matchedTypes.some((isSt) => isSt === undefined),
-          };
-        });
-        return {
-          date: day.date,
-          total: daySessions.length,
-          unstaffed: dailyUnstaffed,
-          tutors: distinctTutors.size,
-          unidentifiedTutors,
-          nonStSessions: tutorTypeSnapshot ? tutorClassifiedSessions.filter((session) => session.nonSt).length : null,
-          unclassifiedTutorSessions: tutorTypeSnapshot ? tutorClassifiedSessions.filter((session) => session.unknown && !session.nonSt).length : null,
-          byOwner: owners.map((owner) => {
-            const ownerSessions = daySessions.filter((session) => session.portfolioOwner === owner);
-            return {
-              owner,
-              total: ownerSessions.length,
-              unstaffed: ownerSessions.filter(isUnstaffed).length,
-            };
-          }),
-          percentage: daySessions.length ? (dailyUnstaffed / daySessions.length) * 100 : 0,
-        };
-      }),
+      daily,
+      worstDays: [...daily].filter((day) => day.unstaffed > 0).sort((a, b) => b.unstaffed - a.unstaffed || b.percentage - a.percentage || a.date.localeCompare(b.date)).slice(0, 10),
+      busiestDays: [...daily].filter((day) => day.total > 0).sort((a, b) => b.total - a.total || a.date.localeCompare(b.date)).slice(0, 10),
       topSchools: Array.from(schools.values())
         .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "fr"))
         .slice(0, 20)
@@ -281,7 +297,15 @@ export default function StaffingAudit() {
       topCities: Array.from(cities.values()).filter((city) => city.count > 0)
         .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "fr"))
         .slice(0, 20)
-        .map((city) => ({ ...city, percentage: city.total ? (city.count / city.total) * 100 : 0, owners: owners.filter((owner) => city.owners.has(owner)).map((owner) => ownerLabels[owner]) })),
+        .map((city) => ({ ...city, affectedSchools: city.unstaffedSchools.size, percentage: city.total ? (city.count / city.total) * 100 : 0, owners: owners.filter((owner) => city.owners.has(owner)).map((owner) => ownerLabels[owner]) })),
+      topStaffedCities: Array.from(cities.values()).filter((city) => city.staffed > 0)
+        .sort((a, b) => b.staffed - a.staffed || a.name.localeCompare(b.name, "fr"))
+        .slice(0, 20)
+        .map((city) => ({ ...city, percentage: city.total ? (city.staffed / city.total) * 100 : 0 })),
+      topSchoolsByTotal: Array.from(schoolsByTotal.values())
+        .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "fr"))
+        .slice(0, 20)
+        .map((school) => ({ ...school, owners: owners.filter((owner) => school.owners.has(owner)).map((owner) => ownerLabels[owner]) })),
     };
   }, [categoryFilter, effectiveAnalysisEndDate, effectiveAnalysisStartDate, excludedCityKeys, excludedSchoolKeys, savedDays, schoolCities, tutorTypeById, tutorTypeSnapshot]);
   async function importFile(file: File | undefined) {
@@ -487,7 +511,7 @@ export default function StaffingAudit() {
               const excluded = excludedCityKeys.includes(city.key);
               return <article className={excluded ? "excluded" : ""} key={city.key}>
                 <span className="staffing-range-rank">{index + 1}</span>
-                <div className="staffing-range-ranking-name"><strong title={city.name}>{city.name}</strong><small>RH : {city.owners.join(", ")}</small></div>
+                <div className="staffing-range-ranking-name"><strong title={city.name}>{city.name}</strong><small>{city.affectedSchools} établissement{city.affectedSchools > 1 ? "s" : ""} concerné{city.affectedSchools > 1 ? "s" : ""} · RH : {city.owners.join(", ")}</small></div>
                 <b className="staffing-range-ranking-count" title={`${city.count} séances non staffées sur ${city.total}`}>{city.count}/{city.total}</b>
                 <span className="staffing-range-city-rate">{new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(city.percentage)} %</span>
                 <button type="button" aria-pressed={excluded} onClick={() => setExcludedCityKeys((current) => excluded ? current.filter((key) => key !== city.key) : [...current, city.key])}>{excluded ? "Réintégrer" : "Exclure"}</button>
@@ -495,6 +519,40 @@ export default function StaffingAudit() {
             }) : <p>Aucune ville avec une séance non staffée.</p>}
             </div>
             {excludedCityKeys.length ? <button type="button" className="staffing-range-reset-exclusions" onClick={() => setExcludedCityKeys([])}>Réintégrer toutes les villes ({excludedCityKeys.length})</button> : null}
+          </div>
+          <div className="staffing-range-ranking staffing-range-extra staffing-range-staffed-cities">
+            <div className="staffing-range-ranking-heading"><h4>Villes les plus staffées</h4><small>Classées par nombre de séances staffées sur la période.</small></div>
+            <div className="staffing-range-ranking-list">{rangeAnalysis.topStaffedCities.length ? rangeAnalysis.topStaffedCities.map((city, index) => <article key={city.key}>
+              <span className="staffing-range-rank">{index + 1}</span>
+              <div className="staffing-range-ranking-name"><strong title={city.name}>{city.name}</strong><small>{city.schools.size} établissement{city.schools.size > 1 ? "s" : ""} · {city.total} séances au total</small></div>
+              <b className="staffing-range-ranking-count">{city.staffed}</b>
+              <span className="staffing-range-city-rate">{new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(city.percentage)} %</span>
+            </article>) : <p>Aucune séance staffée sur cette période.</p>}</div>
+          </div>
+          <div className="staffing-range-ranking staffing-range-extra staffing-range-worst-days">
+            <div className="staffing-range-ranking-heading"><h4>Jours les plus difficiles</h4><small>Classés par nombre de séances non staffées ; le taux aide à comparer les journées.</small></div>
+            <div className="staffing-range-ranking-list">{rangeAnalysis.worstDays.length ? rangeAnalysis.worstDays.map((day, index) => <article key={day.date}>
+              <span className="staffing-range-rank">{index + 1}</span>
+              <div className="staffing-range-ranking-name"><strong>{formatDate(day.date)}</strong><small>{day.total} séances au total</small></div>
+              <b className="staffing-range-ranking-count">{day.unstaffed}</b>
+              <span className="staffing-range-city-rate">{new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(day.percentage)} %</span>
+            </article>) : <p>Aucune séance non staffée sur cette période.</p>}</div>
+          </div>
+          <div className="staffing-range-ranking staffing-range-extra staffing-range-metric-list">
+            <div className="staffing-range-ranking-heading"><h4>Jours avec le plus de séances</h4><small>Volume total de séances, staffées et non staffées.</small></div>
+            <div className="staffing-range-ranking-list">{rangeAnalysis.busiestDays.length ? rangeAnalysis.busiestDays.map((day, index) => <article key={day.date}>
+              <span className="staffing-range-rank">{index + 1}</span>
+              <div className="staffing-range-ranking-name"><strong>{formatDate(day.date)}</strong><small>{day.unstaffed} non staffée{day.unstaffed > 1 ? "s" : ""}</small></div>
+              <b className="staffing-range-ranking-count">{day.total}</b>
+            </article>) : <p>Aucune séance sur cette période.</p>}</div>
+          </div>
+          <div className="staffing-range-ranking staffing-range-extra staffing-range-metric-list">
+            <div className="staffing-range-ranking-heading"><h4>Établissements avec le plus de séances</h4><small>Volume total, tous statuts confondus.</small></div>
+            <div className="staffing-range-ranking-list">{rangeAnalysis.topSchoolsByTotal.length ? rangeAnalysis.topSchoolsByTotal.map((school, index) => <article key={school.key}>
+              <span className="staffing-range-rank">{index + 1}</span>
+              <div className="staffing-range-ranking-name"><strong title={school.name}>{school.name}</strong><small>RH : {school.owners.join(", ")}</small></div>
+              <b className="staffing-range-ranking-count">{school.count}</b>
+            </article>) : <p>Aucune séance sur cette période.</p>}</div>
           </div>
         </div>
       </section> : null}
