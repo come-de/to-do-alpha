@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getUser, logout } from "@netlify/identity";
 import EnrollmentComparison from "@/app/components/enrollment-comparison";
+import ParentsCRM from "@/app/components/parents-crm";
 import FilesHub, { type FileKind } from "@/app/components/files-hub";
 import TutorCoverageComparison from "@/app/components/tutor-coverage-comparison";
 import UnstaffedSessions from "@/app/components/unstaffed-sessions";
@@ -17,7 +18,7 @@ import type { TutorAssignmentImport, TutorAssignmentRow, TutorInterestImport, Tu
 type Status = "todo" | "progress" | "done";
 type Priority = "low" | "medium" | "high";
 type Density = "compact" | "comfortable";
-type AppMode = "dashboard" | "organization" | "tasks" | "recurring" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffingAudit" | "staffingEvolution" | "watchlist" | "tutorReports" | "tutors" | "availability" | "enrollments" | "coverage" | "unstaffed" | "files";
+type AppMode = "dashboard" | "organization" | "tasks" | "recurring" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffingAudit" | "staffingEvolution" | "watchlist" | "tutorReports" | "tutors" | "availability" | "enrollments" | "parents" | "coverage" | "unstaffed" | "files";
 type ViewMode = "list" | "matrix";
 type DurationBucket = "short" | "medium" | "long" | "unset";
 type ObjectiveKind = "counter" | "qualitative";
@@ -429,6 +430,7 @@ const appModeSlugs: Record<AppMode, string> = {
   coverage: "couverture-tuteurs",
   unstaffed: "seances-non-affectees",
   files: "fichiers",
+  parents: "parents",
 };
 
 const appModeAliases: Record<string, AppMode> = {
@@ -472,7 +474,9 @@ const appModeAliases: Record<string, AppMode> = {
   "disponibilites-du-jour": "availability",
   inscriptions: "enrollments",
   "comparaison-inscriptions": "enrollments",
-  parents: "enrollments",
+  parents: "parents",
+  "suivi-parents": "parents",
+  "crm-parents": "parents",
   couverture: "coverage",
   "couverture-tuteurs": "coverage",
   affectations: "coverage",
@@ -5537,6 +5541,8 @@ export default function Home() {
                       ? () => { void loadAvailabilityImports(); }
                     : appMode === "enrollments"
                       ? () => setAppMode("enrollments")
+                    : appMode === "parents"
+                      ? () => setAppMode("parents")
                     : appMode === "coverage"
                       ? () => setAppMode("coverage")
                     : appMode === "unstaffed"
@@ -5574,6 +5580,8 @@ export default function Home() {
                       ? "Actualiser dispos"
                     : appMode === "enrollments"
                       ? "Comparer inscriptions"
+                    : appMode === "parents"
+                      ? "Actualiser les parents"
                     : appMode === "coverage"
                       ? "Voir les tuteurs disponibles"
                     : appMode === "unstaffed"
@@ -5596,10 +5604,9 @@ export default function Home() {
       </header>
 
       <section className="content">
-
         <div className="tabs-shell">
           <div className="main-navigation-row">
-          <div className="main-tabs" role="group" aria-label="Choisir le type de suivi">
+            <div className="main-tabs" role="group" aria-label="Choisir le type de suivi">
             <button className={appMode === "dashboard" ? "active" : ""} onClick={() => setAppMode("dashboard")}>
               <span className="tab-icon" aria-hidden="true">🏠</span> Accueil
             </button>
@@ -5608,6 +5615,9 @@ export default function Home() {
             </button>
             <button className={appMode === "schools" ? "active" : ""} onClick={() => setAppMode("schools")}>
               <span className="tab-icon" aria-hidden="true">🏫</span> Établissements
+            </button>
+            <button className={appMode === "parents" ? "active" : ""} onClick={() => setAppMode("parents")}>
+              <span className="tab-icon" aria-hidden="true">👪</span> Parents
             </button>
             <button className={appMode === "staffingAudit" ? "active" : ""} onClick={() => setAppMode("staffingAudit")}>
               <span className="tab-icon" aria-hidden="true">📊</span> Bilan staffing
@@ -5627,8 +5637,8 @@ export default function Home() {
             <button className={appMode === "files" ? "active" : ""} onClick={() => setAppMode("files")}>
               <span className="tab-icon" aria-hidden="true">🗂️</span> Fichiers
             </button>
-          </div>
-          <AnnualStaffingBadge />
+            </div>
+            <AnnualStaffingBadge />
           </div>
           {(appMode === "organization" || organizationModes.has(appMode)) && <div className="organization-tabs" role="group" aria-label="Rubriques Organisation">
             {organizationSections.map((section) => <button key={section.mode} className={appMode === section.mode ? "active" : ""} onClick={() => setAppMode(section.mode)}>
@@ -6070,6 +6080,7 @@ export default function Home() {
         : appMode === "tutors" ? renderTutorTrackingSection()
         : appMode === "availability" ? renderAvailabilityComparisonSection()
         : appMode === "enrollments" ? <EnrollmentComparison onOpenFiles={openFiles} />
+        : appMode === "parents" ? <ParentsCRM />
         : appMode === "coverage" ? <TutorCoverageComparison onOpenFiles={openFiles} />
         : appMode === "unstaffed" ? <UnstaffedSessions onOpenFiles={openFiles} />
         : appMode === "staffingAudit" ? <StaffingAudit />
