@@ -47,17 +47,37 @@ async function getHandler() {
 
 async function postHandler(request: Request) {
   try {
-    const body = await request.json() as { source?: ParentSource; fileName?: string; rows?: ParentImportRow[] };
-    const source = body.source;
-    if (!source || !sources.has(source) || !Array.isArray(body.rows) || body.rows.length === 0 || body.rows.length > 20000) return json({ error: "Import invalide (maximum 20 000 lignes)." }, 400);
+    const body = await request.json() as { source?: ParentSource | "combined"; mixedSources?: boolean; importId?: string; fileName?: string; rows?: ParentImportRow[] };
+    const mixedSources = body.mixedSources === true && body.source === "combined";
+    if (!body.source || (!sources.has(body.source as ParentSource) && !mixedSources) || !Array.isArray(body.rows) || body.rows.length === 0 || body.rows.length > 20000) return json({ error: "Import invalide (maximum 20 000 lignes)." }, 400);
+    if (mixedSources && body.rows.some((row) => !row || typeof row !== "object" || !row.source || !sources.has(row.source))) return json({ error: "Chaque ligne de la base consolidée doit indiquer une source reconnue." }, 400);
     const contacts = await readArray<ParentContact>(CONTACTS_KEY);
+    // Index contacts once so large platform exports (one row per child) do not
+    // repeatedly scan the whole growing contact list for every row.
+    const identityIndex = new Map<string, Set<ParentContact>>();
+    const nameIndex = new Map<string, Set<ParentContact>>();
+    const addToIndex = (index: Map<string, Set<ParentContact>>, key: string, contact: ParentContact) => {
+      if (!key) return;
+      const values = index.get(key) ?? new Set<ParentContact>();
+      values.add(contact);
+      index.set(key, values);
+    };
+    const contactName = (contact: ParentContact) => (contact.fullName || `${contact.firstName} ${contact.lastName}`).trim().toLocaleLowerCase("fr");
+    const indexContact = (contact: ParentContact) => {
+      for (const email of contact.emails ?? []) addToIndex(identityIndex, `email:${normalizeParentEmail(email)}`, contact);
+      for (const phone of contact.phones ?? []) addToIndex(identityIndex, `phone:${normalizeParentPhone(phone)}`, contact);
+      addToIndex(nameIndex, contactName(contact), contact);
+    };
+    contacts.forEach(indexContact);
     const canonicalNames = (await readSchools()).map((school) => school.name);
     let matched = 0;
     let reviewCount = 0;
     let schoolReviewCount = 0;
+    const countsBySource = new Map<ParentSource, { rows: number; matched: number; review: number; schoolReview: number }>();
     const now = new Date().toISOString();
     for (const input of body.rows) {
       const row = input && typeof input === "object" ? input : {};
+      const source = mixedSources ? row.source as ParentSource : body.source as ParentSource;
       const firstName = clean(row.firstName, 100), lastName = clean(row.lastName, 100);
       const fullName = clean(row.fullName, 180);
       const emails = [...new Set([...(Array.isArray(row.emails) ? row.emails.flatMap((email) => emailList(clean(email, 254))) : []), ...emailList(clean(row.email, 254))])];
@@ -72,14 +92,17 @@ async function postHandler(request: Request) {
       const aircallStatus = source === "aircall" ? clean(row.aircallStatus, 120) : "";
       const aircallNeedsReview = source === "aircall" && /a verifier|a vérifier|partage/i.test(aircallStatus.normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
       if (!firstName && !lastName && !fullName && !emails.length && !phones.length) continue;
-      const exactMatches = contacts.filter((contact) => emails.some((email) => contact.emails.includes(email)) || phones.some((phone) => contact.phones.some((existing) => normalizeParentPhone(existing) === phone)));
-      const ids = new Set(exactMatches.map((contact) => contact.id));
-      const target = ids.size === 1 && !aircallNeedsReview ? exactMatches.find((contact) => contact.id === [...ids][0]) : undefined;
+      const exactMatches = new Set<ParentContact>();
+      for (const email of emails) for (const contact of identityIndex.get(`email:${email}`) ?? []) exactMatches.add(contact);
+      for (const phone of phones) for (const contact of identityIndex.get(`phone:${phone}`) ?? []) exactMatches.add(contact);
+      const ids = new Set([...exactMatches].map((contact) => contact.id));
+      const target = ids.size === 1 && !aircallNeedsReview ? [...exactMatches][0] : undefined;
       const incomingName = (fullName || `${firstName} ${lastName}`).trim().toLocaleLowerCase("fr");
-      const sameName = incomingName ? contacts.some((contact) => (contact.fullName || `${contact.firstName} ${contact.lastName}`).trim().toLocaleLowerCase("fr") === incomingName) : false;
+      const sameNameContacts = nameIndex.get(incomingName) ?? new Set<ParentContact>();
+      const sameName = sameNameContacts.size > 0;
       const uncertain = ids.size > 1 || aircallNeedsReview || (!target && sameName);
       if (ids.size > 1 || aircallNeedsReview || (source === "enrolled" && sameName && !target)) {
-        for (const contact of exactMatches.length ? exactMatches : contacts.filter((item) => (item.fullName || `${item.firstName} ${item.lastName}`).trim().toLocaleLowerCase("fr") === incomingName)) {
+        for (const contact of exactMatches.size ? exactMatches : sameNameContacts) {
           contact.needsReview = true;
           if (source === "enrolled") { contact.suppression = true; contact.followUp = "do-not-contact"; }
           else if (!contact.suppression) contact.followUp = "review";
@@ -135,7 +158,9 @@ async function postHandler(request: Request) {
         brochureRequests: nextBrochureRequests,
         visioRegistrations: nextVisioRegistrations,
         aircallCalls: nextAircallCalls,
-        enrolled: source === "alpha" && typeof row.enrolled === "boolean" ? row.enrolled : source === "aircall" && /non inscrit/i.test(aircallStatus) && target?.enrolled !== true && !target?.suppression ? false : target?.enrolled ?? null,
+        // Several child rows may belong to one parent. A single active slot is
+        // enough to keep that household out of the non-enrolled follow-up list.
+        enrolled: source === "alpha" && typeof row.enrolled === "boolean" ? row.enrolled || target?.enrolled === true : source === "aircall" && /non inscrit/i.test(aircallStatus) && target?.enrolled !== true && !target?.suppression ? false : target?.enrolled ?? null,
         sources: nextSources,
         provenance: nextProvenance,
         suppression,
@@ -144,14 +169,40 @@ async function postHandler(request: Request) {
         updatedAt: now,
       };
       if (uncertain) reviewCount++;
-      if (target) contacts[contacts.findIndex((contact) => contact.id === target?.id)] = next;
+      if (target) Object.assign(target, next);
       else contacts.unshift(next);
+      indexContact(target ?? next);
+      const sourceCounts = countsBySource.get(source) ?? { rows: 0, matched: 0, review: 0, schoolReview: 0 };
+      sourceCounts.rows++;
+      if (target) sourceCounts.matched++;
+      if (uncertain) sourceCounts.review++;
+      if (schoolMatch.review && rawSchool) sourceCounts.schoolReview++;
+      countsBySource.set(source, sourceCounts);
     }
     const imports = await readArray<ParentImport>(IMPORTS_KEY);
-    const entry: ParentImport = { id: crypto.randomUUID(), source, fileName: clean(body.fileName, 180) || "import.csv", importedAt: now, rows: body.rows.length, matched, review: reviewCount, schoolReview: schoolReviewCount };
+    const fileName = clean(body.fileName, 180) || "import.csv";
+    if (mixedSources) {
+      for (const [source, counts] of countsBySource) {
+        const id = `${clean(body.importId, 80) || crypto.randomUUID()}:${source}`;
+        const previous = imports.find((item) => item.id === id);
+        const entry: ParentImport = {
+          id, source, fileName, importedAt: previous?.importedAt ?? now,
+          rows: (previous?.rows ?? 0) + counts.rows,
+          matched: (previous?.matched ?? 0) + counts.matched,
+          review: (previous?.review ?? 0) + counts.review,
+          schoolReview: (previous?.schoolReview ?? 0) + counts.schoolReview,
+        };
+        const existingIndex = imports.findIndex((item) => item.id === id);
+        if (existingIndex >= 0) imports[existingIndex] = entry;
+        else imports.unshift(entry);
+      }
+    } else {
+      const entry: ParentImport = { id: crypto.randomUUID(), source: body.source as ParentSource, fileName, importedAt: now, rows: body.rows.length, matched, review: reviewCount, schoolReview: schoolReviewCount };
+      imports.unshift(entry);
+    }
     const store = taskStore();
     await store.setJSON(CONTACTS_KEY, contacts);
-    await store.setJSON(IMPORTS_KEY, [entry, ...imports].slice(0, 100));
+    await store.setJSON(IMPORTS_KEY, imports.slice(0, 100));
     return json({ imported: body.rows.length, matched, review: reviewCount, schoolReview: schoolReviewCount });
   } catch { return json({ error: "L’import n’a pas pu être enregistré." }, 400); }
 }
