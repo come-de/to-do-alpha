@@ -2,7 +2,7 @@
 
 import StaffingDailyChart from "./staffing-daily-chart";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { STAFFING_AUDIT_UNSTAFFED_REASONS, type SchoolPortfolioOwner, type StaffingAuditDay, type StaffingAuditResolution, type StaffingAuditSession, type StaffingAuditSessionCategory, type TutorTrackingSnapshot, type StaffingAuditUnstaffedReason } from "@/app/lib/shared-data";
+import { STAFFING_AUDIT_UNSTAFFED_REASONS, type School, type SchoolPortfolioOwner, type StaffingAuditDay, type StaffingAuditResolution, type StaffingAuditSession, type StaffingAuditSessionCategory, type TutorTrackingSnapshot, type StaffingAuditUnstaffedReason } from "@/app/lib/shared-data";
 
 const ownerLabels: Record<SchoolPortfolioOwner, string> = { "": "Non attribué", kelly: "Kelly", pierre: "Pierre", julie: "Julie" };
 const owners: SchoolPortfolioOwner[] = ["kelly", "pierre", "julie", ""];
@@ -39,6 +39,10 @@ function effectiveStatus(session: StaffingAuditSession) {
   return session.resolution || session.detectedStatus;
 }
 
+function schoolLookupKey(value: string) {
+  return value.trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr").replace(/[^a-z0-9]+/g, " ").trim();
+}
+
 function daySummary(day: StaffingAuditDay) {
   return owners.map((owner) => {
     const sessions = day.sessions.filter((session) => session.portfolioOwner === owner);
@@ -55,6 +59,7 @@ function daySummary(day: StaffingAuditDay) {
 export default function StaffingAudit() {
   const [sectionTab, setSectionTab] = useState<"general" | "daily">("general");
   const [savedDays, setSavedDays] = useState<StaffingAuditDay[]>([]);
+  const [schools, setSchools] = useState<School[]>([]);
   const [tutorSnapshots, setTutorSnapshots] = useState<TutorTrackingSnapshot[]>([]);
   const [draftDays, setDraftDays] = useState<StaffingAuditDay[]>([]);
   const [selectedDate, setSelectedDate] = useState("");
@@ -66,6 +71,7 @@ export default function StaffingAudit() {
   const [sessionListMode, setSessionListMode] = useState<"active" | "staffed">("active");
   const [showTreated, setShowTreated] = useState(false);
   const [excludedSchoolKeys, setExcludedSchoolKeys] = useState<string[]>([]);
+  const [excludedCityKeys, setExcludedCityKeys] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
@@ -103,6 +109,22 @@ export default function StaffingAudit() {
       })
       .catch(() => {
         if (!cancelled) setTutorSnapshots([]);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/schools", { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Établissements indisponibles");
+        return await response.json() as { schools?: School[] };
+      })
+      .then((data) => {
+        if (!cancelled) setSchools(data.schools ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setSchools([]);
       });
     return () => { cancelled = true; };
   }, []);
@@ -152,6 +174,18 @@ export default function StaffingAudit() {
   }, [savedDays]);
   const effectiveAnalysisStartDate = analysisStartDate || historyDateBounds.first;
   const effectiveAnalysisEndDate = analysisEndDate || historyDateBounds.last;
+  const schoolCities = useMemo(() => {
+    const byId = new Map<string, string>();
+    const byName = new Map<string, string>();
+    schools.forEach((school) => {
+      const city = school.city.trim();
+      if (school.id) byId.set(school.id, city);
+      if (school.externalId) byId.set(school.externalId, city);
+      const name = schoolLookupKey(school.name);
+      if (name) byName.set(name, city);
+    });
+    return { byId, byName };
+  }, [schools]);
   const rangeAnalysis = useMemo(() => {
     const start = effectiveAnalysisStartDate <= effectiveAnalysisEndDate ? effectiveAnalysisStartDate : effectiveAnalysisEndDate;
     const end = effectiveAnalysisStartDate <= effectiveAnalysisEndDate ? effectiveAnalysisEndDate : effectiveAnalysisStartDate;
@@ -164,7 +198,12 @@ export default function StaffingAudit() {
       }));
     const allSessions = filteredDays.flatMap((day) => day.sessions);
     const schoolKey = (session: StaffingAuditSession) => session.school.trim().toLocaleLowerCase("fr") || "établissement non précisé";
-    const isExcluded = (session: StaffingAuditSession) => excludedSchoolKeys.includes(schoolKey(session));
+    const cityForSession = (session: StaffingAuditSession) => {
+      const schoolCity = (session.schoolId ? schoolCities.byId.get(session.schoolId) : undefined) ?? schoolCities.byName.get(schoolLookupKey(session.school));
+      return schoolCity?.trim() || "Ville non renseignée";
+    };
+    const cityKey = (session: StaffingAuditSession) => schoolLookupKey(cityForSession(session)) || "ville non renseignée";
+    const isExcluded = (session: StaffingAuditSession) => excludedSchoolKeys.includes(schoolKey(session)) || excludedCityKeys.includes(cityKey(session));
     const sessions = allSessions.filter((session) => !isExcluded(session));
     const isUnstaffed = (session: StaffingAuditSession) => effectiveStatus(session) === "unstaffed" && !session.treated;
     const unstaffed = sessions.filter(isUnstaffed);
@@ -180,12 +219,19 @@ export default function StaffingAudit() {
       };
     });
     const schools = new Map<string, { key: string; name: string; count: number; owners: Set<SchoolPortfolioOwner> }>();
+    const cities = new Map<string, { key: string; name: string; count: number; owners: Set<SchoolPortfolioOwner> }>();
     allUnstaffed.forEach((session) => {
       const key = schoolKey(session);
       const item = schools.get(key) ?? { key, name: session.school || "Établissement non précisé", count: 0, owners: new Set<SchoolPortfolioOwner>() };
       item.count += 1;
       item.owners.add(session.portfolioOwner);
       schools.set(key, item);
+      const name = cityForSession(session);
+      const keyCity = cityKey(session);
+      const city = cities.get(keyCity) ?? { key: keyCity, name, count: 0, owners: new Set<SchoolPortfolioOwner>() };
+      city.count += 1;
+      city.owners.add(session.portfolioOwner);
+      cities.set(keyCity, city);
     });
     return {
       total: sessions.length,
@@ -227,8 +273,12 @@ export default function StaffingAudit() {
         .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "fr"))
         .slice(0, 20)
         .map((school) => ({ ...school, owners: owners.filter((owner) => school.owners.has(owner)).map((owner) => ownerLabels[owner]) })),
+      topCities: Array.from(cities.values())
+        .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "fr"))
+        .slice(0, 20)
+        .map((city) => ({ ...city, owners: owners.filter((owner) => city.owners.has(owner)).map((owner) => ownerLabels[owner]) })),
     };
-  }, [categoryFilter, effectiveAnalysisEndDate, effectiveAnalysisStartDate, excludedSchoolKeys, savedDays, tutorTypeById, tutorTypeSnapshot]);
+  }, [categoryFilter, effectiveAnalysisEndDate, effectiveAnalysisStartDate, excludedCityKeys, excludedSchoolKeys, savedDays, schoolCities, tutorTypeById, tutorTypeSnapshot]);
   async function importFile(file: File | undefined) {
     if (!file) return;
     setSaving(true);
@@ -410,14 +460,35 @@ export default function StaffingAudit() {
               <b>{new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(row.percentage)} %</b>
             </article>)}
           </div>
-          <div className="staffing-range-schools">
-            <h4>Établissements les plus concernés</h4>
-            <small className="staffing-range-schools-help">Excluez-en un pour mesurer son impact sans modifier les bilans enregistrés.</small>
+          <div className="staffing-range-ranking staffing-range-schools">
+            <div className="staffing-range-ranking-heading"><h4>Établissements les plus concernés</h4><small>Exclusion temporaire pour mesurer l’impact sur le bilan.</small></div>
+            <div className="staffing-range-ranking-list">
             {rangeAnalysis.topSchools.length ? rangeAnalysis.topSchools.map((school, index) => {
               const excluded = excludedSchoolKeys.includes(school.key);
-              return <article className={excluded ? "excluded" : ""} key={school.key}><span>{index + 1}</span><strong>{school.name}</strong><small>RH : {school.owners.join(", ")}</small><b>{school.count}</b><button type="button" aria-pressed={excluded} onClick={() => setExcludedSchoolKeys((current) => excluded ? current.filter((key) => key !== school.key) : [...current, school.key])}>{excluded ? "Réintégrer" : "Exclure"}</button></article>;
+              return <article className={excluded ? "excluded" : ""} key={school.key}>
+                <span className="staffing-range-rank">{index + 1}</span>
+                <div className="staffing-range-ranking-name"><strong title={school.name}>{school.name}</strong><small>RH : {school.owners.join(", ")}</small></div>
+                <b className="staffing-range-ranking-count">{school.count}</b>
+                <button type="button" aria-pressed={excluded} onClick={() => setExcludedSchoolKeys((current) => excluded ? current.filter((key) => key !== school.key) : [...current, school.key])}>{excluded ? "Réintégrer" : "Exclure"}</button>
+              </article>;
             }) : <p>Aucune séance non staffée sur cette période.</p>}
+            </div>
             {excludedSchoolKeys.length ? <button type="button" className="staffing-range-reset-exclusions" onClick={() => setExcludedSchoolKeys([])}>Réintégrer tous les établissements ({excludedSchoolKeys.length})</button> : null}
+          </div>
+          <div className="staffing-range-ranking staffing-range-cities">
+            <div className="staffing-range-ranking-heading"><h4>Villes les plus concernées</h4><small>Ville issue de la fiche établissement.</small></div>
+            <div className="staffing-range-ranking-list">
+            {rangeAnalysis.topCities.length ? rangeAnalysis.topCities.map((city, index) => {
+              const excluded = excludedCityKeys.includes(city.key);
+              return <article className={excluded ? "excluded" : ""} key={city.key}>
+                <span className="staffing-range-rank">{index + 1}</span>
+                <div className="staffing-range-ranking-name"><strong title={city.name}>{city.name}</strong><small>RH : {city.owners.join(", ")}</small></div>
+                <b className="staffing-range-ranking-count">{city.count}</b>
+                <button type="button" aria-pressed={excluded} onClick={() => setExcludedCityKeys((current) => excluded ? current.filter((key) => key !== city.key) : [...current, city.key])}>{excluded ? "Réintégrer" : "Exclure"}</button>
+              </article>;
+            }) : <p>Aucune ville avec une séance non staffée.</p>}
+            </div>
+            {excludedCityKeys.length ? <button type="button" className="staffing-range-reset-exclusions" onClick={() => setExcludedCityKeys([])}>Réintégrer toutes les villes ({excludedCityKeys.length})</button> : null}
           </div>
         </div>
       </section> : null}
