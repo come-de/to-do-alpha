@@ -29,6 +29,9 @@ type SessionImport = {
   sourceSessionCount: number;
   schools?: UpcomingSessionSchool[];
   schoolStaffing?: UpcomingSessionSchoolStaffing[];
+  staffingSessions?: Array<Pick<UpcomingSession, "sessionId" | "school" | "date" | "startTime" | "endTime" | "group"> & {
+    tutors: Array<{ tutorId: string; firstName: string; lastName: string; phone: string }>;
+  }>;
   rows: UpcomingSession[];
 };
 
@@ -53,6 +56,9 @@ type TutorInterest = {
   phone: string;
   sessionId: string;
   date: string;
+  school: string;
+  timeSlot: string;
+  group: string;
   validated: boolean;
 };
 
@@ -63,6 +69,9 @@ type Availability = {
   phone: string;
   sessionId: string;
   date: string;
+  school: string;
+  timeSlot: string;
+  group: string;
 };
 
 type Assignment = {
@@ -90,7 +99,7 @@ type SessionCandidate = {
   firstName: string;
   lastName: string;
   phone: string;
-  sources: Array<"interest" | "availability">;
+  sources: Array<{ source: "interest" | "availability"; sessionId: string; group: string; staffed: boolean }>;
   validatedInterest: boolean;
   assignments: Assignment[];
   hasConflict: boolean;
@@ -98,6 +107,7 @@ type SessionCandidate = {
 };
 
 type EnrichedSession = UpcomingSession & { candidates: SessionCandidate[] };
+type SessionSlot = { key: string; sessions: EnrichedSession[]; candidates: SessionCandidate[] };
 type SessionCategoryKey = "alpha" | "surveillance" | "service";
 type UnstaffedExclusions = { sessionIds: string[]; sourceKeys: string[]; updatedAt: string };
 type SchoolPortfolioOwner = "" | "kelly" | "pierre" | "julie";
@@ -183,6 +193,12 @@ function rangesOverlap(session: UpcomingSession, assignment: Assignment) {
   const sessionRange = timeRange(session.startTime, session.endTime);
   const assignmentRange = timeRange(assignment.timeSlot);
   return Boolean(sessionRange && assignmentRange && sessionRange[0] < assignmentRange[1] && assignmentRange[0] < sessionRange[1]);
+}
+
+function slotKey(date: string, school: string, startTime: string, endTime = "") {
+  const range = timeRange(startTime, endTime);
+  const hours = range ? `${range[0]}-${range[1]}` : `${startTime} ${endTime}`.trim().toLocaleLowerCase("fr");
+  return `${date}|${normalizedSchoolName(school)}|${hours}`;
 }
 
 export default function UnstaffedSessions({ onOpenFiles }: { onOpenFiles: (kind: FileKind) => void }) {
@@ -385,20 +401,39 @@ export default function UnstaffedSessions({ onOpenFiles }: { onOpenFiles: (kind:
     };
   }, [dates, matrixVisibleRows, ownerForSession]);
   const sourceIndexes = useMemo(() => {
-    const interestsBySession = new Map<string, TutorInterest[]>();
-    const availabilityBySession = new Map<string, Availability[]>();
+    const interestsBySlot = new Map<string, TutorInterest[]>();
+    const availabilityBySlot = new Map<string, Availability[]>();
     const assignmentsByTutorDate = new Map<string, Assignment[]>();
     const currentTutorIds = new Set((latestTutorSnapshot?.records ?? []).map((record) => record.tutorId.trim()).filter(Boolean));
-    activeInterestImport?.rows.forEach((row) => interestsBySession.set(row.sessionId, [...(interestsBySession.get(row.sessionId) ?? []), row]));
-    activeAvailabilityImport?.rows.forEach((row) => row.sessionId && availabilityBySession.set(row.sessionId, [...(availabilityBySession.get(row.sessionId) ?? []), row]));
-    activeAssignmentImport?.rows.forEach((row) => {
-      if (row.absent) return;
+    const sessionsById = new Map((activeImport?.staffingSessions ?? activeImport?.rows ?? []).map((row) => [row.sessionId, row]));
+    const keyForSource = (row: { sessionId: string; date: string; school: string; timeSlot: string }) => {
+      const session = sessionsById.get(row.sessionId);
+      if (session && session.date === row.date) return slotKey(session.date, session.school, session.startTime, session.endTime);
+      return row.school && timeRange(row.timeSlot) ? slotKey(row.date, row.school, row.timeSlot) : "";
+    };
+    activeInterestImport?.rows.forEach((row) => {
+      const key = keyForSource(row);
+      if (key) interestsBySlot.set(key, [...(interestsBySlot.get(key) ?? []), row]);
+    });
+    activeAvailabilityImport?.rows.forEach((row) => {
+      const key = keyForSource(row);
+      if (key) availabilityBySlot.set(key, [...(availabilityBySlot.get(key) ?? []), row]);
+    });
+    const addAssignment = (row: Assignment) => {
+      if (row.absent || !row.tutorId) return;
       const key = `${row.tutorId}:${row.date}`;
       const existing = assignmentsByTutorDate.get(key) ?? [];
       if (!existing.some((item) => item.school === row.school && item.timeSlot === row.timeSlot)) assignmentsByTutorDate.set(key, [...existing, row]);
+    };
+    activeAssignmentImport?.rows.forEach((row) => {
+      addAssignment(row);
     });
-    return { interestsBySession, availabilityBySession, assignmentsByTutorDate, currentTutorIds };
-  }, [activeAssignmentImport, activeAvailabilityImport, activeInterestImport, latestTutorSnapshot]);
+    activeImport?.staffingSessions?.forEach((session) => session.tutors.forEach((tutor) => addAssignment({
+      tutorId: tutor.tutorId, firstName: tutor.firstName, lastName: tutor.lastName, phone: tutor.phone,
+      school: session.school, date: session.date, timeSlot: `${session.startTime}–${session.endTime}`, absent: false,
+    })));
+    return { interestsBySlot, availabilityBySlot, assignmentsByTutorDate, currentTutorIds, sessionsById };
+  }, [activeAssignmentImport, activeAvailabilityImport, activeImport, activeInterestImport, latestTutorSnapshot]);
   const hiddenItems = useMemo(() => {
     const sessionsById = new Map<string, UpcomingSession>();
     imports.forEach((item) => item.rows.forEach((row) => {
@@ -422,35 +457,54 @@ export default function UnstaffedSessions({ onOpenFiles }: { onOpenFiles: (kind:
       }),
     };
   }, [availabilityImports, exclusions.sessionIds, exclusions.sourceKeys, imports, interestImports]);
-  const enrichedRows = useMemo(() => visibleRows.map((session): EnrichedSession => {
+  const enrichedRows = useMemo(() => {
+    const candidatesBySlot = new Map<string, SessionCandidate[]>();
+    return visibleRows.map((session): EnrichedSession => {
+    const key = slotKey(session.date, session.school, session.startTime, session.endTime);
+    const cachedCandidates = candidatesBySlot.get(key);
+    if (cachedCandidates) return { ...session, candidates: cachedCandidates };
     const candidates = new Map<string, SessionCandidate>();
-    const addCandidate = (personId: string, firstName: string, lastName: string, phone: string, source: "interest" | "availability", validatedInterest = false) => {
-      if (exclusions.sourceKeys.includes(sourceExclusionKey(session.sessionId, personId, source))) return;
+    const addCandidate = (personId: string, firstName: string, lastName: string, phone: string, source: "interest" | "availability", sourceSessionId: string, group: string, validatedInterest = false) => {
+      if (!personId.trim() || (sourceSessionId && exclusions.sourceKeys.includes(sourceExclusionKey(sourceSessionId, personId, source)))) return;
       const existing = candidates.get(personId);
       const assignments = sourceIndexes.assignmentsByTutorDate.get(`${personId}:${session.date}`) ?? [];
+      const references = [...(existing?.sources ?? [])];
+      const sourceSession = sourceIndexes.sessionsById.get(sourceSessionId);
+      const sourceGroup = group || sourceSession?.group || "";
+      if (!references.some((item) => item.source === source && item.sessionId === sourceSessionId && item.group === sourceGroup)) references.push({ source, sessionId: sourceSessionId, group: sourceGroup, staffed: Boolean(sourceSession && "tutors" in sourceSession && sourceSession.tutors.length) });
       candidates.set(personId, {
         personId,
         firstName: firstName || existing?.firstName || "",
         lastName: lastName || existing?.lastName || "",
         phone: phone || existing?.phone || "",
-        sources: Array.from(new Set([...(existing?.sources ?? []), source])),
+        sources: references,
         validatedInterest: validatedInterest || existing?.validatedInterest || false,
         assignments,
         hasConflict: assignments.some((assignment) => rangesOverlap(session, assignment)),
         personStatus: !latestTutorSnapshot || !personId.trim() ? "unknown" : sourceIndexes.currentTutorIds.has(personId.trim()) ? "tutor" : "candidate",
       });
     };
-    (sourceIndexes.interestsBySession.get(session.sessionId) ?? []).forEach((row) => addCandidate(row.personId, row.firstName, row.lastName, row.phone, "interest", row.validated));
-    (sourceIndexes.availabilityBySession.get(session.sessionId) ?? []).forEach((row) => addCandidate(row.tutorId, row.firstName, row.lastName, row.phone, "availability"));
-    return { ...session, candidates: Array.from(candidates.values()).filter((candidate) => !candidate.hasConflict).sort((a, b) => `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`, "fr")) };
-  }), [exclusions.sourceKeys, latestTutorSnapshot, sourceIndexes, visibleRows]);
-  const groupedRows = useMemo(() => {
-    const groups = new Map<string, EnrichedSession[]>();
-    filteredRowsBeforeSingleStudentRule.forEach((row) => {
-      if (!groups.has(row.date)) groups.set(row.date, []);
+    (sourceIndexes.interestsBySlot.get(key) ?? []).forEach((row) => addCandidate(row.personId, row.firstName, row.lastName, row.phone, "interest", row.sessionId, row.group, row.validated));
+    (sourceIndexes.availabilityBySlot.get(key) ?? []).forEach((row) => addCandidate(row.tutorId, row.firstName, row.lastName, row.phone, "availability", row.sessionId, row.group));
+    const eligibleCandidates = Array.from(candidates.values()).filter((candidate) => !candidate.hasConflict).sort((a, b) => `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`, "fr"));
+    candidatesBySlot.set(key, eligibleCandidates);
+    return { ...session, candidates: eligibleCandidates };
     });
-    enrichedRows.forEach((row) => groups.set(row.date, [...(groups.get(row.date) ?? []), row]));
-    return Array.from(groups.entries()).sort(([a], [b]) => a.localeCompare(b));
+  }, [exclusions.sourceKeys, latestTutorSnapshot, sourceIndexes, visibleRows]);
+  const groupedRows = useMemo(() => {
+    const groups = new Map<string, Map<string, SessionSlot>>();
+    filteredRowsBeforeSingleStudentRule.forEach((row) => {
+      if (!groups.has(row.date)) groups.set(row.date, new Map());
+    });
+    enrichedRows.forEach((row) => {
+      const key = slotKey(row.date, row.school, row.startTime, row.endTime);
+      const slots = groups.get(row.date) ?? new Map<string, SessionSlot>();
+      const slot = slots.get(key) ?? { key, sessions: [], candidates: row.candidates };
+      slot.sessions.push(row);
+      slots.set(key, slot);
+      groups.set(row.date, slots);
+    });
+    return Array.from(groups.entries()).map(([date, slots]) => [date, Array.from(slots.values())] as const).sort(([a], [b]) => a.localeCompare(b));
   }, [enrichedRows, filteredRowsBeforeSingleStudentRule]);
   const schoolsCount = new Set(visibleRows.map((row) => row.schoolId || row.school)).size;
   const studentsCount = visibleRows.reduce((sum, row) => sum + row.studentCount, 0);
@@ -593,7 +647,7 @@ export default function UnstaffedSessions({ onOpenFiles }: { onOpenFiles: (kind:
       row.candidates.map((candidate) => `${candidate.firstName} ${candidate.lastName}`.trim() || candidate.personId).join(" | "),
       row.candidates.map((candidate) => `${candidate.personId}: ${candidate.personStatus === "tutor" ? "Tuteur" : candidate.personStatus === "candidate" ? "Candidat" : "Statut inconnu"}`).join(" | "),
       latestTutorSnapshot?.date || "Aucune liste de référence",
-      row.candidates.map((candidate) => `${candidate.personId}: ${candidate.sources.map((source) => source === "interest" ? "Intérêt" : "Disponibilités").join(" + ")}`).join(" | "),
+      row.candidates.map((candidate) => `${candidate.personId}: ${candidate.sources.map((item) => `${item.source === "interest" ? "Intérêt" : "Disponibilité"} ${item.group || ""}${item.sessionId ? ` #${item.sessionId}` : ""}`.trim()).join(" + ")}`).join(" | "),
       row.candidates.flatMap((candidate) => candidate.assignments.map((assignment) => `${candidate.personId}: ${assignment.timeSlot} — ${assignment.school}`)).join(" | "),
     ]));
     const blob = new Blob([`\uFEFF${rows.map((row) => row.map(csvCell).join(";")).join("\r\n")}`], { type: "text/csv;charset=utf-8" });
@@ -607,7 +661,7 @@ export default function UnstaffedSessions({ onOpenFiles }: { onOpenFiles: (kind:
 
   return <section className="task-panel unstaffed-panel">
     <div className="panel-heading">
-      <div><p className="eyebrow">Pilotage des deux semaines</p><h2>Séances non affectées</h2><p>Une ligne par séance, sans nom d’élève. Les classes sont regroupées automatiquement.</p></div>
+      <div><p className="eyebrow">Pilotage des deux semaines</p><h2>Séances non affectées</h2><p>Les séances d’un même établissement et d’un même créneau sont réunies, avec le détail de chaque groupe.</p></div>
       <div className="filters">
         {exclusions.sessionIds.length + exclusions.sourceKeys.length > 0 ? <button type="button" className={`button quiet ${showHiddenItems ? "active" : ""}`} onClick={() => setShowHiddenItems((current) => !current)} disabled={saving}>{showHiddenItems ? "Fermer les éléments masqués" : "Voir les éléments masqués"} ({exclusions.sessionIds.length + exclusions.sourceKeys.length})</button> : null}
         <button type="button" className="ghost-button" onClick={() => void load()} disabled={saving}>↻ Actualiser</button>
@@ -680,21 +734,21 @@ export default function UnstaffedSessions({ onOpenFiles }: { onOpenFiles: (kind:
       </div>
       <div className="unstaffed-days">
         {groupedRows.length ? groupedRows.map(([date, rows]) => <article className="unstaffed-day" key={date}>
-          <header><div><span>{formatDate(date, true)}</span><small>{new Set(rows.map((row) => row.school)).size} établissements</small></div><div className="unstaffed-day-actions"><strong>{rows.length} séance{rows.length > 1 ? "s" : ""}</strong>{(() => { const hiddenCount = filteredRowsBeforeSingleStudentRule.filter((row) => row.date === date && sessionCategoryKey(row.category) === "alpha" && row.studentCount === 1).length; return hiddenCount ? <button type="button" onClick={() => toggleSingleStudentAlphaForDate(date)}>{shownSingleStudentAlphaDates.includes(date) ? "Masquer" : "Afficher"} {hiddenCount} groupe{hiddenCount > 1 ? "s" : ""} Alpha à 1 élève</button> : null; })()}</div></header>
+          <header><div><span>{formatDate(date, true)}</span><small>{new Set(rows.map((slot) => slot.sessions[0]?.school)).size} établissements</small></div><div className="unstaffed-day-actions"><strong>{rows.reduce((sum, slot) => sum + slot.sessions.length, 0)} séance{rows.reduce((sum, slot) => sum + slot.sessions.length, 0) > 1 ? "s" : ""} · {rows.length} créneau{rows.length > 1 ? "x" : ""}</strong>{(() => { const hiddenCount = filteredRowsBeforeSingleStudentRule.filter((row) => row.date === date && sessionCategoryKey(row.category) === "alpha" && row.studentCount === 1).length; return hiddenCount ? <button type="button" onClick={() => toggleSingleStudentAlphaForDate(date)}>{shownSingleStudentAlphaDates.includes(date) ? "Masquer" : "Afficher"} {hiddenCount} groupe{hiddenCount > 1 ? "s" : ""} Alpha à 1 élève</button> : null; })()}</div></header>
           <div className="unstaffed-table-wrap"><table><thead><tr><th>Horaire</th><th>Établissement</th><th>Type</th><th>Groupe</th><th>Classes</th><th>Élèves</th><th>Salle</th><th aria-label="Actions"></th></tr></thead><tbody>
-            {rows.map((row) => <Fragment key={row.sessionId}>
-              <tr className={row.candidates.length ? "has-candidates" : ""}><td><strong>{row.startTime || "—"}–{row.endTime || "—"}</strong><small>#{row.sessionId}</small></td><td><SchoolAdminLink schoolId={row.schoolId}>{row.school}</SchoolAdminLink><small className={`school-owner-label ${ownerForSession(row) ? "assigned" : "unassigned"}`}>{schoolOwnerLabels[ownerForSession(row)]}</small></td><td><span className="session-category">{row.category || "—"}</span></td><td>{row.group || "—"}</td><td><div className="class-tags">{row.classes.length ? row.classes.map((item) => <span key={item}>{item}</span>) : <em>Non précisée</em>}</div></td><td>{row.studentCount || "—"}</td><td>{row.room || "—"}</td><td><button type="button" className="unstaffed-hide-button" onClick={() => hideSession(row.sessionId)} disabled={saving} title="Masquer durablement cette séance" aria-label={`Masquer la séance ${row.sessionId}`}>×</button></td></tr>
+            {rows.map((slot) => { const row = slot.sessions[0]!; return <Fragment key={slot.key}>
+              <tr className={slot.candidates.length ? "has-candidates" : ""}><td><strong>{row.startTime || "—"}–{row.endTime || "—"}</strong><small className="slot-session-count">{slot.sessions.length} séance{slot.sessions.length > 1 ? "s" : ""}</small></td><td><SchoolAdminLink schoolId={row.schoolId}>{row.school}</SchoolAdminLink><small className={`school-owner-label ${ownerForSession(row) ? "assigned" : "unassigned"}`}>{schoolOwnerLabels[ownerForSession(row)]}</small></td><td><div className="slot-categories">{Array.from(new Set(slot.sessions.map((item) => item.category || "—"))).map((category) => <span className="session-category" key={category}>{category}</span>)}</div></td><td><div className="slot-groups">{slot.sessions.map((item) => <span key={item.sessionId} title={`Séance #${item.sessionId}`}>{item.group || "Sans groupe"}</span>)}</div></td><td><div className="class-tags">{Array.from(new Set(slot.sessions.flatMap((item) => item.classes))).map((item) => <span key={item}>{item}</span>)}</div></td><td>{slot.sessions.reduce((sum, item) => sum + item.studentCount, 0) || "—"}</td><td>{Array.from(new Set(slot.sessions.map((item) => item.room).filter(Boolean))).join(" · ") || "—"}</td><td><details className="slot-session-details"><summary>Détail</summary><div>{slot.sessions.map((item) => <span key={item.sessionId}>{item.group || "Groupe non précisé"} · #{item.sessionId}<button type="button" className="unstaffed-hide-button" onClick={() => hideSession(item.sessionId)} disabled={saving} title="Masquer durablement cette séance" aria-label={`Masquer la séance ${item.sessionId}`}>×</button></span>)}</div></details></td></tr>
               {(() => {
-                const candidates = row.candidates.filter((candidate) => candidate.personStatus === "candidate");
-                const freeTutors = row.candidates.filter((candidate) => candidate.personStatus === "tutor" && !candidate.hasConflict);
-                const unknownPeople = row.candidates.filter((candidate) => candidate.personStatus === "unknown");
+                const candidates = slot.candidates.filter((candidate) => candidate.personStatus === "candidate");
+                const freeTutors = slot.candidates.filter((candidate) => candidate.personStatus === "tutor" && !candidate.hasConflict);
+                const unknownPeople = slot.candidates.filter((candidate) => candidate.personStatus === "unknown");
                 const freeTutorNames = freeTutors.map((candidate) => `${candidate.firstName} ${candidate.lastName}`.trim() || `ID ${candidate.personId}`);
                 const visibleFreeTutorNames = freeTutorNames.slice(0, 2).join(", ");
-                return <tr className={`session-candidates-row ${row.candidates.length ? "has-results" : ""} ${freeTutors.length ? "has-free-tutor" : ""}`}><td colSpan={8}>
-                {row.candidates.length ? <details>
+                return <tr className={`session-candidates-row ${slot.candidates.length ? "has-results" : ""} ${freeTutors.length ? "has-free-tutor" : ""}`}><td colSpan={8}>
+                {slot.candidates.length ? <details>
                   <summary>
                     <div className="candidate-summary-content">
-                      <span className="session-link-label">↳ Pour la séance #{row.sessionId}</span>
+                      <span className="session-link-label">↳ Pour ce créneau · {slot.sessions.length} séance{slot.sessions.length > 1 ? "s" : ""} non staffée{slot.sessions.length > 1 ? "s" : ""}</span>
                       {freeTutors.length ? <strong className="free-tutor-callout">✓ {freeTutors.length} tuteur{freeTutors.length > 1 ? "s" : ""} sans chevauchement · {visibleFreeTutorNames}{freeTutorNames.length > 2 ? ` +${freeTutorNames.length - 2}` : ""}</strong> : null}
                       <div className="candidate-counts">
                         {candidates.length ? <span className="candidate-count candidate">{candidates.length} candidat{candidates.length > 1 ? "s" : ""}</span> : null}
@@ -702,17 +756,17 @@ export default function UnstaffedSessions({ onOpenFiles }: { onOpenFiles: (kind:
                         {unknownPeople.length ? <span className="candidate-count unknown">{unknownPeople.length} statut{unknownPeople.length > 1 ? "s" : ""} inconnu{unknownPeople.length > 1 ? "s" : ""}</span> : null}
                       </div>
                     </div>
-                    <small>Voir les coordonnées, sources et autres séances</small>
+                    <small>Voir les coordonnées et groupes d’origine, y compris déjà staffés</small>
                   </summary>
-                  <div className="session-candidate-list">{row.candidates.map((candidate) => <article key={candidate.personId}>
+                  <div className="session-candidate-list">{slot.candidates.map((candidate) => <article key={candidate.personId}>
                     <div className="candidate-name"><div><strong><PersonAdminLink personId={candidate.personId} status={candidate.personStatus}>{`${candidate.firstName} ${candidate.lastName}`.trim() || `Personne ${candidate.personId}`}</PersonAdminLink></strong><span className={`person-status ${candidate.personStatus}`}>{candidate.personStatus === "tutor" ? "Tuteur" : candidate.personStatus === "candidate" ? "Candidat" : "Statut inconnu"}</span></div><small>ID {candidate.personId}{candidate.phone ? ` · ${candidate.phone}` : ""}</small></div>
-                    <div className="candidate-sources">{candidate.sources.map((source) => <span className={source} key={source}>{source === "interest" ? "Intérêt déclaré" : "Disponible"}<button type="button" onClick={() => hideCandidateSource(row.sessionId, candidate.personId, source)} disabled={saving} title={`Masquer ${source === "interest" ? "cet intérêt" : "cette disponibilité"}`}>×</button></span>)}{candidate.validatedInterest ? <span className="validated">Intérêt validé</span> : null}</div>
+                    <div className="candidate-sources">{candidate.sources.map((item) => <span className={item.source} key={`${item.source}-${item.sessionId}-${item.group}`}>{item.source === "interest" ? "Intérêt" : "Disponible"} · {item.group || `séance #${item.sessionId}`}{item.staffed ? " (groupe staffé)" : ""}{item.sessionId ? <button type="button" onClick={() => hideCandidateSource(item.sessionId, candidate.personId, item.source)} disabled={saving} title={`Masquer ${item.source === "interest" ? "cet intérêt" : "cette disponibilité"} pour la séance #${item.sessionId}`}>×</button> : null}</span>)}{candidate.validatedInterest ? <span className="validated">Intérêt validé</span> : null}</div>
                     <div className="candidate-assignments">{candidate.assignments.length ? <><strong>Autre séance ce jour</strong>{candidate.assignments.map((assignment, index) => <span key={`${assignment.timeSlot}-${assignment.school}-${index}`}>{assignment.timeSlot} · {assignment.school}</span>)}</> : <span className="candidate-free">Aucune autre séance affectée ce jour</span>}</div>
                   </article>)}</div>
-                </details> : <span className="no-candidates"><strong>↳ Pour la séance #{row.sessionId}</strong> · aucune personne mobilisable sans chevauchement</span>}
+                </details> : <span className="no-candidates"><strong>↳ Pour ce créneau</strong> · aucune personne mobilisable sans chevauchement parmi les disponibilités et intérêts de l’établissement</span>}
               </td></tr>;
               })()}
-            </Fragment>)}
+            </Fragment>; })}
             {!rows.length ? <tr><td colSpan={8} className="single-alpha-hidden-note">Les groupes Étude Alpha à un élève sont masqués pour cette date. Utilisez le bouton ci-dessus pour les afficher.</td></tr> : null}
           </tbody></table></div>
         </article>) : <div className="empty-state"><span>✓</span><h3>Aucune séance avec les filtres actuels</h3><p>{schoolOwnerFilter !== "all" ? `Le filtre responsable « ${schoolOwnerFilter === "unassigned" ? "Non attribués" : schoolOwnerLabels[schoolOwnerFilter]} » ne contient aucune séance dans cet import.` : "Modifiez les filtres ou choisissez un autre fichier."}</p>{schoolOwnerFilter !== "all" ? <button type="button" className="button primary" onClick={() => setSchoolOwnerFilter("all")}>Afficher tous les responsables</button> : null}</div>}
