@@ -41,6 +41,7 @@ export type ParentContact = {
 export type ParentImport = { id: string; source: ParentSource; fileName: string; importedAt: string; rows: number; matched: number; review: number; schoolReview?: number };
 
 export type ParentImportRow = {
+  source?: ParentSource;
   firstName?: string;
   lastName?: string;
   email?: string;
