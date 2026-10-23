@@ -219,19 +219,24 @@ export default function StaffingAudit() {
       };
     });
     const schools = new Map<string, { key: string; name: string; count: number; owners: Set<SchoolPortfolioOwner> }>();
-    const cities = new Map<string, { key: string; name: string; count: number; owners: Set<SchoolPortfolioOwner> }>();
+    const cities = new Map<string, { key: string; name: string; count: number; total: number; owners: Set<SchoolPortfolioOwner> }>();
     allUnstaffed.forEach((session) => {
       const key = schoolKey(session);
       const item = schools.get(key) ?? { key, name: session.school || "Établissement non précisé", count: 0, owners: new Set<SchoolPortfolioOwner>() };
       item.count += 1;
       item.owners.add(session.portfolioOwner);
       schools.set(key, item);
+    });
+    allSessions.forEach((session) => {
       const name = cityForSession(session);
-      const keyCity = cityKey(session);
-      const city = cities.get(keyCity) ?? { key: keyCity, name, count: 0, owners: new Set<SchoolPortfolioOwner>() };
-      city.count += 1;
-      city.owners.add(session.portfolioOwner);
-      cities.set(keyCity, city);
+      const key = cityKey(session);
+      const city = cities.get(key) ?? { key, name, count: 0, total: 0, owners: new Set<SchoolPortfolioOwner>() };
+      city.total += 1;
+      if (isUnstaffed(session)) {
+        city.count += 1;
+        city.owners.add(session.portfolioOwner);
+      }
+      cities.set(key, city);
     });
     return {
       total: sessions.length,
@@ -273,10 +278,10 @@ export default function StaffingAudit() {
         .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "fr"))
         .slice(0, 20)
         .map((school) => ({ ...school, owners: owners.filter((owner) => school.owners.has(owner)).map((owner) => ownerLabels[owner]) })),
-      topCities: Array.from(cities.values())
+      topCities: Array.from(cities.values()).filter((city) => city.count > 0)
         .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "fr"))
         .slice(0, 20)
-        .map((city) => ({ ...city, owners: owners.filter((owner) => city.owners.has(owner)).map((owner) => ownerLabels[owner]) })),
+        .map((city) => ({ ...city, percentage: city.total ? (city.count / city.total) * 100 : 0, owners: owners.filter((owner) => city.owners.has(owner)).map((owner) => ownerLabels[owner]) })),
     };
   }, [categoryFilter, effectiveAnalysisEndDate, effectiveAnalysisStartDate, excludedCityKeys, excludedSchoolKeys, savedDays, schoolCities, tutorTypeById, tutorTypeSnapshot]);
   async function importFile(file: File | undefined) {
@@ -476,14 +481,15 @@ export default function StaffingAudit() {
             {excludedSchoolKeys.length ? <button type="button" className="staffing-range-reset-exclusions" onClick={() => setExcludedSchoolKeys([])}>Réintégrer tous les établissements ({excludedSchoolKeys.length})</button> : null}
           </div>
           <div className="staffing-range-ranking staffing-range-cities">
-            <div className="staffing-range-ranking-heading"><h4>Villes les plus concernées</h4><small>Ville issue de la fiche établissement.</small></div>
+            <div className="staffing-range-ranking-heading"><h4>Villes les plus concernées</h4><small>Non staffées / total · ville issue de la fiche établissement.</small></div>
             <div className="staffing-range-ranking-list">
             {rangeAnalysis.topCities.length ? rangeAnalysis.topCities.map((city, index) => {
               const excluded = excludedCityKeys.includes(city.key);
               return <article className={excluded ? "excluded" : ""} key={city.key}>
                 <span className="staffing-range-rank">{index + 1}</span>
                 <div className="staffing-range-ranking-name"><strong title={city.name}>{city.name}</strong><small>RH : {city.owners.join(", ")}</small></div>
-                <b className="staffing-range-ranking-count">{city.count}</b>
+                <b className="staffing-range-ranking-count" title={`${city.count} séances non staffées sur ${city.total}`}>{city.count}/{city.total}</b>
+                <span className="staffing-range-city-rate">{new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(city.percentage)} %</span>
                 <button type="button" aria-pressed={excluded} onClick={() => setExcludedCityKeys((current) => excluded ? current.filter((key) => key !== city.key) : [...current, city.key])}>{excluded ? "Réintégrer" : "Exclure"}</button>
               </article>;
             }) : <p>Aucune ville avec une séance non staffée.</p>}
