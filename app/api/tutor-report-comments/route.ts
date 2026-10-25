@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import {
   readTutorReportComments,
   sanitizeTutorReportComment,
+  writeTutorReportComment,
   writeTutorReportComments,
 } from "@/app/lib/shared-data";
 
@@ -24,16 +25,25 @@ async function getHandler() {
 
 async function putHandler(request: Request) {
   try {
-    const body = (await request.json()) as { comments?: unknown };
+    const body = (await request.json()) as { comment?: unknown; comments?: unknown };
+    if (body.comment && typeof body.comment === "object" && !Array.isArray(body.comment)) {
+      const comment = sanitizeTutorReportComment(body.comment as Record<string, unknown>);
+      if (!comment.tutorId) return json({ error: "A tutor ID is required" }, 400);
+      await writeTutorReportComment(comment);
+      return json({ comments: await readTutorReportComments() });
+    }
     if (!Array.isArray(body.comments)) return json({ error: "Invalid tutor report comment list" }, 400);
 
     const commentsByTutor = new Map<string, ReturnType<typeof sanitizeTutorReportComment>>();
+    const existing = await readTutorReportComments();
+    existing.forEach((comment) => {
+      commentsByTutor.set(comment.tutorId ? `id:${comment.tutorId}` : `legacy:${comment.legacyKey || comment.updatedAt}`, comment);
+    });
     body.comments
       .filter((comment): comment is Record<string, unknown> => Boolean(comment && typeof comment === "object"))
       .map(sanitizeTutorReportComment)
-      .filter((comment) => comment.tutorId)
       .forEach((comment) => {
-        commentsByTutor.set(comment.tutorId, comment);
+        commentsByTutor.set(comment.tutorId ? `id:${comment.tutorId}` : `legacy:${comment.legacyKey || comment.updatedAt}`, comment);
       });
 
     const comments = Array.from(commentsByTutor.values()).sort((a, b) => a.tutorId.localeCompare(b.tutorId, "fr"));
