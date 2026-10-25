@@ -153,10 +153,38 @@ export type TutorReportSnapshot = {
   updatedAt: string;
 };
 
+export type TutorReportAuditSchool = {
+  sourceName: string;
+  expectedCount: number;
+  missingCount: number;
+};
+
+export type TutorReportAuditTutor = {
+  key: string;
+  tutorId: string;
+  name: string;
+  expectedCount: number;
+  missingCount: number;
+  schools: TutorReportAuditSchool[];
+};
+
+export type TutorReportAuditDay = {
+  date: string;
+  sourceFileName: string;
+  sourceRowCount: number;
+  excludedTutorKeys: string[];
+  tutors: TutorReportAuditTutor[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type TutorReportAuditSchoolMapping = Record<string, string>;
+
 export type TutorReportComment = {
   tutorId: string;
   comment: string;
   updatedAt: string;
+  legacyKey?: string;
 };
 
 export type TutorTrackingRecord = {
@@ -545,6 +573,9 @@ export const MASS_COMMUNICATIONS_KEY = "mass-communications.json";
 export const STAFFING_SESSIONS_KEY = "staffing-sessions.json";
 export const TUTOR_REPORTS_KEY = "tutor-reports.json";
 export const TUTOR_REPORT_COMMENTS_KEY = "tutor-report-comments.json";
+const TUTOR_REPORT_COMMENT_PREFIX = "tutor-report-comments:by-tutor:";
+export const TUTOR_REPORT_AUDITS_KEY = "tutor-report-audits.json";
+export const TUTOR_REPORT_AUDIT_SCHOOL_MAPPINGS_KEY = "tutor-report-audit-school-mappings.json";
 export const TUTOR_TRACKING_KEY = "tutor-tracking.json";
 export const AVAILABILITY_IMPORTS_KEY = "availability-imports.json";
 export const TUTOR_ASSIGNMENT_IMPORTS_KEY = "tutor-assignment-imports.json";
@@ -570,7 +601,10 @@ const memory = globalThis as typeof globalThis & {
   __petitSuiviMassCommunications?: MassCommunication[];
   __petitSuiviStaffingSessions?: StaffingDay[];
   __petitSuiviTutorReports?: TutorReportSnapshot[];
+  __petitSuiviTutorReportAuditDays?: TutorReportAuditDay[];
+  __petitSuiviTutorReportAuditSchoolMappings?: TutorReportAuditSchoolMapping;
   __petitSuiviTutorReportComments?: TutorReportComment[];
+  __petitSuiviTutorReportCommentsByTutor?: Record<string, TutorReportComment>;
   __petitSuiviTutorTracking?: TutorTrackingData;
   __petitSuiviAvailabilityImports?: AvailabilityImport[];
   __petitSuiviTutorAssignmentImports?: TutorAssignmentImport[];
@@ -997,12 +1031,49 @@ export function sanitizeTutorReportSnapshot(raw: Record<string, unknown>): Tutor
   };
 }
 
+export function normalizeTutorReportSchoolKey(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr").replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+export function sanitizeTutorReportAuditDay(raw: Record<string, unknown>): TutorReportAuditDay {
+  const now = new Date().toISOString();
+  const tutors = Array.isArray(raw.tutors)
+    ? raw.tutors.filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object")).map((item) => {
+        const schools = Array.isArray(item.schools)
+          ? item.schools.filter((school): school is Record<string, unknown> => Boolean(school && typeof school === "object")).map((school) => ({
+              sourceName: cleanText(school.sourceName),
+              expectedCount: cleanSessionCount(school.expectedCount),
+              missingCount: cleanSessionCount(school.missingCount),
+            })).filter((school) => school.sourceName)
+          : [];
+        return {
+          key: cleanText(item.key),
+          tutorId: cleanText(item.tutorId),
+          name: cleanText(item.name),
+          expectedCount: cleanSessionCount(item.expectedCount),
+          missingCount: cleanSessionCount(item.missingCount),
+          schools,
+        };
+      }).filter((tutor) => tutor.key && tutor.name)
+    : [];
+  return {
+    date: normalizeStaffingAuditDate(raw.date) || cleanText(raw.date),
+    sourceFileName: cleanText(raw.sourceFileName),
+    sourceRowCount: cleanSessionCount(raw.sourceRowCount),
+    excludedTutorKeys: Array.isArray(raw.excludedTutorKeys) ? Array.from(new Set(raw.excludedTutorKeys.map(cleanText).filter(Boolean))) : [],
+    tutors,
+    createdAt: cleanText(raw.createdAt) || now,
+    updatedAt: cleanText(raw.updatedAt) || now,
+  };
+}
+
 export function sanitizeTutorReportComment(raw: Record<string, unknown>): TutorReportComment {
   const legacyKey = cleanText(raw.tutorKey);
   return {
     tutorId: cleanText(raw.tutorId) || (/^id:(.+)$/i.exec(legacyKey)?.[1] ?? ""),
     comment: cleanText(raw.comment),
     updatedAt: cleanText(raw.updatedAt) || new Date().toISOString(),
+    legacyKey: cleanText(raw.legacyKey) || legacyKey,
   };
 }
 
@@ -1224,7 +1295,7 @@ function detectCsvDelimiter(value: string) {
     .sort((a, b) => b.count - a.count)[0]?.delimiter || ";";
 }
 
-function parseCsvRows(value: string) {
+export function parseCsvRows(value: string) {
   const delimiter = detectCsvDelimiter(value);
   const rows: string[][] = [];
   let row: string[] = [];
@@ -1256,7 +1327,7 @@ function parseCsvRows(value: string) {
   return rows;
 }
 
-function normalizedHeader(value: string) {
+export function normalizedHeader(value: string) {
   return value
     .trim()
     .toLocaleLowerCase("fr")
@@ -2548,8 +2619,9 @@ export async function readTutorReports() {
           .map(sanitizeTutorReportSnapshot)
           .sort((a, b) => dateValueForSort(b.date) - dateValueForSort(a.date))
       : [];
-  } catch {
-    return memory.__petitSuiviTutorReports ?? [];
+  } catch (error) {
+    if (canUseMemoryFallback()) return memory.__petitSuiviTutorReports ?? [];
+    throw error;
   }
 }
 
@@ -2557,8 +2629,64 @@ export async function writeTutorReports(reports: TutorReportSnapshot[]) {
   try {
     const store = taskStore();
     await store.setJSON(TUTOR_REPORTS_KEY, reports);
-  } catch {
-    memory.__petitSuiviTutorReports = reports;
+  } catch (error) {
+    if (canUseMemoryFallback()) { memory.__petitSuiviTutorReports = reports; return; }
+    throw error;
+  }
+}
+
+export async function clearLegacyTutorReports() {
+  await writeTutorReports([]);
+}
+
+export async function readTutorReportAuditDays() {
+  try {
+    const store = taskStore();
+    const days = await store.get(TUTOR_REPORT_AUDITS_KEY, { type: "json", consistency: "strong" });
+    return Array.isArray(days)
+      ? days.filter((day): day is Record<string, unknown> => Boolean(day && typeof day === "object")).map(sanitizeTutorReportAuditDay).filter((day) => day.date).sort((a, b) => b.date.localeCompare(a.date))
+      : [];
+  } catch (error) {
+    if (canUseMemoryFallback()) return memory.__petitSuiviTutorReportAuditDays ?? [];
+    throw error;
+  }
+}
+
+export async function writeTutorReportAuditDays(days: TutorReportAuditDay[]) {
+  const normalized = days.map((day) => sanitizeTutorReportAuditDay(day as unknown as Record<string, unknown>)).filter((day) => day.date).sort((a, b) => b.date.localeCompare(a.date));
+  try {
+    const store = taskStore();
+    await store.setJSON(TUTOR_REPORT_AUDITS_KEY, normalized);
+  } catch (error) {
+    if (canUseMemoryFallback()) { memory.__petitSuiviTutorReportAuditDays = normalized; return; }
+    throw error;
+  }
+}
+
+export async function readTutorReportAuditSchoolMappings(): Promise<TutorReportAuditSchoolMapping> {
+  try {
+    const store = taskStore();
+    const mappings = await store.get(TUTOR_REPORT_AUDIT_SCHOOL_MAPPINGS_KEY, { type: "json", consistency: "strong" });
+    const result: TutorReportAuditSchoolMapping = {};
+    if (mappings && typeof mappings === "object" && !Array.isArray(mappings)) {
+      Object.entries(mappings).forEach(([key, value]) => {
+        if (cleanText(key) && typeof value === "string" && (value === "excluded" || value.trim())) result[key] = value.trim();
+      });
+    }
+    return result;
+  } catch (error) {
+    if (canUseMemoryFallback()) return memory.__petitSuiviTutorReportAuditSchoolMappings ?? {};
+    throw error;
+  }
+}
+
+export async function writeTutorReportAuditSchoolMappings(mappings: TutorReportAuditSchoolMapping) {
+  try {
+    const store = taskStore();
+    await store.setJSON(TUTOR_REPORT_AUDIT_SCHOOL_MAPPINGS_KEY, mappings);
+  } catch (error) {
+    if (canUseMemoryFallback()) { memory.__petitSuiviTutorReportAuditSchoolMappings = mappings; return; }
+    throw error;
   }
 }
 
@@ -2570,34 +2698,73 @@ export async function readTutorReportComments() {
     rawComments = Array.isArray(comments)
       ? comments.filter((comment): comment is Record<string, unknown> => Boolean(comment && typeof comment === "object"))
       : [];
-  } catch {
-    rawComments = memory.__petitSuiviTutorReportComments as unknown as Record<string, unknown>[] ?? [];
+    const listed = await store.list({ prefix: TUTOR_REPORT_COMMENT_PREFIX });
+    const individual = await Promise.all(listed.blobs.map((blob) => store.get(blob.key, { type: "json", consistency: "strong" })));
+    rawComments.push(...individual.filter((comment): comment is Record<string, unknown> => Boolean(comment && typeof comment === "object")));
+  } catch (error) {
+    if (!canUseMemoryFallback()) throw error;
+    rawComments = [
+      ...(memory.__petitSuiviTutorReportComments as unknown as Record<string, unknown>[] ?? []),
+      ...Object.values(memory.__petitSuiviTutorReportCommentsByTutor ?? {}) as unknown as Record<string, unknown>[],
+    ];
   }
   const [reports, tracking] = await Promise.all([readTutorReports(), readTutorTracking()]);
   const resolvedReports = resolveTutorReportTutorIds(reports, tracking.snapshots.flatMap((snapshot) => snapshot.records)).reports;
   const idsByLegacyKey = new Map<string, Set<string>>();
+  const addLegacyKey = (legacyKey: string, tutorId: string) => {
+    if (!legacyKey || !tutorId) return;
+    const ids = idsByLegacyKey.get(legacyKey) ?? new Set<string>();
+    ids.add(tutorId);
+    idsByLegacyKey.set(legacyKey, ids);
+  };
   resolvedReports.forEach((report) => report.entries.forEach((entry) => {
     if (!entry.tutorId) return;
     const legacyKey = `name:${`${entry.lastName} ${entry.firstName} ${entry.phone}`.trim().toLocaleLowerCase("fr").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`;
-    const ids = idsByLegacyKey.get(legacyKey) ?? new Set<string>();
-    ids.add(entry.tutorId);
-    idsByLegacyKey.set(legacyKey, ids);
+    addLegacyKey(legacyKey, entry.tutorId);
   }));
-  return rawComments.map((raw) => {
+  tracking.snapshots.flatMap((snapshot) => snapshot.records).forEach((record) => {
+    const legacyKey = `name:${`${record.lastName} ${record.firstName} ${record.phone}`.trim().toLocaleLowerCase("fr").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`;
+    addLegacyKey(legacyKey, record.tutorId);
+  });
+  const resolved = rawComments.map((raw) => {
     const oldKey = cleanText(raw.tutorKey);
     const legacyId = /^id:(.+)$/i.exec(oldKey)?.[1] ?? "";
     const mappedIds = idsByLegacyKey.get(oldKey);
     const tutorId = cleanText(raw.tutorId) || legacyId || (mappedIds?.size === 1 ? Array.from(mappedIds)[0] : "");
-    return sanitizeTutorReportComment({ ...raw, tutorId });
-  }).filter((comment) => comment.tutorId);
+    return sanitizeTutorReportComment({ ...raw, tutorId, legacyKey: oldKey || raw.legacyKey });
+  });
+  const byTutor = new Map<string, TutorReportComment>();
+  const legacy = new Map<string, TutorReportComment>();
+  resolved.forEach((comment) => {
+    if (comment.tutorId) byTutor.set(comment.tutorId, comment);
+    else legacy.set(comment.legacyKey || comment.updatedAt, comment);
+  });
+  return [...byTutor.values(), ...legacy.values()];
 }
 
 export async function writeTutorReportComments(comments: TutorReportComment[]) {
   try {
     const store = taskStore();
     await store.setJSON(TUTOR_REPORT_COMMENTS_KEY, comments);
-  } catch {
-    memory.__petitSuiviTutorReportComments = comments;
+  } catch (error) {
+    if (canUseMemoryFallback()) { memory.__petitSuiviTutorReportComments = comments; return; }
+    throw error;
+  }
+}
+
+export async function writeTutorReportComment(comment: TutorReportComment) {
+  const normalized = sanitizeTutorReportComment(comment as unknown as Record<string, unknown>);
+  if (!normalized.tutorId) throw new Error("Un identifiant tuteur est nécessaire pour enregistrer le commentaire.");
+  try {
+    const store = taskStore();
+    await store.setJSON(`${TUTOR_REPORT_COMMENT_PREFIX}${encodeURIComponent(normalized.tutorId)}`, normalized);
+  } catch (error) {
+    if (canUseMemoryFallback()) {
+      memory.__petitSuiviTutorReportCommentsByTutor ??= {};
+      memory.__petitSuiviTutorReportCommentsByTutor[normalized.tutorId] = normalized;
+      return;
+    }
+    throw error;
   }
 }
 
