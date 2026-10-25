@@ -13,6 +13,7 @@ import HomeDashboard, { type HomeDestination } from "@/app/components/home-dashb
 import AnnualStaffingBadge from "@/app/components/annual-staffing-badge";
 import StaffingAudit from "@/app/components/staffing-audit";
 import StaffingEvolution from "@/app/components/staffing-evolution";
+import TutorReportAudit from "@/app/components/tutor-report-audit";
 import type { TutorAssignmentImport, TutorAssignmentRow, TutorInterestImport, TutorInterestRow, UnstaffedExclusions } from "@/app/lib/shared-data";
 
 type Status = "todo" | "progress" | "done";
@@ -136,33 +137,6 @@ type MassCommunication = {
   updatedAt: string;
 };
 
-type TutorReportEntry = {
-  id: string;
-  tutorId: string;
-  lastName: string;
-  firstName: string;
-  phone: string;
-  school: string;
-  studentCount: number;
-  missingReportCount: number;
-  comment: string;
-};
-
-type TutorReportSnapshot = {
-  id: string;
-  date: string;
-  comment: string;
-  entries: TutorReportEntry[];
-  createdAt: string;
-  updatedAt: string;
-};
-
-type TutorReportComment = {
-  tutorId: string;
-  comment: string;
-  updatedAt: string;
-};
-
 type TutorTrackingRecord = {
   key: string;
   tutorId: string;
@@ -274,25 +248,6 @@ type TutorActivity = {
   pastSessions: TutorActivityItem[];
   availabilities: TutorActivityItem[];
   interests: TutorActivityItem[];
-};
-
-type TutorReportAggregate = {
-  key: string;
-  tutorId: string;
-  lastName: string;
-  firstName: string;
-  phone: string;
-  schools: string[];
-  dates: {
-    date: string;
-    school: string;
-    studentCount: number;
-    missingReportCount: number;
-    comment: string;
-  }[];
-  dateCount: number;
-  totalMissing: number;
-  totalStudents: number;
 };
 
 type SchoolWatchTag = "Nouvel établissement" | "Nouveau besoin" | "Suivi particulier";
@@ -502,7 +457,7 @@ const organizationSections: Array<{ mode: AppMode; icon: string; title: string; 
   { mode: "communications", icon: "📣", title: "Communications", description: "Messages envoyés et suivis à effectuer." },
   { mode: "staffingEvolution", icon: "🔄", title: "Évolution staffing", description: "Comparer les changements entre deux exports." },
   { mode: "enrollments", icon: "🎒", title: "Inscriptions", description: "Comparer les inscriptions par établissement." },
-  { mode: "tutorReports", icon: "🧾", title: "Bilans tuteurs", description: "Suivre les bilans et leurs commentaires." },
+  { mode: "tutorReports", icon: "🧾", title: "Bilans tuteurs", description: "Repérer les rapports manquants jour par jour." },
   { mode: "objectives", icon: "🎯", title: "Objectifs", description: "Suivre les objectifs de l’équipe." },
   { mode: "history", icon: "📈", title: "Historique", description: "Consulter les évolutions par année." },
   { mode: "journal", icon: "✍️", title: "Journal", description: "Partager les nouvelles et les informations." },
@@ -524,40 +479,14 @@ function digitsOnly(value: string) {
   return value.replace(/\D/g, "");
 }
 
-function tutorIdentityKey(entry: Pick<TutorReportEntry, "id" | "tutorId">) {
-  const explicitId = entry.tutorId.trim();
-  if (explicitId) return `id:${explicitId.toLocaleLowerCase("fr")}`;
-  return `unresolved-entry:${entry.id}`;
-}
-
-function tutorDisplayName(entry: Pick<TutorReportEntry, "firstName" | "lastName" | "tutorId">) {
-  return `${entry.firstName} ${entry.lastName}`.trim() || entry.tutorId || "Tuteur sans nom";
+function csvCell(value: string | number) {
+  const text = String(value ?? "");
+  return /[;"\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
 function tutorTrackingKey(record: Pick<TutorTrackingRecord, "tutorId">) {
   const explicitId = record.tutorId.trim();
   return explicitId ? `id:${explicitId.toLocaleLowerCase("fr")}` : "";
-}
-
-function tutorLookupName(value: string) {
-  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr").replace(/[^a-z0-9]+/g, " ").trim();
-}
-
-function resolveTutorReportEntries(entries: TutorReportEntry[], records: TutorTrackingRecord[]) {
-  const byPhone = new Map<string, Set<string>>();
-  const byName = new Map<string, Set<string>>();
-  records.forEach((record) => {
-    if (!record.tutorId) return;
-    const phone = digitsOnly(record.phone);
-    if (phone) byPhone.set(phone, new Set([...(byPhone.get(phone) ?? []), record.tutorId]));
-    const name = tutorLookupName(`${record.firstName} ${record.lastName}`);
-    if (name) byName.set(name, new Set([...(byName.get(name) ?? []), record.tutorId]));
-  });
-  const uniqueId = (set: Set<string> | undefined) => set?.size === 1 ? Array.from(set)[0] : "";
-  return entries.map((entry) => ({
-    ...entry,
-    tutorId: entry.tutorId || uniqueId(digitsOnly(entry.phone) ? byPhone.get(digitsOnly(entry.phone)) : undefined) || uniqueId(byName.get(tutorLookupName(`${entry.firstName} ${entry.lastName}`))),
-  }));
 }
 
 function tutorTrackingDisplayName(record: Pick<TutorTrackingRecord, "firstName" | "lastName" | "tutorId" | "email">) {
@@ -940,59 +869,6 @@ function normalizeMassCommunication(raw: Partial<MassCommunication>): MassCommun
   };
 }
 
-function normalizeSessionCount(value: unknown) {
-  const parsed =
-    typeof value === "number"
-      ? value
-      : typeof value === "string" && value.trim()
-        ? Number(value)
-        : 0;
-  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 0;
-}
-
-function normalizeTutorReportEntry(
-  raw: Partial<Omit<TutorReportEntry, "studentCount" | "missingReportCount">> & {
-    studentCount?: unknown;
-    missingReportCount?: unknown;
-  },
-): TutorReportEntry {
-  return {
-    id: raw.id || uid("tutor-report-entry"),
-    tutorId: raw.tutorId || "",
-    lastName: raw.lastName || "",
-    firstName: raw.firstName || "",
-    phone: raw.phone || "",
-    school: raw.school || "",
-    studentCount: normalizeSessionCount(raw.studentCount),
-    missingReportCount: normalizeSessionCount(raw.missingReportCount),
-    comment: raw.comment || "",
-  };
-}
-
-function normalizeTutorReportSnapshot(raw: Partial<TutorReportSnapshot>): TutorReportSnapshot {
-  const now = new Date().toISOString();
-  const date = raw.date || now.slice(0, 10);
-  return {
-    id: raw.id || `tutor-reports-${date}`,
-    date,
-    comment: raw.comment || "",
-    entries: Array.isArray(raw.entries)
-      ? raw.entries.map(normalizeTutorReportEntry).filter((entry) => entry.tutorId || entry.lastName || entry.firstName || entry.phone || entry.school)
-      : [],
-    createdAt: raw.createdAt || now,
-    updatedAt: raw.updatedAt || raw.createdAt || now,
-  };
-}
-
-function normalizeTutorReportComment(raw: Partial<TutorReportComment>): TutorReportComment {
-  const legacyKey = (raw as Partial<TutorReportComment> & { tutorKey?: string }).tutorKey || "";
-  return {
-    tutorId: raw.tutorId || (/^id:(.+)$/i.exec(legacyKey)?.[1] ?? ""),
-    comment: raw.comment || "",
-    updatedAt: raw.updatedAt || new Date().toISOString(),
-  };
-}
-
 function normalizeTutorTrackingRecord(raw: Partial<TutorTrackingRecord>): TutorTrackingRecord {
   const record = {
     key: "",
@@ -1219,10 +1095,6 @@ function parseCsvRows(value: string) {
   return rows;
 }
 
-function csvCell(value: string | number) {
-  return `"${String(value ?? "").replace(/"/g, "\"\"")}"`;
-}
-
 function normalizedHeader(value: string) {
   return value
     .trim()
@@ -1291,93 +1163,6 @@ function parseTutorTrackingCsv(value: string): TutorTrackingRecord[] {
     }
   });
   return Array.from(byKey.values()).sort((a, b) => tutorTrackingDisplayName(a).localeCompare(tutorTrackingDisplayName(b), "fr"));
-}
-
-function parseTutorReportPaste(value: string): TutorReportEntry[] {
-  return value
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const cells = line.includes("\t")
-        ? line.split("\t")
-        : line.includes(";")
-          ? line.split(";")
-          : line.split(",");
-      return cells.map((cell) => cell.trim());
-    })
-    .filter((cells) => {
-      const normalized = cells
-        .join(" ")
-        .toLocaleLowerCase("fr")
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "");
-      return !(
-        normalized.includes("nom") &&
-        normalized.includes("prenom") &&
-        (normalized.includes("bilan") || normalized.includes("eleve"))
-      );
-    })
-    .map((cells) =>
-      normalizeTutorReportEntry({
-        tutorId: cells[0] || "",
-        lastName: cells[1] || "",
-        firstName: cells[2] || "",
-        phone: cells[3] || "",
-        school: cells[4] || "",
-        studentCount: cells[5] || "",
-        missingReportCount: cells[6] || "",
-        comment: "",
-      }),
-    )
-    .filter((entry) => entry.tutorId || entry.lastName || entry.firstName || entry.phone || entry.school);
-}
-
-function aggregateTutorReports(reports: TutorReportSnapshot[]): TutorReportAggregate[] {
-  const byTutor = new Map<string, TutorReportAggregate>();
-  reports.forEach((report) => {
-    report.entries.forEach((entry) => {
-      const key = tutorIdentityKey(entry);
-      if (!key) return;
-      const existing =
-        byTutor.get(key) ??
-        {
-          key,
-          tutorId: entry.tutorId,
-          lastName: entry.lastName,
-          firstName: entry.firstName,
-          phone: entry.phone,
-          schools: [],
-          dates: [],
-          dateCount: 0,
-          totalMissing: 0,
-          totalStudents: 0,
-        };
-      if (!existing.tutorId && entry.tutorId) existing.tutorId = entry.tutorId;
-      if (!existing.lastName && entry.lastName) existing.lastName = entry.lastName;
-      if (!existing.firstName && entry.firstName) existing.firstName = entry.firstName;
-      if (!existing.phone && entry.phone) existing.phone = entry.phone;
-      if (entry.school && !existing.schools.includes(entry.school)) existing.schools.push(entry.school);
-      existing.dates.push({
-        date: report.date,
-        school: entry.school,
-        studentCount: entry.studentCount,
-        missingReportCount: entry.missingReportCount,
-        comment: entry.comment || report.comment,
-      });
-      existing.totalMissing += entry.missingReportCount;
-      existing.totalStudents += entry.studentCount;
-      byTutor.set(key, existing);
-    });
-  });
-  return Array.from(byTutor.values())
-    .map((item) => ({
-      ...item,
-      dateCount: new Set(item.dates.map((dateItem) => dateItem.date)).size,
-      dates: item.dates.sort((a, b) => sortDateValue(b.date) - sortDateValue(a.date)),
-      schools: item.schools.sort((a, b) => a.localeCompare(b, "fr")),
-    }))
-    .sort((a, b) => b.totalMissing - a.totalMissing || b.dateCount - a.dateCount);
 }
 
 function normalizeSchoolWatchItem(raw: Partial<SchoolWatchItem>): SchoolWatchItem {
@@ -1722,8 +1507,6 @@ export default function Home() {
   const [links, setLinks] = useState<SharedLink[]>([]);
   const [journalPosts, setJournalPosts] = useState<JournalPost[]>([]);
   const [communications, setCommunications] = useState<MassCommunication[]>([]);
-  const [tutorReports, setTutorReports] = useState<TutorReportSnapshot[]>([]);
-  const [tutorReportComments, setTutorReportComments] = useState<TutorReportComment[]>([]);
   const [tutorTracking, setTutorTracking] = useState<TutorTrackingData>({ snapshots: [], comments: [] });
   const [availabilityImports, setAvailabilityImports] = useState<AvailabilityImport[]>([]);
   const [interestImports, setInterestImports] = useState<TutorInterestImport[]>([]);
@@ -1812,14 +1595,6 @@ export default function Home() {
   const [schoolAssignmentPaste, setSchoolAssignmentPaste] = useState("");
   const [schoolAssignmentImportReport, setSchoolAssignmentImportReport] = useState<{ matched: number; changed: number; duplicates: number; invalid: number; unmatched: string[] } | null>(null);
   const [selectedSchoolId, setSelectedSchoolId] = useState<string | null>(null);
-  const [tutorReportDate, setTutorReportDate] = useState(new Date().toISOString().slice(0, 10));
-  const [tutorReportStartDate, setTutorReportStartDate] = useState(`${new Date().getFullYear()}-01-01`);
-  const [tutorReportEndDate, setTutorReportEndDate] = useState(new Date().toISOString().slice(0, 10));
-  const [tutorReportPaste, setTutorReportPaste] = useState("");
-  const [tutorReportQuery, setTutorReportQuery] = useState("");
-  const [tutorReportGlobalQuery, setTutorReportGlobalQuery] = useState("");
-  const [selectedTutorReportKey, setSelectedTutorReportKey] = useState<string | null>(null);
-  const [visibleTutorReportCount, setVisibleTutorReportCount] = useState(10);
   const [tutorTrackingDate, setTutorTrackingDate] = useState(new Date().toISOString().slice(0, 10));
   const [selectedTutorTrackingSnapshotId, setSelectedTutorTrackingSnapshotId] = useState("");
   const [tutorTrackingCompareStartId, setTutorTrackingCompareStartId] = useState("");
@@ -1942,36 +1717,6 @@ export default function Home() {
       );
     } catch {
       setToast("Communications indisponibles");
-    }
-  }, []);
-
-  const loadTutorReports = useCallback(async () => {
-    try {
-      const response = await fetch("/api/tutor-reports", { cache: "no-store" });
-      if (!response.ok) throw new Error("load-tutor-reports-failed");
-      const data = (await response.json()) as { reports?: Partial<TutorReportSnapshot>[] };
-      const reports = Array.isArray(data.reports) ? data.reports.map(normalizeTutorReportSnapshot) : [];
-      setTutorReports(reports);
-      if (reports.length) {
-        setTutorReportDate((current) => (reports.some((report) => report.date === current) ? current : reports[0].date));
-      }
-    } catch {
-      setToast("Bilans tuteurs indisponibles");
-    }
-  }, []);
-
-  const loadTutorReportComments = useCallback(async () => {
-    try {
-      const response = await fetch("/api/tutor-report-comments", { cache: "no-store" });
-      if (!response.ok) throw new Error("load-tutor-report-comments-failed");
-      const data = (await response.json()) as { comments?: Partial<TutorReportComment>[] };
-      setTutorReportComments(
-        Array.isArray(data.comments)
-          ? data.comments.map(normalizeTutorReportComment).filter((comment) => comment.tutorId)
-          : [],
-      );
-    } catch {
-      setToast("Commentaires tuteurs indisponibles");
     }
   }, []);
 
@@ -2124,7 +1869,6 @@ export default function Home() {
       else if (appMode === "links") void loadLinks();
       else if (appMode === "journal") { void loadJournalPosts(); void loadPeople(); }
       else if (appMode === "communications") void loadCommunications();
-      else if (appMode === "tutorReports") { void loadTutorReports(); void loadTutorReportComments(); }
       else if (appMode === "tutors") void loadTutorTracking();
       else if (appMode === "availability") { void loadAvailabilityImports(); void loadLatestAvailabilityStaffing(); void loadSchools(); void loadTutorTracking(); }
       else if (appMode === "watchlist") { void loadSchoolWatchlist(); void loadSchools(); }
@@ -2135,7 +1879,7 @@ export default function Home() {
     const initial = window.setTimeout(refreshCurrentPage, 0);
     const refresh = window.setInterval(refreshCurrentPage, 30_000);
     return () => { window.clearTimeout(initial); window.clearInterval(refresh); };
-  }, [appMode, loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadCommunications, loadTutorReports, loadTutorReportComments, loadTutorTracking, loadAvailabilityImports, loadLatestAvailabilityStaffing, loadSchoolWatchlist, loadSchools, loadStudentHistory]);
+  }, [appMode, loadTasks, loadPeople, loadRecurringTasks, loadObjectives, loadLinks, loadJournalPosts, loadCommunications, loadTutorTracking, loadAvailabilityImports, loadLatestAvailabilityStaffing, loadSchoolWatchlist, loadSchools, loadStudentHistory]);
 
   useEffect(() => {
     if (appMode !== "availability") return;
@@ -2318,72 +2062,6 @@ export default function Home() {
           sortDateValue(a.sentAt || a.followUpDate || a.createdAt),
       );
   }, [communications, communicationQuery, communicationAudienceFilter, communicationStatusFilter]);
-  const activeTutorReport = useMemo(
-    () => tutorReports.find((report) => report.date === tutorReportDate) ?? null,
-    [tutorReports, tutorReportDate],
-  );
-  const filteredTutorReportsForGlobal = useMemo(
-    () =>
-      tutorReports.filter((report) => {
-        const value = sortDateValue(report.date);
-        const start = sortDateValue(tutorReportStartDate);
-        const end = sortDateValue(tutorReportEndDate);
-        return (!start || value >= start) && (!end || value <= end);
-      }),
-    [tutorReportEndDate, tutorReportStartDate, tutorReports],
-  );
-  const tutorReportAggregates = useMemo(
-    () => aggregateTutorReports(filteredTutorReportsForGlobal),
-    [filteredTutorReportsForGlobal],
-  );
-  const tutorReportCommentByKey = useMemo(
-    () => new Map(tutorReportComments.map((comment) => [`id:${comment.tutorId.toLocaleLowerCase("fr")}`, comment.comment])),
-    [tutorReportComments],
-  );
-  const filteredTutorReportAggregates = useMemo(() => {
-    const query = tutorReportGlobalQuery.trim().toLocaleLowerCase("fr");
-    const phoneQuery = digitsOnly(tutorReportGlobalQuery);
-    if (!query && !phoneQuery) return tutorReportAggregates;
-    return tutorReportAggregates.filter((tutor) => {
-      const text = `${tutor.tutorId} ${tutor.lastName} ${tutor.firstName} ${tutor.phone} ${tutor.schools.join(" ")} ${tutorReportCommentByKey.get(tutor.key) || ""}`
-        .toLocaleLowerCase("fr")
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "");
-      const phone = digitsOnly(tutor.phone);
-      return text.includes(
-        query
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, ""),
-      ) || Boolean(phoneQuery && phone.includes(phoneQuery));
-    });
-  }, [tutorReportAggregates, tutorReportCommentByKey, tutorReportGlobalQuery]);
-  const visibleTutorReportAggregates = useMemo(
-    () => filteredTutorReportAggregates.slice(0, visibleTutorReportCount),
-    [filteredTutorReportAggregates, visibleTutorReportCount],
-  );
-  const selectedTutorReport = useMemo(
-    () => tutorReportAggregates.find((item) => item.key === selectedTutorReportKey) ?? null,
-    [tutorReportAggregates, selectedTutorReportKey],
-  );
-  const filteredTutorReportEntries = useMemo(() => {
-    const normalized = tutorReportQuery.trim().toLocaleLowerCase("fr");
-    const phoneQuery = digitsOnly(tutorReportQuery);
-    return (activeTutorReport?.entries ?? [])
-      .filter((entry) => {
-        if (!normalized) return true;
-        const globalComment = tutorReportCommentByKey.get(tutorIdentityKey(entry)) || "";
-        const text = `${entry.tutorId} ${entry.lastName} ${entry.firstName} ${entry.phone} ${entry.school} ${entry.comment} ${globalComment}`
-          .toLocaleLowerCase("fr")
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "");
-        return text.includes(
-          normalized
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, ""),
-        ) || Boolean(phoneQuery && digitsOnly(entry.phone).includes(phoneQuery));
-      })
-      .sort((a, b) => b.missingReportCount - a.missingReportCount || a.lastName.localeCompare(b.lastName, "fr"));
-  }, [activeTutorReport, tutorReportCommentByKey, tutorReportQuery]);
   const latestTutorTrackingSnapshot = tutorTracking.snapshots[0] ?? null;
   const tutorTrackingCommentByKey = useMemo(
     () => new Map(tutorTracking.comments.map((commentItem) => [`id:${commentItem.tutorId.toLocaleLowerCase("fr")}`, commentItem.comment])),
@@ -2870,63 +2548,6 @@ export default function Home() {
     } catch {
       setSyncError("Sauvegarde impossible, rechargez la page avant de continuer");
       setToast("Communication non sauvegardée");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function saveTutorReports(nextReports: TutorReportSnapshot[], message: string) {
-    setSaving(true);
-    setSyncError("");
-    const normalizedReports = nextReports
-      .map((report) => normalizeTutorReportSnapshot({
-        ...report,
-        entries: resolveTutorReportEntries(report.entries, tutorTracking.snapshots.flatMap((snapshot) => snapshot.records)),
-      }))
-      .sort((a, b) => sortDateValue(b.date) - sortDateValue(a.date));
-    setTutorReports(normalizedReports);
-    try {
-      const response = await fetch("/api/tutor-reports", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reports: normalizedReports }),
-      });
-      if (!response.ok) throw new Error("save-tutor-reports-failed");
-      const data = (await response.json()) as { reports?: Partial<TutorReportSnapshot>[] };
-      setTutorReports(Array.isArray(data.reports) ? data.reports.map(normalizeTutorReportSnapshot) : []);
-      setToast(message);
-    } catch {
-      setSyncError("Sauvegarde impossible, rechargez la page avant de continuer");
-      setToast("Bilans tuteurs non sauvegardés");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function saveTutorReportComments(nextComments: TutorReportComment[], message: string) {
-    setSaving(true);
-    setSyncError("");
-    const normalizedComments = nextComments
-      .map(normalizeTutorReportComment)
-      .filter((comment) => comment.tutorId);
-    setTutorReportComments(normalizedComments);
-    try {
-      const response = await fetch("/api/tutor-report-comments", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ comments: normalizedComments }),
-      });
-      if (!response.ok) throw new Error("save-tutor-report-comments-failed");
-      const data = (await response.json()) as { comments?: Partial<TutorReportComment>[] };
-      setTutorReportComments(
-        Array.isArray(data.comments)
-          ? data.comments.map(normalizeTutorReportComment).filter((comment) => comment.tutorId)
-          : [],
-      );
-      setToast(message);
-    } catch {
-      setSyncError("Sauvegarde impossible, rechargez la page avant de continuer");
-      setToast("Commentaire tuteur non sauvegardé");
     } finally {
       setSaving(false);
     }
@@ -3502,158 +3123,6 @@ export default function Home() {
       communications.filter((communication) => communication.id !== communicationId),
       "Communication supprimée",
     );
-  }
-
-  async function importTutorReportPaste() {
-    if (!tutorReportDate || saving) return;
-    const entries = resolveTutorReportEntries(parseTutorReportPaste(tutorReportPaste), tutorTracking.snapshots.flatMap((snapshot) => snapshot.records));
-    if (!entries.length) {
-      setToast("Aucune ligne valide à importer");
-      return;
-    }
-    const now = new Date().toISOString();
-    const existing = tutorReports.find((report) => report.date === tutorReportDate);
-    const existingComments = new Map(
-      (existing?.entries ?? [])
-        .filter((entry) => entry.comment.trim())
-        .map((entry) => [tutorIdentityKey(entry), entry.comment] as const),
-    );
-    const nextSnapshot = normalizeTutorReportSnapshot({
-      id: existing?.id || `tutor-reports-${tutorReportDate}`,
-      date: tutorReportDate,
-      entries: entries.map((entry) => ({ ...entry, comment: entry.comment || existingComments.get(tutorIdentityKey(entry)) || "" })),
-      createdAt: existing?.createdAt || now,
-      updatedAt: now,
-      comment: existing?.comment || "",
-    });
-    await saveTutorReports(
-      [nextSnapshot, ...tutorReports.filter((report) => report.date !== tutorReportDate)],
-      existing ? "Bilans tuteurs remplacés" : "Bilans tuteurs importés",
-    );
-    setTutorReportPaste("");
-  }
-
-  async function importTutorReportFile(file: File | undefined) {
-    if (!file) return;
-    try {
-      const text = await file.text();
-      setTutorReportPaste(text);
-      setToast(`Fichier chargé pour le ${formatFullDate(tutorReportDate)}`);
-    } catch {
-      setToast("Fichier illisible. Exportez-le en CSV ou TSV puis réessayez.");
-    }
-  }
-
-  async function deleteTutorReportSnapshot(date: string) {
-    if (!window.confirm(`Supprimer les bilans tuteurs du ${formatFullDate(date)} ?`)) return;
-    const nextReports = tutorReports.filter((report) => report.date !== date);
-    await saveTutorReports(nextReports, "Bilans tuteurs supprimés");
-    setTutorReportDate(nextReports[0]?.date || new Date().toISOString().slice(0, 10));
-  }
-
-  async function updateTutorReportEntryComment(date: string, entryId: string, commentValue: string) {
-    const now = new Date().toISOString();
-    await saveTutorReports(
-      tutorReports.map((report) =>
-        report.date === date
-          ? {
-              ...report,
-              entries: report.entries.map((entry) =>
-                entry.id === entryId ? { ...entry, comment: commentValue.trim() } : entry,
-              ),
-              updatedAt: now,
-            }
-          : report,
-      ),
-      "Commentaire tuteur sauvegardé",
-    );
-  }
-
-  async function updateTutorReportGlobalComment(tutorId: string, commentValue: string) {
-    const now = new Date().toISOString();
-    const trimmedComment = commentValue.trim();
-    const withoutTutor = tutorReportComments.filter((commentItem) => commentItem.tutorId !== tutorId);
-    const nextComments = trimmedComment
-      ? [...withoutTutor, { tutorId, comment: trimmedComment, updatedAt: now }]
-      : withoutTutor;
-    await saveTutorReportComments(nextComments, "Commentaire global sauvegardé");
-  }
-
-  async function deleteTutorReportEntry(date: string, entryId: string) {
-    const report = tutorReports.find((item) => item.date === date);
-    const entry = report?.entries.find((item) => item.id === entryId);
-    if (!report || !entry) return;
-    if (!window.confirm(`Supprimer la ligne de ${tutorDisplayName(entry)} pour le ${formatFullDate(date)} ?`)) return;
-    const now = new Date().toISOString();
-    await saveTutorReports(
-      tutorReports.map((item) =>
-        item.date === date
-          ? { ...item, entries: item.entries.filter((line) => line.id !== entryId), updatedAt: now }
-          : item,
-      ),
-      "Ligne tuteur supprimée",
-    );
-  }
-
-  async function deleteTutorReportAggregate(tutor: TutorReportAggregate) {
-    const periodLabel = `${tutorReportStartDate ? formatFullDate(tutorReportStartDate) : "le début"} → ${tutorReportEndDate ? formatFullDate(tutorReportEndDate) : "aujourd’hui"}`;
-    if (!window.confirm(`Supprimer ${tutorDisplayName(tutor)} de la vue globale pour la période ${periodLabel} ?\n\nCela supprimera ses lignes dans les imports de cette période.`)) return;
-    const now = new Date().toISOString();
-    await saveTutorReports(
-      tutorReports.map((report) => {
-        const inPeriod = filteredTutorReportsForGlobal.some((filteredReport) => filteredReport.date === report.date);
-        if (!inPeriod) return report;
-        return {
-          ...report,
-          entries: report.entries.filter((entry) => tutorIdentityKey(entry) !== tutor.key),
-          updatedAt: now,
-        };
-      }),
-      "Tuteur supprimé de la vue globale",
-    );
-  }
-
-  function exportTutorReportAggregatesCsv() {
-    const periodLabel = `${tutorReportStartDate || "debut"}-${tutorReportEndDate || "aujourdhui"}`;
-    const header = [
-      "Rang",
-      "ID tuteur",
-      "Nom",
-      "Prénom",
-      "Téléphone",
-      "Établissements",
-      "Nombre de dates",
-      "Bilans non faits",
-      "Élèves concernés",
-      "Dates concernées",
-      "Détail par date",
-      "Commentaire général",
-    ];
-    const rows = tutorReportAggregates.map((tutor, index) => [
-      index + 1,
-      tutor.tutorId,
-      tutor.lastName,
-      tutor.firstName,
-      tutor.phone,
-      tutor.schools.join(" | "),
-      tutor.dateCount,
-      tutor.totalMissing,
-      tutor.totalStudents,
-      tutor.dates.map((dateItem) => formatFullDate(dateItem.date)).join(" | "),
-      tutor.dates
-        .map((dateItem) => `${formatFullDate(dateItem.date)} : ${dateItem.missingReportCount} bilan(s), ${dateItem.studentCount} élève(s), ${dateItem.school || "établissement non renseigné"}`)
-        .join(" | "),
-      tutorReportCommentByKey.get(tutor.key) || "",
-    ]);
-    const csv = "\uFEFF" + [header, ...rows].map((row) => row.map(csvCell).join(";")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `bilans-tuteurs-global-${periodLabel}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
-    setToast("Export CSV téléchargé");
   }
 
   async function importTutorTrackingCsv(csvValue = tutorTrackingCsv, fileName = "liste-tuteurs.csv") {
@@ -4990,303 +4459,7 @@ export default function Home() {
   }
 
   function renderTutorReportsSection() {
-    const totalMissing = (activeTutorReport?.entries ?? []).reduce(
-      (total, entry) => total + entry.missingReportCount,
-      0,
-    );
-    const totalStudents = (activeTutorReport?.entries ?? []).reduce(
-      (total, entry) => total + entry.studentCount,
-      0,
-    );
-    const reportLabel = activeTutorReport
-      ? `${activeTutorReport.entries.length} tuteur${activeTutorReport.entries.length > 1 ? "s" : ""} au ${formatFullDate(activeTutorReport.date)}`
-      : "Choisissez une date et collez une liste Excel pour commencer.";
-    const allTimeMissing = filteredTutorReportAggregates.reduce((total, tutor) => total + tutor.totalMissing, 0);
-    const allTimeDates = new Set(filteredTutorReportsForGlobal.map((report) => report.date)).size;
-    const allTimeTutorCount = filteredTutorReportAggregates.length;
-    const globalPeriodLabel = `${tutorReportStartDate ? formatFullDate(tutorReportStartDate) : "le début"} → ${tutorReportEndDate ? formatFullDate(tutorReportEndDate) : "aujourd’hui"}`;
-
-    return (
-      <section className="task-panel tutor-report-panel">
-        <div className="panel-heading">
-          <div>
-            <h2>Bilans tuteurs non faits</h2>
-            <p>Historique global en haut, mise à jour par date en bas.</p>
-          </div>
-          <div className="filters">
-            <button className="button quiet" onClick={() => { void loadTutorReports(); }} disabled={saving}>
-              ↻ Actualiser
-            </button>
-          </div>
-        </div>
-
-        <div className="tutor-history-hero">
-          <div className="tutor-history-title">
-            <span className="history-badge">Historique</span>
-            <div>
-              <h3>Vue depuis le début de l’année</h3>
-              <p>Les tuteurs qui reviennent le plus souvent avec des bilans non faits · {globalPeriodLabel}</p>
-            </div>
-          </div>
-          <div className="tutor-history-controls">
-            <label>
-              <span>Du</span>
-              <input type="date" value={tutorReportStartDate} onChange={(event) => setTutorReportStartDate(event.target.value)} />
-            </label>
-            <label>
-              <span>Au</span>
-              <input type="date" value={tutorReportEndDate} onChange={(event) => setTutorReportEndDate(event.target.value)} />
-            </label>
-            <button className="button quiet" onClick={exportTutorReportAggregatesCsv} disabled={!tutorReportAggregates.length} type="button">
-              Export CSV
-            </button>
-          </div>
-          <div className="tutor-history-metrics" aria-label="Résumé historique des bilans tuteurs">
-            <div>
-              <span>Tuteurs concernés</span>
-              <strong>{allTimeTutorCount}</strong>
-            </div>
-            <div>
-              <span>Dates importées</span>
-              <strong>{allTimeDates}</strong>
-            </div>
-            <div>
-              <span>Bilans non faits</span>
-              <strong>{allTimeMissing}</strong>
-            </div>
-          </div>
-        </div>
-
-        <div className="tutor-report-top tutor-report-all-time">
-          <div className="tutor-report-top-head">
-            <div>
-              <strong>Top 10 de la période</strong>
-              <span>Nombre total de bilans non faits sur la période choisie.</span>
-            </div>
-            <label className="tutor-report-global-search">
-              <span aria-hidden="true">⌕</span>
-              <input
-                value={tutorReportGlobalQuery}
-                onChange={(event) => {
-                  setTutorReportGlobalQuery(event.target.value);
-                  setVisibleTutorReportCount(10);
-                }}
-                placeholder="Rechercher nom, téléphone, ID..."
-                aria-label="Rechercher un tuteur dans le suivi global"
-              />
-            </label>
-          </div>
-          {visibleTutorReportAggregates.length ? (
-            <div className="tutor-top-list">
-              {visibleTutorReportAggregates.map((tutor, index) => (
-                <article
-                  className="tutor-top-card"
-                  key={tutor.key}
-                >
-                  <span className="rank">#{index + 1}</span>
-                  <div>
-                    <button className="tutor-card-name" onClick={() => setSelectedTutorReportKey(tutor.key)} type="button">
-                      {tutorDisplayName(tutor)}
-                    </button>
-                    <small>
-                      {tutor.dateCount} date{tutor.dateCount > 1 ? "s" : ""} · {tutor.schools.slice(0, 2).join(", ") || "Établissement non renseigné"}
-                    </small>
-                    <input
-                      className="tutor-global-comment"
-                      defaultValue={tutorReportCommentByKey.get(tutor.key) || ""}
-                      placeholder="Commentaire général..."
-                      onBlur={(event) => {
-                        if (event.target.value.trim() !== (tutorReportCommentByKey.get(tutor.key) || "")) {
-                          void updateTutorReportGlobalComment(tutor.key, event.target.value);
-                        }
-                      }}
-                      aria-label={`Commentaire général pour ${tutorDisplayName(tutor)}`}
-                    />
-                  </div>
-                  <div className="tutor-top-actions">
-                    <em>{tutor.totalMissing} bilan{tutor.totalMissing > 1 ? "s" : ""}</em>
-                    <button className="icon-button danger-icon" onClick={() => { void deleteTutorReportAggregate(tutor); }} aria-label={`Supprimer ${tutorDisplayName(tutor)} de la vue globale`}>
-                      ×
-                    </button>
-                  </div>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <p className="compact-empty">Aucun historique global pour le moment.</p>
-          )}
-          {visibleTutorReportAggregates.length < filteredTutorReportAggregates.length && (
-            <button className="button quiet tutor-load-more" onClick={() => setVisibleTutorReportCount((count) => count + 10)} type="button">
-              Voir les 10 suivants
-            </button>
-          )}
-        </div>
-
-        <div className="tutor-report-date-workspace">
-          <div className="tutor-date-section-heading">
-            <div>
-              <span className="history-badge muted">Mise à jour</span>
-              <h3>Données par date</h3>
-              <p>{reportLabel}</p>
-            </div>
-            <div className="filters">
-              <input
-                className="date-input"
-                type="date"
-                value={tutorReportDate}
-                onChange={(event) => setTutorReportDate(event.target.value)}
-                aria-label="Date du suivi des bilans tuteurs"
-              />
-              {tutorReports.length > 0 && (
-                <select
-                  value={tutorReportDate}
-                  onChange={(event) => setTutorReportDate(event.target.value)}
-                  aria-label="Choisir une date importée"
-                >
-                  {tutorReports.map((report) => (
-                    <option key={report.date} value={report.date}>
-                      {formatFullDate(report.date)}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-          </div>
-
-        <div className="tutor-report-summary" aria-label="Résumé des bilans tuteurs">
-          <div>
-            <span>Tuteurs listés</span>
-            <strong>{activeTutorReport?.entries.length ?? 0}</strong>
-          </div>
-          <div>
-            <span>Bilans non faits</span>
-            <strong>{totalMissing}</strong>
-          </div>
-          <div>
-            <span>Élèves concernés</span>
-            <strong>{totalStudents}</strong>
-          </div>
-        </div>
-
-        <div className="tutor-report-import">
-          <div>
-            <strong>Importer une liste pour le {tutorReportDate ? formatFullDate(tutorReportDate) : "jour choisi"}</strong>
-            <span>Choisissez d’abord la date au-dessus, même pour une date passée. Formats fichier conseillés : CSV ou TSV. Ordre attendu : ID, Nom, Prénom, Téléphone, Établissement, Nb élèves, Nb bilans non faits.</span>
-          </div>
-          <label className="tutor-report-file-picker">
-            <span>Charger un fichier CSV / TSV</span>
-            <input
-              type="file"
-              accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain"
-              onChange={(event) => {
-                void importTutorReportFile(event.target.files?.[0]);
-                event.currentTarget.value = "";
-              }}
-            />
-          </label>
-          <textarea
-            value={tutorReportPaste}
-            onChange={(event) => setTutorReportPaste(event.target.value)}
-            placeholder={`Collez ici les lignes Excel pour le ${tutorReportDate || "jour choisi"}…`}
-            aria-label="Liste Excel des tuteurs avec bilans non faits"
-          />
-          <div className="import-actions">
-            <button className="button primary" onClick={() => { void importTutorReportPaste(); }} disabled={saving || !tutorReportDate || !tutorReportPaste.trim()}>
-              Importer / remplacer cette date
-            </button>
-            {activeTutorReport && (
-              <button className="button quiet danger-text" onClick={() => { void deleteTutorReportSnapshot(activeTutorReport.date); }} disabled={saving}>
-                Supprimer cette date
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="panel-heading tutor-report-table-heading">
-          <div>
-            <h3>Détail de la date</h3>
-            <p>{filteredTutorReportEntries.length} ligne{filteredTutorReportEntries.length > 1 ? "s" : ""} affichée{filteredTutorReportEntries.length > 1 ? "s" : ""}</p>
-          </div>
-          <label className="search-box">
-            <span aria-hidden="true">⌕</span>
-            <input
-              value={tutorReportQuery}
-              onChange={(event) => setTutorReportQuery(event.target.value)}
-              placeholder="Rechercher tuteur, téléphone, établissement..."
-              aria-label="Rechercher dans les bilans tuteurs"
-            />
-          </label>
-        </div>
-
-        <div className="tutor-report-table-wrap">
-          <div className="tutor-report-table tutor-report-head" aria-hidden="true">
-            <span>ID</span>
-            <span>Nom</span>
-            <span>Prénom</span>
-            <span>Téléphone</span>
-            <span>Établissement</span>
-            <span>Élèves</span>
-            <span>Bilans non faits</span>
-            <span>Commentaire global</span>
-            <span>Commentaire date</span>
-            <span>Actions</span>
-          </div>
-          {filteredTutorReportEntries.length ? (
-            filteredTutorReportEntries.map((entry) => {
-              const tutorKey = tutorIdentityKey(entry);
-              const globalComment = entry.tutorId ? tutorReportCommentByKey.get(`id:${entry.tutorId.toLocaleLowerCase("fr")}`) || "" : "";
-              return (
-                <article className="tutor-report-table tutor-report-row" key={entry.id}>
-                  <span>{entry.tutorId || "—"}</span>
-                  <button className="tutor-name-button" onClick={() => setSelectedTutorReportKey(tutorKey)} type="button">
-                    {entry.lastName || "—"}
-                  </button>
-                  <span>{entry.firstName || "—"}</span>
-                  <span>{entry.phone || "—"}</span>
-                  <span>{entry.school || "—"}</span>
-                  <span>{entry.studentCount}</span>
-                  <span className="missing">{entry.missingReportCount}</span>
-                  <input
-                    className="tutor-row-comment global-comment"
-                    defaultValue={globalComment}
-                    placeholder="Commentaire global..."
-                    disabled={!entry.tutorId}
-                    title={!entry.tutorId ? "ID tuteur requis pour associer ce commentaire" : undefined}
-                    onBlur={(event) => {
-                      if (event.target.value.trim() !== globalComment) {
-                        if (entry.tutorId) void updateTutorReportGlobalComment(entry.tutorId, event.target.value);
-                      }
-                    }}
-                    aria-label={`Commentaire global pour ${tutorDisplayName(entry)}`}
-                  />
-                  <input
-                    className="tutor-row-comment"
-                    defaultValue={entry.comment}
-                    placeholder="Commentaire date..."
-                    onBlur={(event) => {
-                      if (event.target.value.trim() !== entry.comment) {
-                        void updateTutorReportEntryComment(activeTutorReport?.date || tutorReportDate, entry.id, event.target.value);
-                      }
-                    }}
-                    aria-label={`Commentaire de date pour ${tutorDisplayName(entry)}`}
-                  />
-                  <button className="icon-button danger-icon inline-delete" onClick={() => { void deleteTutorReportEntry(activeTutorReport?.date || tutorReportDate, entry.id); }} aria-label={`Supprimer ${tutorDisplayName(entry)}`}>
-                    ×
-                  </button>
-                </article>
-              );
-            })
-          ) : (
-            <div className="empty-state tutor-report-empty">
-              <span>🧾</span>
-              <h3>{activeTutorReport ? "Aucune ligne ne correspond à la recherche" : "Aucune liste importée"}</h3>
-              <p>{activeTutorReport ? "Essayez une autre recherche." : "Choisissez une date, copiez les lignes depuis Excel, puis importez-les."}</p>
-            </div>
-          )}
-        </div>
-        </div>
-      </section>
-    );
+    return <TutorReportAudit onError={setToast} />;
   }
 
   function renderSocialControls(
@@ -5550,7 +4723,7 @@ export default function Home() {
                     : appMode === "files"
                       ? () => setAppMode("files")
                     : appMode === "tutorReports"
-                      ? () => { void loadTutorReports(); }
+                      ? () => window.dispatchEvent(new Event("tutor-report-audit-refresh"))
                     : appMode === "watchlist"
                       ? () => openNewSchoolWatchItem()
                     : appMode === "schools"
@@ -6900,49 +6073,6 @@ export default function Home() {
               </div>
               <div className="form-actions"><button type="button" className="button quiet" onClick={() => setNotifyOpen(false)}>Annuler</button><button type="submit" className="button primary" disabled={!notifyRecipients.length || notifying}>{notifying ? "Envoi..." : "Envoyer"}</button></div>
             </form>
-          </section>
-        </div>
-      )}
-
-      {selectedTutorReport && (
-        <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setSelectedTutorReportKey(null)}>
-          <section className="modal notify-modal tutor-detail-modal" role="dialog" aria-modal="true" aria-labelledby="tutor-detail-title">
-            <div className="modal-header">
-              <div>
-                <p className="eyebrow">Historique bilans tuteur</p>
-                <h2 id="tutor-detail-title">{tutorDisplayName(selectedTutorReport)}</h2>
-              </div>
-              <button className="close-button" onClick={() => setSelectedTutorReportKey(null)} aria-label="Fermer">×</button>
-            </div>
-            <div className="tutor-detail-body">
-              <div className="tutor-detail-metrics">
-                <div><span>Bilans non faits</span><strong>{selectedTutorReport.totalMissing}</strong></div>
-                <div><span>Dates concernées</span><strong>{selectedTutorReport.dateCount}</strong></div>
-                <div><span>Élèves cumulés</span><strong>{selectedTutorReport.totalStudents}</strong></div>
-              </div>
-              <div className="tutor-detail-info">
-                <span>ID : <strong>{selectedTutorReport.tutorId || "—"}</strong></span>
-                <span>Téléphone : <strong>{selectedTutorReport.phone || "—"}</strong></span>
-                <span>Établissements : <strong>{selectedTutorReport.schools.join(", ") || "—"}</strong></span>
-              </div>
-              <div className="tutor-detail-global-comment">
-                <strong>Commentaire général</strong>
-                <p>{tutorReportCommentByKey.get(selectedTutorReport.key) || "Aucun commentaire général pour ce tuteur."}</p>
-              </div>
-              <div className="tutor-detail-timeline">
-                {selectedTutorReport.dates.map((item, index) => (
-                  <article key={`${selectedTutorReport.key}-${item.date}-${item.school}-${index}`}>
-                    <div>
-                      <strong>{formatFullDate(item.date)}</strong>
-                      <span>{item.school || "Établissement non renseigné"}</span>
-                    </div>
-                    <em>{item.missingReportCount} bilan{item.missingReportCount > 1 ? "s" : ""}</em>
-                    <small>{item.studentCount} élève{item.studentCount > 1 ? "s" : ""}</small>
-                    {item.comment && <p>{item.comment}</p>}
-                  </article>
-                ))}
-              </div>
-            </div>
           </section>
         </div>
       )}
