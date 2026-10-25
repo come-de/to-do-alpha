@@ -1,0 +1,215 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { School, TutorReportAuditDay, TutorReportAuditSchoolMapping, TutorReportComment } from "@/app/lib/shared-data";
+
+type Props = { onError?: (message: string) => void };
+type Payload = { days?: TutorReportAuditDay[]; schools?: School[]; mappings?: TutorReportAuditSchoolMapping; comments?: TutorReportComment[]; error?: string; detail?: string; importedDates?: string[]; invalidDateRowCount?: number; skippedNonAlphaRows?: number };
+const number = new Intl.NumberFormat("fr-FR");
+const percent = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 });
+
+function dayLabel(value: string, options: Intl.DateTimeFormatOptions = { weekday: "long", day: "numeric", month: "long", year: "numeric" }) {
+  const date = new Date(`${value}T12:00:00`);
+  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("fr-FR", options).format(date);
+}
+
+function schoolKey(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr").replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function alpha(school: School) {
+  const value = `${school.category} ${school.schoolType}`.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr");
+  return value.includes("alpha") || value.includes("etude");
+}
+
+export default function TutorReportAudit({ onError }: Props) {
+  const [days, setDays] = useState<TutorReportAuditDay[]>([]);
+  const [schools, setSchools] = useState<School[]>([]);
+  const [mappings, setMappings] = useState<TutorReportAuditSchoolMapping>({});
+  const [comments, setComments] = useState<TutorReportComment[]>([]);
+  const [selectedDate, setSelectedDate] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [selectedTutorKey, setSelectedTutorKey] = useState("");
+  const [selectedSchoolId, setSelectedSchoolId] = useState("");
+  const [query, setQuery] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [progress, setProgress] = useState("");
+  const [message, setMessage] = useState("");
+
+  const load = useCallback(async () => {
+    const response = await fetch("/api/tutor-report-audit", { cache: "no-store" });
+    const data = await response.json() as Payload;
+    if (!response.ok) throw new Error(data.detail || data.error || "Chargement impossible");
+    const nextDays = data.days || [];
+    setDays(nextDays);
+    setSchools(data.schools || []);
+    setMappings(data.mappings || {});
+    setComments(data.comments || []);
+    setSelectedDate((current) => nextDays.some((day) => day.date === current) ? current : nextDays[0]?.date || "");
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => { void load().catch((error: unknown) => onError?.(error instanceof Error ? error.message : "Chargement impossible")); }, 0);
+    return () => window.clearTimeout(timer);
+  }, [load, onError]);
+  useEffect(() => {
+    const refresh = () => { void load().catch((error: unknown) => onError?.(error instanceof Error ? error.message : "Chargement impossible")); };
+    window.addEventListener("tutor-report-audit-refresh", refresh);
+    return () => window.removeEventListener("tutor-report-audit-refresh", refresh);
+  }, [load, onError]);
+
+  const schoolById = useMemo(() => new Map(schools.flatMap((school) => [[school.id, school], ...(school.externalId ? [[school.externalId, school] as const] : [])])), [schools]);
+  const mappingFor = useCallback((sourceName: string) => {
+    const key = schoolKey(sourceName);
+    const explicit = mappings[key];
+    if (explicit === "excluded") return { school: null, excluded: true };
+    const school = (explicit && schoolById.get(explicit)) || schools.find((item) => schoolKey(item.name) === key) || null;
+    return { school, excluded: false };
+  }, [mappings, schoolById, schools]);
+  const filteredDays = useMemo(() => days.filter((day) => (!startDate || day.date >= startDate) && (!endDate || day.date <= endDate)), [days, endDate, startDate]);
+  const visibleSelectedDay = filteredDays.find((day) => day.date === selectedDate) || filteredDays[0] || null;
+  const tutorOptions = useMemo(() => {
+    const items = new Map<string, string>();
+    days.forEach((day) => day.tutors.forEach((tutor) => items.set(tutor.key, tutor.name)));
+    return Array.from(items.entries()).sort((a, b) => a[1].localeCompare(b[1], "fr"));
+  }, [days]);
+  const viewStats = useMemo(() => {
+    const tutors = new Map<string, { key: string; tutorId: string; name: string; expected: number; missing: number; schools: Map<string, { expected: number; missing: number }> }>();
+    const schoolsTotal = new Map<string, { name: string; expected: number; missing: number }>();
+    const daily = filteredDays.map((day) => {
+      let expected = 0; let missing = 0;
+      for (const tutor of day.tutors) {
+        if (selectedTutorKey && tutor.key !== selectedTutorKey) continue;
+        if (day.excludedTutorKeys.includes(tutor.key)) continue;
+        const target = tutors.get(tutor.key) || { key: tutor.key, tutorId: tutor.tutorId, name: tutor.name, expected: 0, missing: 0, schools: new Map() };
+        for (const item of tutor.schools) {
+          const result = mappingFor(item.sourceName);
+          if (result.excluded || !result.school || !alpha(result.school)) continue;
+          if (selectedSchoolId && result.school.id !== selectedSchoolId) continue;
+          expected += item.expectedCount; missing += item.missingCount;
+          target.expected += item.expectedCount; target.missing += item.missingCount;
+          const school = target.schools.get(result.school.id) || { expected: 0, missing: 0 };
+          school.expected += item.expectedCount; school.missing += item.missingCount;
+          target.schools.set(result.school.id, school);
+          const all = schoolsTotal.get(result.school.id) || { name: result.school.name, expected: 0, missing: 0 };
+          all.expected += item.expectedCount; all.missing += item.missingCount;
+          schoolsTotal.set(result.school.id, all);
+        }
+        if (target.expected) tutors.set(tutor.key, target);
+      }
+      return { date: day.date, expected, missing, rate: expected ? (missing / expected) * 100 : 0 };
+    });
+    const expected = daily.reduce((sum, day) => sum + day.expected, 0);
+    const missing = daily.reduce((sum, day) => sum + day.missing, 0);
+    return {
+      expected, missing, done: expected - missing, rate: expected ? (missing / expected) * 100 : 0,
+      tutors: Array.from(tutors.values()).sort((a, b) => b.missing - a.missing || b.expected - a.expected || a.name.localeCompare(b.name, "fr")),
+      schools: Array.from(schoolsTotal.entries()).map(([id, item]) => ({ id, ...item })).sort((a, b) => b.missing - a.missing || a.name.localeCompare(b.name, "fr")),
+      worstDays: [...daily].sort((a, b) => b.missing - a.missing || b.rate - a.rate).slice(0, 5),
+      daily,
+    };
+  }, [filteredDays, mappingFor, selectedSchoolId, selectedTutorKey]);
+  const needsReview = useMemo(() => {
+    const items = new Map<string, { name: string; expected: number; missing: number }>();
+    for (const day of days) for (const tutor of day.tutors) for (const item of tutor.schools) {
+      const resolved = mappingFor(item.sourceName);
+      if (!resolved.school && !resolved.excluded) {
+        const key = schoolKey(item.sourceName);
+        const current = items.get(key) || { name: item.sourceName, expected: 0, missing: 0 };
+        current.expected += item.expectedCount;
+        current.missing += item.missingCount;
+        items.set(key, current);
+      }
+    }
+    return Array.from(items.entries()).map(([key, item]) => ({ key, ...item })).sort((a, b) => b.missing - a.missing || b.expected - a.expected);
+  }, [days, mappingFor]);
+  const sourceSchoolNames = useMemo(() => {
+    const items = new Map<string, string>();
+    days.forEach((day) => day.tutors.forEach((tutor) => tutor.schools.forEach((item) => items.set(schoolKey(item.sourceName), item.sourceName))));
+    return Array.from(items.entries()).filter(([key]) => Boolean(mappings[key])).map(([key, name]) => ({ key, name }));
+  }, [days, mappings]);
+  const dailyTutorRows = useMemo(() => {
+    if (!visibleSelectedDay) return [];
+    const normalized = query.trim().toLocaleLowerCase("fr");
+    return visibleSelectedDay.tutors.map((tutor) => ({ ...tutor, excluded: visibleSelectedDay.excludedTutorKeys.includes(tutor.key) }))
+      .filter((tutor) => !normalized || `${tutor.name} ${tutor.tutorId} ${tutor.schools.map((item) => item.sourceName).join(" ")}`.toLocaleLowerCase("fr").includes(normalized))
+      .filter((tutor) => !selectedTutorKey || tutor.key === selectedTutorKey)
+      .filter((tutor) => !selectedSchoolId || tutor.schools.some((item) => mappingFor(item.sourceName).school?.id === selectedSchoolId))
+      .sort((a, b) => Number(a.excluded) - Number(b.excluded) || b.missingCount - a.missingCount || a.name.localeCompare(b.name, "fr"));
+  }, [mappingFor, query, visibleSelectedDay, selectedSchoolId, selectedTutorKey]);
+
+  async function importFiles(files: FileList | null) {
+    if (!files?.length) return;
+    setSaving(true); setMessage("");
+    try {
+      let latest: Payload | null = null;
+      for (let index = 0; index < files.length; index += 1) {
+        const file = files[index];
+        setProgress(`Analyse de ${index + 1}/${files.length} · ${file.name}`);
+        const response = await fetch(`/api/tutor-report-audit?fileName=${encodeURIComponent(file.name)}`, { method: "POST", headers: { "Content-Type": "text/csv;charset=utf-8" }, body: await file.text() });
+        latest = await response.json() as Payload;
+        if (!response.ok) throw new Error(latest.detail || latest.error || `Import impossible pour ${file.name}`);
+      }
+      await load();
+      setMessage(`${files.length} fichier${files.length > 1 ? "s" : ""} importé${files.length > 1 ? "s" : ""} · les dates existantes ont été remplacées et les exclusions conservées.${latest?.invalidDateRowCount ? ` ${latest.invalidDateRowCount} ligne(s) sans date ignorée(s).` : ""}`);
+      if (latest?.skippedNonAlphaRows) setMessage((current) => `${current} ${latest?.skippedNonAlphaRows} ligne(s) reconnue(s) comme hors périmètre Alpha ou explicitement écartée(s).`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Import impossible");
+    } finally { setSaving(false); setProgress(""); }
+  }
+
+  async function excludeTutor(key: string, excluded: boolean) {
+    if (!visibleSelectedDay) return;
+    setSaving(true);
+    try {
+      const response = await fetch("/api/tutor-report-audit", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "exclude-tutor", date: visibleSelectedDay.date, tutorKey: key, excluded }) });
+      const data = await response.json() as Payload;
+      if (!response.ok) throw new Error(data.error || "Modification impossible");
+      setDays(data.days || []);
+      setMessage(excluded ? "Tuteur retiré du bilan de cette journée." : "Tuteur réintégré au bilan.");
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Modification impossible"); }
+    finally { setSaving(false); }
+  }
+
+  async function mapSchool(sourceName: string, schoolId: string) {
+    setSaving(true);
+    try {
+      const response = await fetch("/api/tutor-report-audit", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "map-school", sourceName, schoolId }) });
+      const data = await response.json() as Payload;
+      if (!response.ok) throw new Error(data.error || "Rapprochement impossible");
+      setMappings(data.mappings || {});
+      setMessage(schoolId === "excluded" ? "Établissement écarté des bilans." : schoolId ? "Établissement rapproché ; les totaux sont recalculés." : "Rapprochement retiré ; l’établissement revient en vérification.");
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Rapprochement impossible"); }
+    finally { setSaving(false); }
+  }
+
+  async function saveComment(tutorId: string, comment: string) {
+    const nextComment = { tutorId, comment, updatedAt: new Date().toISOString() };
+    const response = await fetch("/api/tutor-report-comments", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ comment: nextComment }) });
+    if (!response.ok) throw new Error("Commentaire non enregistré");
+    const data = await response.json() as { comments?: TutorReportComment[] };
+    setComments(data.comments || [...comments.filter((item) => item.tutorId !== tutorId), nextComment]);
+  }
+
+  const commentByTutor = useMemo(() => new Map(comments.map((item) => [item.tutorId, item.comment])), [comments]);
+  const commentFor = (tutorId: string) => commentByTutor.get(tutorId) || "";
+
+  return <section className="task-panel tutor-report-audit">
+    <div className="panel-heading"><div><p className="eyebrow">Suivi des rapports</p><h2>Bilans tuteurs</h2><p>Repérez les rapports manquants, jour par jour, et identifiez les établissements Alpha à accompagner.</p></div><label className="import-button">Importer un ou plusieurs CSV<input type="file" accept=".csv,text/csv" multiple disabled={saving} onChange={(event) => { void importFiles(event.target.files); event.currentTarget.value = ""; }} /></label></div>
+    {progress ? <p className="enrollment-message">{progress}</p> : null}
+    {message ? <p className="enrollment-message">{message}</p> : null}
+    {needsReview.length ? <section className="tutor-report-review"><div><h3>Établissements à rapprocher</h3><p>Ils restent hors des totaux Alpha jusqu’à vérification.</p></div>{needsReview.map((item) => <article key={item.key}><strong>{item.name}</strong><span>{number.format(item.missing)} manquant(s) / {number.format(item.expected)} attendu(s)</span><select value="" onChange={(event) => { if (event.target.value) void mapSchool(item.name, event.target.value); }} disabled={saving}><option value="">Associer à une fiche Alpha…</option>{schools.filter(alpha).map((school) => <option key={school.id} value={school.id}>{school.name}</option>)}</select><button type="button" onClick={() => void mapSchool(item.name, "excluded")} disabled={saving}>Écarter</button></article>)}</section> : null}
+    {sourceSchoolNames.length ? <details className="tutor-report-mappings"><summary>Rapprochements effectués ({sourceSchoolNames.length})</summary>{sourceSchoolNames.map((item) => <label key={item.key}><span>{item.name}</span><select value={mappings[item.key]} onChange={(event) => void mapSchool(item.name, event.target.value)} disabled={saving}><option value="">Remettre en vérification</option><option value="excluded">Écarté</option>{schools.filter(alpha).map((school) => <option key={school.id} value={school.id}>{school.name}</option>)}</select></label>)}</details> : null}
+    <div className="tutor-report-audit-controls"><label>Du<input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} /></label><label>Au<input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} /></label><label>Tuteur<select value={selectedTutorKey} onChange={(event) => setSelectedTutorKey(event.target.value)}><option value="">Tous les tuteurs</option>{tutorOptions.map(([key, name]) => <option key={key} value={key}>{name}</option>)}</select></label><label>Établissement<select value={selectedSchoolId} onChange={(event) => setSelectedSchoolId(event.target.value)}><option value="">Tous les établissements Alpha</option>{schools.filter(alpha).map((school) => <option key={school.id} value={school.id}>{school.name}</option>)}</select></label><label className="tutor-report-search">Rechercher<input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tuteur ou établissement…" /></label></div>
+    <div className="tutor-report-audit-kpis"><article><span>Rapports attendus</span><strong>{number.format(viewStats.expected)}</strong></article><article className="missing"><span>Rapports manquants</span><strong>{number.format(viewStats.missing)}</strong></article><article className="done"><span>Rapports faits</span><strong>{number.format(viewStats.done)}</strong></article><article className="rate"><span>Taux de complétion</span><strong>{percent.format(viewStats.expected ? (viewStats.done / viewStats.expected) * 100 : 0)}%</strong></article></div>
+    {days.length ? <><section className="tutor-report-insights"><article><h3>Jours à regarder</h3>{viewStats.worstDays.map((day) => <button key={day.date} type="button" onClick={() => setSelectedDate(day.date)}><span>{dayLabel(day.date, { day: "2-digit", month: "short" })}</span><strong>{number.format(day.missing)} manquant(s)</strong><em>{percent.format(day.rate)}%</em></button>)}</article><article><h3>Tuteurs avec le plus de rapports manquants</h3>{viewStats.tutors.slice(0, 5).map((tutor) => <div key={tutor.key}><span>{tutor.name}</span><strong>{number.format(tutor.missing)} / {number.format(tutor.expected)}</strong></div>)}</article><article><h3>Établissements Alpha concernés</h3>{viewStats.schools.slice(0, 5).map((school) => <div key={school.id}><span>{school.name}</span><strong>{number.format(school.missing)} / {number.format(school.expected)}</strong></div>)}</article></section>
+    <div className="tutor-report-day-tabs">{viewStats.daily.map((day) => <button type="button" key={day.date} className={visibleSelectedDay?.date === day.date ? "active" : ""} onClick={() => setSelectedDate(day.date)}>{dayLabel(day.date, { day: "2-digit", month: "short", year: "numeric" })}<small>{number.format(day.missing)} manquant(s) · {number.format(day.expected)} attendus</small></button>)}</div>
+    {visibleSelectedDay ? <section className="tutor-report-day"><header><div><span className="history-badge">Bilan du jour</span><h3>{dayLabel(visibleSelectedDay.date)}</h3><p>{number.format(dailyTutorRows.length)} tuteur(s) affiché(s) · import : {visibleSelectedDay.sourceFileName}</p></div><strong>{number.format(visibleSelectedDay.sourceRowCount)} lignes sources</strong></header><div className="tutor-report-day-table"><div className="tutor-report-day-head"><span>Tuteur</span><span>Établissements</span><span>Attendus</span><span>Manquants</span><span>Commentaire général</span><span>Action</span></div>{dailyTutorRows.map((tutor) => {
+      const alphaSchools = tutor.schools.map((item) => ({ ...item, match: mappingFor(item.sourceName) })).filter((item) => item.match.school && alpha(item.match.school) && (!selectedSchoolId || item.match.school.id === selectedSchoolId));
+      const expected = alphaSchools.reduce((sum, item) => sum + item.expectedCount, 0);
+      const missing = alphaSchools.reduce((sum, item) => sum + item.missingCount, 0);
+      return <article className={tutor.excluded ? "excluded" : ""} key={tutor.key}><strong>{tutor.name}{tutor.tutorId ? <small>ID {tutor.tutorId}</small> : null}</strong><div className="tutor-report-school-breakdown">{alphaSchools.length ? alphaSchools.map((item) => <span key={item.sourceName}>{item.match.school?.name}<b>{item.missingCount} / {item.expectedCount}</b></span>) : <span>En attente de rapprochement d’établissement</span>}</div><b>{number.format(expected)}</b><b className="missing">{number.format(missing)}</b>{tutor.tutorId ? <label className="tutor-report-general-note"><span>Note générale</span><textarea key={`${tutor.tutorId}:${commentFor(tutor.tutorId)}`} defaultValue={commentFor(tutor.tutorId)} placeholder="Aucune note" onBlur={(event) => { if (event.target.value !== commentFor(tutor.tutorId)) void saveComment(tutor.tutorId, event.target.value).catch((error: unknown) => setMessage(error instanceof Error ? error.message : "Commentaire non enregistré")); }} /></label> : <span>—</span>}<button type="button" onClick={() => void excludeTutor(tutor.key, !tutor.excluded)} disabled={saving}>{tutor.excluded ? "Réintégrer" : "Exclure ce jour"}</button></article>;
+    })}</div></section> : <div className="empty-state"><h3>Aucun jour dans cette période</h3></div>}</> : <div className="empty-state"><span>🧾</span><h3>Aucun rapport importé</h3><p>Importez les exports CSV pour commencer le suivi jour par jour.</p></div>}
+  </section>;
+}
