@@ -157,6 +157,8 @@ export type TutorReportAuditSchool = {
   sourceName: string;
   expectedCount: number;
   missingCount: number;
+  completedReportCount: number;
+  completedReportCharacterCount: number;
 };
 
 export type TutorReportAuditTutor = {
@@ -576,6 +578,7 @@ export const TUTOR_REPORT_COMMENTS_KEY = "tutor-report-comments.json";
 const TUTOR_REPORT_COMMENT_PREFIX = "tutor-report-comments:by-tutor:";
 export const TUTOR_REPORT_AUDITS_KEY = "tutor-report-audits.json";
 export const TUTOR_REPORT_AUDIT_SCHOOL_MAPPINGS_KEY = "tutor-report-audit-school-mappings.json";
+export const TUTOR_REPORT_AUDIT_GLOBAL_EXCLUSIONS_KEY = "tutor-report-audit-global-exclusions.json";
 export const TUTOR_TRACKING_KEY = "tutor-tracking.json";
 export const AVAILABILITY_IMPORTS_KEY = "availability-imports.json";
 export const TUTOR_ASSIGNMENT_IMPORTS_KEY = "tutor-assignment-imports.json";
@@ -603,6 +606,7 @@ const memory = globalThis as typeof globalThis & {
   __petitSuiviTutorReports?: TutorReportSnapshot[];
   __petitSuiviTutorReportAuditDays?: TutorReportAuditDay[];
   __petitSuiviTutorReportAuditSchoolMappings?: TutorReportAuditSchoolMapping;
+  __petitSuiviTutorReportAuditGlobalExclusions?: string[];
   __petitSuiviTutorReportComments?: TutorReportComment[];
   __petitSuiviTutorReportCommentsByTutor?: Record<string, TutorReportComment>;
   __petitSuiviTutorTracking?: TutorTrackingData;
@@ -1044,6 +1048,8 @@ export function sanitizeTutorReportAuditDay(raw: Record<string, unknown>): Tutor
               sourceName: cleanText(school.sourceName),
               expectedCount: cleanSessionCount(school.expectedCount),
               missingCount: cleanSessionCount(school.missingCount),
+              completedReportCount: cleanSessionCount(school.completedReportCount),
+              completedReportCharacterCount: cleanSessionCount(school.completedReportCharacterCount),
             })).filter((school) => school.sourceName)
           : [];
         return {
@@ -2661,6 +2667,29 @@ export async function writeTutorReportAuditDays(days: TutorReportAuditDay[]) {
     await store.setJSON(TUTOR_REPORT_AUDITS_KEY, normalized);
   } catch (error) {
     if (canUseMemoryFallback()) { memory.__petitSuiviTutorReportAuditDays = normalized; return; }
+    throw error;
+  }
+}
+
+export async function readTutorReportAuditGlobalExclusions(): Promise<string[]> {
+  try {
+    const store = taskStore();
+    if (!await store.getMetadata(TUTOR_REPORT_AUDIT_GLOBAL_EXCLUSIONS_KEY, { consistency: "strong" })) return [];
+    const keys = await store.get(TUTOR_REPORT_AUDIT_GLOBAL_EXCLUSIONS_KEY, { type: "json", consistency: "strong" });
+    return Array.isArray(keys) ? Array.from(new Set(keys.filter((key): key is string => typeof key === "string").map(cleanText).filter(Boolean))) : [];
+  } catch (error) {
+    if (canUseMemoryFallback()) return memory.__petitSuiviTutorReportAuditGlobalExclusions ?? [];
+    throw error;
+  }
+}
+
+export async function writeTutorReportAuditGlobalExclusions(keys: string[]) {
+  const normalized = Array.from(new Set(keys.map(cleanText).filter(Boolean)));
+  try {
+    const store = taskStore();
+    await store.setJSON(TUTOR_REPORT_AUDIT_GLOBAL_EXCLUSIONS_KEY, normalized);
+  } catch (error) {
+    if (canUseMemoryFallback()) { memory.__petitSuiviTutorReportAuditGlobalExclusions = normalized; return; }
     throw error;
   }
 }
