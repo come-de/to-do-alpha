@@ -128,10 +128,10 @@ export default function TutorReportAudit({ onError }: Props) {
             schoolTotal.expected += item.expectedCount; schoolTotal.missing += item.missingCount;
             allSchoolsTotal.set(result.school.id, schoolTotal);
           }
-          tutorExpected += item.expectedCount;
-          target.expected += item.expectedCount; target.missing += item.missingCount;
-          target.completedReports += completed; target.reportCharacters += characters;
           if (!globallyExcludedSchools.has(result.school.id)) {
+            tutorExpected += item.expectedCount;
+            target.expected += item.expectedCount; target.missing += item.missingCount;
+            target.completedReports += completed; target.reportCharacters += characters;
             if (!target.schoolNames.includes(result.school.name)) target.schoolNames.push(result.school.name);
             if (!globallyExcludedTutors.has(tutor.key)) {
               expected += item.expectedCount; missing += item.missingCount;
