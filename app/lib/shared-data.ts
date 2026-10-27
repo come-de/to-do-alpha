@@ -3905,22 +3905,24 @@ function formatDuration(hours: number | null) {
 }
 
 async function sendEmail(to: string, subject: string, html: string) {
-  const apiKey = process.env.RESEND_API_KEY;
+  const apiKey = process.env.SENDGRID_API_KEY;
   const from = process.env.ASSIGNMENT_FROM_EMAIL;
   if (!apiKey || !from) return { sent: false, reason: "missing-config" };
 
-  const response = await fetch("https://api.resend.com/emails", {
+  const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from,
-      to,
+      personalizations: [{ to: [{ email: to }] }],
+      from: { email: from },
       subject,
-      html,
-      ...(process.env.ASSIGNMENT_REPLY_TO_EMAIL ? { reply_to: process.env.ASSIGNMENT_REPLY_TO_EMAIL } : {}),
+      content: [{ type: "text/html", value: html }],
+      ...(process.env.SENDGRID_REPLY_TO_EMAIL
+        ? { reply_to: { email: process.env.SENDGRID_REPLY_TO_EMAIL } }
+        : {}),
     }),
   });
 
