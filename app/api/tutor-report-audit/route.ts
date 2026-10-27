@@ -7,12 +7,14 @@ import {
   readSchools,
   readTutorReportAuditDays,
   readTutorReportAuditGlobalExclusions,
+  readTutorReportAuditGlobalExcludedSchools,
   readTutorReportAuditSchoolMappings,
   readTutorReportComments,
   readTutorReports,
   readTutorTracking,
   writeTutorReportAuditDays,
   writeTutorReportAuditGlobalExclusions,
+  writeTutorReportAuditGlobalExcludedSchools,
   writeTutorReportAuditSchoolMappings,
   writeTutorReportComments,
 } from "@/app/lib/shared-data";
@@ -33,13 +35,13 @@ async function getHandler() {
     return result;
   };
   try {
-    const [days, schools, mappings, comments, legacyReports, globalExcludedTutorKeys] = await Promise.all([
-      measured("days", readTutorReportAuditDays), measured("schools", readSchools), measured("mappings", readTutorReportAuditSchoolMappings), measured("comments", readTutorReportComments), measured("legacy", readTutorReports), measured("global-exclusions", readTutorReportAuditGlobalExclusions),
+    const [days, schools, mappings, comments, legacyReports, globalExcludedTutorKeys, globalExcludedSchoolIds] = await Promise.all([
+      measured("days", readTutorReportAuditDays), measured("schools", readSchools), measured("mappings", readTutorReportAuditSchoolMappings), measured("comments", readTutorReportComments), measured("legacy", readTutorReports), measured("global-exclusions", readTutorReportAuditGlobalExclusions), measured("global-school-exclusions", readTutorReportAuditGlobalExcludedSchools),
     ]);
     // Preserve global tutor comments while clearing the superseded dated manual snapshots.
     await measured("save-comments", () => writeTutorReportComments(comments));
     if (legacyReports.length) await clearLegacyTutorReports();
-    return json({ days, schools, mappings, comments, globalExcludedTutorKeys });
+    return json({ days, schools, mappings, comments, globalExcludedTutorKeys, globalExcludedSchoolIds });
   } catch (error) {
     return json({ error: error instanceof Error ? error.message : "Chargement du suivi impossible" }, 500);
   }
@@ -106,6 +108,16 @@ async function patchHandler(request: Request) {
       const globalExcludedTutorKeys = Array.from(excluded);
       await writeTutorReportAuditGlobalExclusions(globalExcludedTutorKeys);
       return json({ globalExcludedTutorKeys });
+    }
+    if (body.action === "exclude-school-globally") {
+      if (!body.schoolId || typeof body.excluded !== "boolean") return json({ error: "Exclusion d’établissement invalide" }, 400);
+      const schools = await readSchools();
+      if (!schools.some((school) => school.id === body.schoolId)) return json({ error: "Établissement introuvable" }, 404);
+      const excluded = new Set(await readTutorReportAuditGlobalExcludedSchools());
+      if (body.excluded) excluded.add(body.schoolId); else excluded.delete(body.schoolId);
+      const globalExcludedSchoolIds = Array.from(excluded);
+      await writeTutorReportAuditGlobalExcludedSchools(globalExcludedSchoolIds);
+      return json({ globalExcludedSchoolIds });
     }
     if (body.action === "exclude-tutor") {
       if (!body.date || !body.tutorKey || typeof body.excluded !== "boolean") return json({ error: "Exclusion invalide" }, 400);
