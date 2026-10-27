@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { School, TutorReportAuditDay, TutorReportAuditSchoolMapping, TutorReportComment } from "@/app/lib/shared-data";
 
 type Props = { onError?: (message: string) => void };
-type Payload = { days?: TutorReportAuditDay[]; schools?: School[]; mappings?: TutorReportAuditSchoolMapping; comments?: TutorReportComment[]; error?: string; detail?: string; importedDates?: string[]; invalidDateRowCount?: number; skippedNonAlphaRows?: number };
+type Payload = { days?: TutorReportAuditDay[]; schools?: School[]; mappings?: TutorReportAuditSchoolMapping; comments?: TutorReportComment[]; globalExcludedTutorKeys?: string[]; error?: string; detail?: string; importedDates?: string[]; invalidDateRowCount?: number; skippedNonAlphaRows?: number };
 const number = new Intl.NumberFormat("fr-FR");
 const percent = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 });
 
@@ -40,6 +40,9 @@ export default function TutorReportAudit({ onError }: Props) {
   const [schools, setSchools] = useState<School[]>([]);
   const [mappings, setMappings] = useState<TutorReportAuditSchoolMapping>({});
   const [comments, setComments] = useState<TutorReportComment[]>([]);
+  const [globalExcludedTutorKeys, setGlobalExcludedTutorKeys] = useState<string[]>([]);
+  const [showAllTutors, setShowAllTutors] = useState(false);
+  const [allTutorsQuery, setAllTutorsQuery] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -59,6 +62,7 @@ export default function TutorReportAudit({ onError }: Props) {
     setSchools(data.schools || []);
     setMappings(data.mappings || {});
     setComments(data.comments || []);
+    setGlobalExcludedTutorKeys(data.globalExcludedTutorKeys || []);
     setSelectedDate((current) => nextDays.some((day) => day.date === current) ? current : nextDays[0]?.date || "");
   }, []);
 
@@ -66,6 +70,12 @@ export default function TutorReportAudit({ onError }: Props) {
     const timer = window.setTimeout(() => { void load().catch((error: unknown) => onError?.(error instanceof Error ? error.message : "Chargement impossible")); }, 0);
     return () => window.clearTimeout(timer);
   }, [load, onError]);
+  useEffect(() => {
+    if (!showAllTutors) return;
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") setShowAllTutors(false); };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [showAllTutors]);
   useEffect(() => {
     const refresh = () => { void load().catch((error: unknown) => onError?.(error instanceof Error ? error.message : "Chargement impossible")); };
     window.addEventListener("tutor-report-audit-refresh", refresh);
@@ -88,41 +98,49 @@ export default function TutorReportAudit({ onError }: Props) {
     return Array.from(items.entries()).sort((a, b) => a[1].localeCompare(b[1], "fr"));
   }, [days]);
   const viewStats = useMemo(() => {
-    const tutors = new Map<string, { key: string; tutorId: string; name: string; expected: number; missing: number; schools: Map<string, { expected: number; missing: number }> }>();
+    const tutors = new Map<string, { key: string; tutorId: string; name: string; expected: number; missing: number; completedReports: number; reportCharacters: number }>();
     const schoolsTotal = new Map<string, { name: string; expected: number; missing: number }>();
+    const globallyExcluded = new Set(globalExcludedTutorKeys);
     const daily = filteredDays.map((day) => {
       let expected = 0; let missing = 0;
       for (const tutor of day.tutors) {
         if (selectedTutorKey && tutor.key !== selectedTutorKey) continue;
+        const target = tutors.get(tutor.key) || { key: tutor.key, tutorId: tutor.tutorId, name: tutor.name, expected: 0, missing: 0, completedReports: 0, reportCharacters: 0 };
+        tutors.set(tutor.key, target);
         if (day.excludedTutorKeys.includes(tutor.key)) continue;
-        const target = tutors.get(tutor.key) || { key: tutor.key, tutorId: tutor.tutorId, name: tutor.name, expected: 0, missing: 0, schools: new Map() };
+        let tutorExpected = 0;
         for (const item of tutor.schools) {
           const result = mappingFor(item.sourceName);
           if (result.excluded || !result.school || !alpha(result.school)) continue;
           if (selectedSchoolId && result.school.id !== selectedSchoolId) continue;
-          expected += item.expectedCount; missing += item.missingCount;
+          const completed = item.completedReportCount || 0;
+          const characters = item.completedReportCharacterCount || 0;
+          tutorExpected += item.expectedCount;
           target.expected += item.expectedCount; target.missing += item.missingCount;
-          const school = target.schools.get(result.school.id) || { expected: 0, missing: 0 };
-          school.expected += item.expectedCount; school.missing += item.missingCount;
-          target.schools.set(result.school.id, school);
-          const all = schoolsTotal.get(result.school.id) || { name: result.school.name, expected: 0, missing: 0 };
-          all.expected += item.expectedCount; all.missing += item.missingCount;
-          schoolsTotal.set(result.school.id, all);
+          target.completedReports += completed; target.reportCharacters += characters;
+          if (!globallyExcluded.has(tutor.key)) {
+            expected += item.expectedCount; missing += item.missingCount;
+            const all = schoolsTotal.get(result.school.id) || { name: result.school.name, expected: 0, missing: 0 };
+            all.expected += item.expectedCount; all.missing += item.missingCount;
+            schoolsTotal.set(result.school.id, all);
+          }
         }
-        if (target.expected) tutors.set(tutor.key, target);
+        if (tutorExpected) tutors.set(tutor.key, target);
       }
       return { date: day.date, expected, missing, rate: expected ? (missing / expected) * 100 : 0 };
     });
     const expected = daily.reduce((sum, day) => sum + day.expected, 0);
     const missing = daily.reduce((sum, day) => sum + day.missing, 0);
+    const allTutors = Array.from(tutors.values()).sort((a, b) => b.missing - a.missing || b.expected - a.expected || a.name.localeCompare(b.name, "fr"));
     return {
-      expected, missing, done: expected - missing, rate: expected ? (missing / expected) * 100 : 0,
-      tutors: Array.from(tutors.values()).sort((a, b) => b.missing - a.missing || b.expected - a.expected || a.name.localeCompare(b.name, "fr")),
+      expected, missing, done: expected - missing, rate: expected ? (expected - missing) / expected * 100 : 0,
+      tutors: allTutors.filter((tutor) => tutor.expected > 0 && !globallyExcluded.has(tutor.key)),
+      allTutors,
       schools: Array.from(schoolsTotal.entries()).map(([id, item]) => ({ id, ...item })).sort((a, b) => b.missing - a.missing || a.name.localeCompare(b.name, "fr")),
       worstDays: [...daily].sort((a, b) => b.missing - a.missing || b.rate - a.rate).slice(0, 5),
       daily,
     };
-  }, [filteredDays, mappingFor, selectedSchoolId, selectedTutorKey]);
+  }, [filteredDays, globalExcludedTutorKeys, mappingFor, selectedSchoolId, selectedTutorKey]);
   const needsReview = useMemo(() => {
     const items = new Map<string, { name: string; expected: number; missing: number }>();
     for (const day of days) for (const tutor of day.tutors) for (const item of tutor.schools) {
@@ -147,10 +165,11 @@ export default function TutorReportAudit({ onError }: Props) {
     const normalized = query.trim().toLocaleLowerCase("fr");
     return visibleSelectedDay.tutors.map((tutor) => ({ ...tutor, excluded: visibleSelectedDay.excludedTutorKeys.includes(tutor.key) }))
       .filter((tutor) => !normalized || `${tutor.name} ${tutor.tutorId} ${tutor.schools.map((item) => item.sourceName).join(" ")}`.toLocaleLowerCase("fr").includes(normalized))
+      .filter((tutor) => !globalExcludedTutorKeys.includes(tutor.key))
       .filter((tutor) => !selectedTutorKey || tutor.key === selectedTutorKey)
       .filter((tutor) => !selectedSchoolId || tutor.schools.some((item) => mappingFor(item.sourceName).school?.id === selectedSchoolId))
       .sort((a, b) => Number(a.excluded) - Number(b.excluded) || b.missingCount - a.missingCount || a.name.localeCompare(b.name, "fr"));
-  }, [mappingFor, query, visibleSelectedDay, selectedSchoolId, selectedTutorKey]);
+  }, [globalExcludedTutorKeys, mappingFor, query, visibleSelectedDay, selectedSchoolId, selectedTutorKey]);
 
   async function importFiles(selection: FileList | null) {
     // The input is reset immediately after this call; FileList is live.
@@ -191,6 +210,18 @@ export default function TutorReportAudit({ onError }: Props) {
     finally { setSaving(false); }
   }
 
+  async function excludeTutorGlobally(key: string, excluded: boolean) {
+    setSaving(true);
+    try {
+      const response = await fetch("/api/tutor-report-audit", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "exclude-tutor-globally", tutorKey: key, excluded }) });
+      const data = await readPayload(response, "Modification impossible");
+      if (!response.ok) throw new Error(data.error || "Modification impossible");
+      setGlobalExcludedTutorKeys(data.globalExcludedTutorKeys || []);
+      setMessage(excluded ? "Tuteur exclu de tous les jours et des totaux." : "Tuteur réintégré dans tous les jours.");
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Modification impossible"); }
+    finally { setSaving(false); }
+  }
+
   async function mapSchool(sourceName: string, schoolId: string) {
     setSaving(true);
     try {
@@ -222,7 +253,7 @@ export default function TutorReportAudit({ onError }: Props) {
     {sourceSchoolNames.length ? <details className="tutor-report-mappings"><summary>Rapprochements effectués ({sourceSchoolNames.length})</summary>{sourceSchoolNames.map((item) => <label key={item.key}><span>{item.name}</span><select value={mappings[item.key]} onChange={(event) => void mapSchool(item.name, event.target.value)} disabled={saving}><option value="">Remettre en vérification</option><option value="excluded">Écarté</option>{schools.filter(alpha).map((school) => <option key={school.id} value={school.id}>{school.name}</option>)}</select></label>)}</details> : null}
     <div className="tutor-report-audit-controls"><label>Du<input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} /></label><label>Au<input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} /></label><label>Tuteur<select value={selectedTutorKey} onChange={(event) => setSelectedTutorKey(event.target.value)}><option value="">Tous les tuteurs</option>{tutorOptions.map(([key, name]) => <option key={key} value={key}>{name}</option>)}</select></label><label>Établissement<select value={selectedSchoolId} onChange={(event) => setSelectedSchoolId(event.target.value)}><option value="">Tous les établissements Alpha</option>{schools.filter(alpha).map((school) => <option key={school.id} value={school.id}>{school.name}</option>)}</select></label><label className="tutor-report-search">Rechercher<input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tuteur ou établissement…" /></label></div>
     <div className="tutor-report-audit-kpis"><article><span>Rapports attendus</span><strong>{number.format(viewStats.expected)}</strong></article><article className="missing"><span>Rapports manquants</span><strong>{number.format(viewStats.missing)}</strong></article><article className="done"><span>Rapports faits</span><strong>{number.format(viewStats.done)}</strong></article><article className="rate"><span>Taux de complétion</span><strong>{percent.format(viewStats.expected ? (viewStats.done / viewStats.expected) * 100 : 0)}%</strong></article></div>
-    {days.length ? <><section className="tutor-report-insights"><article><h3>Jours à regarder</h3>{viewStats.worstDays.map((day) => <button key={day.date} type="button" onClick={() => setSelectedDate(day.date)}><span>{dayLabel(day.date, { day: "2-digit", month: "short" })}</span><strong>{number.format(day.missing)} manquant(s)</strong><em>{percent.format(day.rate)}%</em></button>)}</article><article><h3>Tuteurs avec le plus de rapports manquants</h3>{viewStats.tutors.slice(0, 5).map((tutor) => <div key={tutor.key}><span>{tutor.name}</span><strong>{number.format(tutor.missing)} / {number.format(tutor.expected)}</strong></div>)}</article><article><h3>Établissements Alpha concernés</h3>{viewStats.schools.slice(0, 5).map((school) => <div key={school.id}><span>{school.name}</span><strong>{number.format(school.missing)} / {number.format(school.expected)}</strong></div>)}</article></section>
+    {days.length ? <><section className="tutor-report-insights"><article><h3>Jours à regarder</h3>{viewStats.worstDays.map((day) => <button key={day.date} type="button" onClick={() => setSelectedDate(day.date)}><span>{dayLabel(day.date, { day: "2-digit", month: "short" })}</span><strong>{number.format(day.missing)} manquant(s)</strong><em>{percent.format(day.rate)}%</em></button>)}</article><article className="tutor-report-top-tutors"><div className="tutor-report-insight-heading"><h3>Tuteurs avec le plus de rapports manquants</h3><button type="button" onClick={() => setShowAllTutors(true)}>Voir la liste ({number.format(viewStats.allTutors.length)})</button></div>{viewStats.tutors.slice(0, 5).map((tutor) => <div key={tutor.key}><span>{tutor.name}</span><strong>{number.format(tutor.missing)} / {number.format(tutor.expected)} · {tutor.completedReports ? number.format(Math.round(tutor.reportCharacters / tutor.completedReports)) + " caractères" : "—"}</strong></div>)}</article><article><h3>Établissements Alpha concernés</h3>{viewStats.schools.slice(0, 5).map((school) => <div key={school.id}><span>{school.name}</span><strong>{number.format(school.missing)} / {number.format(school.expected)}</strong></div>)}</article></section>
     <div className="tutor-report-day-tabs">{viewStats.daily.map((day) => <button type="button" key={day.date} className={visibleSelectedDay?.date === day.date ? "active" : ""} onClick={() => setSelectedDate(day.date)}>{dayLabel(day.date, { day: "2-digit", month: "short", year: "numeric" })}<small>{number.format(day.missing)} manquant(s) · {number.format(day.expected)} attendus</small></button>)}</div>
     {visibleSelectedDay ? <section className="tutor-report-day"><header><div><span className="history-badge">Bilan du jour</span><h3>{dayLabel(visibleSelectedDay.date)}</h3><p>{number.format(dailyTutorRows.length)} tuteur(s) affiché(s) · import : {visibleSelectedDay.sourceFileName}</p></div><strong>{number.format(visibleSelectedDay.sourceRowCount)} lignes sources</strong></header><div className="tutor-report-day-table"><div className="tutor-report-day-head"><span>Tuteur</span><span>Établissements</span><span>Attendus</span><span>Manquants</span><span>Caractères / bilan</span><span>Commentaire général</span><span>Action</span></div>{dailyTutorRows.map((tutor) => {
       const alphaSchools = tutor.schools.map((item) => ({ ...item, match: mappingFor(item.sourceName) })).filter((item) => item.match.school && alpha(item.match.school) && (!selectedSchoolId || item.match.school.id === selectedSchoolId));
@@ -233,5 +264,6 @@ export default function TutorReportAudit({ onError }: Props) {
       const averageReportCharacters = completedReportCount ? Math.round(completedReportCharacterCount / completedReportCount) : null;
       return <article className={tutor.excluded ? "excluded" : ""} key={tutor.key}><strong>{tutor.name}{tutor.tutorId ? <small>ID {tutor.tutorId}</small> : null}</strong><div className="tutor-report-school-breakdown">{alphaSchools.length ? alphaSchools.map((item) => <span key={item.sourceName}>{item.match.school?.name}<b>{item.missingCount} / {item.expectedCount}</b></span>) : <span>En attente de rapprochement d’établissement</span>}</div><b>{number.format(expected)}</b><b className="missing">{number.format(missing)}</b><b>{averageReportCharacters === null ? "—" : number.format(averageReportCharacters)}</b>{tutor.tutorId ? <label className="tutor-report-general-note"><span>Note générale</span><textarea key={`${tutor.tutorId}:${commentFor(tutor.tutorId)}`} defaultValue={commentFor(tutor.tutorId)} placeholder="Aucune note" onBlur={(event) => { if (event.target.value !== commentFor(tutor.tutorId)) void saveComment(tutor.tutorId, event.target.value).catch((error: unknown) => setMessage(error instanceof Error ? error.message : "Commentaire non enregistré")); }} /></label> : <span>—</span>}<button type="button" onClick={() => void excludeTutor(tutor.key, !tutor.excluded)} disabled={saving}>{tutor.excluded ? "Réintégrer" : "Exclure ce jour"}</button></article>;
     })}</div></section> : <div className="empty-state"><h3>Aucun jour dans cette période</h3></div>}</> : <div className="empty-state"><span>🧾</span><h3>Aucun rapport importé</h3><p>Importez les exports CSV pour commencer le suivi jour par jour.</p></div>}
+    {showAllTutors ? <div className="tutor-report-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowAllTutors(false); }}><section className="tutor-report-tutor-modal" role="dialog" aria-modal="true" aria-labelledby="tutor-report-tutor-modal-title"><header><div><p className="eyebrow">Synthèse de la période</p><h2 id="tutor-report-tutor-modal-title">Rapports par tuteur</h2><p>{number.format(viewStats.allTutors.length)} tuteur(s) · moyenne calculée sur les bilans remplis</p></div><button type="button" aria-label="Fermer" onClick={() => setShowAllTutors(false)}>×</button></header><label className="tutor-report-modal-search">Rechercher un tuteur<input autoFocus value={allTutorsQuery} onChange={(event) => setAllTutorsQuery(event.target.value)} placeholder="Nom ou identifiant…" /></label><div className="tutor-report-modal-list">{viewStats.allTutors.filter((tutor) => !allTutorsQuery.trim() || (tutor.name + " " + tutor.tutorId).toLocaleLowerCase("fr").includes(allTutorsQuery.trim().toLocaleLowerCase("fr"))).map((tutor) => { const excluded = globalExcludedTutorKeys.includes(tutor.key); const average = tutor.completedReports ? Math.round(tutor.reportCharacters / tutor.completedReports) : null; return <article className={excluded ? "globally-excluded" : ""} key={tutor.key}><div><strong>{tutor.name}</strong>{tutor.tutorId ? <small>ID {tutor.tutorId}</small> : null}</div><span>{number.format(tutor.missing)} manquant(s) / {number.format(tutor.expected)} attendu(s)</span><b>{average === null ? "—" : number.format(average) + " caractères / bilan"}</b><button type="button" disabled={saving} onClick={() => void excludeTutorGlobally(tutor.key, !excluded)}>{excluded ? "Réintégrer partout" : "Exclure partout"}</button></article>; })}</div></section></div> : null}
   </section>;
 }
