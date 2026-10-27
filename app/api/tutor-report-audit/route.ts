@@ -37,15 +37,26 @@ async function getHandler() {
 }
 
 async function postHandler(request: Request) {
+  const startedAt = Date.now();
+  const trace = (stage: string) => console.info("[tutor-report-import]", stage, { elapsedMs: Date.now() - startedAt });
+  const measured = async <T,>(stage: string, operation: () => Promise<T>): Promise<T> => {
+    trace(`${stage}:start`);
+    const result = await operation();
+    trace(`${stage}:done`);
+    return result;
+  };
+  trace("handler:start");
   try {
     const url = new URL(request.url);
-    const csv = await request.text();
+    const csv = await measured("read-body", () => request.text());
     if (!csv.trim()) return json({ error: "Fichier CSV vide" }, 400);
     const [schools, tracking, savedDays, mappings] = await Promise.all([
-      readSchools(), readTutorTracking(), readTutorReportAuditDays(), readTutorReportAuditSchoolMappings(),
+      measured("schools", readSchools), measured("tracking", readTutorTracking), measured("saved-days", readTutorReportAuditDays), measured("mappings", readTutorReportAuditSchoolMappings),
     ]);
+    trace("parse:start");
     const roster = tracking.snapshots.flatMap((snapshot) => snapshot.records);
     const parsed = parseTutorReportAuditCsv(csv, url.searchParams.get("fileName") || "rapport.csv", schools, mappings, roster);
+    trace("parse:done");
     if (!parsed.days.length) {
       return json({ error: "Aucune ligne ne correspond à une date et à un établissement Alpha exploitable", detail: "Vérifiez les dates et les établissements ; les établissements inconnus doivent d’abord être rapprochés." }, 400);
     }
@@ -66,7 +77,8 @@ async function postHandler(request: Request) {
     });
     const replaceDates = new Set(imported.map((day) => day.date));
     const next = [...imported, ...savedDays.filter((day) => !replaceDates.has(day.date))];
-    await writeTutorReportAuditDays(next);
+    await measured("save", () => writeTutorReportAuditDays(next));
+    trace("response");
     return json({ days: next, schools, mappings, importedDates: imported.map((day) => day.date), invalidDateRowCount: parsed.invalidDateRowCount, skippedNonAlphaRows: parsed.skippedNonAlphaRows });
   } catch (error) {
     return json({ error: "Import impossible", detail: error instanceof Error ? error.message : "Le fichier n’a pas pu être analysé." }, 400);

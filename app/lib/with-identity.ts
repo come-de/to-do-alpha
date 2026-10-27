@@ -18,7 +18,10 @@ export function withIdentity<Handler extends RouteHandler>(handler: Handler): Ha
       }
     }
 
+    const traceImport = request?.method === "POST" && new URL(request.url).pathname === "/api/tutor-report-audit";
+    if (traceImport) console.info("[tutor-report-import] auth:start");
     const user = await getUser();
+    if (traceImport) console.info("[tutor-report-import] auth:done", { authenticated: Boolean(user) });
     if (!user) {
       return NextResponse.json({ error: "Authentification requise" }, {
         status: 401,
