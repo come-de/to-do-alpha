@@ -89,7 +89,7 @@ export function parseTutorReportAuditCsv(csv: string, fileName: string, schools:
       rosterIdsByName.set(normalizedName, new Set([...(rosterIdsByName.get(normalizedName) || []), tutorId]));
     }
   }
-  type TutorCounts = { key: string; tutorId: string; name: string; expectedCount: number; missingCount: number; schools: Map<string, { expectedCount: number; missingCount: number }> };
+  type TutorCounts = { key: string; tutorId: string; name: string; expectedCount: number; missingCount: number; schools: Map<string, { expectedCount: number; missingCount: number; completedReportCount: number; completedReportCharacterCount: number }> };
   const byDate = new Map<string, Map<string, TutorCounts>>();
   let invalidDateRowCount = 0;
   let skippedNonAlphaRows = 0;
@@ -112,12 +112,17 @@ export function parseTutorReportAuditCsv(csv: string, fileName: string, schools:
     const key = tutorId ? `id:${tutorId}` : `name:${normalizedName}`;
     const day = byDate.get(date) || new Map<string, TutorCounts>();
     const tutor = day.get(key) || { key, tutorId, name, expectedCount: 0, missingCount: 0, schools: new Map() };
-    const school = tutor.schools.get(schoolName) || { expectedCount: 0, missingCount: 0 };
-    const missing = !(row[reportIndex] || "").trim();
+    const school = tutor.schools.get(schoolName) || { expectedCount: 0, missingCount: 0, completedReportCount: 0, completedReportCharacterCount: 0 };
+    const report = (row[reportIndex] || "").trim();
+    const missing = !report;
     tutor.expectedCount += 1;
     if (missing) tutor.missingCount += 1;
     school.expectedCount += 1;
     if (missing) school.missingCount += 1;
+    else {
+      school.completedReportCount += 1;
+      school.completedReportCharacterCount += report.length;
+    }
     tutor.schools.set(schoolName, school);
     day.set(key, tutor);
     byDate.set(date, day);
