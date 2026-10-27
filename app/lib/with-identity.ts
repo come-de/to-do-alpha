@@ -9,8 +9,13 @@ export function withIdentity<Handler extends RouteHandler>(handler: Handler): Ha
     const request = args[0] as Request | undefined;
     if (request && request.method !== "GET" && request.method !== "HEAD" && request.method !== "OPTIONS") {
       try {
-        verifyRequestOrigin(request);
+        // Netlify can forward Next.js requests with an internal URL. Trust only
+        // the deployment's configured public origin, never forwarded headers.
+        const allowedOrigins = [new URL(request.url).origin];
+        if (process.env.URL) allowedOrigins.push(new URL(process.env.URL).origin);
+        verifyRequestOrigin(request, { allowedOrigins });
       } catch {
+        console.warn("[api-origin] rejected", { method: request.method, path: new URL(request.url).pathname, originPresent: Boolean(request.headers.get("origin")) });
         return NextResponse.json({ error: "Origine de requête invalide" }, {
           status: 403,
           headers: { "Cache-Control": "no-store" },

@@ -152,8 +152,10 @@ export default function TutorReportAudit({ onError }: Props) {
       .sort((a, b) => Number(a.excluded) - Number(b.excluded) || b.missingCount - a.missingCount || a.name.localeCompare(b.name, "fr"));
   }, [mappingFor, query, visibleSelectedDay, selectedSchoolId, selectedTutorKey]);
 
-  async function importFiles(files: FileList | null) {
-    if (!files?.length) return;
+  async function importFiles(selection: FileList | null) {
+    // The input is reset immediately after this call; FileList is live.
+    const files = Array.from(selection || []);
+    if (!files.length) return;
     setSaving(true); setMessage("");
     try {
       let latest: Payload | null = null;

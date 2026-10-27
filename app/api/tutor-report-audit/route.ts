@@ -23,12 +23,19 @@ function json(data: unknown, status = 200) {
 }
 
 async function getHandler() {
+  const startedAt = Date.now();
+  const measured = async <T,>(stage: string, operation: () => Promise<T>): Promise<T> => {
+    console.info("[tutor-report-load]", `${stage}:start`);
+    const result = await operation();
+    console.info("[tutor-report-load]", `${stage}:done`, { elapsedMs: Date.now() - startedAt });
+    return result;
+  };
   try {
     const [days, schools, mappings, comments, legacyReports] = await Promise.all([
-      readTutorReportAuditDays(), readSchools(), readTutorReportAuditSchoolMappings(), readTutorReportComments(), readTutorReports(),
+      measured("days", readTutorReportAuditDays), measured("schools", readSchools), measured("mappings", readTutorReportAuditSchoolMappings), measured("comments", readTutorReportComments), measured("legacy", readTutorReports),
     ]);
     // Preserve global tutor comments while clearing the superseded dated manual snapshots.
-    await writeTutorReportComments(comments);
+    await measured("save-comments", () => writeTutorReportComments(comments));
     if (legacyReports.length) await clearLegacyTutorReports();
     return json({ days, schools, mappings, comments });
   } catch (error) {
