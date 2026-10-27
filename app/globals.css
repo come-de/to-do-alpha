@@ -344,6 +344,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .tutor-report-detail-schools > div:first-child { border-top: 0; }
 .tutor-report-detail-schools span { min-width: 0; }
 .tutor-report-detail-schools b { flex: none; color: var(--ink); }
+.tutor-report-detail-schools > div > div { display: flex; flex: none; align-items: center; gap: 12px; }
+.tutor-report-detail-schools em { min-width: 96px; color: #a51e51; font-style: normal; font-weight: 900; text-align: right; }
+
 
 .tutor-report-top-tutors > div > strong { max-width: 52%; overflow: hidden; color: #b62156; text-align: right; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; }
 .tutor-report-modal-backdrop { position: fixed; z-index: 1200; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(27, 17, 40, .55); backdrop-filter: blur(4px); }
@@ -1888,6 +1891,8 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .tutor-report-tutor-details { padding-right: 12px; padding-left: 12px; }
   .tutor-report-tutor-details > article > header { align-items: flex-start; }
   .tutor-report-detail-schools > div { align-items: flex-start; flex-direction: column; gap: 3px; }
+  .tutor-report-detail-schools > div > div { align-items: flex-start; flex-direction: column; gap: 2px; }
+  .tutor-report-detail-schools em { text-align: left; }
   .tutor-report-modal-header-actions { gap: 4px; }
   .tutor-report-modal-list article { grid-template-columns: minmax(0, 1fr) auto; gap: 7px 10px; }
   .tutor-report-modal-list article > span, .tutor-report-modal-list article > b { grid-column: 1; }
