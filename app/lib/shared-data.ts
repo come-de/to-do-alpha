@@ -2642,6 +2642,8 @@ export async function clearLegacyTutorReports() {
 export async function readTutorReportAuditDays() {
   try {
     const store = taskStore();
+    // Check existence directly before requesting a signed URL for this new key.
+    if (!await store.getMetadata(TUTOR_REPORT_AUDITS_KEY, { consistency: "strong" })) return [];
     const days = await store.get(TUTOR_REPORT_AUDITS_KEY, { type: "json", consistency: "strong" });
     return Array.isArray(days)
       ? days.filter((day): day is Record<string, unknown> => Boolean(day && typeof day === "object")).map(sanitizeTutorReportAuditDay).filter((day) => day.date).sort((a, b) => b.date.localeCompare(a.date))
@@ -2666,6 +2668,8 @@ export async function writeTutorReportAuditDays(days: TutorReportAuditDay[]) {
 export async function readTutorReportAuditSchoolMappings(): Promise<TutorReportAuditSchoolMapping> {
   try {
     const store = taskStore();
+    // Check existence directly before requesting a signed URL for this new key.
+    if (!await store.getMetadata(TUTOR_REPORT_AUDIT_SCHOOL_MAPPINGS_KEY, { consistency: "strong" })) return {};
     const mappings = await store.get(TUTOR_REPORT_AUDIT_SCHOOL_MAPPINGS_KEY, { type: "json", consistency: "strong" });
     const result: TutorReportAuditSchoolMapping = {};
     if (mappings && typeof mappings === "object" && !Array.isArray(mappings)) {
