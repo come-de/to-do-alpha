@@ -157,6 +157,8 @@ export type TutorReportAuditSchool = {
   sourceName: string;
   expectedCount: number;
   missingCount: number;
+  completedReportCount: number;
+  completedReportCharacterCount: number;
 };
 
 export type TutorReportAuditTutor = {
@@ -1044,6 +1046,8 @@ export function sanitizeTutorReportAuditDay(raw: Record<string, unknown>): Tutor
               sourceName: cleanText(school.sourceName),
               expectedCount: cleanSessionCount(school.expectedCount),
               missingCount: cleanSessionCount(school.missingCount),
+              completedReportCount: cleanSessionCount(school.completedReportCount),
+              completedReportCharacterCount: cleanSessionCount(school.completedReportCharacterCount),
             })).filter((school) => school.sourceName)
           : [];
         return {
