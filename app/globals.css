@@ -327,7 +327,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .tutor-report-day > header h3 { margin: 4px 0; color: var(--blue-title); font-size: 17px; }
 .tutor-report-day > header p { margin: 0; color: var(--muted); font-size: 11px; }
 .tutor-report-day-table { overflow-x: auto; }
-.tutor-report-day-head, .tutor-report-day-table > article { min-width: 980px; display: grid; grid-template-columns: 150px minmax(210px, 1.4fr) 80px 90px minmax(180px, 1fr) 120px; gap: 10px; align-items: center; padding: 8px 10px; }
+.tutor-report-day-head, .tutor-report-day-table > article { min-width: 1080px; display: grid; grid-template-columns: 150px minmax(210px, 1.4fr) 70px 80px 110px minmax(180px, 1fr) 120px; gap: 10px; align-items: center; padding: 8px 10px; }
 .tutor-report-day-head { color: var(--muted); background: #faf7ff; font-size: 10px; font-weight: 900; text-transform: uppercase; }
 .tutor-report-day-table > article { border-top: 1px solid var(--line); color: var(--ink); font-size: 12px; }
 .tutor-report-day-table > article.excluded { opacity: .55; background: #f5f3f7; }
