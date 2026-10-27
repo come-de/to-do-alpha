@@ -322,6 +322,29 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .tutor-report-insight-heading h3 { margin-right: auto; }
 .tutor-report-insight-heading button { flex: none; padding: 3px 7px; border: 1px solid #dccafa; border-radius: 999px; color: #6828b8; background: #f8f3ff; font-size: 10px; font-weight: 800; }
 .tutor-report-top-tutors > div:not(.tutor-report-insight-heading) { min-height: 29px; }
+.tutor-report-name-link { min-width: 0; padding: 0; border: 0; color: #4f258b; background: transparent; font: inherit; font-weight: 800; text-align: left; text-decoration: underline; text-decoration-color: #d9c6f0; text-underline-offset: 3px; cursor: pointer; }
+.tutor-report-name-link:hover { color: #b62156; text-decoration-color: currentColor; }
+.tutor-report-top-tutors > div:not(.tutor-report-insight-heading) > .tutor-report-name-link { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tutor-report-modal-header-actions { display: flex; flex: none; align-items: center; gap: 8px; }
+.tutor-report-modal-header-actions > button:first-child:not(:last-child) { padding: 8px 10px; border: 1px solid #d9c7f2; border-radius: 9px; color: #6429ad; background: #fff; font-size: 11px; font-weight: 800; }
+.tutor-report-detail-summary { padding: 10px 24px 4px; color: var(--muted); font-size: 12px; }
+.tutor-report-detail-summary p { margin: 4px 0; }
+.tutor-report-detail-summary .global-exclusion-note { color: #a51e51; font-weight: 800; }
+.tutor-report-tutor-details { overflow: auto; padding: 0 24px 18px; }
+.tutor-report-tutor-details > article { margin-top: 10px; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+.tutor-report-tutor-details > article.day-excluded { border-color: #e4cad4; background: #faf6f8; }
+.tutor-report-tutor-details > article > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-bottom: 1px solid var(--line); background: #faf7ff; }
+.tutor-report-tutor-details > article.day-excluded > header { background: #f5edf1; }
+.tutor-report-tutor-details > article > header > div { display: grid; gap: 2px; }
+.tutor-report-tutor-details > article > header strong { color: var(--blue-title); font-size: 13px; text-transform: capitalize; }
+.tutor-report-tutor-details > article > header span { color: #b62156; font-size: 11px; font-weight: 800; }
+.tutor-report-tutor-details > article > header button { flex: none; padding: 7px 9px; border: 1px solid #d9c7f2; border-radius: 9px; color: #6429ad; background: #fff; font-size: 11px; font-weight: 800; }
+.tutor-report-detail-schools { padding: 0 12px; }
+.tutor-report-detail-schools > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid #edf0f5; font-size: 11px; }
+.tutor-report-detail-schools > div:first-child { border-top: 0; }
+.tutor-report-detail-schools span { min-width: 0; }
+.tutor-report-detail-schools b { flex: none; color: var(--ink); }
+
 .tutor-report-top-tutors > div > strong { max-width: 52%; overflow: hidden; color: #b62156; text-align: right; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; }
 .tutor-report-modal-backdrop { position: fixed; z-index: 1200; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(27, 17, 40, .55); backdrop-filter: blur(4px); }
 .tutor-report-tutor-modal { display: flex; flex-direction: column; width: min(960px, 100%); max-height: min(86vh, 900px); overflow: hidden; border: 1px solid #dfd2f1; border-radius: 20px; background: #fff; box-shadow: 0 24px 80px rgba(25, 13, 39, .3); }
@@ -1862,6 +1885,10 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .tutor-report-tutor-modal { max-height: 92vh; border-radius: 14px; }
   .tutor-report-tutor-modal > header, .tutor-report-modal-search { padding-left: 14px; padding-right: 14px; }
   .tutor-report-modal-list { padding-right: 14px; padding-left: 14px; }
+  .tutor-report-tutor-details { padding-right: 12px; padding-left: 12px; }
+  .tutor-report-tutor-details > article > header { align-items: flex-start; }
+  .tutor-report-detail-schools > div { align-items: flex-start; flex-direction: column; gap: 3px; }
+  .tutor-report-modal-header-actions { gap: 4px; }
   .tutor-report-modal-list article { grid-template-columns: minmax(0, 1fr) auto; gap: 7px 10px; }
   .tutor-report-modal-list article > span, .tutor-report-modal-list article > b { grid-column: 1; }
   .tutor-report-modal-list article > button { grid-column: 2; grid-row: 1 / span 3; }
