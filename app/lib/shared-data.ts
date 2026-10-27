@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 40920)
-Total output lines: 3988
-
 import { getStore } from "@netlify/blobs";
 import { importedSchools } from "./imported-schools";
 
@@ -2075,7 +2072,90 @@ export function parseTutorInterestsCsv(value: string) {
   const sessionIdIndex = indexFor(["seanceid", "idseance", "iddelaseance"]);
   const dateIndex = indexFor(["dateseance", "date"]);
   const schoolIndex = indexFor(["etablissement", "ecole"]);
-  con…920 tokens truncated…nfant", "firstname"]);
+  const classIndex = indexFor(["classe"]);
+  const timeSlotIndex = indexFor(["heureducreneau", "horaire", "creneau"]);
+  const groupIndex = indexFor(["groupe"]);
+  const studentCountIndex = indexFor(["nombreeleves", "nbreleves"]);
+  const validatedIndex = indexFor(["valide", "validation"]);
+  const createdAtIndex = indexFor(["datedecreation", "creation"]);
+  if (personIdIndex < 0 || sessionIdIndex < 0 || dateIndex < 0) {
+    throw new Error("Colonnes ID tuteur/candidat, Séance ID ou Date séance introuvables dans le CSV d’intérêts");
+  }
+  const dataRows = csvRows.slice(1);
+  return {
+    sourceRowCount: dataRows.length,
+    rows: dataRows.map((row) => sanitizeTutorInterestRow({
+      personId: valueAt(row, personIdIndex),
+      lastName: valueAt(row, lastNameIndex),
+      firstName: valueAt(row, firstNameIndex),
+      phone: valueAt(row, phoneIndex),
+      sessionId: valueAt(row, sessionIdIndex),
+      date: valueAt(row, dateIndex),
+      school: valueAt(row, schoolIndex),
+      className: valueAt(row, classIndex),
+      timeSlot: valueAt(row, timeSlotIndex),
+      group: valueAt(row, groupIndex),
+      studentCount: valueAt(row, studentCountIndex),
+      validated: valueAt(row, validatedIndex),
+      declaredAt: valueAt(row, createdAtIndex),
+    })).filter((row) => row.personId && row.sessionId && row.date),
+  };
+}
+
+export function sanitizeTutorInterestImport(raw: Record<string, unknown>): TutorInterestImport {
+  const now = new Date().toISOString();
+  return {
+    id: cleanText(raw.id) || crypto.randomUUID(),
+    importedAt: cleanText(raw.importedAt) || now,
+    displayName: cleanText(raw.displayName) || cleanText(raw.fileName) || "Intérêts tuteurs et candidats",
+    fileName: cleanText(raw.fileName) || "interets-tuteurs-candidats.csv",
+    sourceRowCount: Math.max(0, Math.round(Number(raw.sourceRowCount) || 0)),
+    rows: Array.isArray(raw.rows)
+      ? raw.rows.filter((row): row is Record<string, unknown> => Boolean(row && typeof row === "object")).map(sanitizeTutorInterestRow).filter((row) => row.personId && row.sessionId && row.date)
+      : [],
+    createdAt: cleanText(raw.createdAt) || now,
+  };
+}
+
+export function sanitizeTutorCoverageNote(raw: Record<string, unknown>): TutorCoverageNote {
+  const status = raw.status === "unavailable" || raw.status === "confirmed" || raw.status === "contacted"
+    ? raw.status
+    : "to-check";
+  return {
+    id: cleanText(raw.id) || crypto.randomUUID(),
+    tutorId: cleanText(raw.tutorId),
+    date: cleanText(raw.date),
+    status,
+    note: cleanText(raw.note),
+    updatedAt: cleanText(raw.updatedAt) || new Date().toISOString(),
+  };
+}
+
+export function sanitizeEnrollmentRow(raw: Record<string, unknown>): EnrollmentRow {
+  return {
+    studentId: cleanText(raw.studentId),
+    firstName: cleanText(raw.firstName),
+    lastName: cleanText(raw.lastName),
+    className: cleanText(raw.className),
+    school: cleanText(raw.school),
+    slots: cleanText(raw.slots),
+  };
+}
+
+export function parseEnrollmentCsv(value: string) {
+  const csvRows = parseCsvRows(value).filter((row) => row.some(Boolean));
+  if (!csvRows.length) return { rows: [] as EnrollmentRow[], sourceRowCount: 0 };
+  const headers = csvRows[0].map(normalizedHeader);
+  const indexFor = (aliases: string[]) => {
+    for (const alias of aliases) {
+      const index = headers.findIndex((header) => header === alias);
+      if (index >= 0) return index;
+    }
+    return -1;
+  };
+  const valueAt = (row: string[], index: number) => (index >= 0 ? row[index] || "" : "");
+  const studentIdIndex = indexFor(["iddelenfant", "iddelefant", "idenfant", "studentid"]);
+  const firstNameIndex = indexFor(["prenomdelenfant", "prenomenfant", "firstname"]);
   const lastNameIndex = indexFor(["nomdelenfant", "nomenfant", "lastname"]);
   const classIndex = indexFor(["classe", "class"]);
   const schoolIndex = indexFor(["ecole", "etablissement", "school"]);
@@ -2562,8 +2642,7 @@ export async function clearLegacyTutorReports() {
 export async function readTutorReportAuditDays() {
   try {
     const store = taskStore();
-    // A missing Netlify Blobs key can stall the signed-URL JSON GET for 60 s.
-    // HEAD is direct and cheap; don't request the body until the key exists.
+    // Check existence directly before requesting a signed URL for this new key.
     if (!await store.getMetadata(TUTOR_REPORT_AUDITS_KEY, { consistency: "strong" })) return [];
     const days = await store.get(TUTOR_REPORT_AUDITS_KEY, { type: "json", consistency: "strong" });
     return Array.isArray(days)
@@ -2589,7 +2668,7 @@ export async function writeTutorReportAuditDays(days: TutorReportAuditDay[]) {
 export async function readTutorReportAuditSchoolMappings(): Promise<TutorReportAuditSchoolMapping> {
   try {
     const store = taskStore();
-    // See readTutorReportAuditDays: avoid signed-URL reads for absent keys.
+    // Check existence directly before requesting a signed URL for this new key.
     if (!await store.getMetadata(TUTOR_REPORT_AUDIT_SCHOOL_MAPPINGS_KEY, { consistency: "strong" })) return {};
     const mappings = await store.get(TUTOR_REPORT_AUDIT_SCHOOL_MAPPINGS_KEY, { type: "json", consistency: "strong" });
     const result: TutorReportAuditSchoolMapping = {};
