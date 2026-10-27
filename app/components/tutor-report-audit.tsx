@@ -8,6 +8,19 @@ type Payload = { days?: TutorReportAuditDay[]; schools?: School[]; mappings?: Tu
 const number = new Intl.NumberFormat("fr-FR");
 const percent = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 });
 
+async function readPayload(response: Response, operation: string): Promise<Payload> {
+  const body = await response.text();
+  try {
+    return JSON.parse(body) as Payload;
+  } catch {
+    const status = `HTTP ${response.status}${response.statusText ? ` ${response.statusText}` : ""}`;
+    const reason = response.status === 413
+      ? "Le fichier dépasse la limite acceptée par le serveur."
+      : `Le serveur a renvoyé une réponse non JSON (${status}).`;
+    throw new Error(`${operation} : ${reason} Réessayez, puis transmettez ce statut si le problème persiste.`);
+  }
+}
+
 function dayLabel(value: string, options: Intl.DateTimeFormatOptions = { weekday: "long", day: "numeric", month: "long", year: "numeric" }) {
   const date = new Date(`${value}T12:00:00`);
   return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("fr-FR", options).format(date);
@@ -39,7 +52,7 @@ export default function TutorReportAudit({ onError }: Props) {
 
   const load = useCallback(async () => {
     const response = await fetch("/api/tutor-report-audit", { cache: "no-store" });
-    const data = await response.json() as Payload;
+    const data = await readPayload(response, "Chargement du suivi impossible");
     if (!response.ok) throw new Error(data.detail || data.error || "Chargement impossible");
     const nextDays = data.days || [];
     setDays(nextDays);
@@ -148,7 +161,7 @@ export default function TutorReportAudit({ onError }: Props) {
         const file = files[index];
         setProgress(`Analyse de ${index + 1}/${files.length} · ${file.name}`);
         const response = await fetch(`/api/tutor-report-audit?fileName=${encodeURIComponent(file.name)}`, { method: "POST", headers: { "Content-Type": "text/csv;charset=utf-8" }, body: await file.text() });
-        latest = await response.json() as Payload;
+        latest = await readPayload(response, `Import de ${file.name} impossible`);
         if (!response.ok) throw new Error(latest.detail || latest.error || `Import impossible pour ${file.name}`);
       }
       await load();
@@ -164,7 +177,7 @@ export default function TutorReportAudit({ onError }: Props) {
     setSaving(true);
     try {
       const response = await fetch("/api/tutor-report-audit", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "exclude-tutor", date: visibleSelectedDay.date, tutorKey: key, excluded }) });
-      const data = await response.json() as Payload;
+      const data = await readPayload(response, "Modification impossible");
       if (!response.ok) throw new Error(data.error || "Modification impossible");
       setDays(data.days || []);
       setMessage(excluded ? "Tuteur retiré du bilan de cette journée." : "Tuteur réintégré au bilan.");
@@ -176,7 +189,7 @@ export default function TutorReportAudit({ onError }: Props) {
     setSaving(true);
     try {
       const response = await fetch("/api/tutor-report-audit", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "map-school", sourceName, schoolId }) });
-      const data = await response.json() as Payload;
+      const data = await readPayload(response, "Rapprochement impossible");
       if (!response.ok) throw new Error(data.error || "Rapprochement impossible");
       setMappings(data.mappings || {});
       setMessage(schoolId === "excluded" ? "Établissement écarté des bilans." : schoolId ? "Établissement rapproché ; les totaux sont recalculés." : "Rapprochement retiré ; l’établissement revient en vérification.");
