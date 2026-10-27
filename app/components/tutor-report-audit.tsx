@@ -164,7 +164,11 @@ export default function TutorReportAudit({ onError }: Props) {
         latest = await readPayload(response, `Import de ${file.name} impossible`);
         if (!response.ok) throw new Error(latest.detail || latest.error || `Import impossible pour ${file.name}`);
       }
-      await load();
+      if (latest) {
+        setDays(latest.days || []);
+        setSchools(latest.schools || []);
+        setMappings(latest.mappings || {});
+      }
       setMessage(`${files.length} fichier${files.length > 1 ? "s" : ""} importé${files.length > 1 ? "s" : ""} · les dates existantes ont été remplacées et les exclusions conservées.${latest?.invalidDateRowCount ? ` ${latest.invalidDateRowCount} ligne(s) sans date ignorée(s).` : ""}`);
       if (latest?.skippedNonAlphaRows) setMessage((current) => `${current} ${latest?.skippedNonAlphaRows} ligne(s) reconnue(s) comme hors périmètre Alpha ou explicitement écartée(s).`);
     } catch (error) {
