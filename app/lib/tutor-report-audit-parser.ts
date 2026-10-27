@@ -121,7 +121,7 @@ export function parseTutorReportAuditCsv(csv: string, fileName: string, schools:
     if (missing) school.missingCount += 1;
     else {
       school.completedReportCount += 1;
-      school.completedReportCharacterCount += report.length;
+      school.completedReportCharacterCount += Array.from(report).length;
     }
     tutor.schools.set(schoolName, school);
     day.set(key, tutor);
