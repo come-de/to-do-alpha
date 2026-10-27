@@ -318,6 +318,29 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .tutor-report-insights span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tutor-report-insights strong { flex: none; color: #b62156; }
 .tutor-report-insights em { flex: none; color: var(--muted); font-style: normal; }
+.tutor-report-insight-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.tutor-report-insight-heading h3 { margin-right: auto; }
+.tutor-report-insight-heading button { flex: none; padding: 3px 7px; border: 1px solid #dccafa; border-radius: 999px; color: #6828b8; background: #f8f3ff; font-size: 10px; font-weight: 800; }
+.tutor-report-top-tutors > div:not(.tutor-report-insight-heading) { min-height: 29px; }
+.tutor-report-top-tutors > div > strong { max-width: 52%; overflow: hidden; color: #b62156; text-align: right; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; }
+.tutor-report-modal-backdrop { position: fixed; z-index: 1200; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(27, 17, 40, .55); backdrop-filter: blur(4px); }
+.tutor-report-tutor-modal { display: flex; flex-direction: column; width: min(960px, 100%); max-height: min(86vh, 900px); overflow: hidden; border: 1px solid #dfd2f1; border-radius: 20px; background: #fff; box-shadow: 0 24px 80px rgba(25, 13, 39, .3); }
+.tutor-report-tutor-modal > header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding: 20px 24px 14px; border-bottom: 1px solid var(--line); background: linear-gradient(115deg, #f7efff, #edfff8); }
+.tutor-report-tutor-modal > header h2 { margin: 2px 0 4px; color: var(--blue-title); font-size: 22px; }
+.tutor-report-tutor-modal > header p { margin: 0; color: var(--muted); font-size: 12px; }
+.tutor-report-tutor-modal > header button { width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 50%; color: var(--ink); background: #fff; font-size: 24px; line-height: 1; }
+.tutor-report-modal-search { display: grid; gap: 5px; padding: 12px 24px; color: var(--muted); font-size: 11px; font-weight: 800; }
+.tutor-report-modal-search input { width: 100%; min-height: 38px; padding: 8px 11px; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); background: #fff; }
+.tutor-report-modal-list { overflow: auto; padding: 0 24px 18px; }
+.tutor-report-modal-list article { display: grid; grid-template-columns: minmax(160px, 1fr) minmax(170px, auto) minmax(150px, auto) 150px; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); color: var(--ink); font-size: 12px; }
+.tutor-report-modal-list article.globally-excluded { opacity: .62; background: #f8f6f9; }
+.tutor-report-modal-list article > div { display: grid; gap: 2px; min-width: 0; }
+.tutor-report-modal-list article small { color: var(--muted); font-size: 10px; }
+.tutor-report-modal-list article > b { color: #08744f; }
+.tutor-report-modal-list article > button { padding: 7px 9px; border: 1px solid #d9c7f2; border-radius: 9px; color: #6429ad; background: #fff; font-size: 11px; font-weight: 800; }
+.tutor-report-modal-list article.globally-excluded > button { border-color: #a8ddc9; color: #067553; background: #effcf6; }
+.tutor-report-modal-list article > button:disabled { opacity: .55; }
+
 .tutor-report-day-tabs { display: flex; gap: 6px; padding: 0 12px 12px; overflow-x: auto; }
 .tutor-report-day-tabs button { flex: none; padding: 7px 10px; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); background: #fff; font-weight: 800; }
 .tutor-report-day-tabs button.active { border-color: #9b5cf6; color: #6026b8; background: #f3eaff; }
@@ -1834,6 +1857,15 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
 .class-tags span { border-radius: 999px; padding: 2px 5px; color: var(--green-dark); background: var(--green-pale); font-size: 8px; white-space: nowrap; }
 .class-tags em { color: var(--muted); font-size: 8px; font-style: normal; }
 
+@media (max-width: 760px) {
+  .tutor-report-modal-backdrop { padding: 10px; }
+  .tutor-report-tutor-modal { max-height: 92vh; border-radius: 14px; }
+  .tutor-report-tutor-modal > header, .tutor-report-modal-search { padding-left: 14px; padding-right: 14px; }
+  .tutor-report-modal-list { padding-right: 14px; padding-left: 14px; }
+  .tutor-report-modal-list article { grid-template-columns: minmax(0, 1fr) auto; gap: 7px 10px; }
+  .tutor-report-modal-list article > span, .tutor-report-modal-list article > b { grid-column: 1; }
+  .tutor-report-modal-list article > button { grid-column: 2; grid-row: 1 / span 3; }
+}
 @media (max-width: 900px) {
   .home-menu-grid { grid-template-columns: repeat(3,minmax(0,1fr)); }
   .staffing-evolution-controls { grid-template-columns: 1fr auto 1fr; }
