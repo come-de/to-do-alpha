@@ -80,7 +80,7 @@ export default function TutorReportAudit({ onError }: Props) {
     const school = (explicit && schoolById.get(explicit)) || schools.find((item) => schoolKey(item.name) === key) || null;
     return { school, excluded: false };
   }, [mappings, schoolById, schools]);
-  const filteredDays = useMemo(() => days.filter((day) => (!startDate || day.date >= startDate) && (!endDate || day.date <= endDate)), [days, endDate, startDate]);
+  const filteredDays = useMemo(() => days.filter((day) => (!startDate || day.date >= startDate) && (!endDate || day.date <= endDate)).sort((a, b) => a.date.localeCompare(b.date)), [days, endDate, startDate]);
   const visibleSelectedDay = filteredDays.find((day) => day.date === selectedDate) || filteredDays[0] || null;
   const tutorOptions = useMemo(() => {
     const items = new Map<string, string>();
