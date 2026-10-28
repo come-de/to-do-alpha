@@ -4020,7 +4020,7 @@ function formatDuration(hours: number | null) {
   return minutes ? `${wholeHours} h ${minutes} min` : `${wholeHours} h`;
 }
 
-async function sendEmail(to: string, subject: string, html: string, text?: string) {
+async function sendEmail(to: string, subject: string, html: string, text?: string, bcc?: string) {
   const apiKey = process.env.SENDGRID_API_KEY;
   const from = process.env.ASSIGNMENT_FROM_EMAIL;
   if (!apiKey || !from) return { sent: false, reason: "missing-config" };
@@ -4032,7 +4032,7 @@ async function sendEmail(to: string, subject: string, html: string, text?: strin
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      personalizations: [{ to: [{ email: to }] }],
+      personalizations: [{ to: [{ email: to }], ...(bcc ? { bcc: [{ email: bcc }] } : {}) }],
       from: { email: from },
       subject,
       content: [...(text ? [{ type: "text/plain", value: text }] : []), { type: "text/html", value: html }],
@@ -4045,8 +4045,10 @@ async function sendEmail(to: string, subject: string, html: string, text?: strin
   return { sent: response.ok, reason: response.ok ? "sent" : "send-failed" };
 }
 
+export const TUTOR_REPORT_EMAIL_BCC = "come@lesetudesdirigees.fr";
+
 export async function sendTutorReportSummaryEmail(to: string, subject: string, html: string, text: string) {
-  return sendEmail(to, subject, html, text);
+  return sendEmail(to, subject, html, text, TUTOR_REPORT_EMAIL_BCC);
 }
 
 function taskUrl() {

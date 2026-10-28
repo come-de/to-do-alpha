@@ -363,9 +363,15 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .tutor-report-email-summary { display: grid; gap: 3px; padding: 14px 22px 8px; }
 .tutor-report-email-summary strong { color: #a51e51; font-size: 15px; }
 .tutor-report-email-summary span { color: var(--muted); font-size: 10px; }
-.tutor-report-email-dates { overflow: auto; padding: 0 22px 14px; }
-.tutor-report-email-dates > div { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 11px; }
-.tutor-report-email-dates b { color: #a51e51; white-space: nowrap; }
+.tutor-report-email-preview-wrap { display: grid; grid-template-rows: auto auto minmax(0,1fr); min-height: 0; gap: 8px; overflow: hidden; padding: 0 22px 14px; }
+.tutor-report-email-headers { display: grid; gap: 5px; padding: 9px 11px; border: 1px solid var(--line); border-radius: 10px; background: #fcfaff; }
+.tutor-report-email-headers p { display: grid; grid-template-columns: 44px minmax(0,1fr); gap: 8px; margin: 0; font-size: 11px; }
+.tutor-report-email-headers b { color: var(--muted); }
+.tutor-report-email-headers span { overflow-wrap: anywhere; color: var(--blue-title); font-weight: 700; }
+.tutor-report-email-rendered-label { color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.tutor-report-email-preview-wrap iframe { width: 100%; min-height: 240px; height: 100%; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+.tutor-report-email-preview-status, .tutor-report-email-preview-error { align-self: center; margin: 20px; color: var(--muted); font-size: 12px; text-align: center; }
+.tutor-report-email-preview-error { color: #a51e51; }
 .tutor-report-email-dialog > footer { display: flex; justify-content: flex-end; gap: 9px; padding: 12px 22px; border-top: 1px solid var(--line); background: #faf8fc; }
 .tutor-report-email-dialog > footer button { padding: 8px 11px; border: 1px solid #d9c7f2; border-radius: 9px; background: #fff; color: #6429ad; font-size: 11px; font-weight: 800; cursor: pointer; }
 .tutor-report-email-dialog > footer button.primary { border-color: #603bb1; background: #603bb1; color: #fff; }

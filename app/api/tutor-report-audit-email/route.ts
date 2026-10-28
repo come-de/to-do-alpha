@@ -1,5 +1,5 @@
 import { withIdentity } from "@/app/lib/with-identity";
-import { readTutorReportAuditDays, readTutorReportAuditGlobalExclusions, readTutorReportAuditGlobalExcludedSchools, readTutorReportAuditSchoolMappings, readTutorReportEmailLog, readTutorTracking, readSchools, normalizeTutorReportSchoolKey, writeTutorReportEmailLog, sendTutorReportSummaryEmail, type TutorReportEmailLogEntry } from "@/app/lib/shared-data";
+import { readTutorReportAuditDays, readTutorReportAuditGlobalExclusions, readTutorReportAuditGlobalExcludedSchools, readTutorReportAuditSchoolMappings, readTutorReportEmailLog, readTutorTracking, readSchools, normalizeTutorReportSchoolKey, writeTutorReportEmailLog, sendTutorReportSummaryEmail, TUTOR_REPORT_EMAIL_BCC, type TutorReportEmailLogEntry } from "@/app/lib/shared-data";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +24,8 @@ function isAlpha(school: { category: string; schoolType: string }) {
 
 async function postHandler(request: Request) {
   try {
-    const body = await request.json() as { tutorKey?: unknown; startDate?: unknown; endDate?: unknown; portfolioOwner?: unknown; schoolId?: unknown };
+    const body = await request.json() as { mode?: unknown; tutorKey?: unknown; startDate?: unknown; endDate?: unknown; portfolioOwner?: unknown; schoolId?: unknown };
+    if (body.mode !== undefined && body.mode !== "preview") return json({ error: "Action invalide." }, 400);
     if (typeof body.tutorKey !== "string" || !body.tutorKey || body.tutorKey.length > 180) return json({ error: "Tuteur invalide." }, 400);
     const validDate = (value: unknown) => value === "" || value === undefined || (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value));
     if (!validDate(body.startDate) || !validDate(body.endDate)) return json({ error: "Période invalide." }, 400);
@@ -74,10 +75,6 @@ async function postHandler(request: Request) {
     if (!emailCandidates.size) return json({ error: `Aucune adresse e-mail valide n’est renseignée pour ${tutorName} dans le suivi des tuteurs.` }, 409);
     if (emailCandidates.size > 1) return json({ error: `Plusieurs adresses e-mail différentes sont associées à ${tutorName}. Corrigez le suivi des tuteurs avant l’envoi.` }, 409);
     const recipient = Array.from(emailCandidates)[0];
-    const apiKey = process.env.SENDGRID_API_KEY;
-    const from = process.env.ASSIGNMENT_FROM_EMAIL;
-    if (!apiKey || !from) return json({ error: "L’envoi SendGrid n’est pas configuré sur Netlify (clé API ou expéditeur manquant)." }, 503);
-
     const missingCount = reportsByDate.reduce((sum, row) => sum + row.missing, 0);
     const periodStart = startDate || reportsByDate[0].date;
     const periodEnd = endDate || reportsByDate.at(-1)!.date;
@@ -90,6 +87,10 @@ async function postHandler(request: Request) {
     const rows = latestFirstReports.map((row) => `<tr><td style="padding:9px;border-bottom:1px solid #e9e1ef">${escapeHtml(formatDate(row.date))}</td><td style="padding:9px;border-bottom:1px solid #e9e1ef;text-align:right"><strong>${row.missing}</strong> manquant(s) / ${row.expected} attendu(s)</td></tr>`).join("");
     const html = `<div style="font-family:Arial,sans-serif;color:#30243e;line-height:1.5"><h2>Bonjour ${escapeHtml(tutorName)},</h2><p>Voici le récapitulatif de vos rapports manquants pour la période du ${escapeHtml(formatDate(periodStart))} au ${escapeHtml(formatDate(periodEnd))}${escapeHtml(ownerSuffix + schoolSuffix)}.</p><p><strong>${missingCount} rapport(s) manquant(s) sur ${reportsByDate.length} date(s) concernée(s).</strong></p><table style="border-collapse:collapse;width:100%;max-width:640px"><thead><tr><th style="padding:9px;text-align:left;background:#f3edfb">Date</th><th style="padding:9px;text-align:right;background:#f3edfb">Rapports manquants</th></tr></thead><tbody>${rows}</tbody></table><p>Ce récapitulatif est basé sur les bilans importés dans le suivi.</p></div>`;
     const text = `Bonjour ${tutorName},\n\nVoici le récapitulatif de vos rapports manquants pour la période du ${formatDate(periodStart)} au ${formatDate(periodEnd)}${ownerSuffix}${schoolSuffix}.\n\n${missingCount} rapport(s) manquant(s) sur ${reportsByDate.length} date(s) concernée(s).\n\n${latestFirstReports.map((row) => `${formatDate(row.date)} : ${row.missing} manquant(s) / ${row.expected} attendu(s)`).join("\n")}\n\nCe récapitulatif est basé sur les bilans importés dans le suivi.`;
+    if (body.mode === "preview") return json({ preview: { recipient, bcc: TUTOR_REPORT_EMAIL_BCC, subject, html, missingCount, dateCount: reportsByDate.length, periodStart, periodEnd } });
+    const apiKey = process.env.SENDGRID_API_KEY;
+    const from = process.env.ASSIGNMENT_FROM_EMAIL;
+    if (!apiKey || !from) return json({ error: "L’envoi SendGrid n’est pas configuré sur Netlify (clé API ou expéditeur manquant)." }, 503);
     const attemptedAt = new Date().toISOString();
     const event: TutorReportEmailLogEntry = { id: crypto.randomUUID(), tutorKey, tutorName, status: "pending", attemptedAt, sentAt: "", periodStart, periodEnd, dateCount: reportsByDate.length, missingCount };
     const existingLog = await readTutorReportEmailLog();
