@@ -2065,10 +2065,57 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .tutor-report-school-tutor-list > div { grid-template-columns: 1fr; gap: 3px; }
 }
 
-.tutor-report-chart-percent { fill: #fff; stroke: #302048; stroke-width: 3px; paint-order: stroke; font-size: 9px; font-weight: 900; }
-.tutor-report-chart-count { fill: #ffb2d4; stroke: #302048; stroke-width: 3px; paint-order: stroke; font-size: 9px; font-weight: 850; }
-.tutor-report-daily-svg g.active .tutor-report-chart-percent { fill: #a7f3d0; font-size: 10px; }
-.tutor-report-daily-svg g.active .tutor-report-chart-count { fill: #fff; font-size: 10px; }
+.tutor-report-daily-chart { min-width: 0; margin: 0 12px 12px; overflow: hidden; border: 2px solid #302044; border-radius: 18px; background: #fffdf9; box-shadow: 3px 4px 0 #302044; }
+.tutor-report-chart-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 16px; background: linear-gradient(110deg, #7038e8, #9a4ddd 62%, #df4d91); color: #fff; }
+.tutor-report-chart-kicker { color: inherit; font-size: 10px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+.tutor-report-chart-heading h3 { margin: 3px 0 2px; color: #fff; font-size: clamp(17px, 2vw, 22px); letter-spacing: -.035em; line-height: 1.1; }
+.tutor-report-chart-heading p { margin: 0; color: #f8eaff; font-size: 11px; line-height: 1.35; }
+.tutor-report-chart-heading > strong { flex: none; min-width: 118px; display: grid; gap: 1px; padding: 8px 12px; border: 1px solid #302044; border-radius: 12px; background: #e1f7a6; color: #302044; box-shadow: 2px 2px 0 #302044; text-align: center; }
+.tutor-report-chart-heading > strong b { font-size: 24px; letter-spacing: -.05em; line-height: 1; }
+.tutor-report-chart-heading > strong span { font-size: 9px; font-weight: 850; }
+.tutor-report-chart-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; padding: 9px 16px; border-bottom: 1px solid #e8dff0; background: #faf6ff; }
+.tutor-report-chart-toolbar > span { color: #51435f; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: .06em; }
+.tutor-report-chart-toolbar > div { display: flex; flex-wrap: wrap; gap: 5px; }
+.tutor-report-chart-toolbar button { min-height: 28px; padding: 4px 10px; border: 1px solid #d8c9f3; border-radius: 999px; background: #fff; color: #5930b4; font: inherit; font-size: 10px; font-weight: 850; cursor: pointer; }
+.tutor-report-chart-toolbar button:hover, .tutor-report-chart-toolbar button:focus-visible { border-color: #7038e8; background: #eee5ff; }
+.tutor-report-chart-toolbar button.active { border-color: #302044; background: #302044; color: #fff; }
+.tutor-report-chart-toolbar > small { margin-left: auto; color: #6a6077; font-size: 9px; }
+.tutor-report-chart-scroll { max-width: 100%; overflow-x: auto; overflow-y: hidden; padding: 8px 8px 2px; scrollbar-color: #7038e8 #eee5ff; scrollbar-width: thin; }
+.tutor-report-chart-scroll:focus-visible { outline: 2px solid #7038e8; outline-offset: -2px; }
+.tutor-report-daily-svg { display: block; max-width: none; background: #fffdf9; }
+.tutor-report-chart-grid { stroke: #e5ddee; stroke-width: 1; stroke-dasharray: 3 5; }
+.tutor-report-chart-axis { fill: #75677f; font-size: 10px; font-weight: 750; }
+.tutor-report-chart-highlight { fill: #f2e9ff; }
+.tutor-report-chart-line { fill: none; stroke: url(#report-chart-line); stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; }
+.tutor-report-chart-day { cursor: pointer; }
+.tutor-report-chart-hit { fill: transparent; }
+.tutor-report-chart-day:focus-visible { outline: none; }
+.tutor-report-chart-day:hover .tutor-report-chart-hit, .tutor-report-chart-day:focus-visible .tutor-report-chart-hit { fill: #f2e9ff; fill-opacity: .65; stroke: #7038e8; stroke-width: 1; }
+.tutor-report-chart-percent-bg { fill: #fff; stroke: #d8c9f3; stroke-width: 1; }
+.tutor-report-chart-percent { fill: #6029b8; font-size: 10px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.tutor-report-chart-point-halo { fill: #fffdf9; stroke: #e83b91; stroke-width: 2; }
+.tutor-report-chart-point { fill: #e83b91; }
+.tutor-report-chart-day.active .tutor-report-chart-percent-bg { fill: #302044; stroke: #302044; }
+.tutor-report-chart-day.active .tutor-report-chart-percent { fill: #fff; }
+.tutor-report-chart-day.active .tutor-report-chart-point-halo { stroke: #302044; stroke-width: 3; }
+.tutor-report-chart-day.active .tutor-report-chart-point { fill: #e1f7a6; }
+.tutor-report-chart-count { fill: #c12162; font-size: 10px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.tutor-report-chart-count-total { fill: #6a6077; font-size: 9px; font-weight: 700; }
+.tutor-report-chart-date { fill: #51435f; font-size: 10px; font-weight: 800; }
+.tutor-report-chart-day.active .tutor-report-chart-date { fill: #6029b8; font-weight: 900; }
+.tutor-report-chart-caption { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 18px; margin: 0; padding: 7px 16px; border-top: 1px solid #e8dff0; background: #faf6ff; color: #6a6077; font-size: 10px; }
+.tutor-report-chart-caption span:first-child { display: flex; align-items: center; gap: 6px; color: #302044; font-weight: 800; }
+.tutor-report-chart-caption i { width: 16px; height: 3px; border-radius: 3px; background: #e83b91; }
+.tutor-report-chart-caption b { color: #c12162; }
+.tutor-report-chart-empty { margin: 0; padding: 24px 16px; color: #6a6077; font-size: 12px; }
+@media (max-width: 760px) {
+  .tutor-report-chart-heading { align-items: flex-start; padding: 11px; }
+  .tutor-report-chart-heading p { max-width: 340px; }
+  .tutor-report-chart-heading > strong { min-width: 88px; padding: 7px; }
+  .tutor-report-chart-heading > strong b { font-size: 20px; }
+  .tutor-report-chart-toolbar { padding: 8px 10px; }
+  .tutor-report-chart-toolbar > small { width: 100%; margin-left: 0; }
+}
 
 .tutor-report-rh-summary { display: flex; align-items: stretch; gap: 8px; padding: 0 12px 10px; }
 .tutor-report-rh-summary > div { display: grid; align-content: center; gap: 3px; min-width: 175px; padding: 8px 12px; border-radius: 12px; background: linear-gradient(120deg, #f5efff, #f0fdfa); }
