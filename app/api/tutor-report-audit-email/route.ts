@@ -1,5 +1,5 @@
 import { withIdentity } from "@/app/lib/with-identity";
-import { readTutorReportAuditDays, readTutorReportAuditGlobalExclusions, readTutorReportAuditGlobalExcludedSchools, readTutorReportAuditSchoolMappings, readTutorReportEmailLog, readTutorTracking, readSchools, normalizeTutorReportSchoolKey, writeTutorReportEmailLog, sendTutorReportSummaryEmail, TUTOR_REPORT_EMAIL_BCC, type TutorReportEmailLogEntry } from "@/app/lib/shared-data";
+import { readTutorReportAuditDays, readTutorReportAuditGlobalExclusions, readTutorReportAuditGlobalExcludedSchools, readTutorReportAuditSchoolMappings, readTutorReportEmailLog, readTutorTracking, readSchools, normalizeTutorReportSchoolKey, writeTutorReportEmailLog, sendTutorReportSummaryEmail, TUTOR_REPORT_EMAIL_BCC, TUTOR_REPORT_EMAIL_FROM, type TutorReportEmailLogEntry } from "@/app/lib/shared-data";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -47,11 +47,10 @@ async function postHandler(request: Request) {
     const matchingTutors = selectedDays.flatMap((day) => day.tutors.filter((tutor) => tutor.key === tutorKey).map((tutor) => ({ day, tutor })));
     if (!matchingTutors.length) return json({ error: "Aucun bilan de ce tuteur dans la période sélectionnée." }, 404);
     const tutorName = matchingTutors[0].tutor.name;
-    const reportsByDate: Array<{ date: string; expected: number; missing: number }> = [];
+    const reportsByDate: Array<{ date: string; schoolName: string; expected: number; completed: number; missing: number }> = [];
     for (const { day, tutor } of matchingTutors) {
       if (day.excludedTutorKeys.includes(tutorKey)) continue;
-      let expected = 0;
-      let missing = 0;
+      const reportsBySchool = new Map<string, { schoolName: string; expected: number; completed: number; missing: number }>();
       for (const item of tutor.schools) {
         const key = normalizeTutorReportSchoolKey(item.sourceName);
         const mappedId = mappings[key];
@@ -60,10 +59,15 @@ async function postHandler(request: Request) {
         if (!school || !isAlpha(school) || excludedSchools.includes(school.id)) continue;
         if (selectedRH && school.portfolioOwner !== selectedRH) continue;
         if (schoolId && school.id !== schoolId) continue;
-        expected += item.expectedCount;
-        missing += item.missingCount;
+        const report = reportsBySchool.get(school.id) || { schoolName: school.name, expected: 0, completed: 0, missing: 0 };
+        report.expected += item.expectedCount;
+        report.completed += item.completedReportCount;
+        report.missing += item.missingCount;
+        reportsBySchool.set(school.id, report);
       }
-      if (missing > 0) reportsByDate.push({ date: day.date, expected, missing });
+      for (const report of reportsBySchool.values()) {
+        if (report.missing > 0) reportsByDate.push({ date: day.date, ...report });
+      }
     }
     if (!reportsByDate.length) return json({ error: "Ce tuteur n’a aucun rapport manquant dans le périmètre sélectionné." }, 409);
 
@@ -76,23 +80,24 @@ async function postHandler(request: Request) {
     if (emailCandidates.size > 1) return json({ error: `Plusieurs adresses e-mail différentes sont associées à ${tutorName}. Corrigez le suivi des tuteurs avant l’envoi.` }, 409);
     const recipient = Array.from(emailCandidates)[0];
     const missingCount = reportsByDate.reduce((sum, row) => sum + row.missing, 0);
-    const periodStart = startDate || reportsByDate[0].date;
-    const periodEnd = endDate || reportsByDate.at(-1)!.date;
-    const latestFirstReports = [...reportsByDate].sort((a, b) => b.date.localeCompare(a.date));
+    const dateCount = new Set(reportsByDate.map((row) => row.date)).size;
+    const reportDates = reportsByDate.map((row) => row.date).sort();
+    const periodStart = startDate || reportDates[0];
+    const periodEnd = endDate || reportDates.at(-1)!;
+    const latestFirstReports = [...reportsByDate].sort((a, b) => b.date.localeCompare(a.date) || a.schoolName.localeCompare(b.schoolName, "fr"));
     const dateFormatter = new Intl.DateTimeFormat("fr-FR", { timeZone: "UTC", weekday: "long", day: "numeric", month: "long", year: "numeric" });
     const formatDate = (date: string) => dateFormatter.format(new Date(`${date}T12:00:00Z`));
     const ownerSuffix = selectedRH ? ` · RH ${selectedRH[0].toUpperCase()}${selectedRH.slice(1)}` : "";
     const schoolSuffix = schoolId ? ` · ${schools.find((school) => school.id === schoolId)?.name || "établissement sélectionné"}` : "";
     const subject = `Récapitulatif des rapports manquants — ${tutorName}`;
-    const rows = latestFirstReports.map((row) => `<tr><td style="padding:9px;border-bottom:1px solid #e9e1ef">${escapeHtml(formatDate(row.date))}</td><td style="padding:9px;border-bottom:1px solid #e9e1ef;text-align:right"><strong>${row.missing}</strong> manquant(s) / ${row.expected} attendu(s)</td></tr>`).join("");
-    const html = `<div style="font-family:Arial,sans-serif;color:#30243e;line-height:1.5"><h2>Bonjour ${escapeHtml(tutorName)},</h2><p>Voici le récapitulatif de vos rapports manquants pour la période du ${escapeHtml(formatDate(periodStart))} au ${escapeHtml(formatDate(periodEnd))}${escapeHtml(ownerSuffix + schoolSuffix)}.</p><p><strong>${missingCount} rapport(s) manquant(s) sur ${reportsByDate.length} date(s) concernée(s).</strong></p><table style="border-collapse:collapse;width:100%;max-width:640px"><thead><tr><th style="padding:9px;text-align:left;background:#f3edfb">Date</th><th style="padding:9px;text-align:right;background:#f3edfb">Rapports manquants</th></tr></thead><tbody>${rows}</tbody></table><p>Ce récapitulatif est basé sur les bilans importés dans le suivi.</p></div>`;
-    const text = `Bonjour ${tutorName},\n\nVoici le récapitulatif de vos rapports manquants pour la période du ${formatDate(periodStart)} au ${formatDate(periodEnd)}${ownerSuffix}${schoolSuffix}.\n\n${missingCount} rapport(s) manquant(s) sur ${reportsByDate.length} date(s) concernée(s).\n\n${latestFirstReports.map((row) => `${formatDate(row.date)} : ${row.missing} manquant(s) / ${row.expected} attendu(s)`).join("\n")}\n\nCe récapitulatif est basé sur les bilans importés dans le suivi.`;
-    if (body.mode === "preview") return json({ preview: { recipient, bcc: TUTOR_REPORT_EMAIL_BCC, subject, html, missingCount, dateCount: reportsByDate.length, periodStart, periodEnd } });
+    const rows = latestFirstReports.map((row) => `<tr><td style="padding:9px;border-bottom:1px solid #e9e1ef">${escapeHtml(formatDate(row.date))}</td><td style="padding:9px;border-bottom:1px solid #e9e1ef">${escapeHtml(row.schoolName)}</td><td style="padding:9px;border-bottom:1px solid #e9e1ef;text-align:right">${row.completed} fait(s)</td><td style="padding:9px;border-bottom:1px solid #e9e1ef;text-align:right"><strong>${row.missing} manquant(s)</strong> / ${row.expected} attendu(s)</td></tr>`).join("");
+    const html = `<div style="font-family:Arial,sans-serif;color:#30243e;line-height:1.6"><h2>Bonjour ${escapeHtml(tutorName)},</h2><p>Merci pour le travail que vous avez accompli auprès des élèves. Les bilans permettent aux parents de suivre les progrès de leur enfant et sont une partie importante de l’accompagnement.</p><p>Après vérification des bilans enregistrés pour la période du ${escapeHtml(formatDate(periodStart))} au ${escapeHtml(formatDate(periodEnd))}${escapeHtml(ownerSuffix + schoolSuffix)}, certains bilans semblent manquer. Voici le détail par date et établissement ; les bilans déjà faits y sont également indiqués :</p><p><strong>${missingCount} rapport(s) manquant(s) sur ${dateCount} date(s) concernée(s).</strong></p><table style="border-collapse:collapse;width:100%;max-width:820px"><thead><tr><th style="padding:9px;text-align:left;background:#f3edfb">Date</th><th style="padding:9px;text-align:left;background:#f3edfb">Établissement</th><th style="padding:9px;text-align:right;background:#f3edfb">Bilans faits</th><th style="padding:9px;text-align:right;background:#f3edfb">Bilans manquants / attendus</th></tr></thead><tbody>${rows}</tbody></table><p>Merci de compléter les bilans manquants dès que possible ou de nous répondre pour nous signaler toute situation particulière ou erreur dans ce récapitulatif.</p><p>La réalisation complète des bilans fait partie des engagements liés à la mission. Si les bilans attendus ne sont pas réalisés et qu’aucun retour ne nous permet de clarifier la situation, cela pourra entraîner une fin de collaboration.</p><p>Merci encore pour votre travail et votre investissement.</p><p style="color:#746982;font-size:13px">Ce récapitulatif est établi à partir des bilans importés dans le suivi.</p></div>`;
+    const text = `Bonjour ${tutorName},\n\nMerci pour le travail que vous avez accompli auprès des élèves. Les bilans permettent aux parents de suivre les progrès de leur enfant et sont une partie importante de l’accompagnement.\n\nAprès vérification des bilans enregistrés pour la période du ${formatDate(periodStart)} au ${formatDate(periodEnd)}${ownerSuffix}${schoolSuffix}, certains bilans semblent manquer. Voici le détail par date et établissement ; les bilans déjà faits y sont également indiqués :\n\n${missingCount} rapport(s) manquant(s) sur ${dateCount} date(s) concernée(s).\n\n${latestFirstReports.map((row) => `${formatDate(row.date)} · ${row.schoolName} : ${row.completed} fait(s), ${row.missing} manquant(s) / ${row.expected} attendu(s)`).join("\n")}\n\nMerci de compléter les bilans manquants dès que possible ou de nous répondre pour nous signaler toute situation particulière ou erreur dans ce récapitulatif.\n\nLa réalisation complète des bilans fait partie des engagements liés à la mission. Si les bilans attendus ne sont pas réalisés et qu’aucun retour ne nous permet de clarifier la situation, cela pourra entraîner une fin de collaboration.\n\nMerci encore pour votre travail et votre investissement.\n\nCe récapitulatif est établi à partir des bilans importés dans le suivi.`;
+    if (body.mode === "preview") return json({ preview: { from: TUTOR_REPORT_EMAIL_FROM, recipient, bcc: TUTOR_REPORT_EMAIL_BCC, subject, html, missingCount, dateCount, periodStart, periodEnd } });
     const apiKey = process.env.SENDGRID_API_KEY;
-    const from = process.env.ASSIGNMENT_FROM_EMAIL;
-    if (!apiKey || !from) return json({ error: "L’envoi SendGrid n’est pas configuré sur Netlify (clé API ou expéditeur manquant)." }, 503);
+    if (!apiKey) return json({ error: "L’envoi SendGrid n’est pas configuré sur Netlify (clé API manquante)." }, 503);
     const attemptedAt = new Date().toISOString();
-    const event: TutorReportEmailLogEntry = { id: crypto.randomUUID(), tutorKey, tutorName, status: "pending", attemptedAt, sentAt: "", periodStart, periodEnd, dateCount: reportsByDate.length, missingCount };
+    const event: TutorReportEmailLogEntry = { id: crypto.randomUUID(), tutorKey, tutorName, status: "pending", attemptedAt, sentAt: "", periodStart, periodEnd, dateCount, missingCount };
     const existingLog = await readTutorReportEmailLog();
     await writeTutorReportEmailLog([...existingLog, event]);
     let result: { sent: boolean; reason: string };

@@ -4020,9 +4020,9 @@ function formatDuration(hours: number | null) {
   return minutes ? `${wholeHours} h ${minutes} min` : `${wholeHours} h`;
 }
 
-async function sendEmail(to: string, subject: string, html: string, text?: string, bcc?: string) {
+async function sendEmail(to: string, subject: string, html: string, text?: string, bcc?: string, fromOverride?: string) {
   const apiKey = process.env.SENDGRID_API_KEY;
-  const from = process.env.ASSIGNMENT_FROM_EMAIL;
+  const from = fromOverride || process.env.ASSIGNMENT_FROM_EMAIL;
   if (!apiKey || !from) return { sent: false, reason: "missing-config" };
 
   const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
@@ -4046,9 +4046,10 @@ async function sendEmail(to: string, subject: string, html: string, text?: strin
 }
 
 export const TUTOR_REPORT_EMAIL_BCC = "come@lesetudesdirigees.fr";
+export const TUTOR_REPORT_EMAIL_FROM = "tuteurs@etudealpha.com";
 
 export async function sendTutorReportSummaryEmail(to: string, subject: string, html: string, text: string) {
-  return sendEmail(to, subject, html, text, TUTOR_REPORT_EMAIL_BCC);
+  return sendEmail(to, subject, html, text, TUTOR_REPORT_EMAIL_BCC, TUTOR_REPORT_EMAIL_FROM);
 }
 
 function taskUrl() {

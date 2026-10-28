@@ -17,4 +17,6 @@ Les notifications d’attribution et de clôture des tâches sont envoyées par 
 - `ASSIGNMENT_FROM_EMAIL` : adresse expéditrice vérifiée dans SendGrid.
 - `SENDGRID_REPLY_TO_EMAIL` : adresse de réponse pour les e-mails envoyés par SendGrid (facultative, distincte des autres réglages `ASSIGNMENT_*`).
 
+Les récapitulatifs de bilans manquants utilisent leur propre expéditeur, `tuteurs@etudealpha.com`, sans modifier l’expéditeur des autres notifications. Cette adresse ou le domaine `etudealpha.com` doit être authentifié dans SendGrid.
+
 Dans SendGrid, authentifier le domaine expéditeur (recommandé pour la production), puis créer une clé API limitée à l’envoi. Définir les variables dans **Netlify → Site configuration → Environment variables**, pour le contexte **Production** (et **Deploy previews** seulement si les e-mails doivent aussi partir des prévisualisations). Une nouvelle publication est nécessaire pour que les fonctions serveur utilisent les valeurs ajoutées ou modifiées. Sans clé ou expéditeur configuré, les notifications restent désactivées.
