@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "re
 import { getUser, logout } from "@netlify/identity";
 import EnrollmentComparison from "@/app/components/enrollment-comparison";
 import ParentsCRM from "@/app/components/parents-crm";
+import CustomerCallAudit from "@/app/components/customer-call-audit";
 import FilesHub, { type FileKind } from "@/app/components/files-hub";
 import TutorCoverageComparison from "@/app/components/tutor-coverage-comparison";
 import UnstaffedSessions from "@/app/components/unstaffed-sessions";
@@ -19,7 +20,7 @@ import type { TutorAssignmentImport, TutorAssignmentRow, TutorInterestImport, Tu
 type Status = "todo" | "progress" | "done";
 type Priority = "low" | "medium" | "high";
 type Density = "compact" | "comfortable";
-type AppMode = "dashboard" | "organization" | "tasks" | "recurring" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffingAudit" | "staffingEvolution" | "watchlist" | "tutorReports" | "tutors" | "availability" | "enrollments" | "parents" | "coverage" | "unstaffed" | "files";
+type AppMode = "dashboard" | "organization" | "tasks" | "recurring" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffingAudit" | "staffingEvolution" | "watchlist" | "tutorReports" | "tutors" | "availability" | "enrollments" | "parents" | "customerCalls" | "coverage" | "unstaffed" | "files";
 type ViewMode = "list" | "matrix";
 type DurationBucket = "short" | "medium" | "long" | "unset";
 type ObjectiveKind = "counter" | "qualitative";
@@ -386,6 +387,7 @@ const appModeSlugs: Record<AppMode, string> = {
   unstaffed: "seances-non-affectees",
   files: "fichiers",
   parents: "parents",
+  customerCalls: "appels-service-client",
 };
 
 const appModeAliases: Record<string, AppMode> = {
@@ -430,6 +432,9 @@ const appModeAliases: Record<string, AppMode> = {
   inscriptions: "enrollments",
   "comparaison-inscriptions": "enrollments",
   parents: "parents",
+  "appels-service-client": "customerCalls",
+  "suivi-appels": "customerCalls",
+  "appels": "customerCalls",
   "suivi-parents": "parents",
   "crm-parents": "parents",
   couverture: "coverage",
@@ -4716,6 +4721,8 @@ export default function Home() {
                       ? () => setAppMode("enrollments")
                     : appMode === "parents"
                       ? () => setAppMode("parents")
+                    : appMode === "customerCalls"
+                      ? () => window.dispatchEvent(new Event("customer-call-audit-refresh"))
                     : appMode === "coverage"
                       ? () => setAppMode("coverage")
                     : appMode === "unstaffed"
@@ -4755,6 +4762,8 @@ export default function Home() {
                       ? "Comparer inscriptions"
                     : appMode === "parents"
                       ? "Actualiser les parents"
+                    : appMode === "customerCalls"
+                      ? "Actualiser les appels"
                     : appMode === "coverage"
                       ? "Voir les tuteurs disponibles"
                     : appMode === "unstaffed"
@@ -4791,6 +4800,9 @@ export default function Home() {
             </button>
             <button className={appMode === "parents" ? "active" : ""} onClick={() => setAppMode("parents")}>
               <span className="tab-icon" aria-hidden="true">👪</span> Parents
+            </button>
+            <button className={appMode === "customerCalls" ? "active" : ""} onClick={() => setAppMode("customerCalls")}>
+              <span className="tab-icon" aria-hidden="true">☎️</span> Appels service client
             </button>
             <button className={appMode === "staffingAudit" ? "active" : ""} onClick={() => setAppMode("staffingAudit")}>
               <span className="tab-icon" aria-hidden="true">📊</span> Bilan staffing
@@ -5257,6 +5269,7 @@ export default function Home() {
         : appMode === "availability" ? renderAvailabilityComparisonSection()
         : appMode === "enrollments" ? <EnrollmentComparison onOpenFiles={openFiles} />
         : appMode === "parents" ? <ParentsCRM />
+        : appMode === "customerCalls" ? <CustomerCallAudit />
         : appMode === "coverage" ? <TutorCoverageComparison onOpenFiles={openFiles} />
         : appMode === "unstaffed" ? <UnstaffedSessions onOpenFiles={openFiles} />
         : appMode === "staffingAudit" ? <StaffingAudit />

@@ -1,0 +1,203 @@
+"use client";
+
+import { ChangeEvent, useCallback, useEffect, useMemo, useState } from "react";
+import "./customer-call-audit.css";
+
+type Role = "parent" | "tutor-candidate" | "school" | "unknown";
+type CallbackState = "not-applicable" | "completed" | "attempted" | "not-called";
+type CallRecord = {
+  id: string; date: string; timestamp: number; direction: "inbound" | "outbound"; callType: string;
+  answered: boolean; missedReason: string; durationSeconds: number; talkSeconds: number; waitingSeconds: number;
+  role: Role; branch: string; callerId: string; parentId: string; parentName: string; parentEnrollment: "inscrit" | "non-inscrit" | "inconnu";
+  parentMatchAmbiguous: boolean; tutorName: string; tutorMatchAmbiguous: boolean; requiresCallback: boolean; callbackState: CallbackState; callbackAttemptCount: number;
+};
+type ImportRow = { id: string; fileName: string; importedAt: string; rowCount: number; addedCount: number; duplicateCount: number; skippedCount: number };
+type Payload = { calls?: CallRecord[]; imports?: ImportRow[]; settings?: { shortCallThresholdSeconds: number }; error?: string; detail?: string; import?: ImportRow };
+type RoleFilter = Role | "all";
+const n = new Intl.NumberFormat("fr-FR");
+const roleNames: Record<Role, string> = { parent: "Parents", "tutor-candidate": "Tuteurs / candidats", school: "Établissements", unknown: "À vérifier" };
+const callTime = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", hour: "2-digit", minute: "2-digit" });
+const importTime = new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short" });
+
+function dateLabel(value: string, weekday = true) {
+  const date = new Date(`${value}T12:00:00Z`);
+  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("fr-FR", { timeZone: "UTC", ...(weekday ? { weekday: "short" as const } : {}), day: "2-digit", month: "short" }).format(date);
+}
+
+function durationLabel(value: number) {
+  const seconds = Math.max(0, Math.round(value));
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
+function calledLabel(call: CallRecord) {
+  if (call.parentName) return call.parentName;
+  if (call.tutorName) return call.tutorName;
+  const kind = call.role === "parent" ? "Parent" : call.role === "tutor-candidate" ? "Tuteur / candidat" : call.role === "school" ? "Établissement" : "Appelant";
+  return `${kind} · ${call.callerId.slice(0, 6).toUpperCase()}`;
+}
+
+function callOutcome(call: CallRecord, threshold: number) {
+  if (call.direction === "outbound") return call.answered ? "Sortant décroché" : "Sortant sans réponse";
+  if (call.answered) return (call.talkSeconds || call.durationSeconds) <= threshold ? "Décroché · court" : "Décroché";
+  if (call.callType.toLocaleLowerCase("fr").includes("out of business")) return "Hors horaires";
+  if (call.callType.toLocaleLowerCase("fr").includes("abandoned")) return "Abandonné";
+  return "Manqué";
+}
+
+export default function CustomerCallAudit() {
+  const [calls, setCalls] = useState<CallRecord[]>([]);
+  const [imports, setImports] = useState<ImportRow[]>([]);
+  const [threshold, setThreshold] = useState("60");
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
+  const [query, setQuery] = useState("");
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedCaller, setSelectedCaller] = useState("");
+  const [queueExpanded, setQueueExpanded] = useState(false);
+
+  async function readPayload(response: Response): Promise<Payload> {
+    const text = await response.text();
+    try { return JSON.parse(text) as Payload; }
+    catch { throw new Error(`Réponse serveur invalide (HTTP ${response.status}).`); }
+  }
+
+  const load = useCallback(async () => {
+    setLoading(true); setError("");
+    try {
+      const response = await fetch("/api/customer-call-audit", { cache: "no-store" });
+      const body = await readPayload(response);
+      if (!response.ok) throw new Error(body.error || "Chargement impossible.");
+      setCalls(body.calls || []); setImports(body.imports || []);
+      setThreshold(String(body.settings?.shortCallThresholdSeconds ?? 60));
+      const latest = [...(body.calls || [])].sort((a, b) => b.date.localeCompare(a.date))[0]?.date || "";
+      setSelectedDate((current) => (body.calls || []).some((call) => call.date === current) ? current : latest);
+    } catch (caught) { setError(caught instanceof Error ? caught.message : "Chargement impossible."); }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { const timer = window.setTimeout(() => { void load(); }, 0); return () => window.clearTimeout(timer); }, [load]);
+  useEffect(() => {
+    const refresh = () => { void load(); };
+    window.addEventListener("customer-call-audit-refresh", refresh);
+    return () => window.removeEventListener("customer-call-audit-refresh", refresh);
+  }, [load]);
+
+  async function importFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setBusy(true); setError(""); setNotice("");
+    try {
+      if (file.size > 15 * 1024 * 1024) throw new Error("Le fichier dépasse la limite de 15 Mo.");
+      const response = await fetch(`/api/customer-call-audit?fileName=${encodeURIComponent(file.name)}`, {
+        method: "POST", headers: { "Content-Type": "text/csv;charset=utf-8" }, body: await file.text(),
+      });
+      const body = await readPayload(response);
+      if (!response.ok) throw new Error(body.error || "Import impossible.");
+      const item = body.import;
+      setNotice(item ? `${n.format(item.addedCount)} nouvel appel ajouté · ${n.format(item.duplicateCount)} doublon${item.duplicateCount === 1 ? "" : "s"} ignoré${item.duplicateCount === 1 ? "" : "s"}${item.skippedCount ? ` · ${n.format(item.skippedCount)} ligne(s) écartée(s)` : ""}.` : "Import terminé.");
+      await load();
+    } catch (caught) { setError(caught instanceof Error ? caught.message : "Import impossible."); }
+    finally { setBusy(false); event.target.value = ""; }
+  }
+
+  async function saveThreshold() {
+    const parsed = Number(threshold);
+    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 600) { setError("Le seuil doit être compris entre 1 et 600 secondes."); return; }
+    try {
+      const response = await fetch("/api/customer-call-audit", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ shortCallThresholdSeconds: parsed }) });
+      const body = await readPayload(response);
+      if (!response.ok) throw new Error(body.error || "Enregistrement impossible.");
+      setThreshold(String(body.settings?.shortCallThresholdSeconds ?? parsed)); setNotice("Seuil des appels courts enregistré.");
+    } catch (caught) { setError(caught instanceof Error ? caught.message : "Enregistrement impossible."); }
+  }
+
+  const filteredCalls = useMemo(() => {
+    const needle = query.trim().toLocaleLowerCase("fr");
+    return calls.filter((call) => (!startDate || call.date >= startDate) && (!endDate || call.date <= endDate))
+      .filter((call) => roleFilter === "all" || call.role === roleFilter)
+      .filter((call) => !needle || `${calledLabel(call)} ${call.callType} ${call.missedReason} ${call.branch}`.toLocaleLowerCase("fr").includes(needle));
+  }, [calls, endDate, query, roleFilter, startDate]);
+  const thresholdNumber = Number(threshold) || 60;
+  const stats = useMemo(() => ({
+    inbound: filteredCalls.filter((call) => call.direction === "inbound").length,
+    missed: filteredCalls.filter((call) => call.direction === "inbound" && !call.answered).length,
+    answered: filteredCalls.filter((call) => call.direction === "inbound" && call.answered).length,
+    outbound: filteredCalls.filter((call) => call.direction === "outbound").length,
+    short: filteredCalls.filter((call) => call.answered && (call.talkSeconds || call.durationSeconds) <= thresholdNumber).length,
+  }), [filteredCalls, thresholdNumber]);
+  const daily = useMemo(() => {
+    const byDate = new Map<string, { date: string; total: number; missed: number; outbound: number }>();
+    for (const call of filteredCalls) {
+      const item = byDate.get(call.date) || { date: call.date, total: 0, missed: 0, outbound: 0 };
+      item.total += 1;
+      if (call.direction === "inbound" && !call.answered) item.missed += 1;
+      if (call.direction === "outbound") item.outbound += 1;
+      byDate.set(call.date, item);
+    }
+    return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
+  }, [filteredCalls]);
+  const visibleDate = daily.some((item) => item.date === selectedDate) ? selectedDate : daily.at(-1)?.date || "";
+  const dayCalls = filteredCalls.filter((call) => call.date === visibleDate).sort((a, b) => a.timestamp - b.timestamp);
+  const queue = useMemo(() => {
+    const grouped = new Map<string, { callerId: string; parentId: string; name: string; enrollment: string; missed: number; attempts: number; latest: number; state: CallbackState }>();
+    for (const call of filteredCalls) {
+      if (call.role !== "parent" || !call.requiresCallback || call.callbackState === "completed") continue;
+      const current = grouped.get(call.callerId) || { callerId: call.callerId, parentId: call.parentId, name: call.parentName || calledLabel(call), enrollment: call.parentEnrollment, missed: 0, attempts: 0, latest: 0, state: call.callbackState };
+      current.missed += 1; current.attempts += call.callbackAttemptCount;
+      current.latest = Math.max(current.latest, call.timestamp);
+      if (call.callbackState === "not-called") current.state = "not-called";
+      else if (call.callbackState === "attempted" && current.state !== "not-called") current.state = "attempted";
+      grouped.set(call.callerId, current);
+    }
+    return [...grouped.values()].sort((a, b) => (a.state === b.state ? b.latest - a.latest : a.state === "not-called" ? -1 : 1));
+  }, [filteredCalls]);
+  const selectedCallerCalls = selectedCaller ? calls.filter((call) => call.callerId === selectedCaller).sort((a, b) => a.timestamp - b.timestamp) : [];
+  const maxDayCalls = Math.max(1, ...daily.map((item) => item.total));
+  const onDateClick = (date: string) => { setSelectedDate(date); setSelectedCaller(""); };
+
+  return <main className="customer-calls-page">
+    <section className="customer-calls-hero">
+      <div><span className="customer-calls-kicker">AIRCall · QUALITÉ DE RÉPONSE</span><h1>Appels service client</h1><p>Repérez les appels manqués, les rappels à faire et les conversations trop courtes.</p></div>
+      <label className="customer-calls-upload"><input type="file" accept=".csv,text/csv" onChange={(event) => void importFile(event)} disabled={busy} /><span aria-hidden="true">↥</span>{busy ? "Analyse du fichier…" : "Importer un CSV Aircall"}</label>
+    </section>
+    {error && <p className="customer-calls-alert error" role="alert">{error}</p>}
+    {notice && <p className="customer-calls-alert success" role="status">{notice}</p>}
+    <section className="customer-calls-controls task-panel" aria-label="Filtres et réglages">
+      <label><span>Du</span><input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} /></label>
+      <label><span>Au</span><input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} /></label>
+      <label><span>Type d’appelant</span><select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value as RoleFilter)}><option value="all">Tous les types</option>{Object.entries(roleNames).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
+      <label className="customer-calls-search"><span>Rechercher</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Parent, tuteur, établissement…" /></label>
+      <label className="customer-calls-threshold"><span>Appel court si ≤</span><span className="customer-calls-threshold-input"><input type="number" min="1" max="600" value={threshold} onChange={(event) => setThreshold(event.target.value)} onBlur={() => void saveThreshold()} onKeyDown={(event) => { if (event.key === "Enter") { event.currentTarget.blur(); } }} /><b>sec</b></span></label>
+    </section>
+    <section className="customer-calls-stat-grid" aria-label="Indicateurs de la période">
+      {[ ["Appels entrants", stats.inbound, "violet", "↙"], ["Manqués / sans réponse", stats.missed, "pink", "!"], ["Décrochés", stats.answered, "mint", "✓"], ["Appels sortants", stats.outbound, "blue", "↗"], ["Décrochés courts", stats.short, "orange", "◷"] ].map(([label, value, color, icon]) => <article className={`customer-call-stat ${color}`} key={String(label)}><span>{icon}</span><small>{label}</small><strong>{n.format(Number(value))}</strong></article>)}
+    </section>
+    {loading ? <section className="task-panel customer-calls-empty">Chargement des appels…</section> : !calls.length ? <section className="task-panel customer-calls-empty"><span>☎</span><h2>Importez un export Aircall</h2><p>Les enregistrements, messages vocaux et commentaires ne seront pas conservés.</p></section> : <>
+      <section className="customer-calls-main-grid">
+        <article className="task-panel customer-calls-chart-panel"><div className="customer-calls-panel-heading"><div><span>VUE JOURNALIÈRE</span><h2>Volume et appels manqués</h2></div><small>{n.format(filteredCalls.length)} appels sur la période</small></div>
+          {daily.length ? <div className="customer-calls-chart" role="group" aria-label="Appels par jour">
+            {daily.map((item) => <button key={item.date} type="button" className={`customer-calls-day-bar ${visibleDate === item.date ? "active" : ""}`} onClick={() => onDateClick(item.date)} title={`${dateLabel(item.date)} : ${item.total} appels, ${item.missed} manqués`}>
+              <span className="customer-calls-bar-values"><b>{n.format(item.total)}</b><i>{item.missed ? `−${n.format(item.missed)}` : ""}</i></span><span className="customer-calls-bar-track"><i style={{ height: `${Math.max(4, item.total / maxDayCalls * 100)}%` }} /><b style={{ height: `${item.total ? Math.max(0, item.missed / item.total * 100) : 0}%` }} /></span><small>{dateLabel(item.date, false)}</small>
+            </button>)}
+          </div> : <p className="customer-calls-empty-inline">Aucun appel sur cette période.</p>}
+          <div className="customer-calls-legend"><span><i /> Tous les appels</span><span><i /> Appels entrants manqués</span><small>Cliquez sur un jour pour afficher son détail.</small></div>
+        </article>
+        <article className="task-panel customer-calls-queue-panel"><div className="customer-calls-panel-heading"><div><span>À RELANCER</span><h2>Parents sans échange établi</h2></div><b>{queue.length}</b></div>
+          {queue.length ? <div className="customer-calls-queue-list">{queue.slice(0, queueExpanded ? queue.length : 8).map((item) => <button type="button" className="customer-calls-queue-item" key={item.callerId} onClick={() => setSelectedCaller(item.callerId)}><span className="customer-calls-queue-name"><strong>{item.name}</strong><small>{item.enrollment === "inscrit" ? "Déjà inscrit" : item.enrollment === "non-inscrit" ? "Non inscrit" : "Statut inconnu"} · dernier appel {new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", dateStyle: "short", timeStyle: "short" }).format(item.latest)}</small></span><span className={`customer-calls-state ${item.state}`}>{item.state === "attempted" ? `Tentative · ${item.attempts}` : "À rappeler"}</span><span className="customer-calls-missed-count">{item.missed} manqué{item.missed > 1 ? "s" : ""}</span></button>)}</div> : <p className="customer-calls-empty-inline">Aucun parent en attente de rappel dans les filtres choisis.</p>}
+          {queue.length > 8 && <button type="button" className="customer-calls-queue-more" onClick={() => setQueueExpanded((value) => !value)}>{queueExpanded ? "Réduire la liste" : `Afficher les ${queue.length} parents`}</button>}
+        </article>
+      </section>
+      {selectedCaller && <section className="task-panel customer-calls-history-panel"><div className="customer-calls-panel-heading"><div><span>HISTORIQUE DE L’APPELANT</span><h2>{selectedCallerCalls[0] ? calledLabel(selectedCallerCalls[0]) : "Appelant"}</h2></div><button type="button" onClick={() => setSelectedCaller("")}>Fermer</button></div><div className="customer-calls-history-list">{selectedCallerCalls.map((call) => <div key={call.id}><b>{new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", dateStyle: "medium", timeStyle: "short" }).format(call.timestamp)}</b><span>{call.direction === "inbound" ? "Entrant" : "Sortant"} · {callOutcome(call, thresholdNumber)}</span><span>{durationLabel(call.talkSeconds || call.durationSeconds)}</span>{call.direction === "inbound" && call.requiresCallback && <small>{call.callbackState === "completed" ? "Échange établi sous 24 h" : call.callbackState === "attempted" ? "Tentative sans échange établi" : "Aucun rappel établi"}</small>}</div>)}</div></section>}
+      <section className="task-panel customer-calls-detail-panel"><div className="customer-calls-panel-heading"><div><span>DÉTAIL DU JOUR</span><h2>{visibleDate ? dateLabel(visibleDate) : "Aucune date"}</h2></div><small>{n.format(dayCalls.length)} appel{dayCalls.length > 1 ? "s" : ""}</small></div>
+        {daily.length > 0 && <div className="customer-calls-date-strip">{daily.map((item) => <button type="button" key={item.date} className={visibleDate === item.date ? "active" : ""} onClick={() => onDateClick(item.date)}><strong>{dateLabel(item.date)}</strong><small>{n.format(item.missed)} manqué{item.missed === 1 ? "" : "s"} · {n.format(item.total)} appels</small></button>)}</div>}
+        <div className="customer-calls-table-wrap"><table className="customer-calls-table"><thead><tr><th>Heure</th><th>Appelant</th><th>Type</th><th>Sens / résultat</th><th>Durée</th><th>Rappel après appel manqué</th></tr></thead><tbody>{dayCalls.map((call) => <tr key={call.id}><td>{callTime.format(call.timestamp)}</td><td><strong>{calledLabel(call)}</strong><small>{call.parentId ? call.parentEnrollment === "inscrit" ? "Parent inscrit" : call.parentEnrollment === "non-inscrit" ? "Parent non inscrit" : "Parent · statut inconnu" : call.parentMatchAmbiguous || call.tutorMatchAmbiguous ? "Rapprochement ambigu · à vérifier" : call.branch || "Rôle à vérifier"}</small></td><td><span className={`customer-calls-role ${call.role}`}>{roleNames[call.role]}</span></td><td><span className={`customer-calls-outcome ${call.answered ? "answered" : "missed"}`}>{callOutcome(call, thresholdNumber)}</span>{call.missedReason && <small>{call.missedReason.replaceAll("_", " ")}</small>}</td><td>{durationLabel(call.talkSeconds || call.durationSeconds)}{call.answered && (call.talkSeconds || call.durationSeconds) <= thresholdNumber && <small className="customer-calls-short-label">À vérifier · appel court</small>}</td><td>{call.requiresCallback ? call.callbackState === "completed" ? <span className="customer-calls-state completed">Échange établi</span> : call.callbackState === "attempted" ? <span className="customer-calls-state attempted">Tentative sans échange</span> : <span className="customer-calls-state not-called">Aucun rappel établi</span> : <span className="customer-calls-dash">—</span>}</td></tr>)}</tbody></table>{!dayCalls.length && <p className="customer-calls-empty-inline">Aucun appel dans ce jour avec les filtres choisis.</p>}</div>
+      </section>
+      <section className="task-panel customer-calls-import-panel"><div className="customer-calls-panel-heading"><div><span>TRAÇABILITÉ</span><h2>Imports récents</h2></div><small>{n.format(calls.length)} appels conservés</small></div>{imports.length ? <div className="customer-calls-import-list">{imports.slice(0, 8).map((item) => <div key={item.id}><strong>{item.fileName}</strong><span>{importTime.format(new Date(item.importedAt))}</span><span>{n.format(item.rowCount)} lignes · {n.format(item.addedCount)} nouveaux · {n.format(item.duplicateCount)} doublons</span></div>)}</div> : <p className="customer-calls-empty-inline">Aucun import enregistré.</p>}<p className="customer-calls-privacy">🔒 Les données sont réservées aux utilisateurs connectés. Les numéros sont rapprochés côté serveur puis masqués dans les réponses; aucun fichier, message vocal ni enregistrement n’est conservé.</p></section>
+    </>}
+  </main>;
+}
