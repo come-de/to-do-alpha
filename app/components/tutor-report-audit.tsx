@@ -218,7 +218,7 @@ export default function TutorReportAudit({ onError }: Props) {
       const tutor = day.tutors.find((item) => item.key === selectedTutorDetailKey);
       if (!tutor) return [];
       const schoolsForDay = tutor.schools.map((item) => ({ ...item, match: mappingFor(item.sourceName) }))
-        .filter((item) => item.match.school && alpha(item.match.school) && !globalExcludedSchoolIds.includes(item.match.school.id) && (!selectedSchoolId || item.match.school.id === selectedSchoolId))
+        .filter((item) => item.match.school && alpha(item.match.school) && !globalExcludedSchoolIds.includes(item.match.school.id) && (!selectedRH || item.match.school.portfolioOwner === selectedRH) && (!selectedSchoolId || item.match.school.id === selectedSchoolId))
         .map((item) => ({ sourceName: item.sourceName, schoolName: item.match.school!.name, expected: item.expectedCount, missing: item.missingCount }));
       if (!schoolsForDay.length) return [];
       return [{
@@ -229,7 +229,7 @@ export default function TutorReportAudit({ onError }: Props) {
         schools: schoolsForDay,
       }];
     });
-  }, [filteredDays, mappingFor, selectedSchoolId, selectedTutorDetailKey, globalExcludedSchoolIds]);
+  }, [filteredDays, mappingFor, selectedRH, selectedSchoolId, selectedTutorDetailKey, globalExcludedSchoolIds]);
   const selectedTutorDetail = viewStats.allTutors.find((tutor) => tutor.key === selectedTutorDetailKey) || null;
   const selectedSchoolDetails = useMemo(() => {
     if (!selectedSchoolDetailId) return [];
