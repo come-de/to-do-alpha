@@ -3,7 +3,7 @@ import { withIdentity } from "@/app/lib/with-identity";
 import { normalizeParentPhone, type ParentContact } from "@/app/lib/parents";
 import { readTutorTracking, taskStore } from "@/app/lib/shared-data";
 import { readCustomerCallData, writeCustomerCallData } from "@/app/lib/customer-call-audit";
-import { evaluateCustomerCallback, mergeCustomerCallRecords, normalizeCustomerPhone, parseCustomerCallCsv, type CustomerCallRole } from "@/app/lib/customer-call-audit-parser";
+import { evaluateCustomerCallback, markCustomerCallbacksRecalled, mergeCustomerCallRecords, normalizeCustomerPhone, parseCustomerCallCsv, type CustomerCallRole } from "@/app/lib/customer-call-audit-parser";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -77,7 +77,8 @@ async function getHandler() {
         tutorName: tutorMatches.length === 1 ? tutorMatches[0] : "",
         tutorMatchAmbiguous: tutorMatches.length > 1,
         requiresCallback: missed,
-        callbackState: callback.state,
+        callbackState: call.callbackCompletedManuallyAt ? "completed" : callback.state,
+        callbackManuallyCompleted: Boolean(call.callbackCompletedManuallyAt),
         callbackAttemptCount: missed ? callback.attemptCount : 0,
       };
     });
@@ -125,7 +126,18 @@ async function postHandler(request: Request) {
 
 async function patchHandler(request: Request) {
   try {
-    const body = await request.json() as { shortCallThresholdSeconds?: number };
+    const body = await request.json() as { action?: string; callId?: string; shortCallThresholdSeconds?: number };
+    if (body.action === "mark-parent-recalled") {
+      if (typeof body.callId !== "string" || body.callId.length > 180) return json({ error: "Appel de référence invalide." }, 400);
+      const data = await readCustomerCallData();
+      const missedCall = data.calls.find((call) => call.id === body.callId);
+      if (!missedCall || missedCall.direction !== "inbound" || missedCall.answered || !missedCall.customerNumber) return json({ error: "Cet appel ne peut pas être marqué comme rappelé." }, 400);
+      const result = markCustomerCallbacksRecalled(data.calls, missedCall.customerNumber, Date.now());
+      if (!result.updatedCount) return json({ error: "Aucun rappel en attente pour ce parent." }, 409);
+      data.calls = result.calls;
+      await writeCustomerCallData(data);
+      return json({ updatedCount: result.updatedCount });
+    }
     const threshold = Number(body.shortCallThresholdSeconds);
     if (!Number.isInteger(threshold) || threshold < 1 || threshold > 600) return json({ error: "Le seuil doit être compris entre 1 et 600 secondes." }, 400);
     const data = await readCustomerCallData();

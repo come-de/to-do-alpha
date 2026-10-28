@@ -18,6 +18,7 @@ export type CustomerCallRecord = {
   customerNumber: string;
   sourceFileName: string;
   importedAt: string;
+  callbackCompletedManuallyAt?: string;
 };
 
 export type CustomerCallImport = {
@@ -53,6 +54,17 @@ export function mergeCustomerCallRecords(existing: CustomerCallRecord[], incomin
     addedCount += 1;
   }
   return { calls: [...byId.values()].sort((left, right) => left.timestamp - right.timestamp), addedCount, duplicateCount };
+}
+
+export function markCustomerCallbacksRecalled(calls: CustomerCallRecord[], customerNumber: string, throughTimestamp: number, completedAt = new Date().toISOString()) {
+  let updatedCount = 0;
+  const nextCalls = calls.map((call) => {
+    if (call.customerNumber !== customerNumber || (call.role !== "parent" && call.role !== "unknown") || call.direction !== "inbound" || call.answered || call.timestamp > throughTimestamp || call.callbackCompletedManuallyAt) return call;
+    if (evaluateCustomerCallback(call, calls).state === "completed") return call;
+    updatedCount += 1;
+    return { ...call, callbackCompletedManuallyAt: completedAt };
+  });
+  return { calls: nextCalls, updatedCount };
 }
 
 const normalizeHeader = (value: string) => value.trim().toLocaleLowerCase("fr").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "");

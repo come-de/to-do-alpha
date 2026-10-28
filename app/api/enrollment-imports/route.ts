@@ -1,5 +1,7 @@
 import { withIdentity } from "@/app/lib/with-identity";
 import { NextResponse } from "next/server";
+import { normalizeParentEmail, normalizeParentPhone, type ParentContact } from "@/app/lib/parents";
+import { taskStore } from "@/app/lib/shared-data";
 import {
   createEnrollmentImportFromCsv,
   deleteEnrollmentImportById,
@@ -39,9 +41,29 @@ async function postHandler(request: Request) {
     const url = new URL(request.url);
     const rawCsv = await request.text();
     if (!rawCsv.trim()) return json({ error: "Fichier CSV vide" }, 400);
+    const storedContacts = await taskStore().get("parents-crm/contacts.json", { type: "json", consistency: "strong" });
+    const contacts = Array.isArray(storedContacts) ? storedContacts as ParentContact[] : [];
+    const identities = new Map<string, Set<string>>();
+    for (const contact of contacts) {
+      for (const email of contact.emails || []) {
+        const key = `email:${normalizeParentEmail(email)}`;
+        identities.set(key, new Set([...(identities.get(key) || []), contact.id]));
+      }
+      for (const phone of contact.phones || []) {
+        const key = `phone:${normalizeParentPhone(phone)}`;
+        identities.set(key, new Set([...(identities.get(key) || []), contact.id]));
+      }
+    }
+    const resolveParentIds = (row: { parentEmails?: string[]; parentPhones?: string[] }) => {
+      const ids = new Set<string>();
+      for (const email of row.parentEmails || []) for (const id of identities.get(`email:${normalizeParentEmail(email)}`) || []) ids.add(id);
+      for (const phone of row.parentPhones || []) for (const id of identities.get(`phone:${normalizeParentPhone(phone)}`) || []) ids.add(id);
+      return ids.size === 1 ? [...ids] : [];
+    };
     const createdImport = await createEnrollmentImportFromCsv({
       fileName: url.searchParams.get("fileName") || "parents.csv",
       rawCsv,
+      resolveParentIds,
     });
     return json({ import: createdImport, imports: await readEnrollmentImportSummaries() }, 201);
   } catch (error) {

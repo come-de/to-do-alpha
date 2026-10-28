@@ -405,6 +405,7 @@ export type EnrollmentRow = {
   className: string;
   school: string;
   slots: string;
+  parentContactIds?: string[];
 };
 
 export type EnrollmentImport = {
@@ -2147,6 +2148,7 @@ export function sanitizeEnrollmentRow(raw: Record<string, unknown>): EnrollmentR
     className: cleanText(raw.className),
     school: cleanText(raw.school),
     slots: cleanText(raw.slots),
+    parentContactIds: Array.isArray(raw.parentContactIds) ? [...new Set(raw.parentContactIds.map(cleanText).filter((id) => id.length <= 100))] : [],
   };
 }
 
@@ -2168,6 +2170,8 @@ export function parseEnrollmentCsv(value: string) {
   const classIndex = indexFor(["classe", "class"]);
   const schoolIndex = indexFor(["ecole", "etablissement", "school"]);
   const slotsIndex = indexFor(["creneaux", "creneau", "slots"]);
+  const parentEmailIndices = headers.flatMap((header, index) => /^(?:courriel|email|mail|emailparent|courrielparent|emailduparent|courrielduparent|adresseemail|adresseemailparent)$/.test(header) ? [index] : []);
+  const parentPhoneIndices = headers.flatMap((header, index) => /^(?:numerodetelephone|numerodetelephoneparent|telephone|telephoneparent|telephoneportable|telephoneportableparent|mobile|mobileparent|portable|portableparent)$/.test(header) ? [index] : []);
   const oneTimeSessionIndex = indexFor(["seancesponctuelles", "seanceponctuelle", "ponctuelle", "ponctuel"]);
   if (studentIdIndex < 0 || slotsIndex < 0) {
     throw new Error("Colonnes « Id de l’enfant » ou « Creneaux » introuvables");
@@ -2176,14 +2180,14 @@ export function parseEnrollmentCsv(value: string) {
   const rows = dataRows
     .filter((row) => normalizedHeader(valueAt(row, oneTimeSessionIndex)) !== "oui")
     .map((row) =>
-      sanitizeEnrollmentRow({
+      ({ ...sanitizeEnrollmentRow({
         studentId: valueAt(row, studentIdIndex),
         firstName: valueAt(row, firstNameIndex),
         lastName: valueAt(row, lastNameIndex),
         className: valueAt(row, classIndex),
         school: valueAt(row, schoolIndex),
         slots: valueAt(row, slotsIndex),
-      }),
+      }), parentEmails: parentEmailIndices.map((index) => valueAt(row, index)).filter(Boolean), parentPhones: parentPhoneIndices.map((index) => valueAt(row, index)).filter(Boolean) }),
     )
     .filter((row) => row.studentId && row.slots);
   return { rows, sourceRowCount: dataRows.length };
@@ -3652,7 +3656,7 @@ export async function readEnrollmentImports() {
   }
 }
 
-export async function createEnrollmentImportFromCsv(input: { fileName: string; rawCsv: string }) {
+export async function createEnrollmentImportFromCsv(input: { fileName: string; rawCsv: string; resolveParentIds?: (row: EnrollmentRow & { parentEmails?: string[]; parentPhones?: string[] }) => string[] }) {
   const now = new Date().toISOString();
   const parsed = parseEnrollmentCsv(input.rawCsv);
   if (!parsed.rows.length) throw new Error("Aucun élève avec des créneaux dans ce CSV");
@@ -3662,7 +3666,7 @@ export async function createEnrollmentImportFromCsv(input: { fileName: string; r
     displayName: input.fileName.replace(/\.[^.]+$/, "") || "Export inscriptions",
     fileName: input.fileName || "parents.csv",
     sourceRowCount: parsed.sourceRowCount,
-    rows: parsed.rows,
+    rows: parsed.rows.map((row) => ({ ...row, parentContactIds: input.resolveParentIds?.(row) ?? [] })),
     createdAt: now,
   });
   try {

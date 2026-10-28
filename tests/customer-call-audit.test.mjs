@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   evaluateCustomerCallback,
+  markCustomerCallbacksRecalled,
   mergeCustomerCallRecords,
   normalizeCustomerPhone,
   parseCustomerCallCsv,
@@ -46,6 +47,19 @@ test("deduplicates reimports by Aircall call ID and keeps existing records", () 
   assert.equal(merged.duplicateCount, 1);
   assert.equal(merged.calls.length, 2);
   assert.equal(merged.calls[0].role, "parent");
+});
+
+test("manual callback completion removes only pending missed calls up to the marked call", () => {
+  const { events } = parseCustomerCallCsv(csv, "aircall.csv", "2026-10-28T00:00:00.000Z");
+  const pending = events.slice(0, 2);
+  const newerMiss = { ...events[0], id: "missed-later", timestamp: events[0].timestamp + 60 * 60 * 1000 };
+  const markedAt = events[1].timestamp;
+  const result = markCustomerCallbacksRecalled([...pending, newerMiss], events[0].customerNumber, markedAt, "2026-10-28T12:00:00.000Z");
+  assert.equal(result.updatedCount, 1);
+  assert.equal(result.calls[0].callbackCompletedManuallyAt, "2026-10-28T12:00:00.000Z");
+  assert.equal(result.calls[2].callbackCompletedManuallyAt, undefined);
+  const autoCompleted = markCustomerCallbacksRecalled(events, events[0].customerNumber, Date.now(), "2026-10-28T12:00:00.000Z");
+  assert.equal(autoCompleted.updatedCount, 0);
 });
 
 test("normalizes French and international phone notation and role labels", () => {

@@ -3,6 +3,7 @@
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { formatParentDate, parentEvents } from "@/app/lib/parent-provenance";
 import { parentSourceLabels, type ParentContact, type ParentFollowUp, type ParentImport, type ParentImportRow, type ParentSource } from "@/app/lib/parents";
+import ParentHistoryDialog from "@/app/components/parent-history-dialog";
 import "./parents-crm.css";
 
 type CsvState = { headers: string[]; rows: string[][]; fileName: string };
@@ -96,6 +97,7 @@ export default function ParentsCRM() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
   const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
+  const [historyParentId, setHistoryParentId] = useState("");
   const [source, setSource] = useState<ImportSource>("alpha");
   const [csv, setCsv] = useState<CsvState | null>(null);
   const [mapping, setMapping] = useState<Record<Field, string[]>>({ source: [], firstName: [], lastName: [], parentName: [], email: [], phone: [], school: [], enrolled: [], childClass: [], submittedAt: [], brochure: [], visioInterested: [], enrolledAnswer: [], contactPreference: [], selectedMeeting: [], expectations: [], knownVia: [], aircallStatus: [], aircallIncomingCalls: [], aircallMissedCalls: [], aircallAnsweredCalls: [], aircallFirstIncoming: [], aircallLastIncoming: [] });
@@ -266,7 +268,7 @@ export default function ParentsCRM() {
       </div>
       <div className="parents-table-wrap"><table className="parents-table"><thead><tr><th>Parent</th><th>Établissement</th><th>Sources et parcours</th><th>Dernière trace</th><th>Inscription</th><th>Suivi</th><th aria-label="Actions" /></tr></thead><tbody>
         {loading ? <tr><td colSpan={7} className="parents-empty">Chargement des fiches…</td></tr> : filtered.length ? filtered.map(({ contact, events }) => <tr key={contact.id} className={contact.suppression ? "is-suppressed" : contact.needsReview ? "is-review" : ""}>
-          <td><strong>{contact.fullName || [contact.firstName, contact.lastName].filter(Boolean).join(" ") || "Sans nom"}</strong>{contact.emails.length ? <small>{contact.emails.join(" · ")}</small> : null}{contact.phones.length ? <small>{contact.phones.join(" · ")}</small> : null}{!contact.emails.length && !contact.phones.length ? <small>Coordonnée absente</small> : null}</td>
+          <td><button type="button" className="parents-history-link" onClick={() => setHistoryParentId(contact.id)}>{contact.fullName || [contact.firstName, contact.lastName].filter(Boolean).join(" ") || "Sans nom"}<span aria-hidden="true"> ↗</span></button>{contact.emails.length ? <small>{contact.emails.join(" · ")}</small> : null}{contact.phones.length ? <small>{contact.phones.join(" · ")}</small> : null}{!contact.emails.length && !contact.phones.length ? <small>Coordonnée absente</small> : null}</td>
           <td>{[...contact.schools, ...(contact.childClasses ?? [])].map((school) => <span className="parents-school-chip" key={school}>{school}</span>)}{(contact.schoolIssues ?? []).map((issue) => <div className="parents-school-issue" key={issue.raw}><span title={issue.suggestions.join(" · ")}>{issue.raw} · à vérifier</span><select aria-label={`Corriger ${issue.raw}`} value="" onChange={(event) => { if (event.target.value) void resolveSchool(contact, issue.raw, event.target.value); }}><option value="">Associer à…</option>{canonicalSchools.map((school) => <option key={school} value={school}>{school}</option>)}</select></div>)}{!contact.schools.length && !contact.childClasses?.length && !contact.schoolIssues?.length ? <span className="parents-muted">—</span> : null}</td>
           <td className="parents-source-cell"><div className="parents-source-chips">{contact.sources.map((item) => <button type="button" key={item} title={`Afficher les contacts de la source ${parentSourceLabels[item]}`} className={`source-chip ${item}`} onClick={() => setSourceFilter(item)}>{sourceNames[item]}</button>)}{contact.sources.length > 1 ? <span className="parents-multi-badge">{contact.sources.length} sources</span> : null}</div>
             {contact.brochureRequests?.length ? <small className="parents-request-detail">Plaquette : {[...new Set(contact.brochureRequests.map((request) => request.brochure).filter(Boolean))].join(" · ") || "demande reçue"}</small> : null}
@@ -282,5 +284,6 @@ export default function ParentsCRM() {
       </tbody></table></div>
       <p className="parents-privacy-note">🔒 Données accessibles après connexion. Les fichiers CSV ne sont pas conservés. Les exclusions et les identités à vérifier ne peuvent pas être exportées pour relance.</p>
     </section>
+    {historyParentId && <ParentHistoryDialog id={historyParentId} onClose={() => setHistoryParentId("")} />}
   </main>;
 }

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { EnrollmentImport, EnrollmentRow } from "@/app/lib/shared-data";
 import type { FileKind } from "@/app/components/files-hub";
+import ParentHistoryDialog from "@/app/components/parent-history-dialog";
 
 type ComparisonView = "new" | "lost" | "same";
 type SchoolPortfolioOwner = "" | "kelly" | "pierre" | "julie";
@@ -73,6 +74,7 @@ export default function EnrollmentComparison({ onOpenFiles }: { onOpenFiles: (ki
   const [message, setMessage] = useState("");
   const [detailError, setDetailError] = useState("");
   const [detailRetry, setDetailRetry] = useState(0);
+  const [historyParentId, setHistoryParentId] = useState("");
 
   const loadImports = useCallback(async (silent = false) => {
     const results = await Promise.allSettled([
@@ -315,6 +317,7 @@ export default function EnrollmentComparison({ onOpenFiles }: { onOpenFiles: (ki
   const importLabel = (item: EnrollmentImport) => `${item.displayName} · ${importDate(item.importedAt)}`;
 
   return (
+    <>
     <section className="task-panel enrollment-panel">
         <div className="panel-heading enrollment-heading">
         <div>
@@ -426,9 +429,12 @@ export default function EnrollmentComparison({ onOpenFiles }: { onOpenFiles: (ki
               <strong>{student.school || "Établissement non renseigné"}</strong>
               <small>{student.slots.split(/\r?\n/).filter(Boolean).length} créneau(x)</small>
               <details><summary>Voir les créneaux</summary><pre>{student.slots}</pre></details>
+              {student.parentContactIds?.length === 1 ? <button type="button" className="enrollment-parent-history-link" onClick={() => setHistoryParentId(student.parentContactIds?.[0] || "")}>Parent rapproché · voir son historique ↗</button> : null}
             </article>
           )) : <div className="empty-state compact">Aucun élève dans cette catégorie.</div>}
       </div>
     </section>
+    {historyParentId && <ParentHistoryDialog id={historyParentId} onClose={() => setHistoryParentId("")} />}
+    </>
   );
 }
