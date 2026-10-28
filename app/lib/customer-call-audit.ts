@@ -18,6 +18,7 @@ export async function readCustomerCallData(): Promise<CustomerCallData> {
     calls: Array.isArray(data.calls) ? data.calls as CustomerCallRecord[] : [],
     imports: Array.isArray(data.imports) ? data.imports as CustomerCallImport[] : [],
     settings,
+    parentLinks: data.parentLinks && typeof data.parentLinks === "object" ? Object.fromEntries(Object.entries(data.parentLinks).filter(([key, value]) => /^[a-f0-9]{64}$/.test(key) && typeof value === "string" && value.length <= 100)) : {},
   };
 }
 

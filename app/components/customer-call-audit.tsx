@@ -9,11 +9,12 @@ type CallbackState = "not-applicable" | "completed" | "attempted" | "not-called"
 type CallRecord = {
   id: string; date: string; timestamp: number; direction: "inbound" | "outbound"; callType: string;
   answered: boolean; missedReason: string; durationSeconds: number; talkSeconds: number; waitingSeconds: number;
-  role: Role; branch: string; callerId: string; parentId: string; parentName: string; parentEnrollment: "inscrit" | "non-inscrit" | "inconnu";
+  role: Role; branch: string; callerId: string; callerNumberAvailable: boolean; parentId: string; parentName: string; parentPhone: string; parentEnrollment: "inscrit" | "non-inscrit" | "inconnu";
   parentMatchAmbiguous: boolean; tutorName: string; tutorMatchAmbiguous: boolean; requiresCallback: boolean; callbackState: CallbackState; callbackAttemptCount: number; callbackManuallyCompleted?: boolean;
 };
 type ImportRow = { id: string; fileName: string; importedAt: string; rowCount: number; addedCount: number; duplicateCount: number; skippedCount: number };
-type Payload = { calls?: CallRecord[]; imports?: ImportRow[]; settings?: { shortCallThresholdSeconds: number }; error?: string; detail?: string; import?: ImportRow; updatedCount?: number };
+type ParentOption = { id: string; name: string; enrolled: boolean | null };
+type Payload = { calls?: CallRecord[]; imports?: ImportRow[]; parents?: ParentOption[]; settings?: { shortCallThresholdSeconds: number }; error?: string; detail?: string; import?: ImportRow; updatedCount?: number };
 type RoleFilter = Role | "all";
 const n = new Intl.NumberFormat("fr-FR");
 const roleNames: Record<Role, string> = { parent: "Parents", "tutor-candidate": "Tuteurs / candidats", school: "Établissements", unknown: "À vérifier" };
@@ -28,6 +29,21 @@ function dateLabel(value: string, weekday = true) {
 function durationLabel(value: number) {
   const seconds = Math.max(0, Math.round(value));
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
+function displayPhone(value: string) {
+  const digits = value.replace(/\D/g, "");
+  if (digits.length === 10 && digits.startsWith("0")) return digits.match(/.{1,2}/g)?.join(" ") || value;
+  return value.startsWith("+") ? value : `+${digits}`;
+}
+
+function dialPhone(value: string) {
+  const digits = value.replace(/\D/g, "");
+  if (!digits) return "";
+  if (digits.startsWith("00")) return `+${digits.slice(2)}`;
+  if (digits.startsWith("33") && digits.length === 11) return `+${digits}`;
+  if (digits.startsWith("0") && digits.length === 10) return `+33${digits.slice(1)}`;
+  return `+${digits}`;
 }
 
 function calledLabel(call: CallRecord) {
@@ -48,6 +64,7 @@ function callOutcome(call: CallRecord, threshold: number) {
 export default function CustomerCallAudit() {
   const [calls, setCalls] = useState<CallRecord[]>([]);
   const [imports, setImports] = useState<ImportRow[]>([]);
+  const [parents, setParents] = useState<ParentOption[]>([]);
   const [threshold, setThreshold] = useState("60");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -62,6 +79,9 @@ export default function CustomerCallAudit() {
   const [historyParentId, setHistoryParentId] = useState("");
   const [queueDialogOpen, setQueueDialogOpen] = useState(false);
   const [recallingCallId, setRecallingCallId] = useState("");
+  const [linkingCallId, setLinkingCallId] = useState("");
+  const [parentSearch, setParentSearch] = useState("");
+  const [linking, setLinking] = useState(false);
 
   async function readPayload(response: Response): Promise<Payload> {
     const text = await response.text();
@@ -75,7 +95,7 @@ export default function CustomerCallAudit() {
       const response = await fetch("/api/customer-call-audit", { cache: "no-store" });
       const body = await readPayload(response);
       if (!response.ok) throw new Error(body.error || "Chargement impossible.");
-      setCalls(body.calls || []); setImports(body.imports || []);
+      setCalls(body.calls || []); setImports(body.imports || []); setParents(body.parents || []);
       setThreshold(String(body.settings?.shortCallThresholdSeconds ?? 60));
       const latest = [...(body.calls || [])].sort((a, b) => b.date.localeCompare(a.date))[0]?.date || "";
       setSelectedDate((current) => (body.calls || []).some((call) => call.date === current) ? current : latest);
@@ -131,6 +151,19 @@ export default function CustomerCallAudit() {
     finally { setRecallingCallId(""); }
   }
 
+  async function linkCallToParent(callId: string, parentId: string) {
+    setLinking(true); setError("");
+    try {
+      const response = await fetch("/api/customer-call-audit", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "link-parent", callId, parentId }) });
+      const body = await readPayload(response);
+      if (!response.ok) throw new Error(body.error || "Rapprochement impossible.");
+      setNotice("Appelant relié à la fiche parent. Ses appels sont maintenant regroupés dans son historique.");
+      setLinkingCallId(""); setParentSearch("");
+      await load();
+    } catch (caught) { setError(caught instanceof Error ? caught.message : "Rapprochement impossible."); }
+    finally { setLinking(false); }
+  }
+
   const filteredCalls = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase("fr");
     return calls.filter((call) => (!startDate || call.date >= startDate) && (!endDate || call.date <= endDate))
@@ -173,6 +206,7 @@ export default function CustomerCallAudit() {
     return [...grouped.values()].sort((a, b) => (a.state === b.state ? b.latest - a.latest : a.state === "not-called" ? -1 : 1));
   }, [filteredCalls]);
   const selectedCallerCalls = selectedCaller ? calls.filter((call) => call.callerId === selectedCaller).sort((a, b) => a.timestamp - b.timestamp) : [];
+  const parentOptions = parents.filter((parent) => parent.name.toLocaleLowerCase("fr").includes(parentSearch.trim().toLocaleLowerCase("fr"))).slice(0, 100);
   const maxDayCalls = Math.max(1, ...daily.map((item) => item.total));
   const onDateClick = (date: string) => { setSelectedDate(date); setSelectedCaller(""); };
   const openQueueParent = (item: (typeof queue)[number]) => {
@@ -218,14 +252,15 @@ export default function CustomerCallAudit() {
           {queue.length > 0 && <button type="button" className="customer-calls-queue-more" onClick={() => setQueueDialogOpen(true)}>Afficher toute la liste · {queue.length} parent{queue.length > 1 ? "s" : ""} ↗</button>}
         </article>
       </section>
-      {selectedCaller && <section className="task-panel customer-calls-history-panel"><div className="customer-calls-panel-heading"><div><span>HISTORIQUE DE L’APPELANT</span><h2>{selectedCallerCalls[0] ? calledLabel(selectedCallerCalls[0]) : "Appelant"}</h2></div><button type="button" onClick={() => setSelectedCaller("")}>Fermer</button></div><div className="customer-calls-history-list">{selectedCallerCalls.map((call) => <div key={call.id}><b>{new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", dateStyle: "medium", timeStyle: "short" }).format(call.timestamp)}</b><span>{call.direction === "inbound" ? "Entrant" : "Sortant"} · {callOutcome(call, thresholdNumber)}</span><span>{durationLabel(call.talkSeconds || call.durationSeconds)}</span>{call.direction === "inbound" && call.requiresCallback && <small>{call.callbackState === "completed" ? "Échange établi sous 24 h" : call.callbackState === "attempted" ? "Tentative sans échange établi" : "Aucun rappel établi"}</small>}</div>)}</div></section>}
+      {selectedCaller && <div className="customer-calls-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedCaller(""); }}><section className="customer-calls-history-dialog" role="dialog" aria-modal="true" aria-labelledby="customer-calls-history-title"><header><div><span>HISTORIQUE DES APPELS</span><h2 id="customer-calls-history-title">{selectedCallerCalls[0] ? calledLabel(selectedCallerCalls[0]) : "Appelant"}</h2>{selectedCallerCalls[0]?.parentPhone && <a href={`tel:${dialPhone(selectedCallerCalls[0].parentPhone)}`} className="customer-calls-call-phone">{displayPhone(selectedCallerCalls[0].parentPhone)} · Appeler ↗</a>}<p>{selectedCallerCalls.length} appel{selectedCallerCalls.length > 1 ? "s" : ""} retrouvé{selectedCallerCalls.length > 1 ? "s" : ""} pour ce numéro</p></div><button type="button" onClick={() => setSelectedCaller("")} aria-label="Fermer l’historique">×</button></header><div className="customer-calls-history-list">{selectedCallerCalls.map((call) => <div key={call.id}><b>{new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", dateStyle: "medium", timeStyle: "short" }).format(call.timestamp)}</b><span>{call.direction === "inbound" ? "Entrant" : "Sortant"} · {callOutcome(call, thresholdNumber)}</span><span>{durationLabel(call.talkSeconds || call.durationSeconds)}</span>{call.direction === "inbound" && call.requiresCallback && <small>{call.callbackState === "completed" ? "Échange établi sous 24 h" : call.callbackState === "attempted" ? "Tentative sans échange établi" : "Aucun rappel établi"}</small>}</div>)}</div></section></div>}
       <section className="task-panel customer-calls-detail-panel"><div className="customer-calls-panel-heading"><div><span>DÉTAIL DU JOUR</span><h2>{visibleDate ? dateLabel(visibleDate) : "Aucune date"}</h2></div><small>{n.format(dayCalls.length)} appel{dayCalls.length > 1 ? "s" : ""}</small></div>
         {daily.length > 0 && <div className="customer-calls-date-strip">{daily.map((item) => <button type="button" key={item.date} className={visibleDate === item.date ? "active" : ""} onClick={() => onDateClick(item.date)}><strong>{dateLabel(item.date)}</strong><small>{n.format(item.missed)} manqué{item.missed === 1 ? "" : "s"} · {n.format(item.total)} appels</small></button>)}</div>}
-        <div className="customer-calls-table-wrap"><table className="customer-calls-table"><thead><tr><th>Heure</th><th>Appelant</th><th>Type</th><th>Sens / résultat</th><th>Durée</th><th>Rappel après appel manqué</th></tr></thead><tbody>{dayCalls.map((call) => <tr key={call.id}><td>{callTime.format(call.timestamp)}</td><td>{call.parentId ? <button type="button" className="customer-calls-parent-link" onClick={() => setHistoryParentId(call.parentId)}>{calledLabel(call)} ↗</button> : <strong>{calledLabel(call)}</strong>}<small>{call.parentId ? call.parentEnrollment === "inscrit" ? "Parent inscrit · historique complet" : call.parentEnrollment === "non-inscrit" ? "Parent non inscrit · historique complet" : "Parent · statut inconnu" : call.parentMatchAmbiguous || call.tutorMatchAmbiguous ? "Rapprochement ambigu · à vérifier" : call.branch || "Rôle à vérifier"}</small></td><td><span className={`customer-calls-role ${call.role}`}>{roleNames[call.role]}</span></td><td><span className={`customer-calls-outcome ${call.answered ? "answered" : "missed"}`}>{callOutcome(call, thresholdNumber)}</span>{call.missedReason && <small>{call.missedReason.replaceAll("_", " ")}</small>}</td><td>{durationLabel(call.talkSeconds || call.durationSeconds)}{call.answered && (call.talkSeconds || call.durationSeconds) <= thresholdNumber && <small className="customer-calls-short-label">À vérifier · appel court</small>}</td><td>{call.requiresCallback ? call.callbackState === "completed" ? <span className="customer-calls-state completed">Échange établi</span> : call.callbackState === "attempted" ? <span className="customer-calls-state attempted">Tentative sans échange</span> : <span className="customer-calls-state not-called">Aucun rappel établi</span> : <span className="customer-calls-dash">—</span>}</td></tr>)}</tbody></table>{!dayCalls.length && <p className="customer-calls-empty-inline">Aucun appel dans ce jour avec les filtres choisis.</p>}</div>
+        <div className="customer-calls-table-wrap"><table className="customer-calls-table"><thead><tr><th>Heure</th><th>Appelant</th><th>Téléphone</th><th>Type</th><th>Sens / résultat</th><th>Durée</th><th>Rappel après appel manqué</th></tr></thead><tbody>{dayCalls.map((call) => <tr key={call.id} className={call.callerNumberAvailable ? "customer-calls-clickable-row" : ""} tabIndex={call.callerNumberAvailable ? 0 : undefined} onClick={() => { if (call.callerNumberAvailable) { setHistoryParentId(""); setSelectedCaller(call.callerId); } }} onKeyDown={(event) => { if ((event.key === "Enter" || event.key === " ") && event.target === event.currentTarget && call.callerNumberAvailable) { event.preventDefault(); setHistoryParentId(""); setSelectedCaller(call.callerId); } }} title={call.callerNumberAvailable ? "Cliquer pour afficher tous les appels de ce numéro" : undefined}><td>{callTime.format(call.timestamp)}</td><td>{call.parentId ? <button type="button" className="customer-calls-parent-link" onClick={(event) => { event.stopPropagation(); setHistoryParentId(call.parentId); }}>{calledLabel(call)} ↗</button> : <strong>{calledLabel(call)}</strong>}<small>{call.parentId ? call.parentEnrollment === "inscrit" ? "Parent inscrit · historique complet" : call.parentEnrollment === "non-inscrit" ? "Parent non inscrit · historique complet" : "Parent · statut inconnu" : call.parentMatchAmbiguous || call.tutorMatchAmbiguous ? "Rapprochement ambigu · à vérifier" : call.branch || "Rôle à vérifier"}</small>{!call.parentId && (call.role === "unknown" || call.role === "parent" || call.parentMatchAmbiguous) && <button type="button" className="customer-calls-link-parent" onClick={(event) => { event.stopPropagation(); setParentSearch(""); setLinkingCallId(call.id); }}>Relier à un parent…</button>}</td><td>{call.parentId && call.parentPhone ? <a className="customer-calls-call-phone" href={`tel:${dialPhone(call.parentPhone)}`} onClick={(event) => event.stopPropagation()} aria-label={`Appeler ${calledLabel(call)} au ${displayPhone(call.parentPhone)}`}>{displayPhone(call.parentPhone)}<small>Appeler ↗</small></a> : <span className="customer-calls-dash">—</span>}</td><td><span className={`customer-calls-role ${call.role}`}>{roleNames[call.role]}</span></td><td><span className={`customer-calls-outcome ${call.answered ? "answered" : "missed"}`}>{callOutcome(call, thresholdNumber)}</span>{call.missedReason && <small>{call.missedReason.replaceAll("_", " ")}</small>}</td><td>{durationLabel(call.talkSeconds || call.durationSeconds)}{call.answered && (call.talkSeconds || call.durationSeconds) <= thresholdNumber && <small className="customer-calls-short-label">À vérifier · appel court</small>}</td><td>{call.requiresCallback ? call.callbackState === "completed" ? <span className="customer-calls-state completed">Échange établi</span> : call.callbackState === "attempted" ? <span className="customer-calls-state attempted">Tentative sans échange</span> : <span className="customer-calls-state not-called">Aucun rappel établi</span> : <span className="customer-calls-dash">—</span>}</td></tr>)}</tbody></table>{!dayCalls.length && <p className="customer-calls-empty-inline">Aucun appel dans ce jour avec les filtres choisis.</p>}</div>
       </section>
       <section className="task-panel customer-calls-import-panel"><div className="customer-calls-panel-heading"><div><span>TRAÇABILITÉ</span><h2>Imports récents</h2></div><small>{n.format(calls.length)} appels conservés</small></div>{imports.length ? <div className="customer-calls-import-list">{imports.slice(0, 8).map((item) => <div key={item.id}><strong>{item.fileName}</strong><span>{importTime.format(new Date(item.importedAt))}</span><span>{n.format(item.rowCount)} lignes · {n.format(item.addedCount)} nouveaux · {n.format(item.duplicateCount)} doublons</span></div>)}</div> : <p className="customer-calls-empty-inline">Aucun import enregistré.</p>}<p className="customer-calls-privacy">🔒 Les données sont réservées aux utilisateurs connectés. Les numéros sont rapprochés côté serveur puis masqués dans les réponses; aucun fichier, message vocal ni enregistrement n’est conservé.</p></section>
     </>}
     {queueDialogOpen && <div className="customer-calls-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setQueueDialogOpen(false); }}><section className="customer-calls-queue-dialog" role="dialog" aria-modal="true" aria-labelledby="customer-calls-queue-title"><header><div><span>FILE DE RAPPEL</span><h2 id="customer-calls-queue-title">Parents sans échange établi</h2><p>{queue.length} parent{queue.length > 1 ? "s" : ""} · confirmez le rappel pour les retirer de cette liste</p></div><button type="button" onClick={() => setQueueDialogOpen(false)} aria-label="Fermer la liste">×</button></header><div className="customer-calls-queue-dialog-list">{queue.length ? queue.map((item) => renderQueueItem(item)) : <p className="customer-calls-empty-inline">Tous les parents ont été rappelés.</p>}</div></section></div>}
+    {linkingCallId && <div className="customer-calls-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !linking) setLinkingCallId(""); }}><section className="customer-calls-parent-link-dialog" role="dialog" aria-modal="true" aria-labelledby="customer-calls-parent-link-title"><header><div><span>RAPPROCHEMENT MANUEL</span><h2 id="customer-calls-parent-link-title">Relier cet appel à un parent</h2><p>Cette association sera appliquée à tous les appels de ce numéro.</p></div><button type="button" onClick={() => setLinkingCallId("")} aria-label="Fermer" disabled={linking}>×</button></header><label className="customer-calls-parent-search"><span>Rechercher dans les fiches parents</span><input autoFocus value={parentSearch} onChange={(event) => setParentSearch(event.target.value)} placeholder="Nom du parent…" /></label><div className="customer-calls-parent-options">{parentOptions.map((parent) => <button type="button" key={parent.id} onClick={() => void linkCallToParent(linkingCallId, parent.id)} disabled={linking}><strong>{parent.name}</strong><small>{parent.enrolled === true ? "Inscrit" : parent.enrolled === false ? "Non inscrit" : "Statut inconnu"}</small></button>)}{!parentOptions.length && <p>Aucun parent correspondant à cette recherche.</p>}</div></section></div>}
     {historyParentId && <ParentHistoryDialog id={historyParentId} onClose={() => setHistoryParentId("")} />}
   </main>;
 }

@@ -50,10 +50,15 @@ async function getHandler() {
       tutorByPhone.set(normalized, [...new Set([...(tutorByPhone.get(normalized) || []), label])]);
     }
     const calls = data.calls.map((call) => {
-      const parentMatches = (call.role === "parent" || call.role === "unknown") ? parentByPhone.get(call.customerNumber) || [] : [];
+      const manualParentId = data.parentLinks?.[identityHash(call.customerNumber, "")];
+      const manualParent = manualParentId ? contacts.find((contact) => contact.id === manualParentId) : undefined;
+      // Match by normalized phone across every Aircall branch. A parent may be
+      // reached through a generic or outbound branch, so the branch is not a
+      // reliable gate for identity matching.
+      const parentMatches = parentByPhone.get(call.customerNumber) || [];
       const tutorMatches = (call.role === "tutor-candidate" || call.role === "unknown") ? tutorByPhone.get(call.customerNumber) || [] : [];
-      const role: CustomerCallRole = call.role === "unknown" && parentMatches.length === 1 && tutorMatches.length === 0 ? "parent" : call.role === "unknown" && tutorMatches.length === 1 && parentMatches.length === 0 ? "tutor-candidate" : call.role;
-      const parent = role === "parent" && parentMatches.length === 1 ? parentMatches[0] : undefined;
+      const role: CustomerCallRole = manualParent ? "parent" : call.role === "unknown" && parentMatches.length === 1 && tutorMatches.length === 0 ? "parent" : call.role === "unknown" && tutorMatches.length === 1 && parentMatches.length === 0 ? "tutor-candidate" : call.role;
+      const parent = manualParent || (parentMatches.length === 1 ? parentMatches[0] : undefined);
       const missed = callNeedsCallback(call);
       const callback = evaluateCustomerCallback(call, data.calls);
       return {
@@ -70,8 +75,10 @@ async function getHandler() {
         role,
         branch: call.branch,
         callerId: identityHash(call.customerNumber, call.id),
+        callerNumberAvailable: Boolean(call.customerNumber),
         parentId: parent?.id || "",
         parentName: parent ? (parent.fullName || `${parent.firstName} ${parent.lastName}`).trim() : "",
+        parentPhone: parent ? call.customerNumber : "",
         parentEnrollment: parent?.enrolled === true ? "inscrit" : parent?.enrolled === false ? "non-inscrit" : "inconnu",
         parentMatchAmbiguous: parentMatches.length > 1,
         tutorName: tutorMatches.length === 1 ? tutorMatches[0] : "",
@@ -82,7 +89,8 @@ async function getHandler() {
         callbackAttemptCount: missed ? callback.attemptCount : 0,
       };
     });
-    return json({ calls, imports: data.imports, settings: data.settings });
+    const parents = contacts.map((contact) => ({ id: contact.id, name: (contact.fullName || `${contact.firstName} ${contact.lastName}`).trim() || "Parent sans nom", enrolled: contact.enrolled }));
+    return json({ calls, imports: data.imports, settings: data.settings, parents });
   } catch {
     return json({ error: "Impossible de charger le suivi des appels." }, 503);
   }
@@ -114,6 +122,7 @@ async function postHandler(request: Request) {
       calls: merged.calls,
       imports: [importEntry, ...data.imports].slice(0, 100),
       settings: data.settings,
+      parentLinks: data.parentLinks,
     };
     await writeCustomerCallData(next);
     // Return only a compact import receipt; the original CSV, recordings, notes,
@@ -126,7 +135,21 @@ async function postHandler(request: Request) {
 
 async function patchHandler(request: Request) {
   try {
-    const body = await request.json() as { action?: string; callId?: string; shortCallThresholdSeconds?: number };
+    const body = await request.json() as { action?: string; callId?: string; parentId?: string; shortCallThresholdSeconds?: number };
+    if (body.action === "link-parent") {
+      if (typeof body.callId !== "string" || body.callId.length > 180 || typeof body.parentId !== "string") return json({ error: "Appel ou fiche parent invalide." }, 400);
+      const parentId = body.parentId;
+      if (parentId.length > 100) return json({ error: "Fiche parent invalide." }, 400);
+      const data = await readCustomerCallData();
+      const call = data.calls.find((item) => item.id === body.callId);
+      if (!call?.customerNumber) return json({ error: "Cet appelant ne peut pas être rapproché." }, 404);
+      const rawContacts = await taskStore().get("parents-crm/contacts.json", { type: "json", consistency: "strong" });
+      const contacts = Array.isArray(rawContacts) ? rawContacts as ParentContact[] : [];
+      if (!contacts.some((contact) => contact.id === parentId)) return json({ error: "Fiche parent introuvable." }, 404);
+      data.parentLinks = { ...data.parentLinks, [identityHash(call.customerNumber, "")]: parentId };
+      await writeCustomerCallData(data);
+      return json({ linked: true });
+    }
     if (body.action === "mark-parent-recalled") {
       if (typeof body.callId !== "string" || body.callId.length > 180) return json({ error: "Appel de référence invalide." }, 400);
       const data = await readCustomerCallData();

@@ -32,7 +32,7 @@ export type CustomerCallImport = {
 };
 
 export type CustomerCallSettings = { shortCallThresholdSeconds: number };
-export type CustomerCallData = { calls: CustomerCallRecord[]; imports: CustomerCallImport[]; settings: CustomerCallSettings };
+export type CustomerCallData = { calls: CustomerCallRecord[]; imports: CustomerCallImport[]; settings: CustomerCallSettings; parentLinks?: Record<string, string> };
 export type CustomerCallCallbackState = "not-applicable" | "completed" | "attempted" | "not-called";
 
 export function evaluateCustomerCallback(call: CustomerCallRecord, calls: CustomerCallRecord[], windowHours = 24, minimumTalkSeconds = 30) {

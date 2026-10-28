@@ -325,6 +325,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .tutor-report-name-link { min-width: 0; padding: 0; border: 0; color: #4f258b; background: transparent; font: inherit; font-weight: 800; text-align: left; text-decoration: underline; text-decoration-color: #d9c6f0; text-underline-offset: 3px; cursor: pointer; }
 .tutor-report-name-link:hover { color: #b62156; text-decoration-color: currentColor; }
 .tutor-report-top-tutors > div:not(.tutor-report-insight-heading) > .tutor-report-name-link { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tutor-report-top-tutor-name { display: grid; flex: 1; gap: 2px; min-width: 0; overflow: visible !important; white-space: normal !important; }
+.tutor-report-top-tutor-name > .tutor-report-name-link { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tutor-report-top-tutor-name > small { overflow: hidden; color: var(--muted); font-size: 9px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
 .tutor-report-modal-header-actions { display: flex; flex: none; align-items: center; gap: 8px; }
 .tutor-report-modal-header-actions > button:first-child:not(:last-child) { padding: 8px 10px; border: 1px solid #d9c7f2; border-radius: 9px; color: #6429ad; background: #fff; font-size: 11px; font-weight: 800; }
 .tutor-report-detail-summary { padding: 10px 24px 4px; color: var(--muted); font-size: 12px; }
@@ -348,7 +351,25 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .tutor-report-detail-schools em { min-width: 96px; color: #a51e51; font-style: normal; font-weight: 900; text-align: right; }
 
 
-.tutor-report-top-tutors > div > strong { max-width: 52%; overflow: hidden; color: #b62156; text-align: right; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; }
+.tutor-report-top-tutors > div > strong { max-width: 42%; overflow: hidden; color: #b62156; text-align: right; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; }
+.tutor-report-send-email { flex: none; padding: 4px 7px; border: 1px solid #d8c8f1; border-radius: 8px; color: #5b36a4; background: #fff; font-size: 9px; font-weight: 850; white-space: nowrap; cursor: pointer; }
+.tutor-report-send-email:hover:not(:disabled) { border-color: #a98cda; background: #f8f3ff; }
+.tutor-report-send-email:disabled { color: #9a91a2; background: #f5f3f6; opacity: .8; cursor: not-allowed; }
+.tutor-report-email-dialog { display: grid; grid-template-rows: auto auto minmax(0,1fr) auto; width: min(660px,100%); max-height: min(86vh,820px); overflow: hidden; border: 1px solid #dfd2f1; border-radius: 20px; background: #fff; box-shadow: 0 24px 80px rgba(25,13,39,.3); }
+.tutor-report-email-dialog > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding: 18px 22px; border-bottom: 1px solid var(--line); background: linear-gradient(115deg,#f7efff,#edfff8); }
+.tutor-report-email-dialog > header h2 { margin: 3px 0; color: var(--blue-title); font-size: 20px; }
+.tutor-report-email-dialog > header p:last-child { margin: 5px 0 0; color: var(--muted); font-size: 11px; }
+.tutor-report-email-dialog > header button { width: 32px; height: 32px; border: 1px solid var(--line); border-radius: 9px; background: #fff; color: var(--blue-title); font-size: 20px; cursor: pointer; }
+.tutor-report-email-summary { display: grid; gap: 3px; padding: 14px 22px 8px; }
+.tutor-report-email-summary strong { color: #a51e51; font-size: 15px; }
+.tutor-report-email-summary span { color: var(--muted); font-size: 10px; }
+.tutor-report-email-dates { overflow: auto; padding: 0 22px 14px; }
+.tutor-report-email-dates > div { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 11px; }
+.tutor-report-email-dates b { color: #a51e51; white-space: nowrap; }
+.tutor-report-email-dialog > footer { display: flex; justify-content: flex-end; gap: 9px; padding: 12px 22px; border-top: 1px solid var(--line); background: #faf8fc; }
+.tutor-report-email-dialog > footer button { padding: 8px 11px; border: 1px solid #d9c7f2; border-radius: 9px; background: #fff; color: #6429ad; font-size: 11px; font-weight: 800; cursor: pointer; }
+.tutor-report-email-dialog > footer button.primary { border-color: #603bb1; background: #603bb1; color: #fff; }
+.tutor-report-email-dialog > footer button:disabled { opacity: .6; cursor: wait; }
 .tutor-report-modal-backdrop { position: fixed; z-index: 1200; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(27, 17, 40, .55); backdrop-filter: blur(4px); }
 .tutor-report-tutor-modal { display: flex; flex-direction: column; width: min(960px, 100%); max-height: min(86vh, 900px); overflow: hidden; border: 1px solid #dfd2f1; border-radius: 20px; background: #fff; box-shadow: 0 24px 80px rgba(25, 13, 39, .3); }
 .tutor-report-tutor-modal > header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding: 20px 24px 14px; border-bottom: 1px solid var(--line); background: linear-gradient(115deg, #f7efff, #edfff8); }
@@ -1896,7 +1917,8 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .tutor-report-modal-header-actions { gap: 4px; }
   .tutor-report-modal-list article { grid-template-columns: minmax(0, 1fr) auto; gap: 7px 10px; }
   .tutor-report-modal-list article > span, .tutor-report-modal-list article > b { grid-column: 1; }
-  .tutor-report-modal-list article > button { grid-column: 2; grid-row: 1 / span 3; }
+  .tutor-report-modal-list article > button:not(.tutor-report-send-email) { grid-column: 2; grid-row: 1 / span 3; }
+  .tutor-report-modal-list article > .tutor-report-send-email { grid-column: 1; grid-row: 4; justify-self: start; }
 }
 @media (max-width: 900px) {
   .home-menu-grid { grid-template-columns: repeat(3,minmax(0,1fr)); }
@@ -2048,7 +2070,7 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
 
 
 /* Tutor report school drill-down and compact tutor-school synthesis */
-.tutor-report-modal-list article:has(.tutor-report-modal-schools) { grid-template-columns: minmax(150px,1.1fr) minmax(160px,auto) minmax(130px,auto) minmax(180px,1fr) 150px; }
+.tutor-report-modal-list article:has(.tutor-report-modal-schools) { grid-template-columns: minmax(150px,1.1fr) minmax(160px,auto) minmax(130px,auto) minmax(180px,1fr) 125px 150px; }
 .tutor-report-modal-schools { min-width: 0; color: var(--muted) !important; font-size: 10px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tutor-report-school-modal-list article { grid-template-columns: minmax(180px,1fr) minmax(170px,auto) minmax(130px,auto) 150px; }
 .tutor-report-school-tutor-list { padding: 4px 12px 10px; display: grid; }
@@ -2060,7 +2082,8 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
 @media (max-width: 760px) {
   .tutor-report-modal-list article:has(.tutor-report-modal-schools) { grid-template-columns: minmax(0,1fr) auto; }
   .tutor-report-modal-list article:has(.tutor-report-modal-schools) > .tutor-report-modal-schools { grid-column: 1 / -1; }
-  .tutor-report-modal-list article:has(.tutor-report-modal-schools) > button { grid-column: 2; grid-row: 1 / span 3; }
+  .tutor-report-modal-list article:has(.tutor-report-modal-schools) > button:not(.tutor-report-send-email) { grid-column: 2; grid-row: 1 / span 3; }
+  .tutor-report-modal-list article:has(.tutor-report-modal-schools) > .tutor-report-send-email { grid-column: 1; grid-row: 4; justify-self: start; }
   .tutor-report-school-modal-list article { grid-template-columns: minmax(0,1fr) auto; }
   .tutor-report-school-tutor-list > div { grid-template-columns: 1fr; gap: 3px; }
 }

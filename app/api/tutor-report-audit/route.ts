@@ -10,6 +10,7 @@ import {
   readTutorReportAuditGlobalExcludedSchools,
   readTutorReportAuditSchoolMappings,
   readTutorReportComments,
+  readTutorReportEmailLog,
   readTutorReports,
   readTutorTracking,
   writeTutorReportAuditDays,
@@ -38,10 +39,22 @@ async function getHandler() {
     const [days, schools, mappings, comments, legacyReports, globalExcludedTutorKeys, globalExcludedSchoolIds] = await Promise.all([
       measured("days", readTutorReportAuditDays), measured("schools", readSchools), measured("mappings", readTutorReportAuditSchoolMappings), measured("comments", readTutorReportComments), measured("legacy", readTutorReports), measured("global-exclusions", readTutorReportAuditGlobalExclusions), measured("global-school-exclusions", readTutorReportAuditGlobalExcludedSchools),
     ]);
+    const [tracking, emailLog] = await Promise.all([readTutorTracking(), readTutorReportEmailLog()]);
+    const records = tracking.snapshots.flatMap((snapshot) => snapshot.records);
+    const normalizedName = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr").replace(/[^a-z0-9]+/g, " ").trim();
+    const emailByTutor = new Map<string, Set<string>>();
+    for (const record of records) {
+      const email = record.email.trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) continue;
+      const keys = [record.tutorId ? `id:${record.tutorId}` : "", `name:${normalizedName(`${record.firstName} ${record.lastName}`).replace(/ /g, "-")}`].filter(Boolean);
+      for (const key of keys) emailByTutor.set(key, new Set([...(emailByTutor.get(key) || []), email]));
+    }
+    const tutorEmails = Object.fromEntries(Array.from(new Set(days.flatMap((day) => day.tutors.map((tutor) => tutor.key))))
+      .flatMap((key) => { const emails = emailByTutor.get(key); return emails?.size === 1 ? [[key, Array.from(emails)[0]] as const] : []; }));
     // Preserve global tutor comments while clearing the superseded dated manual snapshots.
     await measured("save-comments", () => writeTutorReportComments(comments));
     if (legacyReports.length) await clearLegacyTutorReports();
-    return json({ days, schools, mappings, comments, globalExcludedTutorKeys, globalExcludedSchoolIds });
+    return json({ days, schools, mappings, comments, globalExcludedTutorKeys, globalExcludedSchoolIds, tutorEmails, emailLog });
   } catch (error) {
     return json({ error: error instanceof Error ? error.message : "Chargement du suivi impossible" }, 500);
   }

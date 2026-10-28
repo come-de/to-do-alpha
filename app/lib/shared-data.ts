@@ -189,6 +189,19 @@ export type TutorReportComment = {
   legacyKey?: string;
 };
 
+export type TutorReportEmailLogEntry = {
+  id: string;
+  tutorKey: string;
+  tutorName: string;
+  status: "pending" | "sent" | "failed";
+  attemptedAt: string;
+  sentAt: string;
+  periodStart: string;
+  periodEnd: string;
+  dateCount: number;
+  missingCount: number;
+};
+
 export type TutorTrackingRecord = {
   key: string;
   tutorId: string;
@@ -576,6 +589,7 @@ export const MASS_COMMUNICATIONS_KEY = "mass-communications.json";
 export const STAFFING_SESSIONS_KEY = "staffing-sessions.json";
 export const TUTOR_REPORTS_KEY = "tutor-reports.json";
 export const TUTOR_REPORT_COMMENTS_KEY = "tutor-report-comments.json";
+export const TUTOR_REPORT_EMAIL_LOG_KEY = "tutor-report-email-log.json";
 const TUTOR_REPORT_COMMENT_PREFIX = "tutor-report-comments:by-tutor:";
 export const TUTOR_REPORT_AUDITS_KEY = "tutor-report-audits.json";
 export const TUTOR_REPORT_AUDIT_SCHOOL_MAPPINGS_KEY = "tutor-report-audit-school-mappings.json";
@@ -611,6 +625,7 @@ const memory = globalThis as typeof globalThis & {
   __petitSuiviTutorReportAuditGlobalExclusions?: string[];
   __petitSuiviTutorReportAuditGlobalExcludedSchools?: string[];
   __petitSuiviTutorReportComments?: TutorReportComment[];
+  __petitSuiviTutorReportEmailLog?: TutorReportEmailLogEntry[];
   __petitSuiviTutorReportCommentsByTutor?: Record<string, TutorReportComment>;
   __petitSuiviTutorTracking?: TutorTrackingData;
   __petitSuiviAvailabilityImports?: AvailabilityImport[];
@@ -2752,6 +2767,45 @@ export async function writeTutorReportAuditSchoolMappings(mappings: TutorReportA
   }
 }
 
+export async function readTutorReportEmailLog(): Promise<TutorReportEmailLogEntry[]> {
+  try {
+    const store = taskStore();
+    if (!await store.getMetadata(TUTOR_REPORT_EMAIL_LOG_KEY, { consistency: "strong" })) return [];
+    const rows = await store.get(TUTOR_REPORT_EMAIL_LOG_KEY, { type: "json", consistency: "strong" });
+    return Array.isArray(rows) ? rows.filter((row): row is Record<string, unknown> => Boolean(row && typeof row === "object")).map((row) => ({
+      id: cleanText(row.id),
+      tutorKey: cleanText(row.tutorKey),
+      tutorName: cleanText(row.tutorName),
+      status: (row.status === "sent" || row.status === "pending" ? row.status : "failed") as TutorReportEmailLogEntry["status"],
+      attemptedAt: cleanText(row.attemptedAt),
+      sentAt: cleanText(row.sentAt),
+      periodStart: cleanText(row.periodStart),
+      periodEnd: cleanText(row.periodEnd),
+      dateCount: Math.max(0, Number(row.dateCount) || 0),
+      missingCount: Math.max(0, Number(row.missingCount) || 0),
+    })).filter((row) => row.id && row.tutorKey).slice(-1000) : [];
+  } catch (error) {
+    if (canUseMemoryFallback()) return memory.__petitSuiviTutorReportEmailLog ?? [];
+    throw error;
+  }
+}
+
+export async function writeTutorReportEmailLog(entries: TutorReportEmailLogEntry[]) {
+  const normalized = entries.slice(-1000).map((entry) => ({
+    ...entry,
+    tutorName: cleanText(entry.tutorName).slice(0, 180),
+    tutorKey: cleanText(entry.tutorKey).slice(0, 180),
+    missingCount: Math.max(0, Math.round(entry.missingCount)),
+    dateCount: Math.max(0, Math.round(entry.dateCount)),
+  }));
+  try {
+    await taskStore().setJSON(TUTOR_REPORT_EMAIL_LOG_KEY, normalized);
+  } catch (error) {
+    if (canUseMemoryFallback()) { memory.__petitSuiviTutorReportEmailLog = normalized; return; }
+    throw error;
+  }
+}
+
 export async function readTutorReportComments() {
   let rawComments: Record<string, unknown>[] = [];
   try {
@@ -3966,7 +4020,7 @@ function formatDuration(hours: number | null) {
   return minutes ? `${wholeHours} h ${minutes} min` : `${wholeHours} h`;
 }
 
-async function sendEmail(to: string, subject: string, html: string) {
+async function sendEmail(to: string, subject: string, html: string, text?: string) {
   const apiKey = process.env.SENDGRID_API_KEY;
   const from = process.env.ASSIGNMENT_FROM_EMAIL;
   if (!apiKey || !from) return { sent: false, reason: "missing-config" };
@@ -3981,7 +4035,7 @@ async function sendEmail(to: string, subject: string, html: string) {
       personalizations: [{ to: [{ email: to }] }],
       from: { email: from },
       subject,
-      content: [{ type: "text/html", value: html }],
+      content: [...(text ? [{ type: "text/plain", value: text }] : []), { type: "text/html", value: html }],
       ...(process.env.SENDGRID_REPLY_TO_EMAIL
         ? { reply_to: { email: process.env.SENDGRID_REPLY_TO_EMAIL } }
         : {}),
@@ -3989,6 +4043,10 @@ async function sendEmail(to: string, subject: string, html: string) {
   });
 
   return { sent: response.ok, reason: response.ok ? "sent" : "send-failed" };
+}
+
+export async function sendTutorReportSummaryEmail(to: string, subject: string, html: string, text: string) {
+  return sendEmail(to, subject, html, text);
 }
 
 function taskUrl() {
