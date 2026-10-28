@@ -2085,3 +2085,33 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
   .tutor-report-rh-summary > button { min-width: 0; padding: 8px; }
   .tutor-report-rh-summary > button b { font-size: 11px; }
 }
+
+/* Daily report chart: keep the open line path unfilled and labels calm at high density. */
+.tutor-report-daily-chart { margin: 10px 12px; overflow: hidden; border: 1px solid #e2d4f4; border-radius: 16px; background: linear-gradient(145deg, #fff 0%, #fcfaff 62%, #f0fdfa 100%); box-shadow: 0 6px 18px rgba(73, 40, 111, .06); }
+.tutor-report-chart-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 16px 8px; }
+.tutor-report-chart-heading > div { min-width: 0; }
+.tutor-report-chart-kicker { color: #7050b9; font-size: 9px; font-weight: 900; letter-spacing: .12em; }
+.tutor-report-chart-heading h3 { margin: 3px 0; color: #302048; font-size: 16px; }
+.tutor-report-chart-heading p { margin: 0; color: #796f87; font-size: 11px; line-height: 1.4; }
+.tutor-report-chart-heading > strong { flex: none; padding: 7px 10px; border: 1px solid #b7e9d7; border-radius: 999px; color: #08785c; background: #e9fff5; font-size: 13px; font-variant-numeric: tabular-nums; }
+.tutor-report-chart-scroll { overflow-x: auto; padding: 4px 10px 10px; scrollbar-color: #cbb8e6 transparent; scrollbar-width: thin; }
+.tutor-report-daily-svg { display: block; width: 100%; min-width: 760px; overflow: visible; }
+.tutor-report-chart-grid { stroke: #e9e2f1; stroke-width: 1; stroke-dasharray: 3 6; }
+.tutor-report-chart-axis { fill: #8b8198; font-size: 10px; font-weight: 650; }
+.tutor-report-chart-line { fill: none !important; stroke: url(#report-chart-line); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.tutor-report-chart-point { fill: #fff; stroke: #e34897; stroke-width: 2.5; cursor: pointer; transition: r .15s ease, fill .15s ease, stroke .15s ease; }
+.tutor-report-daily-svg g:hover .tutor-report-chart-point { fill: #fce7f3; stroke: #bd2780; }
+.tutor-report-daily-svg g.active .tutor-report-chart-point { fill: #10a77e; stroke: #fff; stroke-width: 3; filter: drop-shadow(0 2px 3px rgba(8,120,92,.3)); }
+.tutor-report-daily-svg g:focus-visible .tutor-report-chart-point { stroke: #34214c; stroke-width: 4; }
+.tutor-report-chart-percent { fill: #594770; stroke: #fff; stroke-width: 3px; paint-order: stroke; font-size: 9px; font-weight: 800; }
+.tutor-report-chart-count { fill: #aa3971; stroke: #fff; stroke-width: 3px; paint-order: stroke; font-size: 8.5px; font-weight: 800; }
+.tutor-report-daily-svg g.active .tutor-report-chart-percent { fill: #08785c; font-size: 10px; }
+.tutor-report-daily-svg g.active .tutor-report-chart-count { fill: #08785c; font-size: 9px; }
+.tutor-report-chart-date { fill: #776b87; font-size: 9px; font-weight: 700; }
+.tutor-report-chart-empty { margin: 0; padding: 18px; color: #766b83; font-size: 12px; }
+@media (max-width: 760px) {
+  .tutor-report-daily-chart { margin: 8px; border-radius: 12px; }
+  .tutor-report-chart-heading { align-items: flex-start; flex-direction: column; gap: 7px; padding: 11px 12px 7px; }
+  .tutor-report-chart-heading > strong { align-self: flex-start; }
+  .tutor-report-chart-scroll { padding-inline: 4px; }
+}
