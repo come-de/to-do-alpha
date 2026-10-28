@@ -7,6 +7,8 @@ type Props = { onError?: (message: string) => void };
 type Payload = { days?: TutorReportAuditDay[]; schools?: School[]; mappings?: TutorReportAuditSchoolMapping; comments?: TutorReportComment[]; globalExcludedTutorKeys?: string[]; globalExcludedSchoolIds?: string[]; error?: string; detail?: string; importedDates?: string[]; invalidDateRowCount?: number; skippedNonAlphaRows?: number };
 const number = new Intl.NumberFormat("fr-FR");
 const percent = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 });
+const rhLabels: Record<string, string> = { kelly: "Kelly", julie: "Julie", pierre: "Pierre" };
+const rhOrder = ["kelly", "julie", "pierre"];
 
 async function readPayload(response: Response, operation: string): Promise<Payload> {
   const body = await response.text();
@@ -52,6 +54,7 @@ export default function TutorReportAudit({ onError }: Props) {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [selectedTutorKey, setSelectedTutorKey] = useState("");
+  const [selectedRH, setSelectedRH] = useState("");
   const [selectedSchoolId, setSelectedSchoolId] = useState("");
   const [query, setQuery] = useState("");
   const [saving, setSaving] = useState(false);
@@ -107,6 +110,7 @@ export default function TutorReportAudit({ onError }: Props) {
     const tutors = new Map<string, { key: string; tutorId: string; name: string; expected: number; missing: number; completedReports: number; reportCharacters: number; schoolNames: string[] }>();
     const schoolsTotal = new Map<string, { name: string; expected: number; missing: number }>();
     const allSchoolsTotal = new Map<string, { name: string; expected: number; missing: number }>();
+    const rhTotals = new Map<string, { expected: number; missing: number }>();
     const globallyExcludedTutors = new Set(globalExcludedTutorKeys);
     const globallyExcludedSchools = new Set(globalExcludedSchoolIds);
     const daily = filteredDays.map((day) => {
@@ -121,6 +125,13 @@ export default function TutorReportAudit({ onError }: Props) {
           const result = mappingFor(item.sourceName);
           if (result.excluded || !result.school || !alpha(result.school)) continue;
           if (selectedSchoolId && result.school.id !== selectedSchoolId) continue;
+          const owner = result.school.portfolioOwner || "";
+          if (!globallyExcludedTutors.has(tutor.key) && !globallyExcludedSchools.has(result.school.id)) {
+            const rhTotal = rhTotals.get(owner) || { expected: 0, missing: 0 };
+            rhTotal.expected += item.expectedCount; rhTotal.missing += item.missingCount;
+            rhTotals.set(owner, rhTotal);
+          }
+          if (selectedRH && owner !== selectedRH) continue;
           const completed = item.completedReportCount || 0;
           const characters = item.completedReportCharacterCount || 0;
           if (!globallyExcludedTutors.has(tutor.key)) {
@@ -155,10 +166,11 @@ export default function TutorReportAudit({ onError }: Props) {
       allTutors,
       schools: Array.from(schoolsTotal.entries()).map(([id, item]) => ({ id, ...item })).sort((a, b) => b.missing - a.missing || a.name.localeCompare(b.name, "fr")),
       allSchools,
+      rhTotals: rhOrder.map((key) => ({ key, name: rhLabels[key], ...(rhTotals.get(key) || { expected: 0, missing: 0 }) })),
       worstDays: [...daily].sort((a, b) => b.missing - a.missing || b.rate - a.rate).slice(0, 5),
       daily,
     };
-  }, [filteredDays, globalExcludedTutorKeys, globalExcludedSchoolIds, mappingFor, selectedSchoolId, selectedTutorKey]);
+  }, [filteredDays, globalExcludedTutorKeys, globalExcludedSchoolIds, mappingFor, selectedRH, selectedSchoolId, selectedTutorKey]);
   const chartDays = viewStats.daily.filter((day) => day.expected > 0);
   const chartMax = Math.max(5, Math.ceil(Math.max(...chartDays.map((day) => day.rate), 0) / 5) * 5);
   const chartPoints = chartDays.map((day, index) => ({
@@ -195,9 +207,10 @@ export default function TutorReportAudit({ onError }: Props) {
       .filter((tutor) => !normalized || `${tutor.name} ${tutor.tutorId} ${tutor.schools.map((item) => item.sourceName).join(" ")}`.toLocaleLowerCase("fr").includes(normalized))
       .filter((tutor) => !globalExcludedTutorKeys.includes(tutor.key))
       .filter((tutor) => !selectedTutorKey || tutor.key === selectedTutorKey)
+      .filter((tutor) => !selectedRH || tutor.schools.some((item) => { const school = mappingFor(item.sourceName).school; return school?.portfolioOwner === selectedRH && !globalExcludedSchoolIds.includes(school.id); }))
       .filter((tutor) => !selectedSchoolId || tutor.schools.some((item) => mappingFor(item.sourceName).school?.id === selectedSchoolId && !globalExcludedSchoolIds.includes(mappingFor(item.sourceName).school!.id)))
       .sort((a, b) => Number(a.excluded) - Number(b.excluded) || b.missingCount - a.missingCount || a.name.localeCompare(b.name, "fr"));
-  }, [globalExcludedTutorKeys, globalExcludedSchoolIds, mappingFor, query, visibleSelectedDay, selectedSchoolId, selectedTutorKey]);
+  }, [globalExcludedTutorKeys, globalExcludedSchoolIds, mappingFor, query, visibleSelectedDay, selectedRH, selectedSchoolId, selectedTutorKey]);
 
   const selectedTutorDetails = useMemo(() => {
     if (!selectedTutorDetailKey) return [];
@@ -328,7 +341,8 @@ export default function TutorReportAudit({ onError }: Props) {
     {message ? <p className="enrollment-message">{message}</p> : null}
     {needsReview.length ? <section className="tutor-report-review"><div><h3>Établissements à rapprocher</h3><p>Ils restent hors des totaux Alpha jusqu’à vérification.</p></div>{needsReview.map((item) => <article key={item.key}><strong>{item.name}</strong><span>{number.format(item.missing)} manquant(s) / {number.format(item.expected)} attendu(s)</span><select value="" onChange={(event) => { if (event.target.value) void mapSchool(item.name, event.target.value); }} disabled={saving}><option value="">Associer à une fiche Alpha…</option>{schools.filter(alpha).map((school) => <option key={school.id} value={school.id}>{school.name}</option>)}</select><button type="button" onClick={() => void mapSchool(item.name, "excluded")} disabled={saving}>Écarter</button></article>)}</section> : null}
     {sourceSchoolNames.length ? <details className="tutor-report-mappings"><summary>Rapprochements effectués ({sourceSchoolNames.length})</summary>{sourceSchoolNames.map((item) => <label key={item.key}><span>{item.name}</span><select value={mappings[item.key]} onChange={(event) => void mapSchool(item.name, event.target.value)} disabled={saving}><option value="">Remettre en vérification</option><option value="excluded">Écarté</option>{schools.filter(alpha).map((school) => <option key={school.id} value={school.id}>{school.name}</option>)}</select></label>)}</details> : null}
-    <div className="tutor-report-audit-controls"><label>Du<input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} /></label><label>Au<input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} /></label><label>Tuteur<select value={selectedTutorKey} onChange={(event) => setSelectedTutorKey(event.target.value)}><option value="">Tous les tuteurs</option>{tutorOptions.map(([key, name]) => <option key={key} value={key}>{name}</option>)}</select></label><label>Établissement<select value={selectedSchoolId} onChange={(event) => setSelectedSchoolId(event.target.value)}><option value="">Tous les établissements Alpha</option>{schools.filter(alpha).map((school) => <option key={school.id} value={school.id}>{school.name}</option>)}</select></label><label className="tutor-report-search">Rechercher<input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tuteur ou établissement…" /></label></div>
+    <div className="tutor-report-audit-controls"><label>Du<input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} /></label><label>Au<input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} /></label><label>RH<select value={selectedRH} onChange={(event) => setSelectedRH(event.target.value)}><option value="">Tous les RH</option>{rhOrder.map((key) => <option key={key} value={key}>{rhLabels[key]}</option>)}</select></label><label>Tuteur<select value={selectedTutorKey} onChange={(event) => setSelectedTutorKey(event.target.value)}><option value="">Tous les tuteurs</option>{tutorOptions.map(([key, name]) => <option key={key} value={key}>{name}</option>)}</select></label><label>Établissement<select value={selectedSchoolId} onChange={(event) => setSelectedSchoolId(event.target.value)}><option value="">Tous les établissements Alpha</option>{schools.filter(alpha).map((school) => <option key={school.id} value={school.id}>{school.name}</option>)}</select></label><label className="tutor-report-search">Rechercher<input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tuteur ou établissement…" /></label></div>
+    <section className="tutor-report-rh-summary" aria-label="Bilans manquants par responsable RH"><div><span className="tutor-report-chart-kicker">BILANS MANQUANTS PAR RH</span><small>Établissements rattachés · hors exclusions</small></div>{viewStats.rhTotals.map((rh) => <button key={rh.key} type="button" className={selectedRH === rh.key ? "active" : ""} aria-pressed={selectedRH === rh.key} onClick={() => setSelectedRH(selectedRH === rh.key ? "" : rh.key)}><strong>{rh.name}</strong><b>{number.format(rh.missing)} / {number.format(rh.expected)}</b><small>{rh.expected ? percent.format((rh.missing / rh.expected) * 100) + "% non faits" : "Aucun bilan"}</small></button>)}</section>
     <div className="tutor-report-audit-kpis"><article><span>Rapports attendus</span><strong>{number.format(viewStats.expected)}</strong></article><article className="missing"><span>Rapports manquants</span><strong>{number.format(viewStats.missing)}</strong></article><article className="done"><span>Rapports faits</span><strong>{number.format(viewStats.done)}</strong></article><article className="rate"><span>Taux de complétion</span><strong>{percent.format(viewStats.expected ? (viewStats.done / viewStats.expected) * 100 : 0)}%</strong></article></div>
     {days.length ? <><section className="tutor-report-daily-chart" aria-labelledby="tutor-report-daily-chart-title"><div className="tutor-report-chart-heading"><div><span className="tutor-report-chart-kicker">TENDANCE · HORS EXCLUS</span><h3 id="tutor-report-daily-chart-title">Rapports manquants, jour après jour</h3><p>Le taux figure au-dessus du point, les bilans manquants juste dessous. Cliquez sur un point ou une date pour afficher son détail plus bas.</p></div><strong>{chartDays.length ? percent.format(viewStats.expected ? (viewStats.missing / viewStats.expected) * 100 : 0) + "% sur la période" : "Aucun jour mesurable"}</strong></div>{chartPoints.length ? <div className="tutor-report-chart-scroll"><svg className="tutor-report-daily-svg" style={{ minWidth: `${Math.max(760, chartPoints.length * 46)}px` }} viewBox="0 0 1000 224" role="img" aria-label="Pourcentage et nombre de rapports manquants par jour, hors exclusions">
       <defs><linearGradient id="report-chart-fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#fc4f9b" stopOpacity=".3" /><stop offset="100%" stopColor="#8b5cf6" stopOpacity=".015" /></linearGradient><linearGradient id="report-chart-line" x1="0" x2="1" y1="0" y2="0"><stop offset="0%" stopColor="#8b5cf6" /><stop offset="55%" stopColor="#ec4899" /><stop offset="100%" stopColor="#f97316" /></linearGradient></defs>
@@ -338,7 +352,7 @@ export default function TutorReportAudit({ onError }: Props) {
     </svg></div> : <p className="tutor-report-chart-empty">Tous les rapports de cette période sont exclus du calcul. Réintégrez au moins une journée, un tuteur ou un établissement pour voir les taux.</p>}</section><section className="tutor-report-insights"><article><h3>Jours à regarder</h3>{viewStats.worstDays.map((day) => <button key={day.date} type="button" onClick={() => setSelectedDate(day.date)}><span>{dayLabel(day.date, { weekday: "short", day: "2-digit", month: "short" })}</span><strong>{number.format(day.missing)} manquant(s)</strong><em>{percent.format(day.rate)}%</em></button>)}</article><article className="tutor-report-top-tutors"><div className="tutor-report-insight-heading"><h3>Tuteurs avec le plus de rapports manquants</h3><button type="button" onClick={() => setShowAllTutors(true)}>Voir la liste ({number.format(viewStats.allTutors.length)})</button></div>{viewStats.tutors.slice(0, 5).map((tutor) => <div key={tutor.key}><button type="button" className="tutor-report-name-link" onClick={() => openTutorDetail(tutor.key)}>{tutor.name}</button><strong>{number.format(tutor.missing)} / {number.format(tutor.expected)} · {tutor.completedReports ? number.format(Math.round(tutor.reportCharacters / tutor.completedReports)) + " caractères" : "—"}</strong></div>)}</article><article><div className="tutor-report-insight-heading"><h3>Établissements Alpha concernés</h3><button type="button" onClick={() => setShowAllSchools(true)}>Voir la liste ({number.format(viewStats.allSchools.length)})</button></div>{viewStats.schools.slice(0, 5).map((school) => <div key={school.id}><button type="button" className="tutor-report-name-link" onClick={() => openSchoolDetail(school.id)}>{school.name}</button><strong>{number.format(school.missing)} / {number.format(school.expected)} · {school.expected ? percent.format(school.missing / school.expected * 100) + "% non faits" : "—"}</strong></div>)}</article></section>
     <div className="tutor-report-day-tabs">{viewStats.daily.map((day) => <button type="button" key={day.date} className={visibleSelectedDay?.date === day.date ? "active" : ""} onClick={() => setSelectedDate(day.date)}>{dayLabel(day.date, { weekday: "short", day: "2-digit", month: "short", year: "numeric" })}<small>{number.format(day.missing)} manquant(s) · {number.format(day.expected)} attendus</small></button>)}</div>
     {visibleSelectedDay ? <section className="tutor-report-day" aria-live="polite"><header><div><span className="history-badge">Bilan du jour</span><h3>{dayLabel(visibleSelectedDay.date)}</h3><p>{number.format(dailyTutorRows.length)} tuteur(s) affiché(s) · import : {visibleSelectedDay.sourceFileName}</p></div><strong>{number.format(visibleSelectedDay.sourceRowCount)} lignes sources</strong></header><div className="tutor-report-day-table"><div className="tutor-report-day-head"><span>Tuteur</span><span>Établissements</span><span>Attendus</span><span>Manquants</span><span>Caractères / bilan</span><span>Commentaire général</span><span>Action</span></div>{dailyTutorRows.map((tutor) => {
-      const alphaSchools = tutor.schools.map((item) => ({ ...item, match: mappingFor(item.sourceName) })).filter((item) => item.match.school && alpha(item.match.school) && !globalExcludedSchoolIds.includes(item.match.school.id) && (!selectedSchoolId || item.match.school.id === selectedSchoolId));
+      const alphaSchools = tutor.schools.map((item) => ({ ...item, match: mappingFor(item.sourceName) })).filter((item) => item.match.school && alpha(item.match.school) && !globalExcludedSchoolIds.includes(item.match.school.id) && (!selectedRH || item.match.school.portfolioOwner === selectedRH) && (!selectedSchoolId || item.match.school.id === selectedSchoolId));
       const expected = alphaSchools.reduce((sum, item) => sum + item.expectedCount, 0);
       const missing = alphaSchools.reduce((sum, item) => sum + item.missingCount, 0);
       const completedReportCount = alphaSchools.reduce((sum, item) => sum + item.completedReportCount, 0);
