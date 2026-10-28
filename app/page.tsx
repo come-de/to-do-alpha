@@ -4795,6 +4795,9 @@ export default function Home() {
             <button className={appMode === "staffingAudit" ? "active" : ""} onClick={() => setAppMode("staffingAudit")}>
               <span className="tab-icon" aria-hidden="true">📊</span> Bilan staffing
             </button>
+            <button className={appMode === "tutorReports" ? "active" : ""} onClick={() => setAppMode("tutorReports")}>
+              <span className="tab-icon" aria-hidden="true">🧾</span> Bilans manquants
+            </button>
             <button className={appMode === "unstaffed" ? "active" : ""} onClick={() => setAppMode("unstaffed")}>
               <span className="tab-icon" aria-hidden="true">📋</span> Séances non affectées
             </button>
