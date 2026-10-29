@@ -461,7 +461,7 @@ const organizationSections: Array<{ mode: AppMode; icon: string; title: string; 
   { mode: "watchlist", icon: "👀", title: "À suivre", description: "Établissements qui demandent une attention particulière." },
   { mode: "communications", icon: "📣", title: "Communications", description: "Messages envoyés et suivis à effectuer." },
   { mode: "staffingEvolution", icon: "🔄", title: "Évolution staffing", description: "Comparer les changements entre deux exports." },
-  { mode: "enrollments", icon: "🎒", title: "Inscriptions", description: "Comparer les inscriptions par établissement." },
+  { mode: "parents", icon: "👪", title: "Parents", description: "Centraliser les fiches, imports et suivis des parents." },
   { mode: "tutorReports", icon: "🧾", title: "Bilans tuteurs", description: "Repérer les rapports manquants jour par jour." },
   { mode: "objectives", icon: "🎯", title: "Objectifs", description: "Suivre les objectifs de l’équipe." },
   { mode: "history", icon: "📈", title: "Historique", description: "Consulter les évolutions par année." },
@@ -4798,8 +4798,8 @@ export default function Home() {
             <button className={appMode === "schools" ? "active" : ""} onClick={() => setAppMode("schools")}>
               <span className="tab-icon" aria-hidden="true">🏫</span> Établissements
             </button>
-            <button className={appMode === "parents" ? "active" : ""} onClick={() => setAppMode("parents")}>
-              <span className="tab-icon" aria-hidden="true">👪</span> Parents
+            <button className={appMode === "enrollments" ? "active" : ""} onClick={() => setAppMode("enrollments")}>
+              <span className="tab-icon" aria-hidden="true">🎒</span> Inscriptions
             </button>
             <button className={appMode === "customerCalls" ? "active" : ""} onClick={() => setAppMode("customerCalls")}>
               <span className="tab-icon" aria-hidden="true">☎️</span> Appels service client
