@@ -3219,7 +3219,7 @@ export async function createTutorAssignmentImportFromCsv(input: { fileName: stri
     importedAt: now,
     displayName: input.fileName.replace(/\.[^.]+$/, "") || "Séances affectées",
     fileName: input.fileName || "seances-affectees.csv",
-    sourceRowCount: Math.max(parsed.sourceRowCount, Math.min(1_000_000, input.sourceRowCount || 0)),
+    sourceRowCount: parsed.sourceRowCount,
     rows: parsed.rows,
     createdAt: now,
   });
@@ -3719,7 +3719,7 @@ export async function createEnrollmentImportFromCsv(input: { fileName: string; r
     importedAt: now,
     displayName: input.fileName.replace(/\.[^.]+$/, "") || "Export inscriptions",
     fileName: input.fileName || "parents.csv",
-    sourceRowCount: parsed.sourceRowCount,
+    sourceRowCount: Math.max(parsed.sourceRowCount, Math.min(1_000_000, input.sourceRowCount || 0)),
     rows: parsed.rows.map((row) => ({ ...row, parentContactIds: input.resolveParentIds?.(row) ?? [] })),
     createdAt: now,
   });
