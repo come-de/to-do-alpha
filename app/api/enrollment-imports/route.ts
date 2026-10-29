@@ -60,45 +60,38 @@ async function postHandler(request: Request) {
     }
     trace("body:read");
     if (!rawCsv.trim()) return json({ error: "Fichier CSV vide" }, 400);
-    // A very large CRM blob can stall for the whole 60-second function limit.
-    // Keep the enrollment import usable and report when parent linking could not run.
-    let contactTimer: ReturnType<typeof setTimeout> | undefined;
-    const contactResult = await Promise.race([
-      taskStore().get("parents-crm/contacts.json", { type: "json" })
-        .then((value) => ({ available: true as const, value }))
-        .catch(() => ({ available: false as const, value: null })),
-      new Promise<{ available: false; value: null }>((resolve) => {
-        contactTimer = setTimeout(() => resolve({ available: false, value: null }), 5000);
-      }),
-    ]);
-    if (contactTimer) clearTimeout(contactTimer);
-    trace(contactResult.available ? "contacts:read" : "contacts:unavailable");
-    let contacts = Array.isArray(contactResult.value) ? contactResult.value as ParentContact[] : [];
-    let parentLinkingUnavailable = !contactResult.available;
+    // Never report a successful enrollment import after silently skipping the
+    // parent link. The CRM blob can take longer than a short arbitrary timeout
+    // to load on a cold Netlify function, so wait for it and fail the import
+    // clearly if the registry cannot be read or saved.
+    let contacts: ParentContact[];
+    try {
+      const value = await taskStore().get("parents-crm/contacts.json", { type: "json" });
+      contacts = Array.isArray(value) ? value as ParentContact[] : [];
+      trace("contacts:read");
+    } catch (error) {
+      console.error("[enrollment-import] parent registry read failed", error);
+      return json({ error: "Le rapprochement avec les fiches Parents est indisponible. Le CSV n’a pas été importé ; réessayez dans quelques instants." }, 503);
+    }
     let parentLinking = { linkedEnrollmentRows: 0, createdParentContacts: 0 };
     const fileName = url.searchParams.get("fileName") || "parents.csv";
     const parsed = parseEnrollmentCsv(rawCsv);
     if (!parsed.rows.length) return json({ error: "Aucun élève avec des créneaux dans ce CSV" }, 400);
-    let rowsWithParents = parsed.rows;
-    if (!parentLinkingUnavailable) {
-      const linked = linkEnrollmentParents(parsed.rows, contacts, fileName);
-      try {
-        await taskStore().setJSON("parents-crm/contacts.json", linked.contacts);
-        contacts = linked.contacts;
-        rowsWithParents = linked.rows;
-        parentLinking = { linkedEnrollmentRows: linked.linkedEnrollmentRows, createdParentContacts: linked.createdParentContacts };
-        trace("parents:linked-and-saved");
-      } catch (error) {
-        parentLinkingUnavailable = true;
-        console.error("[enrollment-import] parent registry write failed", error);
-      }
+    const linked = linkEnrollmentParents(parsed.rows, contacts, fileName);
+    try {
+      await taskStore().setJSON("parents-crm/contacts.json", linked.contacts);
+      parentLinking = { linkedEnrollmentRows: linked.linkedEnrollmentRows, createdParentContacts: linked.createdParentContacts };
+      trace("parents:linked-and-saved");
+    } catch (error) {
+      console.error("[enrollment-import] parent registry write failed", error);
+      return json({ error: "Les fiches Parents n’ont pas pu être mises à jour. Le CSV n’a pas été importé ; réessayez dans quelques instants." }, 503);
     }
     trace("contacts:indexed");
     const createdImport = await createEnrollmentImportFromCsv({
       fileName,
       rawCsv,
       sourceRowCount: Number(request.headers.get("x-alpha-source-row-count")) || undefined,
-      parsedRows: parentLinkingUnavailable ? parsed.rows : rowsWithParents,
+      parsedRows: linked.rows,
     });
     // Enrollment imports can contain tens of thousands of rows. Returning the
     // full import here duplicates the entire CSV-derived dataset in the
@@ -108,7 +101,7 @@ async function postHandler(request: Request) {
     const summary = { ...createdImport, rows: [] };
     const imports = await readEnrollmentImportSummaries();
     trace("summaries:read");
-    return json({ import: summary, imports, parentLinkingUnavailable, parentLinking }, 201);
+    return json({ import: summary, imports, parentLinkingUnavailable: false, parentLinking }, 201);
   } catch (error) {
     trace("error");
     const detail = error instanceof Error ? error.message : "Impossible d’importer le CSV";
