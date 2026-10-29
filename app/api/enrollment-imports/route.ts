@@ -1,6 +1,7 @@
 import { withIdentity } from "@/app/lib/with-identity";
 import { NextResponse } from "next/server";
-import { normalizeParentEmail, normalizeParentPhone, type ParentContact } from "@/app/lib/parents";
+import type { ParentContact } from "@/app/lib/parents";
+import { linkEnrollmentParents } from "@/app/lib/enrollment-parent-linking.js";
 import { taskStore } from "@/app/lib/shared-data";
 import { gunzipSync } from "node:zlib";
 import {
@@ -10,6 +11,7 @@ import {
   readEnrollmentImports,
   readEnrollmentImportSummaries,
   updateEnrollmentImportName,
+  parseEnrollmentCsv,
 } from "@/app/lib/shared-data";
 
 export const dynamic = "force-dynamic";
@@ -71,31 +73,30 @@ async function postHandler(request: Request) {
     ]);
     if (contactTimer) clearTimeout(contactTimer);
     trace(contactResult.available ? "contacts:read" : "contacts:unavailable");
-    const contacts = Array.isArray(contactResult.value) ? contactResult.value as ParentContact[] : [];
-    const parentLinkingUnavailable = !contactResult.available;
-    const identities = new Map<string, Set<string>>();
-    for (const contact of contacts) {
-      for (const email of contact.emails || []) {
-        const key = `email:${normalizeParentEmail(email)}`;
-        identities.set(key, new Set([...(identities.get(key) || []), contact.id]));
-      }
-      for (const phone of contact.phones || []) {
-        const key = `phone:${normalizeParentPhone(phone)}`;
-        identities.set(key, new Set([...(identities.get(key) || []), contact.id]));
+    let contacts = Array.isArray(contactResult.value) ? contactResult.value as ParentContact[] : [];
+    let parentLinkingUnavailable = !contactResult.available;
+    const fileName = url.searchParams.get("fileName") || "parents.csv";
+    const parsed = parseEnrollmentCsv(rawCsv);
+    if (!parsed.rows.length) return json({ error: "Aucun élève avec des créneaux dans ce CSV" }, 400);
+    let rowsWithParents = parsed.rows;
+    if (!parentLinkingUnavailable) {
+      const linked = linkEnrollmentParents(parsed.rows, contacts, fileName);
+      try {
+        await taskStore().setJSON("parents-crm/contacts.json", linked.contacts);
+        contacts = linked.contacts;
+        rowsWithParents = linked.rows;
+        trace("parents:linked-and-saved");
+      } catch (error) {
+        parentLinkingUnavailable = true;
+        console.error("[enrollment-import] parent registry write failed", error);
       }
     }
-    const resolveParentIds = (row: { parentEmails?: string[]; parentPhones?: string[] }) => {
-      const ids = new Set<string>();
-      for (const email of row.parentEmails || []) for (const id of identities.get(`email:${normalizeParentEmail(email)}`) || []) ids.add(id);
-      for (const phone of row.parentPhones || []) for (const id of identities.get(`phone:${normalizeParentPhone(phone)}`) || []) ids.add(id);
-      return ids.size === 1 ? [...ids] : [];
-    };
     trace("contacts:indexed");
     const createdImport = await createEnrollmentImportFromCsv({
-      fileName: url.searchParams.get("fileName") || "parents.csv",
+      fileName,
       rawCsv,
       sourceRowCount: Number(request.headers.get("x-alpha-source-row-count")) || undefined,
-      resolveParentIds,
+      parsedRows: parentLinkingUnavailable ? parsed.rows : rowsWithParents,
     });
     // Enrollment imports can contain tens of thousands of rows. Returning the
     // full import here duplicates the entire CSV-derived dataset in the
