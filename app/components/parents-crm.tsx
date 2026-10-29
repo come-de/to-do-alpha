@@ -2,7 +2,7 @@
 
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { formatParentDate, parentEvents } from "@/app/lib/parent-provenance";
-import { parentSourceLabels, type ParentContact, type ParentFollowUp, type ParentImport, type ParentImportRow, type ParentSource } from "@/app/lib/parents";
+import { parentSourceLabels, splitParentPhones, type ParentContact, type ParentFollowUp, type ParentImport, type ParentImportRow, type ParentSource } from "@/app/lib/parents";
 import ParentHistoryDialog from "@/app/components/parent-history-dialog";
 import "./parents-crm.css";
 
@@ -14,8 +14,8 @@ const fields: Array<{ key: Field; label: string; aliases: string[] }> = [
   { key: "firstName", label: "Prénom", aliases: ["prenom", "first name", "firstname", "given name"] },
   { key: "lastName", label: "Nom", aliases: ["nom", "nom de famille", "last name", "lastname", "surname"] },
   { key: "parentName", label: "Nom du parent", aliases: ["nom du parent", "parent name"] },
-  { key: "email", label: "E-mail", aliases: ["email", "e mail", "mail", "courriel"] },
-  { key: "phone", label: "Téléphone", aliases: ["telephone", "phone", "mobile", "numero de telephone"] },
+  { key: "email", label: "E-mail", aliases: ["email", "e mail", "mail", "courriel", "couriel"] },
+  { key: "phone", label: "Téléphone", aliases: ["telephone", "phone", "mobile", "numero de telephone", "telephone parent", "telephone portable"] },
   { key: "school", label: "Établissement", aliases: ["etablissement", "school", "ecole"] },
   { key: "enrolled", label: "Créneaux / statut inscrit", aliases: ["creneaux", "slots", "inscrit", "inscription", "statut"] },
   { key: "submittedAt", label: "Date de la demande", aliases: ["horodateur", "timestamp", "date de reponse", "date de réponse"] },
@@ -157,7 +157,7 @@ export default function ParentsCRM() {
     const pick = (row: string[], field: Field) => pickAll(row, field)[0] ?? "";
     const rows: ParentImportRow[] = csv.rows.map((row) => ({
       source: source === "combined" ? pick(row, "source") as ParentSource : undefined,
-      firstName: pick(row, "firstName"), lastName: pick(row, "lastName"), fullName: pick(row, "parentName"), emails: pickAll(row, "email").flatMap((email) => email.split(/[;,]/).map((value) => value.trim()).filter(Boolean)), phones: pickAll(row, "phone").flatMap((phone) => phone.split(/[;,]/).map((value) => value.trim()).filter(Boolean)), school: pick(row, "school"),
+      firstName: pick(row, "firstName"), lastName: pick(row, "lastName"), fullName: pick(row, "parentName"), emails: pickAll(row, "email").flatMap((email) => email.split(/[|;,/\r\n]+/).map((value) => value.trim()).filter(Boolean)), phones: pickAll(row, "phone").flatMap(splitParentPhones), school: pick(row, "school"),
       enrolled: (source === "alpha" || source === "combined" && pick(row, "source") === "alpha") && mapping.enrolled.length ? enrollmentValue(pick(row, "enrolled")) : null,
       childClass: pick(row, "childClass"), submittedAt: pick(row, "submittedAt"), brochure: pick(row, "brochure"), visioInterested: yesNoValue(pick(row, "visioInterested")),
       enrolledAnswer: pick(row, "enrolledAnswer"), contactPreference: pick(row, "contactPreference"), selectedMeeting: pick(row, "selectedMeeting"), expectations: pick(row, "expectations"), knownVia: pick(row, "knownVia"),
@@ -165,19 +165,31 @@ export default function ParentsCRM() {
     })).filter((row) => row.firstName || row.lastName || row.fullName || row.emails?.length || row.phones?.length);
     try {
       if (source === "combined" && rows.some((row) => !row.source || !["alpha", "aircall", "visio", "enrolled", "brochure"].includes(row.source))) throw new Error("La colonne Source doit contenir Alpha, Aircall, Visio, Déjà inscrits ou Plaquette pour chaque ligne.");
-      const batchSize = 750;
-      const batchCount = Math.ceil(rows.length / batchSize);
       const importId = crypto.randomUUID();
+      // Keep each request below Netlify's request-body limit. Normal exports
+      // (including the 15k-row Alpha file) fit in one request, avoiding dozens
+      // of full-CRM read/modify/write cycles that previously timed out.
+      const maxBatchBytes = 4_500_000;
+      const batches: ParentImportRow[][] = [];
+      let batch: ParentImportRow[] = [];
+      let batchBytes = 0;
+      for (const row of rows) {
+        const rowBytes = new TextEncoder().encode(JSON.stringify(row)).byteLength + (batch.length ? 1 : 0);
+        if (batch.length && batchBytes + rowBytes > maxBatchBytes) { batches.push(batch); batch = []; batchBytes = 0; }
+        batch.push(row); batchBytes += rowBytes;
+      }
+      if (batch.length) batches.push(batch);
+      const batchCount = batches.length;
       let imported = 0, matched = 0, review = 0, schoolReview = 0;
-      for (let offset = 0; offset < rows.length; offset += batchSize) {
-        const batch = rows.slice(offset, offset + batchSize);
-        setNotice(`Import sécurisé en cours · lot ${Math.floor(offset / batchSize) + 1}/${batchCount}…`);
-        const response = await fetch("/api/parents", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ source, mixedSources: source === "combined", importId, fileName: csv.fileName, rows: batch }) });
+      for (let index = 0; index < batches.length; index++) {
+        const currentBatch = batches[index];
+        setNotice(`Import sécurisé en cours · lot ${index + 1}/${batchCount}…`);
+        const response = await fetch("/api/parents", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ source, mixedSources: source === "combined", importId, fileName: csv.fileName, rows: currentBatch }) });
         let body: { error?: string; imported?: number; matched?: number; review?: number; schoolReview?: number };
         try { body = await response.json(); }
-        catch { throw new Error(`Réponse invalide au lot ${Math.floor(offset / batchSize) + 1}/${batchCount}. ${imported} ligne(s) ont déjà été enregistrées; le fichier peut être réimporté sans créer de doublons.`); }
+        catch { throw new Error(`Réponse invalide au lot ${index + 1}/${batchCount}. ${imported} ligne(s) ont déjà été enregistrées; le fichier peut être réimporté sans créer de doublons.`); }
         if (!response.ok) throw new Error(`${body.error || "Import impossible."} ${imported ? `${imported} ligne(s) déjà enregistrées; réimporte le même fichier si nécessaire.` : ""}`);
-        imported += body.imported ?? batch.length; matched += body.matched ?? 0; review += body.review ?? 0; schoolReview += body.schoolReview ?? 0;
+        imported += body.imported ?? currentBatch.length; matched += body.matched ?? 0; review += body.review ?? 0; schoolReview += body.schoolReview ?? 0;
       }
       setNotice(`${imported} ligne(s) importée(s), ${matched} rapprochée(s), ${review} identité(s) à vérifier, ${schoolReview} établissement(s) à harmoniser.`); setCsv(null); await refresh();
     } catch (caught) { setError(caught instanceof Error ? caught.message : "Import impossible."); }

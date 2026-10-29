@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { withIdentity } from "@/app/lib/with-identity";
-import { normalizeParentPhone, type ParentContact } from "@/app/lib/parents";
+import { normalizeParentPhone, splitParentPhones, type ParentContact } from "@/app/lib/parents";
 import { readTutorTracking, taskStore } from "@/app/lib/shared-data";
 import { readCustomerCallData, writeCustomerCallData } from "@/app/lib/customer-call-audit";
 import { evaluateCustomerCallback, markCustomerCallbacksRecalled, mergeCustomerCallRecords, normalizeCustomerPhone, parseCustomerCallCsv, type CustomerCallRole } from "@/app/lib/customer-call-audit-parser";
@@ -38,9 +38,9 @@ async function getHandler() {
     ]);
     const contacts = rawContacts;
     const parentByPhone = new Map<string, ParentContact[]>();
-    for (const contact of contacts) for (const phone of contact.phones || []) {
+    for (const contact of contacts) for (const value of contact.phones || []) for (const phone of splitParentPhones(value)) {
       const normalized = normalizeParentPhone(phone);
-      if (normalized) parentByPhone.set(normalized, [...(parentByPhone.get(normalized) || []), contact]);
+      if (normalized.length >= 7 && normalized.length <= 15) parentByPhone.set(normalized, [...(parentByPhone.get(normalized) || []), contact]);
     }
     const tutorByPhone = new Map<string, string[]>();
     for (const snapshot of tracking.snapshots) for (const tutor of snapshot.records) {
@@ -54,9 +54,11 @@ async function getHandler() {
       const manualParent = manualParentId ? contacts.find((contact) => contact.id === manualParentId) : undefined;
       // Match by normalized phone across every Aircall branch. A parent may be
       // reached through a generic or outbound branch, so the branch is not a
-      // reliable gate for identity matching.
-      const parentMatches = parentByPhone.get(call.customerNumber) || [];
-      const tutorMatches = (call.role === "tutor-candidate" || call.role === "unknown") ? tutorByPhone.get(call.customerNumber) || [] : [];
+      // reliable gate for identity matching. Re-normalize stored call values
+      // so older imports using +33 (0) notation remain linkable.
+      const customerNumber = normalizeCustomerPhone(call.customerNumber);
+      const parentMatches = parentByPhone.get(customerNumber) || [];
+      const tutorMatches = (call.role === "tutor-candidate" || call.role === "unknown") ? tutorByPhone.get(customerNumber) || [] : [];
       const role: CustomerCallRole = manualParent ? "parent" : call.role === "unknown" && parentMatches.length === 1 && tutorMatches.length === 0 ? "parent" : call.role === "unknown" && tutorMatches.length === 1 && parentMatches.length === 0 ? "tutor-candidate" : call.role;
       const parent = manualParent || (role === "parent" && parentMatches.length === 1 ? parentMatches[0] : undefined);
       const parentCall = Boolean(manualParent) || role === "parent";

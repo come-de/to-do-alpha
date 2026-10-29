@@ -1,5 +1,5 @@
 import { withIdentity } from "@/app/lib/with-identity";
-import { normalizeParentPhone, type ParentContact } from "@/app/lib/parents";
+import { normalizeParentPhone, splitParentPhones, type ParentContact } from "@/app/lib/parents";
 import { readEnrollmentImports, taskStore } from "@/app/lib/shared-data";
 import { readCustomerCallData } from "@/app/lib/customer-call-audit";
 
@@ -16,11 +16,11 @@ async function getHandler(request: Request) {
     const contact = contacts.find((item) => item.id === id);
     if (!contact) return Response.json({ error: "Fiche parent introuvable." }, { status: 404 });
     const phoneOwners = new Map<string, number>();
-    for (const item of contacts) for (const phone of item.phones || []) {
+    for (const item of contacts) for (const value of item.phones || []) for (const phone of splitParentPhones(value)) {
       const normalized = normalizeParentPhone(phone);
-      if (normalized) phoneOwners.set(normalized, (phoneOwners.get(normalized) || 0) + 1);
+      if (normalized.length >= 7 && normalized.length <= 15) phoneOwners.set(normalized, (phoneOwners.get(normalized) || 0) + 1);
     }
-    const phones = new Set((contact.phones || []).map(normalizeParentPhone).filter((phone) => phone && phoneOwners.get(phone) === 1));
+    const phones = new Set((contact.phones || []).flatMap((value) => splitParentPhones(value).map(normalizeParentPhone)).filter((phone) => phone.length >= 7 && phone.length <= 15 && phoneOwners.get(phone) === 1));
     const data = await readCustomerCallData();
     const calls = data.calls.filter((call) => (call.role === "parent" || call.role === "unknown") && phones.has(normalizeParentPhone(call.customerNumber)))
       .map((call) => ({ id: call.id, timestamp: call.timestamp, direction: call.direction, answered: call.answered, callType: call.callType, durationSeconds: call.talkSeconds || call.durationSeconds, branch: call.branch, missedReason: call.missedReason }));
