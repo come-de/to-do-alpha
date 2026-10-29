@@ -2185,7 +2185,7 @@ export function parseEnrollmentCsv(value: string) {
   const classIndex = indexFor(["classe", "class"]);
   const schoolIndex = indexFor(["ecole", "etablissement", "school"]);
   const slotsIndex = indexFor(["creneaux", "creneau", "slots"]);
-  const parentEmailIndices = headers.flatMap((header, index) => /^(?:courriel|email|mail|emailparent|courrielparent|emailduparent|courrielduparent|adresseemail|adresseemailparent)$/.test(header) ? [index] : []);
+  const parentEmailIndices = headers.flatMap((header, index) => /^(?:courriel|couriel|email|mail|emailparent|courrielparent|emailduparent|courrielduparent|adresseemail|adresseemailparent)$/.test(header) ? [index] : []);
   const parentPhoneIndices = headers.flatMap((header, index) => /^(?:numerodetelephone|numerodetelephoneparent|telephone|telephoneparent|telephoneportable|telephoneportableparent|mobile|mobileparent|portable|portableparent)$/.test(header) ? [index] : []);
   const oneTimeSessionIndex = indexFor(["seancesponctuelles", "seanceponctuelle", "ponctuelle", "ponctuel"]);
   if (studentIdIndex < 0 || slotsIndex < 0) {
@@ -3219,7 +3219,7 @@ export async function createTutorAssignmentImportFromCsv(input: { fileName: stri
     importedAt: now,
     displayName: input.fileName.replace(/\.[^.]+$/, "") || "Séances affectées",
     fileName: input.fileName || "seances-affectees.csv",
-    sourceRowCount: parsed.sourceRowCount,
+    sourceRowCount: Math.max(parsed.sourceRowCount, Math.min(1_000_000, input.sourceRowCount || 0)),
     rows: parsed.rows,
     createdAt: now,
   });
@@ -3710,7 +3710,7 @@ export async function readEnrollmentImports() {
   }
 }
 
-export async function createEnrollmentImportFromCsv(input: { fileName: string; rawCsv: string; resolveParentIds?: (row: EnrollmentRow & { parentEmails?: string[]; parentPhones?: string[] }) => string[] }) {
+export async function createEnrollmentImportFromCsv(input: { fileName: string; rawCsv: string; sourceRowCount?: number; resolveParentIds?: (row: EnrollmentRow & { parentEmails?: string[]; parentPhones?: string[] }) => string[] }) {
   const now = new Date().toISOString();
   const parsed = parseEnrollmentCsv(input.rawCsv);
   if (!parsed.rows.length) throw new Error("Aucun élève avec des créneaux dans ce CSV");
