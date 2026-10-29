@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { EnrollmentImport, EnrollmentRow } from "@/app/lib/shared-data";
 import type { FileKind } from "@/app/components/files-hub";
 import ParentHistoryDialog from "@/app/components/parent-history-dialog";
+import { postEnrollmentCsv } from "@/app/lib/enrollment-upload";
 
 type ComparisonView = "new" | "lost" | "same";
 type SchoolPortfolioOwner = "" | "kelly" | "pierre" | "julie";
@@ -236,11 +237,7 @@ export default function EnrollmentComparison({ onOpenFiles }: { onOpenFiles: (ki
     setMessage("Import en cours…");
     try {
       const text = await file.text();
-      const response = await fetch(`/api/enrollment-imports?fileName=${encodeURIComponent(file.name)}`, {
-        method: "POST",
-        headers: { "Content-Type": "text/csv;charset=utf-8" },
-        body: text,
-      });
+      const response = await postEnrollmentCsv(text, file.name);
       const data = await readApiJson<{
         import?: Partial<EnrollmentImport>;
         imports?: Partial<EnrollmentImport>[];
