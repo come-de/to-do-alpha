@@ -2,6 +2,7 @@ import { withIdentity } from "@/app/lib/with-identity";
 import { NextResponse } from "next/server";
 import type { ParentContact } from "@/app/lib/parents";
 import { linkEnrollmentParents } from "@/app/lib/enrollment-parent-linking.js";
+import { readParentArray } from "@/app/lib/parent-storage";
 import { taskStore } from "@/app/lib/shared-data";
 import { gunzipSync } from "node:zlib";
 import {
@@ -60,14 +61,11 @@ async function postHandler(request: Request) {
     }
     trace("body:read");
     if (!rawCsv.trim()) return json({ error: "Fichier CSV vide" }, 400);
-    // Never report a successful enrollment import after silently skipping the
-    // parent link. The CRM blob can take longer than a short arbitrary timeout
-    // to load on a cold Netlify function, so wait for it and fail the import
-    // clearly if the registry cannot be read or saved.
+    // Confirm absence before reading the optional registry, then create it on
+    // the first import. Never save an enrollment import with a skipped link.
     let contacts: ParentContact[];
     try {
-      const value = await taskStore().get("parents-crm/contacts.json", { type: "json" });
-      contacts = Array.isArray(value) ? value as ParentContact[] : [];
+      contacts = await readParentArray<ParentContact>(taskStore(), "parents-crm/contacts.json");
       trace("contacts:read");
     } catch (error) {
       console.error("[enrollment-import] parent registry read failed", error);
