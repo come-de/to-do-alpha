@@ -1,3 +1,5 @@
+import { normalizeParentPhone } from "./phone-normalization.js";
+
 export type CustomerCallRole = "parent" | "tutor-candidate" | "school" | "unknown";
 export type CustomerCallDirection = "inbound" | "outbound";
 
@@ -38,7 +40,8 @@ export type CustomerCallCallbackState = "not-applicable" | "completed" | "attemp
 export function evaluateCustomerCallback(call: CustomerCallRecord, calls: CustomerCallRecord[], windowHours = 24, minimumTalkSeconds = 30) {
   if (call.direction !== "inbound" || call.answered) return { state: "not-applicable" as CustomerCallCallbackState, attemptCount: 0 };
   if (!call.customerNumber) return { state: "not-called" as const, attemptCount: 0 };
-  const attempts = calls.filter((candidate) => candidate.direction === "outbound" && candidate.customerNumber === call.customerNumber
+  const customerNumber = normalizeCustomerPhone(call.customerNumber);
+  const attempts = calls.filter((candidate) => candidate.direction === "outbound" && normalizeCustomerPhone(candidate.customerNumber) === customerNumber
     && candidate.timestamp >= call.timestamp && candidate.timestamp <= call.timestamp + windowHours * 60 * 60 * 1000);
   const completed = attempts.some((candidate) => candidate.answered && candidate.talkSeconds > minimumTalkSeconds);
   return { state: completed ? "completed" as const : attempts.length ? "attempted" as const : "not-called" as const, attemptCount: attempts.length };
@@ -59,7 +62,7 @@ export function mergeCustomerCallRecords(existing: CustomerCallRecord[], incomin
 export function markCustomerCallbacksRecalled(calls: CustomerCallRecord[], customerNumber: string, throughTimestamp: number, completedAt = new Date().toISOString()) {
   let updatedCount = 0;
   const nextCalls = calls.map((call) => {
-    if (call.customerNumber !== customerNumber || (call.role !== "parent" && call.role !== "unknown") || call.direction !== "inbound" || call.answered || call.timestamp > throughTimestamp || call.callbackCompletedManuallyAt) return call;
+    if (normalizeCustomerPhone(call.customerNumber) !== normalizeCustomerPhone(customerNumber) || (call.role !== "parent" && call.role !== "unknown") || call.direction !== "inbound" || call.answered || call.timestamp > throughTimestamp || call.callbackCompletedManuallyAt) return call;
     if (evaluateCustomerCallback(call, calls).state === "completed") return call;
     updatedCount += 1;
     return { ...call, callbackCompletedManuallyAt: completedAt };
@@ -70,10 +73,7 @@ export function markCustomerCallbacksRecalled(calls: CustomerCallRecord[], custo
 const normalizeHeader = (value: string) => value.trim().toLocaleLowerCase("fr").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "");
 
 export function normalizeCustomerPhone(value: string) {
-  let digits = value.replace(/\D/g, "");
-  if (digits.startsWith("00")) digits = digits.slice(2);
-  if (digits.startsWith("33") && digits.length === 11) digits = `0${digits.slice(2)}`;
-  return digits;
+  return normalizeParentPhone(value);
 }
 
 export function classifyCustomerCallRole(branch: string): CustomerCallRole {

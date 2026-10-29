@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { splitParentPhones } from "../app/lib/phone-normalization.js";
 import {
   evaluateCustomerCallback,
   markCustomerCallbacksRecalled,
@@ -64,10 +65,16 @@ test("manual callback completion removes only pending missed calls up to the mar
 
 test("normalizes French and international phone notation and role labels", () => {
   assert.equal(normalizeCustomerPhone("+33 6 12 34 56 78"), "0612345678");
+  assert.equal(normalizeCustomerPhone("+33 (0)6 12 34 56 78"), "0612345678");
+  assert.equal(normalizeCustomerPhone("0033 6 12 34 56 78"), "0612345678");
   const parent = parseCustomerCallCsv(csv.replace("Parent,", "tuteur ou candidat,"), "x.csv").events[0];
   assert.equal(parent.role, "tutor-candidate");
   const school = parseCustomerCallCsv(csv.replace("Parent,", "établissement scolaire,"), "x.csv").events[0];
   assert.equal(school.role, "school");
+});
+
+test("splits multiple parent phone values instead of concatenating them", () => {
+  assert.deepEqual(splitParentPhones("06 12 34 56 78 | +33 (0)7 98 76 54 32"), ["06 12 34 56 78", "+33 (0)7 98 76 54 32"]);
 });
 
 test("keeps calls without a usable caller number in totals without linking them to each other", () => {

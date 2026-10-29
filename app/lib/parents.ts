@@ -80,10 +80,6 @@ export function normalizeParentEmail(value: string) {
   return value.trim().toLocaleLowerCase("fr");
 }
 
-export function normalizeParentPhone(value: string) {
-  let digits = value.replace(/\D/g, "");
-  if (digits.startsWith("00")) digits = digits.slice(2);
-  if (digits.startsWith("33") && digits.length === 11) digits = `0${digits.slice(2)}`;
-  return digits;
-}
+
+export { normalizeParentPhone, splitParentPhones } from "./phone-normalization.js";
 

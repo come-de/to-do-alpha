@@ -1,13 +1,13 @@
 import { withIdentity } from "@/app/lib/with-identity";
 import { readSchools, taskStore } from "@/app/lib/shared-data";
-import { normalizeParentEmail, normalizeParentPhone, type ParentContact, type ParentFollowUp, type ParentImport, type ParentImportRow, type ParentSource } from "@/app/lib/parents";
+import { normalizeParentEmail, normalizeParentPhone, splitParentPhones, type ParentContact, type ParentFollowUp, type ParentImport, type ParentImportRow, type ParentSource } from "@/app/lib/parents";
 
 const CONTACTS_KEY = "parents-crm/contacts.json";
 const IMPORTS_KEY = "parents-crm/imports.json";
 const sources = new Set<ParentSource>(["alpha", "aircall", "visio", "enrolled", "brochure"]);
 const clean = (value: unknown, max = 200) => typeof value === "string" ? value.trim().slice(0, max) : "";
 const emailList = (value: string) => value ? [normalizeParentEmail(value)].filter((item) => item.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(item)) : [];
-const phoneList = (value: string) => { const phone = normalizeParentPhone(value); return phone.length >= 7 && phone.length <= 24 ? [phone] : []; };
+const phoneList = (value: string) => splitParentPhones(value).map(normalizeParentPhone).filter((phone) => phone.length >= 7 && phone.length <= 15);
 const aircallCount = (value: unknown) => { const parsed = Number.parseInt(clean(value, 20), 10); return Number.isFinite(parsed) && parsed >= 0 ? parsed : null; };
 const normalizeSchool = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr").replace(/\.pdf\s*$/i, "").replace(/\bst\b/g, "saint").replace(/\bste\b/g, "sainte").replace(/[^a-z0-9]+/g, " ").trim();
 const schoolStopWords = new Set(["etude", "alpha", "college", "lycee", "ecole", "groupe", "scolaire", "institution", "site", "primaire", "maternelle", "surveillance", "stage", "de", "du", "des", "la", "le", "les", "sur", "et", "a", "l", "ensemble", "sixieme", "cinquieme", "quatrieme", "troisieme", "seconde", "terminale", "premiere"]);
@@ -65,11 +65,12 @@ async function postHandler(request: Request) {
     const contactName = (contact: ParentContact) => (contact.fullName || `${contact.firstName} ${contact.lastName}`).trim().toLocaleLowerCase("fr");
     const indexContact = (contact: ParentContact) => {
       for (const email of contact.emails ?? []) addToIndex(identityIndex, `email:${normalizeParentEmail(email)}`, contact);
-      for (const phone of contact.phones ?? []) addToIndex(identityIndex, `phone:${normalizeParentPhone(phone)}`, contact);
+      for (const value of contact.phones ?? []) for (const phone of splitParentPhones(value).map(normalizeParentPhone).filter((item) => item.length >= 7 && item.length <= 15)) addToIndex(identityIndex, `phone:${phone}`, contact);
       addToIndex(nameIndex, contactName(contact), contact);
     };
     contacts.forEach(indexContact);
     const canonicalNames = (await readSchools()).map((school) => school.name);
+    const schoolMatchCache = new Map<string, ReturnType<typeof matchSchool>>();
     let matched = 0;
     let reviewCount = 0;
     let schoolReviewCount = 0;
@@ -83,7 +84,12 @@ async function postHandler(request: Request) {
       const emails = [...new Set([...(Array.isArray(row.emails) ? row.emails.flatMap((email) => emailList(clean(email, 254))) : []), ...emailList(clean(row.email, 254))])];
       const phones = [...new Set([...(Array.isArray(row.phones) ? row.phones.flatMap((phone) => phoneList(clean(phone, 40))) : []), ...phoneList(clean(row.phone, 40))])];
       const rawSchool = clean(row.school, 180);
-      const schoolMatch = matchSchool(rawSchool, canonicalNames);
+      const schoolKey = normalizeSchool(rawSchool);
+      let schoolMatch = schoolMatchCache.get(schoolKey);
+      if (!schoolMatch) {
+        schoolMatch = matchSchool(rawSchool, canonicalNames);
+        schoolMatchCache.set(schoolKey, schoolMatch);
+      }
       if (schoolMatch.review && rawSchool) schoolReviewCount++;
       const school = schoolMatch.review ? "" : schoolMatch.match;
       const childClass = clean(row.childClass, 100);
@@ -197,8 +203,11 @@ async function postHandler(request: Request) {
         else imports.unshift(entry);
       }
     } else {
-      const entry: ParentImport = { id: crypto.randomUUID(), source: body.source as ParentSource, fileName, importedAt: now, rows: body.rows.length, matched, review: reviewCount, schoolReview: schoolReviewCount };
-      imports.unshift(entry);
+      const id = clean(body.importId, 80);
+      const previous = id ? imports.find((item) => item.id === id) : undefined;
+      const entry: ParentImport = { id: id || crypto.randomUUID(), source: body.source as ParentSource, fileName, importedAt: previous?.importedAt ?? now, rows: (previous?.rows ?? 0) + body.rows.length, matched: (previous?.matched ?? 0) + matched, review: (previous?.review ?? 0) + reviewCount, schoolReview: (previous?.schoolReview ?? 0) + schoolReviewCount };
+      if (previous) imports[imports.indexOf(previous)] = entry;
+      else imports.unshift(entry);
     }
     const store = taskStore();
     await store.setJSON(CONTACTS_KEY, contacts);
