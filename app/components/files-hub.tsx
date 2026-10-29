@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { postEnrollmentCsv } from "@/app/lib/enrollment-upload";
 
 export type FileKind = "availability" | "assignments" | "interests" | "upcomingSessions" | "enrollments" | "tutors";
 type StoredImport = {
@@ -84,6 +85,8 @@ export default function FilesHub({ onOpen, focusKind = null }: { onOpen: (kind: 
         ? await fetch(config.endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fileName: file.name, rawCsv }) })
         : kind === "tutors"
           ? await fetch(config.endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ date: tutorImportDate, fileName: file.name, rawCsv }) })
+        : kind === "enrollments"
+          ? await postEnrollmentCsv(rawCsv, file.name)
         : await fetch(`${config.endpoint}?fileName=${encodeURIComponent(file.name)}`, { method: "POST", headers: { "Content-Type": "text/csv;charset=utf-8" }, body: rawCsv });
       const data = await response.json() as { error?: string; detail?: string };
       if (!response.ok) throw new Error(data.detail || data.error || "Import impossible");
