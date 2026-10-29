@@ -50,7 +50,7 @@ function calledLabel(call: CallRecord) {
   if (call.parentName) return call.parentName;
   if (call.tutorName) return call.tutorName;
   if (call.role === "parent") return call.parentMatchAmbiguous ? "Parent · plusieurs fiches" : "Parent · fiche à relier";
-  const kind = call.role === "parent" ? "Parent" : call.role === "tutor-candidate" ? "Tuteur / candidat" : call.role === "school" ? "Établissement" : "Appelant";
+  const kind = call.role === "tutor-candidate" ? "Tuteur / candidat" : call.role === "school" ? "Établissement" : "Appelant";
   return `${kind} · ${call.callerId.slice(0, 6).toUpperCase()}`;
 }
 
