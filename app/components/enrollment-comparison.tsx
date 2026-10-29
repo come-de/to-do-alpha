@@ -5,6 +5,7 @@ import type { EnrollmentImport, EnrollmentRow } from "@/app/lib/shared-data";
 import type { FileKind } from "@/app/components/files-hub";
 import ParentHistoryDialog from "@/app/components/parent-history-dialog";
 import { postEnrollmentCsv } from "@/app/lib/enrollment-upload";
+import { readApiJson } from "@/app/lib/api-json";
 
 type ComparisonView = "new" | "lost" | "same";
 type SchoolPortfolioOwner = "" | "kelly" | "pierre" | "julie";
@@ -59,17 +60,6 @@ function studentMap(rows: EnrollmentRow[]) {
 function csvCell(value: unknown) {
   const text = String(value ?? "");
   return /[;"\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
-}
-
-async function readApiJson<T>(response: Response): Promise<T> {
-  const contentType = response.headers.get("content-type") || "";
-  if (!contentType.toLocaleLowerCase("fr").includes("application/json")) {
-    const reason = response.status === 504
-      ? "Le serveur a dépassé son délai de traitement. L’import a peut-être été enregistré; actualisez la liste avant de réessayer."
-      : `Le serveur a renvoyé une page HTML au lieu du résultat attendu (HTTP ${response.status}).`;
-    throw new Error(reason);
-  }
-  return await response.json() as T;
 }
 
 export default function EnrollmentComparison({ onOpenFiles }: { onOpenFiles: (kind: FileKind) => void }) {
