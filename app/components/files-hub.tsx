@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { postEnrollmentCsv } from "@/app/lib/enrollment-upload";
+import { readApiJson } from "@/app/lib/api-json";
 
 export type FileKind = "availability" | "assignments" | "interests" | "upcomingSessions" | "enrollments" | "tutors";
 type StoredImport = {
@@ -88,7 +89,7 @@ export default function FilesHub({ onOpen, focusKind = null }: { onOpen: (kind: 
         : kind === "enrollments"
           ? await postEnrollmentCsv(rawCsv, file.name)
         : await fetch(`${config.endpoint}?fileName=${encodeURIComponent(file.name)}`, { method: "POST", headers: { "Content-Type": "text/csv;charset=utf-8" }, body: rawCsv });
-      const data = await response.json() as { error?: string; detail?: string; parentLinkingUnavailable?: boolean; parentLinking?: { linkedEnrollmentRows?: number; createdParentContacts?: number } };
+      const data = await readApiJson<{ error?: string; detail?: string; parentLinkingUnavailable?: boolean; parentLinking?: { linkedEnrollmentRows?: number; createdParentContacts?: number } }>(response);
       if (!response.ok) throw new Error(data.detail || data.error || "Import impossible");
       await load(true);
       const linkingMessage = kind !== "enrollments" ? "" : data.parentLinkingUnavailable
