@@ -76,6 +76,7 @@ async function postHandler(request: Request) {
     const createdImport = await createEnrollmentImportFromCsv({
       fileName: url.searchParams.get("fileName") || "parents.csv",
       rawCsv,
+      sourceRowCount: Number(request.headers.get("x-alpha-source-row-count")) || undefined,
       resolveParentIds,
     });
     // Enrollment imports can contain tens of thousands of rows. Returning the
