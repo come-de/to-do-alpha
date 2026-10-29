@@ -75,6 +75,7 @@ async function postHandler(request: Request) {
     trace(contactResult.available ? "contacts:read" : "contacts:unavailable");
     let contacts = Array.isArray(contactResult.value) ? contactResult.value as ParentContact[] : [];
     let parentLinkingUnavailable = !contactResult.available;
+    let parentLinking = { linkedEnrollmentRows: 0, createdParentContacts: 0 };
     const fileName = url.searchParams.get("fileName") || "parents.csv";
     const parsed = parseEnrollmentCsv(rawCsv);
     if (!parsed.rows.length) return json({ error: "Aucun élève avec des créneaux dans ce CSV" }, 400);
@@ -85,6 +86,7 @@ async function postHandler(request: Request) {
         await taskStore().setJSON("parents-crm/contacts.json", linked.contacts);
         contacts = linked.contacts;
         rowsWithParents = linked.rows;
+        parentLinking = { linkedEnrollmentRows: linked.linkedEnrollmentRows, createdParentContacts: linked.createdParentContacts };
         trace("parents:linked-and-saved");
       } catch (error) {
         parentLinkingUnavailable = true;
@@ -106,7 +108,7 @@ async function postHandler(request: Request) {
     const summary = { ...createdImport, rows: [] };
     const imports = await readEnrollmentImportSummaries();
     trace("summaries:read");
-    return json({ import: summary, imports, parentLinkingUnavailable }, 201);
+    return json({ import: summary, imports, parentLinkingUnavailable, parentLinking }, 201);
   } catch (error) {
     trace("error");
     const detail = error instanceof Error ? error.message : "Impossible d’importer le CSV";

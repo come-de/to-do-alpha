@@ -88,10 +88,13 @@ export default function FilesHub({ onOpen, focusKind = null }: { onOpen: (kind: 
         : kind === "enrollments"
           ? await postEnrollmentCsv(rawCsv, file.name)
         : await fetch(`${config.endpoint}?fileName=${encodeURIComponent(file.name)}`, { method: "POST", headers: { "Content-Type": "text/csv;charset=utf-8" }, body: rawCsv });
-      const data = await response.json() as { error?: string; detail?: string; parentLinkingUnavailable?: boolean };
+      const data = await response.json() as { error?: string; detail?: string; parentLinkingUnavailable?: boolean; parentLinking?: { linkedEnrollmentRows?: number; createdParentContacts?: number } };
       if (!response.ok) throw new Error(data.detail || data.error || "Import impossible");
       await load(true);
-      setMessage(`${config.title} : fichier sauvegardé${data.parentLinkingUnavailable ? " · rapprochement avec les fiches Parents indisponible pour cet import" : ""}`);
+      const linkingMessage = kind !== "enrollments" ? "" : data.parentLinkingUnavailable
+        ? " · rapprochement avec les fiches Parents indisponible pour cet import"
+        : ` · ${data.parentLinking?.linkedEnrollmentRows ?? 0} ligne(s) reliée(s) à un parent, ${data.parentLinking?.createdParentContacts ?? 0} nouvelle(s) fiche(s)`;
+      setMessage(`${config.title} : fichier sauvegardé${linkingMessage}`);
     } catch (error) {
       setMessage(error instanceof Error ? `Import non sauvegardé : ${error.message}` : "Import non sauvegardé");
     } finally {
