@@ -243,6 +243,7 @@ export default function EnrollmentComparison({ onOpenFiles }: { onOpenFiles: (ki
         imports?: Partial<EnrollmentImport>[];
         error?: string;
         detail?: string;
+        parentLinkingUnavailable?: boolean;
       }>(response);
       if (!response.ok) throw new Error(data.detail || data.error || "Import impossible");
       const nextImports = (data.imports ?? []).map(normalizeImport).sort((a, b) => sortTimestamp(b.importedAt) - sortTimestamp(a.importedAt));
@@ -254,7 +255,7 @@ export default function EnrollmentComparison({ onOpenFiles }: { onOpenFiles: (ki
       setReferenceId(previousNewestId || nextImports[1]?.id || created?.id || "");
       setSchoolFilter("all");
       setView("new");
-      setMessage(`Import sauvegardé : ${created?.sourceRowCount ?? 0} ligne(s) analysée(s). Chargement des données…`);
+      setMessage(`Import sauvegardé : ${created?.sourceRowCount ?? 0} ligne(s) analysée(s).${data.parentLinkingUnavailable ? " Rapprochement avec les fiches Parents indisponible pour cet import." : ""} Chargement des données…`);
     } catch (error) {
       setMessage(error instanceof Error ? `Import non sauvegardé : ${error.message}` : "Import non sauvegardé");
     } finally {
