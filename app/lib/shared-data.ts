@@ -3713,6 +3713,7 @@ export async function readEnrollmentImports() {
 export async function createEnrollmentImportFromCsv(input: { fileName: string; rawCsv: string; sourceRowCount?: number; resolveParentIds?: (row: EnrollmentRow & { parentEmails?: string[]; parentPhones?: string[] }) => string[] }) {
   const now = new Date().toISOString();
   const parsed = parseEnrollmentCsv(input.rawCsv);
+  console.info("[enrollment-import] csv:parsed", { rows: parsed.rows.length });
   if (!parsed.rows.length) throw new Error("Aucun élève avec des créneaux dans ce CSV");
   const nextImport = sanitizeEnrollmentImport({
     id: crypto.randomUUID(),
@@ -3725,13 +3726,18 @@ export async function createEnrollmentImportFromCsv(input: { fileName: string; r
   });
   try {
     const store = taskStore();
+    console.info("[enrollment-import] rows:write:start");
     await store.setJSON(enrollmentRowsKey(nextImport.id), nextImport.rows);
+    console.info("[enrollment-import] rows:write:done");
     const existing = await readEnrollmentIndex();
+    console.info("[enrollment-import] index:read");
     const nextIndex = [
       { ...nextImport, rows: [] },
       ...existing.filter((item) => item.id !== nextImport.id).map((item) => ({ ...item, rows: [] })),
     ].sort((a, b) => dateValueForSort(b.importedAt) - dateValueForSort(a.importedAt));
+    console.info("[enrollment-import] index:write:start");
     await store.setJSON(ENROLLMENT_IMPORTS_KEY, nextIndex);
+    console.info("[enrollment-import] index:write:done");
   } catch (error) {
     if (!canUseMemoryFallback()) throw error;
     memory.__petitSuiviEnrollmentImports = [nextImport, ...(memory.__petitSuiviEnrollmentImports ?? [])];

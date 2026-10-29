@@ -38,6 +38,9 @@ async function getHandler(request: Request) {
 }
 
 async function postHandler(request: Request) {
+  const startedAt = Date.now();
+  const trace = (stage: string) => console.info("[enrollment-import]", stage, { elapsedMs: Date.now() - startedAt });
+  trace("handler:start");
   try {
     const url = new URL(request.url);
     let rawCsv: string;
@@ -53,8 +56,10 @@ async function postHandler(request: Request) {
       rawCsv = await request.text();
       if (Buffer.byteLength(rawCsv, "utf8") > 20 * 1024 * 1024) return json({ error: "Le fichier CSV dépasse la limite de 20 Mo." }, 413);
     }
+    trace("body:read");
     if (!rawCsv.trim()) return json({ error: "Fichier CSV vide" }, 400);
     const storedContacts = await taskStore().get("parents-crm/contacts.json", { type: "json", consistency: "strong" });
+    trace("contacts:read");
     const contacts = Array.isArray(storedContacts) ? storedContacts as ParentContact[] : [];
     const identities = new Map<string, Set<string>>();
     for (const contact of contacts) {
@@ -73,6 +78,7 @@ async function postHandler(request: Request) {
       for (const phone of row.parentPhones || []) for (const id of identities.get(`phone:${normalizeParentPhone(phone)}`) || []) ids.add(id);
       return ids.size === 1 ? [...ids] : [];
     };
+    trace("contacts:indexed");
     const createdImport = await createEnrollmentImportFromCsv({
       fileName: url.searchParams.get("fileName") || "parents.csv",
       rawCsv,
@@ -83,9 +89,13 @@ async function postHandler(request: Request) {
     // full import here duplicates the entire CSV-derived dataset in the
     // response and can exceed Netlify's response/runtime limits. The client
     // loads row details separately through GET ?id=... when needed.
+    trace("import:created");
     const summary = { ...createdImport, rows: [] };
-    return json({ import: summary, imports: await readEnrollmentImportSummaries() }, 201);
+    const imports = await readEnrollmentImportSummaries();
+    trace("summaries:read");
+    return json({ import: summary, imports }, 201);
   } catch (error) {
+    trace("error");
     const detail = error instanceof Error ? error.message : "Impossible d’importer le CSV";
     return json({ error: "Impossible d’importer le CSV", detail }, 500);
   }
