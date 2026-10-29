@@ -1,4 +1,5 @@
 import { withIdentity } from "@/app/lib/with-identity";
+import { readParentArray } from "@/app/lib/parent-storage";
 import { normalizeParentPhone, splitParentPhones, type ParentContact } from "@/app/lib/parents";
 import { readEnrollmentImports, taskStore } from "@/app/lib/shared-data";
 import { readCustomerCallData } from "@/app/lib/customer-call-audit";
@@ -11,8 +12,7 @@ async function getHandler(request: Request) {
     const id = new URL(request.url).searchParams.get("id") || "";
     if (!id || id.length > 100) return Response.json({ error: "Identifiant parent invalide." }, { status: 400 });
     const store = taskStore();
-    const raw = await store.get("parents-crm/contacts.json", { type: "json", consistency: "strong" });
-    const contacts = Array.isArray(raw) ? raw as ParentContact[] : [];
+    const contacts = await readParentArray<ParentContact>(store, "parents-crm/contacts.json");
     const contact = contacts.find((item) => item.id === id);
     if (!contact) return Response.json({ error: "Fiche parent introuvable." }, { status: 404 });
     const phoneOwners = new Map<string, number>();
