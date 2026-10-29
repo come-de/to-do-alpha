@@ -2,6 +2,7 @@ import { withIdentity } from "@/app/lib/with-identity";
 import { NextResponse } from "next/server";
 import { normalizeParentEmail, normalizeParentPhone, type ParentContact } from "@/app/lib/parents";
 import { taskStore } from "@/app/lib/shared-data";
+import { gunzipSync } from "node:zlib";
 import {
   createEnrollmentImportFromCsv,
   deleteEnrollmentImportById,
@@ -39,7 +40,19 @@ async function getHandler(request: Request) {
 async function postHandler(request: Request) {
   try {
     const url = new URL(request.url);
-    const rawCsv = await request.text();
+    let rawCsv: string;
+    if (request.headers.get("x-alpha-csv-compression") === "gzip") {
+      const compressed = Buffer.from(await request.arrayBuffer());
+      if (compressed.length > 6 * 1024 * 1024) return json({ error: "Le fichier compressé dépasse la limite de 6 Mo." }, 413);
+      try {
+        rawCsv = gunzipSync(compressed, { maxOutputLength: 20 * 1024 * 1024 }).toString("utf8");
+      } catch {
+        return json({ error: "Fichier CSV compressé invalide ou trop volumineux (maximum 20 Mo)." }, 400);
+      }
+    } else {
+      rawCsv = await request.text();
+      if (Buffer.byteLength(rawCsv, "utf8") > 20 * 1024 * 1024) return json({ error: "Le fichier CSV dépasse la limite de 20 Mo." }, 413);
+    }
     if (!rawCsv.trim()) return json({ error: "Fichier CSV vide" }, 400);
     const storedContacts = await taskStore().get("parents-crm/contacts.json", { type: "json", consistency: "strong" });
     const contacts = Array.isArray(storedContacts) ? storedContacts as ParentContact[] : [];
