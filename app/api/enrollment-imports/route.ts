@@ -65,7 +65,12 @@ async function postHandler(request: Request) {
       rawCsv,
       resolveParentIds,
     });
-    return json({ import: createdImport, imports: await readEnrollmentImportSummaries() }, 201);
+    // Enrollment imports can contain tens of thousands of rows. Returning the
+    // full import here duplicates the entire CSV-derived dataset in the
+    // response and can exceed Netlify's response/runtime limits. The client
+    // loads row details separately through GET ?id=... when needed.
+    const summary = { ...createdImport, rows: [] };
+    return json({ import: summary, imports: await readEnrollmentImportSummaries() }, 201);
   } catch (error) {
     const detail = error instanceof Error ? error.message : "Impossible d’importer le CSV";
     return json({ error: "Impossible d’importer le CSV", detail }, 500);

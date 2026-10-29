@@ -60,6 +60,17 @@ function csvCell(value: unknown) {
   return /[;"\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
+async function readApiJson<T>(response: Response): Promise<T> {
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.toLocaleLowerCase("fr").includes("application/json")) {
+    const reason = response.status === 504
+      ? "Le serveur a dépassé son délai de traitement. L’import a peut-être été enregistré; actualisez la liste avant de réessayer."
+      : `Le serveur a renvoyé une page HTML au lieu du résultat attendu (HTTP ${response.status}).`;
+    throw new Error(reason);
+  }
+  return await response.json() as T;
+}
+
 export default function EnrollmentComparison({ onOpenFiles }: { onOpenFiles: (kind: FileKind) => void }) {
   const [imports, setImports] = useState<EnrollmentImport[]>([]);
   const [loadedImports, setLoadedImports] = useState<Record<string, EnrollmentImport>>({});
@@ -230,24 +241,23 @@ export default function EnrollmentComparison({ onOpenFiles }: { onOpenFiles: (ki
         headers: { "Content-Type": "text/csv;charset=utf-8" },
         body: text,
       });
-      const data = (await response.json()) as {
+      const data = await readApiJson<{
         import?: Partial<EnrollmentImport>;
         imports?: Partial<EnrollmentImport>[];
         error?: string;
         detail?: string;
-      };
+      }>(response);
       if (!response.ok) throw new Error(data.detail || data.error || "Import impossible");
       const nextImports = (data.imports ?? []).map(normalizeImport).sort((a, b) => sortTimestamp(b.importedAt) - sortTimestamp(a.importedAt));
       const created = data.import ? normalizeImport(data.import) : nextImports[0];
       const previousNewestId = imports[0]?.id || "";
       setImports(nextImports);
-      if (created) setLoadedImports((current) => ({ ...current, [created.id]: created }));
       setNameDrafts(Object.fromEntries(nextImports.map((item) => [item.id, item.displayName])));
       if (created) setRecentId(created.id);
       setReferenceId(previousNewestId || nextImports[1]?.id || created?.id || "");
       setSchoolFilter("all");
       setView("new");
-      setMessage(`Import sauvegardé : ${created ? studentMap(alphaRows(created.rows)).size : 0} élève(s) Étude Alpha inscrit(s)`);
+      setMessage(`Import sauvegardé : ${created?.sourceRowCount ?? 0} ligne(s) analysée(s). Chargement des données…`);
     } catch (error) {
       setMessage(error instanceof Error ? `Import non sauvegardé : ${error.message}` : "Import non sauvegardé");
     } finally {
