@@ -1,4 +1,5 @@
 import { withIdentity } from "@/app/lib/with-identity";
+import { readParentArray } from "@/app/lib/parent-storage";
 import { readSchools, taskStore } from "@/app/lib/shared-data";
 import { normalizeParentEmail, normalizeParentPhone, splitParentPhones, type ParentContact, type ParentFollowUp, type ParentImport, type ParentImportRow, type ParentSource } from "@/app/lib/parents";
 
@@ -35,8 +36,7 @@ function matchSchool(value: string, canonicalNames: string[]) {
   return { match: value.trim(), suggestions: ranked.filter((item) => item.score >= 0.55).slice(0, 3).map((item) => item.name), review: true };
 }
 const readArray = async <T,>(key: string): Promise<T[]> => {
-  const value = await taskStore().get(key, { type: "json", consistency: "strong" });
-  return Array.isArray(value) ? value as T[] : [];
+  return readParentArray<T>(taskStore(), key);
 };
 const json = (body: unknown, status = 200) => Response.json(body, { status, headers: { "Cache-Control": "private, no-store" } });
 

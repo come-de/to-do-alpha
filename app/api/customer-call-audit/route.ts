@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { withIdentity } from "@/app/lib/with-identity";
+import { readParentArray } from "@/app/lib/parent-storage";
 import { normalizeParentPhone, splitParentPhones, type ParentContact } from "@/app/lib/parents";
 import { readTutorTracking, taskStore } from "@/app/lib/shared-data";
 import { readCustomerCallData, writeCustomerCallData } from "@/app/lib/customer-call-audit";
@@ -25,15 +26,9 @@ function callNeedsCallback(call: { direction: string; answered: boolean }) {
 async function getHandler() {
   try {
     const store = taskStore();
-    const readParentContacts = async () => {
-      const key = "parents-crm/contacts.json";
-      if (!await store.getMetadata(key, { consistency: "strong" })) return [] as ParentContact[];
-      const value = await store.get(key, { type: "json", consistency: "strong" });
-      return Array.isArray(value) ? value as ParentContact[] : [];
-    };
     const [data, rawContacts, tracking] = await Promise.all([
       readCustomerCallData(),
-      readParentContacts(),
+      readParentArray<ParentContact>(store, "parents-crm/contacts.json"),
       readTutorTracking(),
     ]);
     const contacts = rawContacts;
@@ -147,8 +142,7 @@ async function patchHandler(request: Request) {
       const data = await readCustomerCallData();
       const call = data.calls.find((item) => item.id === body.callId);
       if (!call?.customerNumber) return json({ error: "Cet appelant ne peut pas être rapproché." }, 404);
-      const rawContacts = await taskStore().get("parents-crm/contacts.json", { type: "json", consistency: "strong" });
-      const contacts = Array.isArray(rawContacts) ? rawContacts as ParentContact[] : [];
+      const contacts = await readParentArray<ParentContact>(taskStore(), "parents-crm/contacts.json");
       if (!contacts.some((contact) => contact.id === parentId)) return json({ error: "Fiche parent introuvable." }, 404);
       data.parentLinks = { ...data.parentLinks, [identityHash(call.customerNumber, "")]: parentId };
       await writeCustomerCallData(data);
