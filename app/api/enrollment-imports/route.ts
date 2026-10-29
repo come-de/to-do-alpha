@@ -58,9 +58,21 @@ async function postHandler(request: Request) {
     }
     trace("body:read");
     if (!rawCsv.trim()) return json({ error: "Fichier CSV vide" }, 400);
-    const storedContacts = await taskStore().get("parents-crm/contacts.json", { type: "json", consistency: "strong" });
-    trace("contacts:read");
-    const contacts = Array.isArray(storedContacts) ? storedContacts as ParentContact[] : [];
+    // A very large CRM blob can stall for the whole 60-second function limit.
+    // Keep the enrollment import usable and report when parent linking could not run.
+    let contactTimer: ReturnType<typeof setTimeout> | undefined;
+    const contactResult = await Promise.race([
+      taskStore().get("parents-crm/contacts.json", { type: "json" })
+        .then((value) => ({ available: true as const, value }))
+        .catch(() => ({ available: false as const, value: null })),
+      new Promise<{ available: false; value: null }>((resolve) => {
+        contactTimer = setTimeout(() => resolve({ available: false, value: null }), 5000);
+      }),
+    ]);
+    if (contactTimer) clearTimeout(contactTimer);
+    trace(contactResult.available ? "contacts:read" : "contacts:unavailable");
+    const contacts = Array.isArray(contactResult.value) ? contactResult.value as ParentContact[] : [];
+    const parentLinkingUnavailable = !contactResult.available;
     const identities = new Map<string, Set<string>>();
     for (const contact of contacts) {
       for (const email of contact.emails || []) {
@@ -93,7 +105,7 @@ async function postHandler(request: Request) {
     const summary = { ...createdImport, rows: [] };
     const imports = await readEnrollmentImportSummaries();
     trace("summaries:read");
-    return json({ import: summary, imports }, 201);
+    return json({ import: summary, imports, parentLinkingUnavailable }, 201);
   } catch (error) {
     trace("error");
     const detail = error instanceof Error ? error.message : "Impossible d’importer le CSV";
