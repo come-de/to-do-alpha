@@ -58,7 +58,8 @@ async function getHandler() {
       const parentMatches = parentByPhone.get(call.customerNumber) || [];
       const tutorMatches = (call.role === "tutor-candidate" || call.role === "unknown") ? tutorByPhone.get(call.customerNumber) || [] : [];
       const role: CustomerCallRole = manualParent ? "parent" : call.role === "unknown" && parentMatches.length === 1 && tutorMatches.length === 0 ? "parent" : call.role === "unknown" && tutorMatches.length === 1 && parentMatches.length === 0 ? "tutor-candidate" : call.role;
-      const parent = manualParent || (parentMatches.length === 1 ? parentMatches[0] : undefined);
+      const parent = manualParent || (role === "parent" && parentMatches.length === 1 ? parentMatches[0] : undefined);
+      const parentCall = Boolean(manualParent) || role === "parent";
       const missed = callNeedsCallback(call);
       const callback = evaluateCustomerCallback(call, data.calls);
       return {
@@ -78,7 +79,8 @@ async function getHandler() {
         callerNumberAvailable: Boolean(call.customerNumber),
         parentId: parent?.id || "",
         parentName: parent ? (parent.fullName || `${parent.firstName} ${parent.lastName}`).trim() : "",
-        parentPhone: parent ? call.customerNumber : "",
+        parentSchools: parent ? (parent.schools || []).filter(Boolean).join(" · ") : "",
+        parentPhone: parentCall ? call.customerNumber : "",
         parentEnrollment: parent?.enrolled === true ? "inscrit" : parent?.enrolled === false ? "non-inscrit" : "inconnu",
         parentMatchAmbiguous: parentMatches.length > 1,
         tutorName: tutorMatches.length === 1 ? tutorMatches[0] : "",
