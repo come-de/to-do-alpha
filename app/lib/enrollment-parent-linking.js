@@ -24,6 +24,7 @@ export function linkEnrollmentParents(rows, contacts, fileName, importedAt = new
     for (const value of contact.phones ?? []) for (const phone of splitParentPhones(value).map(normalizeParentPhone).filter(validPhone)) add(phoneIndex, phone, contact.id);
   };
   contacts.forEach(indexContact);
+  const createdContactIds = new Set();
 
   const linkedRows = rows.map((row) => {
     const emails = unique((row.parentEmails ?? []).flatMap((value) => value.split(/[;,|\s]+/)).map(normalizeParentEmail).filter(validEmail));
@@ -45,6 +46,7 @@ export function linkEnrollmentParents(rows, contacts, fileName, importedAt = new
         sources: [], provenance: [], suppression: false, needsReview: false, followUp: "to-contact", updatedAt: importedAt,
       };
       contacts.unshift(contact);
+      createdContactIds.add(contact.id);
     }
     const firstName = String(row.parentFirstName ?? "").trim().slice(0, 100);
     const lastName = String(row.parentLastName ?? "").trim().slice(0, 100);
@@ -65,5 +67,10 @@ export function linkEnrollmentParents(rows, contacts, fileName, importedAt = new
     indexContact(contact);
     return { ...row, parentContactIds: [contact.id] };
   });
-  return { rows: linkedRows, contacts };
+  return {
+    rows: linkedRows,
+    contacts,
+    linkedEnrollmentRows: linkedRows.filter((row) => row.parentContactIds?.length).length,
+    createdParentContacts: createdContactIds.size,
+  };
 }

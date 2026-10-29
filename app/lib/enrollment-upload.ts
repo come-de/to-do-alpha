@@ -43,6 +43,8 @@ export function projectEnrollmentCsv(rawCsv: string) {
     id,
     find(["prenomdelenfant", "prenomenfant", "firstname"]),
     find(["nomdelenfant", "nomenfant", "lastname"]),
+    find(["prenomparent", "prenomduparent", "parentfirstname", "firstnameparent"]),
+    find(["nomparent", "nomduparent", "parentlastname", "lastnameparent"]),
     find(["classe", "class"]),
     find(["ecole", "etablissement", "school"]),
     slots,
@@ -50,7 +52,7 @@ export function projectEnrollmentCsv(rawCsv: string) {
     find(["numerodetelephone", "numerodetelephoneparent", "telephone", "telephoneparent", "telephoneportable", "telephoneportableparent", "mobile", "mobileparent", "portable", "portableparent"]),
     find(["seancesponctuelles", "seanceponctuelle", "ponctuelle", "ponctuel"]),
   ];
-  const projected = ["Id de l'enfant;Prénom de l'enfant;Nom de l'enfant;Classe;Ecole;Creneaux;Courriel;Numéro de téléphone;Séances ponctuelles"];
+  const projected = ["Id de l'enfant;Prénom de l'enfant;Nom de l'enfant;Prénom Parent;Nom Parent;Classe;Ecole;Creneaux;Courriel;Numéro de téléphone;Séances ponctuelles"];
   for (const row of rows.slice(1)) {
     if (!row[id]?.trim() || !row[slots]?.trim()) continue;
     projected.push(indexes.map((index) => csvCell(index < 0 ? "" : row[index] || "")).join(";"));

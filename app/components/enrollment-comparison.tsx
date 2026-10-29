@@ -244,6 +244,7 @@ export default function EnrollmentComparison({ onOpenFiles }: { onOpenFiles: (ki
         error?: string;
         detail?: string;
         parentLinkingUnavailable?: boolean;
+        parentLinking?: { linkedEnrollmentRows?: number; createdParentContacts?: number };
       }>(response);
       if (!response.ok) throw new Error(data.detail || data.error || "Import impossible");
       const nextImports = (data.imports ?? []).map(normalizeImport).sort((a, b) => sortTimestamp(b.importedAt) - sortTimestamp(a.importedAt));
@@ -255,7 +256,10 @@ export default function EnrollmentComparison({ onOpenFiles }: { onOpenFiles: (ki
       setReferenceId(previousNewestId || nextImports[1]?.id || created?.id || "");
       setSchoolFilter("all");
       setView("new");
-      setMessage(`Import sauvegardé : ${created?.sourceRowCount ?? 0} ligne(s) analysée(s).${data.parentLinkingUnavailable ? " Rapprochement avec les fiches Parents indisponible pour cet import." : ""} Chargement des données…`);
+      const linkingMessage = data.parentLinkingUnavailable
+        ? " Rapprochement avec les fiches Parents indisponible pour cet import."
+        : ` ${data.parentLinking?.linkedEnrollmentRows ?? 0} ligne(s) d’inscription reliée(s) à des parents · ${data.parentLinking?.createdParentContacts ?? 0} nouvelle(s) fiche(s) créée(s).`;
+      setMessage(`Import sauvegardé : ${created?.sourceRowCount ?? 0} ligne(s) analysée(s).${linkingMessage} Chargement des données…`);
     } catch (error) {
       setMessage(error instanceof Error ? `Import non sauvegardé : ${error.message}` : "Import non sauvegardé");
     } finally {

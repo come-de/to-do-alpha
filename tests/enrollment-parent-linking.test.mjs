@@ -1,11 +1,23 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { linkEnrollmentParents } from "../app/lib/enrollment-parent-linking.js";
+import { projectEnrollmentCsv } from "../app/lib/enrollment-upload.ts";
 
 const row = (overrides = {}) => ({
   studentId: "student-private-id", firstName: "Child", lastName: "Private", className: "CE2", slots: "Monday",
   parentFirstName: "Camille", parentLastName: "Martin", parentEmails: [" CAMILLE@example.fr "], parentPhones: ["06 12 34 56 78 | +33 (0)6 98 76 54 32"], school: "École Alpha",
   ...overrides,
+});
+
+test("the enrollment upload projection keeps parent names and contact fields", () => {
+  const source = [
+    "Id de l'enfant;Prénom de l'enfant;Nom de l'enfant;Classe;Ecole;Creneaux;Prénom Parent;Nom Parent;Couriel;Numéro de téléphone;Séances ponctuelles",
+    '42;Léa;Martin;CE2;École Test;Lundi;Camille;Martin;camille@example.fr;"06 12 34 56 78 | +33 (0)6 98 76 54 32";Non',
+  ].join("\n");
+  const projected = projectEnrollmentCsv(source);
+  assert.match(projected.csv, /Prénom Parent;Nom Parent/);
+  assert.match(projected.csv, /Camille;Martin;CE2;École Test;Lundi;camille@example\.fr;/);
+  assert.match(projected.csv, /06 12 34 56 78 \| \+33 \(0\)6 98 76 54 32/);
 });
 
 test("enrollment rows create a parent contact and split multiple French phones", () => {
