@@ -29,7 +29,7 @@ type SessionImport = {
   sourceSessionCount: number;
   schools?: UpcomingSessionSchool[];
   schoolStaffing?: UpcomingSessionSchoolStaffing[];
-  staffingSessions?: Array<Pick<UpcomingSession, "sessionId" | "school" | "date" | "startTime" | "endTime" | "group"> & {
+  staffingSessions?: Array<Pick<UpcomingSession, "sessionId" | "schoolId" | "school" | "category" | "date" | "startTime" | "endTime" | "group"> & {
     tutors: Array<{ tutorId: string; firstName: string; lastName: string; phone: string }>;
   }>;
   rows: UpcomingSession[];
@@ -113,6 +113,11 @@ type UnstaffedExclusions = { sessionIds: string[]; sourceKeys: string[]; updated
 type SchoolPortfolioOwner = "" | "kelly" | "pierre" | "julie";
 type SchoolAssignment = { externalId: string; name: string; portfolioOwner: SchoolPortfolioOwner };
 type SchoolOwnerFilter = "all" | "unassigned" | Exclude<SchoolPortfolioOwner, "">;
+
+function MatrixCount({ count, total }: { count: number; total: number }) {
+  const percent = total ? new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format((count / total) * 100) : "0";
+  return <span className="unstaffed-rh-matrix-value"><strong>{count}</strong><small>{total} au total · {percent} % non staffées</small></span>;
+}
 
 function initialDateFilter() {
   if (typeof window === "undefined") return "all";
@@ -383,23 +388,62 @@ export default function UnstaffedSessions({ onOpenFiles }: { onOpenFiles: (kind:
     const isSingleStudentAlpha = sessionCategoryKey(row.category) === "alpha" && row.studentCount === 1;
     return !isSingleStudentAlpha || shownSingleStudentAlphaDates.includes(row.date);
   }), [filteredRowsBeforeDateAndOwner, shownSingleStudentAlphaDates]);
+  const staffedMatrixByDate = useMemo(() => {
+    const byDate = new Map<string, Record<SchoolPortfolioOwner, number>>();
+    const add = (date: string, owner: SchoolPortfolioOwner, count: number) => {
+      const day = byDate.get(date) ?? { "": 0, kelly: 0, pierre: 0, julie: 0 };
+      day[owner] += count;
+      byDate.set(date, day);
+    };
+    if (activeImport?.staffingSessions?.length) {
+      activeImport.staffingSessions.forEach((session) => {
+        if (session.tutors.length && selectedCategories.includes(sessionCategoryKey(session.category))) {
+          add(session.date, ownerForSchool(session.schoolId, session.school), 1);
+        }
+      });
+    } else if (activeImport?.schoolStaffing?.length) {
+      activeImport.schoolStaffing.forEach((school) => add(school.date, ownerForSchool(school.schoolId, school.name), school.staffedSessions));
+    } else {
+      const seen = new Set<string>();
+      (activeAssignmentImport?.rows ?? []).forEach((row) => {
+        if (row.absent || !selectedCategories.includes(sessionCategoryKey(row.category || ""))) return;
+        const key = [row.date, normalizedSchoolName(row.school), row.timeSlot, row.category || ""].join("|");
+        if (seen.has(key)) return;
+        seen.add(key);
+        add(row.date, ownerForSchool("", row.school), 1);
+      });
+    }
+    return byDate;
+  }, [activeAssignmentImport, activeImport, ownerForSchool, selectedCategories]);
   const unstaffedMatrix = useMemo(() => {
     const matrixOwners: SchoolPortfolioOwner[] = ["", "kelly", "pierre", "julie"];
+    const matrixDates = Array.from(new Set([...dates, ...staffedMatrixByDate.keys()])).sort();
     const buildCounts = (rows: UpcomingSession[]) => {
       const counts: Record<SchoolPortfolioOwner, number> = { "": 0, kelly: 0, pierre: 0, julie: 0 };
       rows.forEach((row) => { counts[ownerForSession(row)] += 1; });
       return counts;
     };
+    const staffedTotals: Record<SchoolPortfolioOwner, number> = { "": 0, kelly: 0, pierre: 0, julie: 0 };
+    staffedMatrixByDate.forEach((day) => matrixOwners.forEach((owner) => { staffedTotals[owner] += day[owner]; }));
+    const totals = buildCounts(matrixVisibleRows);
     return {
       owners: matrixOwners,
-      totals: buildCounts(matrixVisibleRows),
+      totals,
+      sessionTotals: Object.fromEntries(matrixOwners.map((owner) => [owner, totals[owner] + staffedTotals[owner]])) as Record<SchoolPortfolioOwner, number>,
       total: matrixVisibleRows.length,
-      rows: dates.map((date) => {
+      sessionTotal: matrixVisibleRows.length + Object.values(staffedTotals).reduce((sum, count) => sum + count, 0),
+      rows: matrixDates.map((date) => {
         const dayRows = matrixVisibleRows.filter((row) => row.date === date);
-        return { date, counts: buildCounts(dayRows), total: dayRows.length };
+        const counts = buildCounts(dayRows);
+        const staffed = staffedMatrixByDate.get(date);
+        return {
+          date, counts, total: dayRows.length,
+          sessionTotals: Object.fromEntries(matrixOwners.map((owner) => [owner, counts[owner] + (staffed?.[owner] ?? 0)])) as Record<SchoolPortfolioOwner, number>,
+          sessionTotal: dayRows.length + (staffed ? Object.values(staffed).reduce((sum, count) => sum + count, 0) : 0),
+        };
       }),
     };
-  }, [dates, matrixVisibleRows, ownerForSession]);
+  }, [dates, matrixVisibleRows, ownerForSession, staffedMatrixByDate]);
   const sourceIndexes = useMemo(() => {
     const interestsBySlot = new Map<string, TutorInterest[]>();
     const availabilityBySlot = new Map<string, Availability[]>();
@@ -723,8 +767,8 @@ export default function UnstaffedSessions({ onOpenFiles }: { onOpenFiles: (kind:
       <section className="unstaffed-rh-matrix">
         <div className="unstaffed-rh-matrix-heading"><div><strong>Séances non staffées par jour et par RH</strong><span>Cliquez sur une date ou un chiffre pour afficher le détail correspondant en dessous.</span></div>{selectedDate !== "all" || schoolOwnerFilter !== "all" ? <button type="button" onClick={() => { setSelectedDate("all"); setSchoolOwnerFilter("all"); }}>Réinitialiser la sélection</button> : null}</div>
         <div className="unstaffed-rh-matrix-scroll"><table><thead><tr><th>Date</th>{unstaffedMatrix.owners.map((owner) => <th key={owner || "unassigned"}>{schoolOwnerLabels[owner]}</th>)}<th>Total</th></tr></thead><tbody>
-          <tr className="total-row"><th><button type="button" className={selectedDate === "all" && schoolOwnerFilter === "all" ? "active" : ""} onClick={() => { setSelectedDate("all"); setSchoolOwnerFilter("all"); }}>Toutes les dates</button></th>{unstaffedMatrix.owners.map((owner) => <td key={owner || "unassigned"}><button type="button" className={selectedDate === "all" && schoolOwnerFilter === (owner || "unassigned") ? "active" : ""} onClick={() => { setSelectedDate("all"); setSchoolOwnerFilter(owner || "unassigned"); }}>{unstaffedMatrix.totals[owner]}</button></td>)}<td><button type="button" className={selectedDate === "all" && schoolOwnerFilter === "all" ? "active" : ""} onClick={() => { setSelectedDate("all"); setSchoolOwnerFilter("all"); }}>{unstaffedMatrix.total}</button></td></tr>
-          {unstaffedMatrix.rows.map((row) => <tr key={row.date}><th><button type="button" className={selectedDate === row.date && schoolOwnerFilter === "all" ? "active" : ""} onClick={() => { setSelectedDate(row.date); setSchoolOwnerFilter("all"); }}>{formatDate(row.date, true)}</button></th>{unstaffedMatrix.owners.map((owner) => <td key={owner || "unassigned"}><button type="button" className={selectedDate === row.date && schoolOwnerFilter === (owner || "unassigned") ? "active" : ""} onClick={() => { setSelectedDate(row.date); setSchoolOwnerFilter(owner || "unassigned"); }}>{row.counts[owner]}</button></td>)}<td><button type="button" className={selectedDate === row.date && schoolOwnerFilter === "all" ? "active" : ""} onClick={() => { setSelectedDate(row.date); setSchoolOwnerFilter("all"); }}>{row.total}</button></td></tr>)}
+          <tr className="total-row"><th><button type="button" className={selectedDate === "all" && schoolOwnerFilter === "all" ? "active" : ""} onClick={() => { setSelectedDate("all"); setSchoolOwnerFilter("all"); }}>Toutes les dates</button></th>{unstaffedMatrix.owners.map((owner) => <td key={owner || "unassigned"}><button type="button" className={selectedDate === "all" && schoolOwnerFilter === (owner || "unassigned") ? "active" : ""} onClick={() => { setSelectedDate("all"); setSchoolOwnerFilter(owner || "unassigned"); }}><MatrixCount count={unstaffedMatrix.totals[owner]} total={unstaffedMatrix.sessionTotals[owner]} /></button></td>)}<td><button type="button" className={selectedDate === "all" && schoolOwnerFilter === "all" ? "active" : ""} onClick={() => { setSelectedDate("all"); setSchoolOwnerFilter("all"); }}><MatrixCount count={unstaffedMatrix.total} total={unstaffedMatrix.sessionTotal} /></button></td></tr>
+          {unstaffedMatrix.rows.map((row) => <tr key={row.date}><th><button type="button" className={selectedDate === row.date && schoolOwnerFilter === "all" ? "active" : ""} onClick={() => { setSelectedDate(row.date); setSchoolOwnerFilter("all"); }}>{formatDate(row.date, true)}</button></th>{unstaffedMatrix.owners.map((owner) => <td key={owner || "unassigned"}><button type="button" className={selectedDate === row.date && schoolOwnerFilter === (owner || "unassigned") ? "active" : ""} onClick={() => { setSelectedDate(row.date); setSchoolOwnerFilter(owner || "unassigned"); }}><MatrixCount count={row.counts[owner]} total={row.sessionTotals[owner]} /></button></td>)}<td><button type="button" className={selectedDate === row.date && schoolOwnerFilter === "all" ? "active" : ""} onClick={() => { setSelectedDate(row.date); setSchoolOwnerFilter("all"); }}><MatrixCount count={row.total} total={row.sessionTotal} /></button></td></tr>)}
         </tbody></table></div>
       </section>
       <div className="owner-count-strip unstaffed-owner-counts">

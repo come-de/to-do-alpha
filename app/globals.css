@@ -487,6 +487,11 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .tutor-tracking-meta span { border: 1px solid var(--line); border-radius: 999px; padding: 3px 7px; color: var(--blue-dark); background: rgba(255,255,255,.84); font-size: 10.5px; font-weight: 750; }
 .tutor-tracking-card input { width: 100%; min-height: 34px; border: 1px solid var(--line); border-radius: 9px; padding: 6px 8px; color: var(--blue-title); background: white; font-size: 12px; }
 .tutor-tracking-empty { border-top: 0; }
+.tutors-without-controls { display: flex; align-items: end; flex-wrap: wrap; gap: 10px; }
+.tutors-without-controls label { min-width: 180px; }
+.tutors-without-controls input { min-height: 36px; border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px; background: white; color: var(--blue-title); }
+.tutors-without-error { margin: 0; color: #a32542; font-size: 12px; }
+.tutors-without-card { display: block; }
 .tutor-activity { grid-column: 1 / -1; padding-top: 9px; border-top: 1px solid var(--line); }
 .tutor-activity-prompt { margin: 0; padding: 8px 10px; border-radius: 9px; color: var(--muted); background: rgba(240,249,255,.72); font-size: 11px; font-weight: 700; }
 .tutor-activity-prompt.error { color: #9f1239; background: #fff1f2; }
@@ -1818,7 +1823,7 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
 .unstaffed-rh-matrix-heading button { border: 1px solid var(--line); border-radius: 999px; padding: 4px 8px; background: white; color: var(--blue-dark); font-size: 8px; font-weight: 820; cursor: pointer; }
 .unstaffed-rh-matrix-scroll { max-height: 330px; overflow: auto; border-top: 1px solid var(--line); }
 .unstaffed-rh-matrix table { width: 100%; min-width: 660px; border-collapse: collapse; table-layout: fixed; }
-.unstaffed-rh-matrix th, .unstaffed-rh-matrix td { height: 31px; padding: 3px 5px; border-bottom: 1px solid #e8f2f5; text-align: center; }
+.unstaffed-rh-matrix th, .unstaffed-rh-matrix td { height: 45px; padding: 3px 5px; border-bottom: 1px solid #e8f2f5; text-align: center; }
 .unstaffed-rh-matrix thead th { position: sticky; top: 0; z-index: 2; background: #f3fafc; color: var(--muted); font-size: 8px; font-weight: 850; text-transform: uppercase; }
 .unstaffed-rh-matrix thead th:first-child { width: 190px; text-align: left; }
 .unstaffed-rh-matrix thead th:last-child { background: #eefdf7; color: var(--green-dark); }
@@ -1829,7 +1834,10 @@ h1 { max-width: 780px; margin: 0; font-size: clamp(29px, 3.2vw, 42px); line-heig
 .unstaffed-rh-matrix button { cursor: pointer; }
 .unstaffed-rh-matrix tbody button { width: 100%; min-height: 24px; border: 1px solid transparent; border-radius: 7px; background: transparent; color: var(--blue-title); font-size: 9px; font-weight: 820; }
 .unstaffed-rh-matrix tbody th button { padding: 3px 6px; text-align: left; }
-.unstaffed-rh-matrix tbody td button { font-size: 11px; }
+.unstaffed-rh-matrix tbody td button { min-height: 38px; font-size: 11px; }
+.unstaffed-rh-matrix-value { display: grid; justify-items: center; gap: 1px; line-height: 1.1; }
+.unstaffed-rh-matrix-value strong { font-size: 11px; }
+.unstaffed-rh-matrix-value small { color: var(--muted); font-size: 8px; font-weight: 650; white-space: nowrap; }
 .unstaffed-rh-matrix tbody td:last-child button { color: var(--green-dark); background: rgba(236,253,245,.72); }
 .unstaffed-rh-matrix tbody button:hover { border-color: rgba(14,165,233,.3); background: #eefaff; }
 .unstaffed-rh-matrix tbody button.active { border-color: var(--blue-main); background: #e0f7ff; color: var(--blue-dark); box-shadow: inset 0 -2px 0 var(--blue-main); }

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-export type HomeDestination = "organization" | "tasks" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffingAudit" | "staffingEvolution" | "watchlist" | "tutorReports" | "tutors" | "availability" | "enrollments" | "coverage" | "unstaffed" | "files";
+export type HomeDestination = "organization" | "tasks" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffingAudit" | "staffingEvolution" | "watchlist" | "tutorReports" | "tutors" | "availability" | "enrollments" | "coverage" | "unstaffed" | "files" | "tutorsWithoutAvailability";
 type DashboardPayload = {
   counts?: Record<string, number>;
   error?: string;
@@ -14,6 +14,7 @@ const menuItems: Array<{ mode: HomeDestination; icon: string; title: string; des
   { mode: "staffingAudit", icon: "📊", title: "Bilan staffing", description: "Enregistrer et suivre les séances non staffées par journée." },
   { mode: "availability", icon: "📆", title: "Comparaison dispos", description: "Comparer deux exports de disponibilités tuteurs.", countKey: "availability" },
   { mode: "coverage", icon: "🧩", title: "Tuteurs dispo sans séance", description: "Croiser les disponibilités, les intérêts et les séances à staffer." },
+  { mode: "tutorsWithoutAvailability", icon: "📭", title: "Tuteurs sans disponibilité", description: "Repérer les tuteurs sans disponibilité ni séance sur une période." },
   { mode: "schools", icon: "🏫", title: "Établissements", description: "Consulter le CRM et la répartition des établissements.", countKey: "schools" },
   { mode: "files", icon: "🗂️", title: "Fichiers", description: "Retrouver et gérer les imports partagés." },
   { mode: "unstaffed", icon: "📋", title: "Séances non affectées", description: "Identifier les séances à staffer et les personnes mobilisables." },

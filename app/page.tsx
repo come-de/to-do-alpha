@@ -15,12 +15,13 @@ import AnnualStaffingBadge from "@/app/components/annual-staffing-badge";
 import StaffingAudit from "@/app/components/staffing-audit";
 import StaffingEvolution from "@/app/components/staffing-evolution";
 import TutorReportAudit from "@/app/components/tutor-report-audit";
+import TutorsWithoutAvailability from "@/app/components/tutors-without-availability";
 import type { TutorAssignmentImport, TutorAssignmentRow, TutorInterestImport, TutorInterestRow, UnstaffedExclusions } from "@/app/lib/shared-data";
 
 type Status = "todo" | "progress" | "done";
 type Priority = "low" | "medium" | "high";
 type Density = "compact" | "comfortable";
-type AppMode = "dashboard" | "organization" | "tasks" | "recurring" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffingAudit" | "staffingEvolution" | "watchlist" | "tutorReports" | "tutors" | "availability" | "enrollments" | "parents" | "customerCalls" | "coverage" | "unstaffed" | "files";
+type AppMode = "dashboard" | "organization" | "tasks" | "recurring" | "links" | "objectives" | "history" | "journal" | "schools" | "communications" | "staffingAudit" | "staffingEvolution" | "watchlist" | "tutorReports" | "tutors" | "availability" | "enrollments" | "parents" | "customerCalls" | "coverage" | "unstaffed" | "files" | "tutorsWithoutAvailability";
 type ViewMode = "list" | "matrix";
 type DurationBucket = "short" | "medium" | "long" | "unset";
 type ObjectiveKind = "counter" | "qualitative";
@@ -384,6 +385,7 @@ const appModeSlugs: Record<AppMode, string> = {
   availability: "comparaison-dispos",
   enrollments: "comparaison-inscriptions",
   coverage: "couverture-tuteurs",
+  tutorsWithoutAvailability: "tuteurs-sans-disponibilite",
   unstaffed: "seances-non-affectees",
   files: "fichiers",
   parents: "parents",
@@ -439,6 +441,7 @@ const appModeAliases: Record<string, AppMode> = {
   "crm-parents": "parents",
   couverture: "coverage",
   "couverture-tuteurs": "coverage",
+  "tuteurs-sans-disponibilite": "tutorsWithoutAvailability",
   affectations: "coverage",
   "seances-non-affectees": "unstaffed",
   "séances-non-affectées": "unstaffed",
@@ -4725,6 +4728,8 @@ export default function Home() {
                       ? () => window.dispatchEvent(new Event("customer-call-audit-refresh"))
                     : appMode === "coverage"
                       ? () => setAppMode("coverage")
+                    : appMode === "tutorsWithoutAvailability"
+                      ? () => window.dispatchEvent(new Event("tutors-without-availability-refresh"))
                     : appMode === "unstaffed"
                       ? () => setAppMode("unstaffed")
                     : appMode === "files"
@@ -4766,6 +4771,8 @@ export default function Home() {
                       ? "Actualiser les appels"
                     : appMode === "coverage"
                       ? "Voir les tuteurs disponibles"
+                    : appMode === "tutorsWithoutAvailability"
+                      ? "Actualiser la liste"
                     : appMode === "unstaffed"
                       ? "Voir les séances"
                     : appMode === "files"
@@ -4821,6 +4828,9 @@ export default function Home() {
             </button>
             <button className={appMode === "coverage" ? "active" : ""} onClick={() => setAppMode("coverage")}>
               <span className="tab-icon" aria-hidden="true">🧩</span> Tuteurs dispo sans séance
+            </button>
+            <button className={appMode === "tutorsWithoutAvailability" ? "active" : ""} onClick={() => setAppMode("tutorsWithoutAvailability")}>
+              <span className="tab-icon" aria-hidden="true">📭</span> Tuteurs sans disponibilité
             </button>
             <button className={appMode === "files" ? "active" : ""} onClick={() => setAppMode("files")}>
               <span className="tab-icon" aria-hidden="true">🗂️</span> Fichiers
@@ -5271,6 +5281,7 @@ export default function Home() {
         : appMode === "parents" ? <ParentsCRM />
         : appMode === "customerCalls" ? <CustomerCallAudit />
         : appMode === "coverage" ? <TutorCoverageComparison onOpenFiles={openFiles} />
+        : appMode === "tutorsWithoutAvailability" ? <TutorsWithoutAvailability />
         : appMode === "unstaffed" ? <UnstaffedSessions onOpenFiles={openFiles} />
         : appMode === "staffingAudit" ? <StaffingAudit />
         : appMode === "staffingEvolution" ? <StaffingEvolution />
